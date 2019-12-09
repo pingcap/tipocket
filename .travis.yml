@@ -1,0 +1,12 @@
+sudo: false
+
+language: go
+go:
+  - 1.13.3
+
+jobs:
+  include:
+    - stage: test
+      env:
+        - TRAVIS_BUILD_DIR=./pocket
+      script: make test
