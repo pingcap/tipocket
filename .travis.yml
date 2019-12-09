@@ -7,6 +7,6 @@ go:
 jobs:
   include:
     - stage: test
-      env:
-        - TRAVIS_BUILD_DIR=./pocket
-      script: make test
+      script:
+        - cd pocket
+        - make test
