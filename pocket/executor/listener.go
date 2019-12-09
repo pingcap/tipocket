@@ -1,7 +1,7 @@
 package executor
 
 import (
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 // ExecSQL add sql into exec queue

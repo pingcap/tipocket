@@ -3,9 +3,9 @@ package executor
 import (
 	"fmt"
 	"sync"
-	"github.com/pingcap/tipocket/abclient/connection"
-	"github.com/pingcap/tipocket/abclient/util"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/connection"
+	"github.com/pingcap/tipocket/pocket/util"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/juju/errors"
 )
 

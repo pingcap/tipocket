@@ -5,7 +5,7 @@ import (
 	"os"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/abclient/util"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 // Logger struct

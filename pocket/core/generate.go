@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 	// smith "github.com/pingcap/tipocket/go-sqlsmith"
 )
 

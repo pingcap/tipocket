@@ -9,9 +9,9 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
-	"github.com/pingcap/tipocket/abclient/executor"
-	"github.com/pingcap/tipocket/abclient/util"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 func (e *Executor) reloadSchema() error {

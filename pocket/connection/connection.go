@@ -2,8 +2,8 @@ package connection
 
 import (
 	"fmt"
-	"github.com/pingcap/tipocket/abclient/pkg/logger"
-	"github.com/pingcap/tipocket/abclient/pkg/mysql"
+	"github.com/pingcap/tipocket/pocket/pkg/logger"
+	"github.com/pingcap/tipocket/pocket/pkg/mysql"
 	"github.com/juju/errors"
 )
 

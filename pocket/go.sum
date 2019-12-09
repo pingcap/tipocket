@@ -193,8 +193,11 @@ github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/negroni v0.3.0/go.mod h1:Meg73S6kFm/4PpbYdq35yYWoCZ9mS/YSx+lKnmiohz4=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/yookoala/realpath v1.0.0/go.mod h1:gJJMA9wuX7AcqLy1+ffPatSCySA1FQ2S8Ya9AIoYBpE=
+github.com/you06/sqlsmith-go v0.0.0-20191205065339-ef0a8db01d04/go.mod h1:93Hwm1LnxZfhdj7SyeKXgZU9ZufVmVs5DFfrP6nHI9I=
 github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610 h1:nrYl/UyqbBMhUmCoT2g4K3b77DKwPA4fvui6HR3/lBk=
 github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610/go.mod h1:N8LOrZQBeRpnWaQblZGc1tR9+Le7J2bHAGqSJ4NaNEY=
+github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02 h1:03/QFB401jG25FCTileKTAm/Z5lbRNOPqnyvSqj6sTY=
+github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02/go.mod h1:wZi0pRHRdcbeqgji5TW8zcnnJ9F30iQN5j1IKSlS4do=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/etcd v0.0.0-20190320044326-77d4b742cdbf/go.mod h1:KSGwdbiFchh5KIC9My2+ZVl5/3ANcwohw50dpPwa2cw=

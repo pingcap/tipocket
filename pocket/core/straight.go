@@ -2,8 +2,8 @@ package core
 
 import (
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/abclient/executor"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 // straight is for execute SQLs and transactions directly

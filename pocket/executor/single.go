@@ -3,7 +3,7 @@ package executor
 import (
 	"fmt"
 	"github.com/juju/errors"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (e *Executor) singleTest() {

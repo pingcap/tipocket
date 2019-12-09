@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"time"
 	// "github.com/ngaut/log"
-	"github.com/pingcap/tipocket/abclient/executor"
+	"github.com/pingcap/tipocket/pocket/executor"
 )
 
 const (

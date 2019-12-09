@@ -2,7 +2,7 @@ package core
 
 import (
 	"testing"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/stretchr/testify/assert"
 )
 

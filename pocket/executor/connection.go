@@ -2,7 +2,7 @@ package executor
 
 import (
 	"fmt"
-	"github.com/pingcap/tipocket/abclient/connection"
+	"github.com/pingcap/tipocket/pocket/connection"
 )
 
 // IfTxn show if in a transaction

@@ -8,10 +8,10 @@ import (
 	"path"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/abclient/executor"
-	"github.com/pingcap/tipocket/abclient/pkg/logger"
-	"github.com/pingcap/tipocket/abclient/pkg/types"
-	"github.com/pingcap/tipocket/abclient/connection"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/logger"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/go-sqlsmith"
 )
 

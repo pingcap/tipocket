@@ -6,9 +6,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pingcap/tipocket/abclient/core"
-	"github.com/pingcap/tipocket/abclient/executor"
-	"github.com/pingcap/tipocket/abclient/util"
+	"github.com/pingcap/tipocket/pocket/core"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/util"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
