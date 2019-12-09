@@ -1,0 +1,7 @@
+.vscode
+bin
+test-log
+scripts
+test.sh
+test-re.sh
+test-binlog.sh
