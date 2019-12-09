@@ -15,6 +15,7 @@ func (s *SQLSmith) createTableStmt() ast.Node {
 	if util.Rd(4) == 0 {
 		s.partitionTable(&createTableNode)
 	}
+
 	return &createTableNode
 }
 
@@ -25,4 +26,12 @@ func (s *SQLSmith) partitionTable(node *ast.CreateTableStmt) {
 		},
 		Definitions: []*ast.PartitionDefinition{},
 	}
+}
+
+func (s *SQLSmith) alterTableStmt() ast.Node {
+	alterTableNode := ast.AlterTableStmt{
+
+	}
+
+	return &alterTableNode
 }
