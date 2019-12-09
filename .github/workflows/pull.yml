@@ -1,10 +1,9 @@
-name: Go
+name: pocket-test
 on: [push]
 jobs:
   pocket-test:
     name: Pocket test
     runs-on: ubuntu-latest
-    working-directory: ./pocket
     steps:
 
     - name: Set up Go 1.13
@@ -17,6 +16,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Get dependencies
+      working-directory: ./pocket
       run: |
         go get -v -t -d ./...
         if [ -f Gopkg.toml ]; then
@@ -25,7 +25,9 @@ jobs:
         fi
 
     - name: Test
+      working-directory: ./pocket
       run: make test
 
     - name: Build
+      working-directory: ./pocket
       run: make
