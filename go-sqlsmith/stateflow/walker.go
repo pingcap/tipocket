@@ -261,6 +261,9 @@ func (s *StateFlow) makeList(columns []*types.Column) []ast.ExprNode {
 }
 
 func (s *StateFlow) walkOrderByClause(node *ast.OrderByClause, table *types.Table) {
+	if node == nil {
+		return
+	}
 	orderBys := s.randColumns(table)
 	for _, column := range orderBys {
 		item := ast.ByItem{
