@@ -17,5 +17,3 @@ require (
 )
 
 replace github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610
-
-replace github.com/pingcap/tipocket/go-sqlsmith => github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02
