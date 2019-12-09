@@ -13,3 +13,10 @@ jobs:
       script:
         - make test
         - make build
+    - name: "go-sqlsmith-test"
+      stage: test
+      before_install:
+        - cd go-sqlsmith
+      script:
+        - go test -v ./...
+
