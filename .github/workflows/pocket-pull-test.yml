@@ -1,5 +1,5 @@
 name: pocket-test
-on: [push]
+on: [pull_request]
 jobs:
   pocket-test:
     name: Pocket test
