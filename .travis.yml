@@ -12,3 +12,4 @@ jobs:
         - cd pocket
       script:
         - make test
+        - make build
