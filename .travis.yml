@@ -1,0 +1,21 @@
+sudo: false
+
+language: go
+go:
+  - 1.13.3
+
+jobs:
+  include:
+    - name: "pocket-test"
+      stage: test
+      before_install:
+        - cd pocket
+      script:
+        - make test
+        - make build
+    - name: "go-sqlsmith-test"
+      stage: test
+      before_install:
+        - cd go-sqlsmith
+      script:
+        - go test -v ./...
