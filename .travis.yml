@@ -19,4 +19,3 @@ jobs:
         - cd go-sqlsmith
       script:
         - go test -v ./...
-
