@@ -15,7 +15,7 @@ const typeRegex = `\(\d+\)`
 // record[2] table type
 // record[3] column name
 // record[4] column type
-func (s *SQLSmith) LoadSchema (records [][5]string) {
+func (s *SQLSmith) LoadSchema (records [][5]string, indexes map[string][]string) {
 	// init databases
 	for _, record := range records {
 		dbname := record[0]
@@ -23,6 +23,10 @@ func (s *SQLSmith) LoadSchema (records [][5]string) {
 		tableType := record[2]
 		columnName := record[3]
 		columnType := record[4]
+		index, ok := indexes[tableName]
+		if !ok {
+			index = []string{}
+		}
 		if _, ok := s.Databases[dbname]; !ok {
 			s.Databases[dbname] = &types.Database{
 				Name: dbname,
@@ -35,6 +39,7 @@ func (s *SQLSmith) LoadSchema (records [][5]string) {
 				Table: tableName,
 				Type: tableType,
 				Columns: make(map[string]*types.Column),
+				Indexes: index,
 			}
 		}
 		if _, ok := s.Databases[dbname].Tables[tableName].Columns[columnName]; !ok {

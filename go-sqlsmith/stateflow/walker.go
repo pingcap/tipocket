@@ -28,6 +28,10 @@ func (s *StateFlow) walkTree(node ast.Node) {
 	// DDL
 	case *ast.CreateTableStmt:
 		_ = s.walkCreateTableStmt(node)
+	case *ast.AlterTableStmt:
+		_ = s.walkAlterTableStmt(node)
+	case *ast.CreateIndexStmt:
+		_ = s.walkCreateIndexStmt(node)
 	}
 }
 

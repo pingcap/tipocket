@@ -12,6 +12,7 @@ type Table struct {
 	OriginTable string
 	Type string
 	Columns map[string]*Column
+	Indexes []string
 }
 
 type byColumn []*Column
@@ -38,12 +39,18 @@ func min(a, b int) int {
 	return b
 }
 
+// Clone copy table struct
+func (t *Table) Clone() *Table {
+	newTable := *t
+	return &newTable
+}
+
 // RandColumn rand column from table
 func (t *Table) RandColumn() *Column {
 	if len(t.Columns) == 0 {
 		return nil
 	}
-	rdIndex := util.RdRange(0, len(t.Columns))
+	rdIndex := util.Rd(len(t.Columns))
 	index := 0
 	for _, column := range t.Columns {
 		if rdIndex == index {
@@ -63,4 +70,12 @@ func (t *Table) GetColumns() []*Column {
 	}
 	sort.Sort(byColumn(r))
 	return r
+}
+
+// RandIndex rand indexes
+func (t *Table) RandIndex() string {
+	if len(t.Indexes) == 0 {
+		return ""
+	}
+	return t.Indexes[util.Rd(len(t.Indexes))]
 }
