@@ -77,6 +77,19 @@ func (s *StateFlow) randTable(newName bool, fn bool) (*types.Table) {
 	return nil
 }
 
+func (s *StateFlow) randOriginTable() *types.Table {
+	tables := s.db.Tables
+	index := 0
+	k := util.Rd(len(tables))
+	for _, table := range tables {
+		if index == k {
+			return table.Clone()
+		}
+		index++
+	}
+	return nil
+}
+
 func (s *StateFlow) randColumns(table *types.Table) []*types.Column {
 	var columns []*types.Column
 	rate := float64(0.75)
@@ -172,26 +185,31 @@ func (s *StateFlow) randNewTable() *types.Table {
 	table.Columns["id"].AddOption(ast.ColumnOptionAutoIncrement)
 	columnCount := util.RdRange(4, 20)
 	for i := 0; i < columnCount; i++ {
-		columnName := util.RdStringChar(util.RdRange(5, 10))
-		columnType := util.RdType()
-		columnLen := util.RdDataLen(columnType)
-		columnOptions := util.RdColumnOptions(columnType)
-		if s.stable {
-			for i, o := range columnOptions {
-				if o == ast.ColumnOptionDefaultValue {
-					columnOptions = append(columnOptions[:i], columnOptions[i+1:]...)
-				}
-			}
-		}
-		table.Columns[columnName] = &types.Column{
-			DB: table.DB,
-			Table: table.Table,
-			Column: columnName,
-			DataType: columnType,
-			DataLen: columnLen,
-			Options: columnOptions,
-		}
+		col := s.randNewColumn()
+		col.DB = table.DB
+		col.Table = table.Table
+		table.Columns[col.Column] = col
 	}
 
 	return &table
+}
+
+func (s *StateFlow) randNewColumn() *types.Column {
+	columnName := util.RdStringChar(util.RdRange(5, 10))
+	columnType := util.RdType()
+	columnLen := util.RdDataLen(columnType)
+	columnOptions := util.RdColumnOptions(columnType)
+	if s.stable {
+		for i, o := range columnOptions {
+			if o == ast.ColumnOptionDefaultValue {
+				columnOptions = append(columnOptions[:i], columnOptions[i+1:]...)
+			}
+		}
+	}
+	return &types.Column{
+		Column: columnName,
+		DataType: columnType,
+		DataLen: columnLen,
+		Options: columnOptions,
+	}
 }

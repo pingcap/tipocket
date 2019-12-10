@@ -47,6 +47,40 @@ func (s *StateFlow) walkCreateTableStmt(node *ast.CreateTableStmt) *types.Table 
 	return nil
 }
 
+func (s *StateFlow) walkAlterTableStmt(node *ast.AlterTableStmt) *types.Table {
+	table := s.randOriginTable()
+	node.Table.Name = model.NewCIStr(table.Table)
+	// we support only one spec now
+	// unless TiDB will print error
+	// ERROR 8200 (HY000): Unsupported multi schema change
+	switch node.Specs[0].Tp {
+	case ast.AlterTableAddColumns: {
+		s.alterTableSpecAddColumns(node.Specs[0], table)
+	}
+	case ast.AlterTableDropColumn: {
+		s.alterTableSpecDropColumn(node.Specs[0], table)
+	}
+	case ast.AlterTableDropIndex: {
+		s.alterTableSpecDropIndex(node.Specs[0], table)
+	}
+	}
+	return table
+}
+
+func (s *StateFlow) walkCreateIndexStmt(node *ast.CreateIndexStmt) *types.Table {
+	table := s.randTable(false, false)
+	node.Table.Name = model.NewCIStr(table.Table)
+	node.IndexName = util.RdStringChar(5)
+	for _, column := range table.Columns {
+		node.IndexColNames = append(node.IndexColNames, &ast.IndexColName{
+			Column: &ast.ColumnName{
+				Name: model.NewCIStr(column.Column),
+			},
+		})
+	}
+	return nil
+}
+
 func (s *StateFlow) makeFieldType(t string, l int) *parserTypes.FieldType {
 	fieldType := parserTypes.NewFieldType(util.Type2Tp(t))
 	fieldType.Flen = l
@@ -236,4 +270,29 @@ func (s *StateFlow) walkPartitionDefinitionsTimestamp(definitions *[]*ast.Partit
 				},
 			})
 	}
+}
+
+func (s *StateFlow) alterTableSpecAddColumns(node *ast.AlterTableSpec, table *types.Table) {
+	column := s.randNewColumn()
+	node.NewColumns[0] = &ast.ColumnDef{
+		Name: &ast.ColumnName{
+			Name: model.NewCIStr(column.Column),
+		},
+		Tp: s.makeFieldType(column.DataType, column.DataLen),
+		Options: s.makeColumnOptions(column, column.Options),
+	}
+}
+
+func (s *StateFlow) alterTableSpecDropColumn(node *ast.AlterTableSpec, table *types.Table) {
+	column := table.RandColumn()
+	node.OldColumnName = &ast.ColumnName{
+		Name: model.NewCIStr(column.Column),
+	}
+}
+
+func (s *StateFlow) alterTableSpecDropIndex(node *ast.AlterTableSpec, table *types.Table) {
+	// when index is a empty string
+	// there will be a SQL error will
+	// not it doesn't matter
+	node.Name = table.RandIndex()
 }
