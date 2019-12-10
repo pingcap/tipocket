@@ -80,7 +80,7 @@ func (s *SQLSmith) createIndexStmt() *ast.CreateIndexStmt {
 
 	node := ast.CreateIndexStmt{
 		Table: &ast.TableName{},
-		IndexColNames: []*ast.IndexColName{},
+		IndexPartSpecifications: []*ast.IndexPartSpecification{},
 		IndexOption: &ast.IndexOption{
 			Tp: indexType,
 		},
