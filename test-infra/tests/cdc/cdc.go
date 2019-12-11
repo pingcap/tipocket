@@ -18,16 +18,19 @@ import (
 
 	"github.com/onsi/ginkgo"
 	chaosv1alpha1 "github.com/pingcap/chaos-operator/api/v1alpha1"
-	"github.com/pingcap/tipocket/pkg/cdc"
-	"github.com/pingcap/tipocket/pkg/fixture"
-	"github.com/pingcap/tipocket/pkg/mysql"
-	"github.com/pingcap/tipocket/pkg/tidb"
-	"github.com/pingcap/tipocket/tests/util"
+	"github.com/pingcap/tipocket/pocket/core"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/test-infra/pkg/cdc"
+	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/test-infra/pkg/mysql"
+	"github.com/pingcap/tipocket/test-infra/pkg/tidb"
+	putil "github.com/pingcap/tipocket/test-infra/pkg/util"
+	"github.com/pingcap/tipocket/test-infra/tests/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/klog"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+
+	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var _ = ginkgo.Describe("cdc", func() {
@@ -107,15 +110,38 @@ var _ = ginkgo.Describe("cdc", func() {
 		framework.ExpectNoError(err, "Expected to apply pod chaos.")
 
 		// TODO: write data to TiDB
+		tidbService, err := c.TiDB.GetTiDBService(tc)
+		framework.ExpectNoError(err, "Expected to get tidb service")
+		sourceAddr := putil.GenTiDBServiceAddress(tidbService)
 
-		// check chaos tolerance for 5 minutes
-		err = wait.PollImmediate(10*time.Second, 5*time.Minute, func() (bool, error) {
-			// TODO: check acceptance of CDC
-			klog.Info("Dummy waiting...")
-			return false, nil
-		})
-		if err != wait.ErrWaitTimeout {
-			e2elog.Failf("Encounter unexpected error: %v", err)
-		}
+		targetAddr := putil.GenMysqlServiceAddress(mysql.Svc)
+
+		err = workload(sourceAddr, targetAddr, 10)
+		framework.ExpectNoError(err, "Expected to run workload")
 	})
 })
+
+func workload(sourceAddr string, targetAddr string, concurrency int) error {
+	executorOption := &executor.Option{
+		Clear:  false,
+		Stable: true,
+		Log:    "./log",
+	}
+
+	coreOption := &core.Option{
+		Concurrency: concurrency,
+		Stable:      true,
+		Mode:        "binlog",
+	}
+
+	exec, err := core.NewABTest(sourceAddr, targetAddr, coreOption, executorOption)
+	if err != nil {
+		return err
+	}
+
+	if err := exec.PrintSchema(); err != nil {
+		return err
+	}
+
+	return exec.Start()
+}

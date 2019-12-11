@@ -18,9 +18,19 @@ import (
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/controller"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 func PDAddress(tc *v1alpha1.TidbCluster) string {
 	pdSvcName := controller.PDMemberName(tc.Name)
 	return fmt.Sprintf("http://%s.%s.svc:2379", pdSvcName, tc.Namespace)
+}
+
+func GenTiDBServiceAddress(svc *corev1.Service) string {
+	return fmt.Sprintf("%s:4000", svc.Spec.ClusterIP)
+}
+
+func GenMysqlServiceAddress(svc *corev1.Service) string {
+	return fmt.Sprintf("%s:3306", svc.Spec.ClusterIP)
 }
