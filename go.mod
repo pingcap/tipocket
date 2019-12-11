@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.7.1
 	github.com/pelletier/go-toml v1.3.0 // indirect
 	github.com/pingcap/advanced-statefulset v0.1.0
-	github.com/pingcap/chaos-operator v0.0.0
+	github.com/pingcap/chaos-operator v0.0.0-20191210023407-138b9bd96642
 	github.com/pingcap/errors v0.11.4
 	github.com/pingcap/kvproto v0.0.0-20191029074618-fd9325002cc1 // indirect
 	github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9 // indirect
@@ -37,8 +37,6 @@ require (
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 	sigs.k8s.io/controller-runtime v0.4.0
 )
-
-replace github.com/pingcap/chaos-operator => ./vendor/github.com/pingcap/chaos-operator
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 

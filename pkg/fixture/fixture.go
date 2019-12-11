@@ -28,6 +28,7 @@ type E2eFixture struct {
 	TiDBVersion              string
 	MySQLVersion             string
 	CDCImage                 string
+	DockerRepository         string
 }
 
 var E2eContext E2eFixture

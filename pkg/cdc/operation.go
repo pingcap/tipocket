@@ -16,6 +16,7 @@ package cdc
 import (
 	"context"
 	"fmt"
+	"os/exec"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/pingcap/errors"
@@ -84,10 +85,15 @@ func (c *CdcOps) DeleteCDC(cc *CDC) error {
 	return nil
 }
 
-// TODO: import ticdc will mess up the go mod dependencies, need to figure out why and add implementation
 func (c *CdcOps) StartJob(job *CDCJob) error {
-	//pdAddr := util.PDAddress(job.CDC.Source)
-	//// TODO: configurable
+
+	pdAddr := util.PDAddress(job.CDC.Source)
+	// TODO: script to ensure the cdc binary in the image and local env
+	cmd := fmt.Sprintf("cdc cli --pd-addr %s --start-ts 0 --sink-uri %s", pdAddr, job.SinkURI)
+	_, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
+
+	// import ticdc will mess up the go mod dependencies, need to figure out why
+	// TODO: call the go interface instead after the dependency issue get fixed
 	//cli, err := clientv3.New(clientv3.Config{
 	//	Endpoints:   []string{pdAddr},
 	//	DialTimeout: 5 * time.Second,
@@ -112,7 +118,7 @@ func (c *CdcOps) StartJob(job *CDCJob) error {
 	//}
 	//klog.V(4).Infof("create changefeed ID: %s detail %+v\n", id, detail)
 	//return kv.SaveChangeFeedDetail(context.Background(), cli, detail, id)
-	return fmt.Errorf("Not implemented")
+	return err
 }
 
 const (

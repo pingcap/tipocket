@@ -11,23 +11,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package br
+package tidb
 
 import (
-	"github.com/onsi/ginkgo"
-	"k8s.io/kubernetes/test/e2e/framework"
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
-var _ = ginkgo.Describe("br", func() {
+func (t *TidbOps) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
+	// TODO: implement
+	return nil, nil
+}
 
-	f := framework.NewDefaultFramework("br")
-
-	ginkgo.BeforeEach(func() {
-		_ = f.Namespace.Name
-		_ = f.ClientSet
-	})
-
-	ginkgo.It("tolerant random pod kill chaos", func() {
-
-	})
-})
+func (t *TidbOps) DeleteDrainer(drainer appsv1.StatefulSet) error {
+	// TODO: implement
+	return nil
+}

@@ -32,11 +32,9 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework/config"
 	"k8s.io/kubernetes/test/e2e/framework/testfiles"
 	"k8s.io/kubernetes/test/e2e/framework/viperconfig"
-	"k8s.io/kubernetes/test/utils/image"
-
 	// test sources
-	_ "github.com/pingcap/tipocket/tests/binlog"
-	_ "github.com/pingcap/tipocket/tests/br"
+	// _ "github.com/pingcap/tipocket/tests/binlog"
+	// _ "github.com/pingcap/tipocket/tests/br"
 	_ "github.com/pingcap/tipocket/tests/cdc"
 )
 
@@ -45,6 +43,7 @@ var viperConfig = flag.String("viper-config", "", "The name of a viper config fi
 // handleFlags sets up all flags and parses the command line.
 func handleFlags() {
 	flags := flag.CommandLine
+
 	config.CopyFlags(config.Flags, flags)
 	framework.RegisterCommonFlags(flags)
 	framework.RegisterClusterFlags(flags)
@@ -53,10 +52,11 @@ func handleFlags() {
 	flags.StringVar(&fixture.E2eContext.TiDBVersion, "tidb-version", "v3.0.7", "Default TiDB cluster version in e2e")
 	flags.StringVar(&fixture.E2eContext.CDCImage, "cdc-image", "hub.pingcap.net/aylei/cdc:latest", "Default CDC image in e2e")
 	flags.StringVar(&fixture.E2eContext.MySQLVersion, "mysql-version", "5.6", "Default CDC image in e2e")
+	flags.StringVar(&fixture.E2eContext.DockerRepository, "docker-repo", "pingcap", "Default docker repository in e2e")
 	flag.Parse()
 }
 
-func init() {
+func TestMain(m *testing.M) {
 	// Register test flags, then parse flags.
 	handleFlags()
 
@@ -66,13 +66,6 @@ func init() {
 	if err := viperconfig.ViperizeFlags(*viperConfig, "e2e", flag.CommandLine); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	}
-
-	if framework.TestContext.ListImages {
-		for _, v := range image.GetImageConfigs() {
-			fmt.Println(v.GetE2EImage())
-		}
-		os.Exit(0)
 	}
 
 	framework.AfterReadingAllFlags(&framework.TestContext)
@@ -85,9 +78,6 @@ func init() {
 	if framework.TestContext.RepoRoot != "" {
 		testfiles.AddFileSource(testfiles.RootFileSource{Root: framework.TestContext.RepoRoot})
 	}
-}
-
-func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UnixNano())
 	os.Exit(m.Run())
 }

@@ -25,13 +25,17 @@ import (
 	"github.com/pingcap/tipocket/tests/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 )
 
-var _ = ginkgo.Describe("CDC", func() {
+var _ = ginkgo.Describe("cdc", func() {
 
-	f := framework.NewDefaultFramework("CDC")
+	// FIXME: framework will check if all nodes are ready for 3 minutes after each spec, which
+	// is time consuming
+	f := framework.NewDefaultFramework("cdc")
+	f.SkipPrivilegedPSPBinding = true
 
 	var ns string
 	var c *util.E2eCli
@@ -51,9 +55,11 @@ var _ = ginkgo.Describe("CDC", func() {
 		err := c.TiDB.ApplyTiDBCluster(tc)
 		framework.ExpectNoError(err, "Expected to deploy tidb-cluster.")
 
+		e2elog.Logf("Wait TiDB cluster ready")
 		err = c.TiDB.WaitTiDBClusterReady(tc, 5*time.Minute)
 		framework.ExpectNoError(err, "Expected to see tidb-cluster is ready.")
 
+		e2elog.Logf("Deploy CDC")
 		// CDC sink
 		mysql, err := c.MySQL.ApplyMySQL(&mysql.MySQLSpec{
 			Namespace: ns,
@@ -72,11 +78,15 @@ var _ = ginkgo.Describe("CDC", func() {
 		})
 		framework.ExpectNoError(err, "Expected to deploy CDC.")
 
-		err = c.CDC.StartJob(&cdc.CDCJob{
+		_ = &cdc.CDCJob{
 			CDC:     cc,
 			SinkURI: mysql.URI(),
-		})
-		framework.ExpectNoError(err, "Expected to start a CDC job.")
+		}
+		//err = c.CDC.StartJob(&cdc.CDCJob{
+		//	CDC:     cc,
+		//	SinkURI: mysql.URI(),
+		//})
+		//framework.ExpectNoError(err, "Expected to start a CDC job.")
 
 		// TODO: able to describe describe chaos in BDD-style
 		podKill := &chaosv1alpha1.PodChaos{
@@ -101,6 +111,7 @@ var _ = ginkgo.Describe("CDC", func() {
 		// check chaos tolerance for 5 minutes
 		err = wait.PollImmediate(10*time.Second, 5*time.Minute, func() (bool, error) {
 			// TODO: check acceptance of CDC
+			klog.Info("Dummy waiting...")
 			return false, nil
 		})
 		if err != wait.ErrWaitTimeout {

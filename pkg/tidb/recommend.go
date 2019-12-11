@@ -1,6 +1,8 @@
 package tidb
 
 import (
+	"fmt"
+
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tipocket/pkg/fixture"
 	corev1 "k8s.io/api/core/v1"
@@ -63,14 +65,14 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 					Replicas:  3,
 					Resources: fixture.Small,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						BaseImage: "pingcap/pd",
+						BaseImage: fmt.Sprintf("%s/pd", fixture.E2eContext.DockerRepository),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
 					Replicas:  3,
 					Resources: fixture.Medium,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						BaseImage: "pingcap/tikv",
+						BaseImage: fmt.Sprintf("%s/tikv", fixture.E2eContext.DockerRepository),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -82,7 +84,7 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 						},
 					},
 					ComponentSpec: v1alpha1.ComponentSpec{
-						BaseImage: "pingcap/tidb",
+						BaseImage: fmt.Sprintf("%s/tidb", fixture.E2eContext.DockerRepository),
 					},
 				},
 			},

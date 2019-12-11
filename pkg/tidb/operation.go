@@ -15,16 +15,23 @@ package tidb
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tidb-operator/pkg/label"
 	"github.com/pingcap/tipocket/pkg/fixture"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
-	controllerruntime "sigs.k8s.io/controller-runtime"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // TidbOps knows how to operate TiDB on k8s
@@ -41,7 +48,25 @@ func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	if tc.Spec.Version == "" {
 		tc.Spec.Version = fixture.E2eContext.TiDBVersion
 	}
-	_, err := controllerruntime.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
+
+	klog.Info("Apply tidb discovery")
+	if err := t.ApplyDiscovery(tc); err != nil {
+		return err
+	}
+	klog.Info("Apply tidb configmap")
+	if err := t.ApplyTiDBConfigMap(tc); err != nil {
+		return err
+	}
+	klog.Info("Apply pd configmap")
+	if err := t.ApplyPDConfigMap(tc); err != nil {
+		return err
+	}
+	klog.Info("Apply tikv configmap")
+	if err := t.ApplyTiKVConfigMap(tc); err != nil {
+		return err
+	}
+
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
 		tc.Spec = desired.Spec
 		tc.Annotations = desired.Annotations
 		tc.Labels = desired.Labels
@@ -88,12 +113,215 @@ func (t *TidbOps) DeleteTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	return t.cli.Delete(context.TODO(), tc)
 }
 
-func (t *TidbOps) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
-	// TODO: implement
-	return nil, nil
+func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
+	configMap, err := getTiDBConfigMap(tc)
+	if err != nil {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), configMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
 
-func (t *TidbOps) DeleteDrainer(drainer appsv1.StatefulSet) error {
-	// TODO: implement
+func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
+	configMap, err := getPDConfigMap(tc)
+	if err != nil {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), configMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
 	return nil
+}
+
+func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
+	configMap, err := getTiKVConfigMap(tc)
+	if err != nil {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), configMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func (t *TidbOps) ApplyDiscovery(tc *v1alpha1.TidbCluster) error {
+
+	meta, _ := getDiscoveryMeta(tc)
+
+	// Ensure RBAC
+	err := t.cli.Create(context.TODO(), &rbacv1.Role{
+		ObjectMeta: meta,
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups:     []string{"pingcap.com"},
+				Resources:     []string{"tidbclusters"},
+				ResourceNames: []string{tc.Name},
+				Verbs:         []string{"get"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
+				Verbs:     []string{"get", "list"},
+			},
+		},
+	})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), &corev1.ServiceAccount{
+		ObjectMeta: meta,
+	})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), &rbacv1.RoleBinding{
+		ObjectMeta: meta,
+		Subjects: []rbacv1.Subject{{
+			Kind: "ServiceAccount",
+			Name: meta.Name,
+		}},
+		RoleRef: rbacv1.RoleRef{
+			Kind:     "Role",
+			Name:     meta.Name,
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+
+	// RBAC ensured, reconcile
+	err = t.cli.Create(context.TODO(), getTidbDiscoveryService(tc))
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), getTidbDiscoveryDeployment(tc))
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {
+	meta, l := getDiscoveryMeta(tc)
+	return &corev1.Service{
+		ObjectMeta: meta,
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeClusterIP,
+			Ports: []corev1.ServicePort{{
+				Name:       "discovery",
+				Port:       10261,
+				TargetPort: intstr.FromInt(10261),
+				Protocol:   corev1.ProtocolTCP,
+			}},
+			Selector: l.Labels(),
+		},
+	}
+}
+
+// TODO: use the latest tidb-operator feature instead
+func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	s, err := RenderPDStartScript(&PDStartScriptModel{})
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-pd", tc.Name),
+		},
+		Data: map[string]string{
+			"startup-script": s,
+			"config-file":    ``,
+		},
+	}, nil
+}
+
+func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	s, err := RenderTiDBStartScript(&TidbStartScriptModel{ClusterName: tc.Name})
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-tidb", tc.Name),
+		},
+		Data: map[string]string{
+			"startup-script": s,
+			"config-file":    ``,
+		},
+	}, nil
+}
+
+func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	s, err := RenderTiKVStartScript(&TiKVStartScriptModel{})
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-tikv", tc.Name),
+		},
+		Data: map[string]string{
+			"startup-script": s,
+			"config-file":    ``,
+		},
+	}, nil
+}
+
+func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
+	meta, l := getDiscoveryMeta(tc)
+	return &appsv1.Deployment{
+		ObjectMeta: meta,
+		Spec: appsv1.DeploymentSpec{
+			Replicas: pointer.Int32Ptr(1),
+			Selector: l.LabelSelector(),
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: l.Labels(),
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: meta.Name,
+					Containers: []corev1.Container{{
+						Name:            "discovery",
+						Image:           "pingcap/tidb-operator:v1.0.5",
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Command: []string{
+							"/usr/local/bin/tidb-discovery",
+						},
+						Env: []corev1.EnvVar{
+							{
+								Name: "MY_POD_NAMESPACE",
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{
+										FieldPath: "metadata.namespace",
+									},
+								},
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+}
+
+func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label) {
+	instanceName := tc.GetLabels()[label.InstanceLabelKey]
+	discoveryLabel := label.New().Instance(instanceName)
+	discoveryLabel["app.kubernetes.io/component"] = "discovery"
+
+	objMeta := metav1.ObjectMeta{
+		Name:      fmt.Sprintf("%s-discovery", tc.Name),
+		Namespace: tc.Namespace,
+		Labels:    discoveryLabel,
+	}
+	return objMeta, discoveryLabel
 }

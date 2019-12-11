@@ -19,9 +19,9 @@ import (
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 
-var _ = ginkgo.Describe("Binlog", func() {
+var _ = ginkgo.Describe("binlog", func() {
 
-	f := framework.NewDefaultFramework("Binlog")
+	f := framework.NewDefaultFramework("binlog")
 
 	ginkgo.BeforeEach(func() {
 		_ = f.Namespace.Name
