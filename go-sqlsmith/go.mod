@@ -11,3 +11,5 @@ require (
 )
 
 replace github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107073350-1f019a46fa2c
+
+replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
