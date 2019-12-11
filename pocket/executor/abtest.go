@@ -29,6 +29,10 @@ func (e *Executor) abTest() {
 			err = e.abTestDelete(sql.SQLStmt)
 		case types.SQLTypeDDLCreate:
 			err = e.abTestCreateTable(sql.SQLStmt)
+		case types.SQLTypeDDLAlterTable:
+			err = e.abTestAlterTable(sql.SQLStmt)
+		case types.SQLTypeDDLCreateIndex:
+			err = e.abTestCreateIndex(sql.SQLStmt)
 		case types.SQLTypeTxnBegin:
 			err = e.abTestTxnBegin()
 		case types.SQLTypeTxnCommit:
@@ -88,6 +92,24 @@ func (e *Executor) ABTestDelete(sql string) error {
 func (e *Executor) ABTestCreateTable(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.abTestCreateTable(sql)
+	e.logStmtResult(sql, err)
+	<- e.TxnReadyCh
+	return err
+}
+
+// ABTestAlterTable expose abTestAlterTable
+func (e *Executor) ABTestAlterTable(sql string) error {
+	e.logStmtTodo(sql)
+	err := e.abTestAlterTable(sql)
+	e.logStmtResult(sql, err)
+	<- e.TxnReadyCh
+	return err
+}
+
+// ABTestCreateIndex expose abTestCreateIndex
+func (e *Executor) ABTestCreateIndex(sql string) error {
+	e.logStmtTodo(sql)
+	err := e.abTestCreateIndex(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
 	return err
@@ -252,6 +274,50 @@ func (e *Executor) abTestDelete(sql string) error {
 
 // DDL
 func (e *Executor) abTestCreateTable(sql string) error {
+	var (
+		wg sync.WaitGroup
+		err1 error
+		err2 error
+	)
+	wg.Add(2)
+	go func() {
+		err1 = e.conn1.ExecDDL(sql)
+		_ = e.conn1.Commit()
+		wg.Done()
+	}()
+	go func() {
+		err2 = e.conn2.ExecDDL(sql)
+		_ = e.conn2.Commit()
+		wg.Done()
+	}()
+	wg.Wait()
+	e.TxnReadyCh <- struct{}{}
+	return util.ErrorMustSame(err1, err2)
+}
+
+func (e *Executor) abTestAlterTable(sql string) error {
+	var (
+		wg sync.WaitGroup
+		err1 error
+		err2 error
+	)
+	wg.Add(2)
+	go func() {
+		err1 = e.conn1.ExecDDL(sql)
+		_ = e.conn1.Commit()
+		wg.Done()
+	}()
+	go func() {
+		err2 = e.conn2.ExecDDL(sql)
+		_ = e.conn2.Commit()
+		wg.Done()
+	}()
+	wg.Wait()
+	e.TxnReadyCh <- struct{}{}
+	return util.ErrorMustSame(err1, err2)
+}
+
+func (e *Executor) abTestCreateIndex(sql string) error {
 	var (
 		wg sync.WaitGroup
 		err1 error

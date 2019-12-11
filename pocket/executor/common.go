@@ -65,6 +65,32 @@ func (e *Executor) CreateTable(stmt string) error {
 	panic("unhandled select switch")
 }
 
+// AlterTable offer unified method for single & abtest
+func (e *Executor) AlterTable(stmt string) error {
+	e.Lock()
+	defer e.Unlock()
+	switch e.mode {
+	case "abtest":
+		return e.ABTestAlterTable(stmt)
+	case "single":
+		return e.SingleTestAlterTable(stmt)
+	}
+	panic("unhandled select switch")
+}
+
+// CreateIndex offer unified method for single & abtest
+func (e *Executor) CreateIndex(stmt string) error {
+	e.Lock()
+	defer e.Unlock()
+	switch e.mode {
+	case "abtest":
+		return e.ABTestCreateIndex(stmt)
+	case "single":
+		return e.SingleTestCreateIndex(stmt)
+	}
+	panic("unhandled select switch")
+}
+
 // TxnBegin offer unified method for single & abtest
 func (e *Executor) TxnBegin() error {
 	e.Lock()

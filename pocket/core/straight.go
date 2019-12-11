@@ -32,6 +32,10 @@ func (e *Executor) ExecStraight(sql *types.SQL, node int) {
 		err = executor.Delete(sql.SQLStmt)
 	case types.SQLTypeDDLCreate:
 		err = executor.CreateTable(sql.SQLStmt)
+	case types.SQLTypeDDLAlterTable:
+		err = executor.AlterTable(sql.SQLStmt)
+	case types.SQLTypeDDLCreateIndex:
+		err = executor.CreateIndex(sql.SQLStmt)
 	case types.SQLTypeTxnBegin:
 		err = executor.TxnBegin()
 	case types.SQLTypeTxnCommit:
