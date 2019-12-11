@@ -26,6 +26,10 @@ func (e *Executor) singleTest() {
 			err = e.singleTestDelete(sql.SQLStmt)
 		case types.SQLTypeDDLCreate:
 			err = e.singleTestCreateTable(sql.SQLStmt)
+		case types.SQLTypeDDLAlterTable:
+			err = e.singleTestAlterTable(sql.SQLStmt)
+		case types.SQLTypeDDLCreateIndex:
+			err = e.singleTestCreateIndex(sql.SQLStmt)
 		case types.SQLTypeTxnBegin:
 			err = e.singleTestTxnBegin()
 		case types.SQLTypeTxnCommit:
@@ -85,6 +89,24 @@ func (e *Executor) SingleTestDelete(sql string) error {
 func (e *Executor) SingleTestCreateTable(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.singleTestCreateTable(sql)
+	e.logStmtResult(sql, err)
+	<- e.TxnReadyCh
+	return err
+}
+
+// SingleTestAlterTable expose singleTestAlterTable
+func (e *Executor) SingleTestAlterTable(sql string) error {
+	e.logStmtTodo(sql)
+	err := e.singleTestAlterTable(sql)
+	e.logStmtResult(sql, err)
+	<- e.TxnReadyCh
+	return err
+}
+
+// SingleTestCreateIndex expose singleTestCreateIndex
+func (e *Executor) SingleTestCreateIndex(sql string) error {
+	e.logStmtTodo(sql)
+	err := e.singleTestCreateIndex(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
 	return err
@@ -155,6 +177,19 @@ func (e *Executor) singleTestCreateTable(sql string) error {
 	return errors.Trace(err)
 }
 
+func (e *Executor) singleTestAlterTable(sql string) error {
+	err := e.conn1.ExecDDL(sql)
+	// continue generate
+	e.TxnReadyCh <- struct{}{}
+	return errors.Trace(err)
+}
+
+func (e *Executor) singleTestCreateIndex(sql string) error {
+	err := e.conn1.ExecDDL(sql)
+	// continue generate
+	e.TxnReadyCh <- struct{}{}
+	return errors.Trace(err)
+}
 
 // just execute
 func (e *Executor) singleTestExec(sql string) {
