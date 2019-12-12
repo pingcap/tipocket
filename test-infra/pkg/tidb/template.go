@@ -107,8 +107,8 @@ fi
 # Use HOSTNAME if POD_NAME is unset for backward compatibility.
 POD_NAME=${POD_NAME:-$HOSTNAME}
 # the general form of variable PEER_SERVICE_NAME is: "<clusterName>-pd-peer"
-cluster_name=` + "`" + `echo ${PEER_SERVICE_NAME} | sed 's/-pd-peer//'` + "`" +
-	`domain="${POD_NAME}.${PEER_SERVICE_NAME}.${NAMESPACE}.svc"
+cluster_name=` + "`" + `echo ${PEER_SERVICE_NAME} | sed 's/-pd-peer//'` + "`" + "\n" +
+	`domain="${POD_NAME}.${PEER_SERVICE_NAME}.${NAMESPACE}.svc" 
 discovery_url="${cluster_name}-discovery.${NAMESPACE}.svc:10261"
 encoded_domain_url=` + "`" + `echo ${domain}:2380 | base64 | tr "\n" " " | sed "s/ //g"` + "`" +
 	`
@@ -139,7 +139,7 @@ ARGS="--data-dir=/var/lib/pd \
 --peer-urls=http://0.0.0.0:2380 \
 --advertise-peer-urls=http://${domain}:2380 \
 --client-urls=http://0.0.0.0:2379 \
---advertise-client-urls=://${domain}:2379 \
+--advertise-client-urls=http://${domain}:2379 \
 --config=/etc/pd/pd.toml \
 "
 

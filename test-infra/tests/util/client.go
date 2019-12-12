@@ -14,12 +14,12 @@
 package util
 
 import (
-	"github.com/pingcap/tipocket/pkg/br"
-	"github.com/pingcap/tipocket/pkg/cdc"
-	"github.com/pingcap/tipocket/pkg/chaos"
-	"github.com/pingcap/tipocket/pkg/fixture"
-	"github.com/pingcap/tipocket/pkg/mysql"
-	"github.com/pingcap/tipocket/pkg/tidb"
+	"github.com/pingcap/tipocket/test-infra/pkg/br"
+	"github.com/pingcap/tipocket/test-infra/pkg/cdc"
+	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
+	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/test-infra/pkg/mysql"
+	"github.com/pingcap/tipocket/test-infra/pkg/tidb"
 	"k8s.io/client-go/rest"
 
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"

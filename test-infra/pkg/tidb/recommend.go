@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tipocket/pkg/fixture"
+	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -62,15 +62,17 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: true,
 				PD: v1alpha1.PDSpec{
-					Replicas:  3,
-					Resources: fixture.Small,
+					Replicas:         3,
+					Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
+					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/pd", fixture.E2eContext.DockerRepository),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:  3,
-					Resources: fixture.Medium,
+					Replicas:         3,
+					Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
+					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/tikv", fixture.E2eContext.DockerRepository),
 					},

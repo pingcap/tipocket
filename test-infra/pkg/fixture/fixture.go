@@ -15,7 +15,7 @@ package fixture
 
 import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tipocket/pkg/scheme"
+	"github.com/pingcap/tipocket/test-infra/pkg/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -99,9 +99,11 @@ func StorageClass(t StorageType) string {
 	}
 }
 
-func WithStorage(r *v1alpha1.Resources, size string) {
+func WithStorage(r v1alpha1.Resources, size string) v1alpha1.Resources {
 	if r.Requests == nil {
 		r.Requests = &v1alpha1.ResourceRequirement{}
 	}
 	r.Requests.Storage = size
+
+	return r
 }

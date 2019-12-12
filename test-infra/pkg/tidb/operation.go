@@ -21,7 +21,8 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/label"
-	"github.com/pingcap/tipocket/pkg/fixture"
+	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -41,6 +42,20 @@ type TidbOps struct {
 
 func New(cli client.Client) *TidbOps {
 	return &TidbOps{cli}
+}
+
+func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
+	key, err := client.ObjectKeyFromObject(tc)
+	if err != nil {
+		return nil, err
+	}
+
+	svc := &corev1.Service{}
+	if err := t.cli.Get(context.TODO(), key, svc); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
 }
 
 func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
