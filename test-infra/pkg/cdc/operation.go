@@ -63,6 +63,9 @@ type CDCJob struct {
 }
 
 func (c *CdcOps) ApplyCDC(spec *CDCSpec) (*CDC, error) {
+	if spec.Image == "" {
+		spec.Image = fixture.E2eContext.CDCImage
+	}
 	cc, err := c.renderCdc(spec)
 	if err != nil {
 		return nil, err
@@ -144,6 +147,7 @@ func (c *CdcOps) renderCdc(spec *CDCSpec) (*CDC, error) {
 	pdAddr := util.PDAddress(spec.Source)
 	cmds := []string{
 		"/cdc",
+		"server",
 		"--pd-endpoints",
 		pdAddr,
 	}

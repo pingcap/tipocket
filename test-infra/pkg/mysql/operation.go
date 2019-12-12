@@ -131,7 +131,7 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 								"/var/lib/mysql/lost+found",
 							},
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "data",
+								Name:      spec.Name,
 								MountPath: "/var/lib/mysql",
 							}},
 						}},
@@ -141,7 +141,7 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources:       util.ResourceRequirement(spec.Resource),
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      "data",
+								Name:      spec.Name,
 								MountPath: "/var/lib/mysql",
 							}},
 							Env: []corev1.EnvVar{
