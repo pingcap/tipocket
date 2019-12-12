@@ -14,6 +14,7 @@
 package cdc
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/onsi/ginkgo"
@@ -129,16 +130,15 @@ var _ = ginkgo.Describe("cdc", func() {
 
 		targetAddr := putil.GenMysqlServiceAddress(mysql.Svc)
 
-		err = workload(sourceAddr, targetAddr, 10)
+		err = workload(sourceAddr, targetAddr, 10, "sqlsmith")
 		framework.ExpectNoError(err, "Expected to run workload")
 	})
 })
 
-func workload(sourceAddr string, targetAddr string, concurrency int) error {
+func workload(sourceAddr string, targetAddr string, concurrency int, dbName string) error {
 	executorOption := &executor.Option{
 		Clear:  false,
 		Stable: true,
-		Log:    "./log",
 	}
 
 	coreOption := &core.Option{
@@ -147,7 +147,7 @@ func workload(sourceAddr string, targetAddr string, concurrency int) error {
 		Mode:        "binlog",
 	}
 
-	exec, err := core.NewABTest(sourceAddr, targetAddr, coreOption, executorOption)
+	exec, err := core.NewABTest(genDbDsn(sourceAddr, dbName), genDbDsn(targetAddr, dbName), coreOption, executorOption)
 	if err != nil {
 		return err
 	}
@@ -157,4 +157,8 @@ func workload(sourceAddr string, targetAddr string, concurrency int) error {
 	}
 
 	return exec.Start()
+}
+
+func genDbDsn(addr string, dbName string) string {
+	return fmt.Sprintf("root:@tcp(%s)/%s", addr, dbName)
 }
