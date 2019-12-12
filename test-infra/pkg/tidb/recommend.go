@@ -62,8 +62,9 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: true,
 				PD: v1alpha1.PDSpec{
-					Replicas:  3,
-					Resources: fixture.Small,
+					Replicas:         3,
+					Resources:        fixture.Small,
+					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/pd", fixture.E2eContext.DockerRepository),
 					},
@@ -71,6 +72,7 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 				TiKV: v1alpha1.TiKVSpec{
 					Replicas:  3,
 					Resources: fixture.Medium,
+					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/tikv", fixture.E2eContext.DockerRepository),
 					},
