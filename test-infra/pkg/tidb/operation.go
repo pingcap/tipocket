@@ -45,12 +45,17 @@ func New(cli client.Client) *TidbOps {
 }
 
 func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
-	key, err := client.ObjectKeyFromObject(tc)
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-tidb", tc.Name),
+			Namespace: tc.Namespace,
+		},
+	}
+	key, err := client.ObjectKeyFromObject(svc)
 	if err != nil {
 		return nil, err
 	}
 
-	svc := &corev1.Service{}
 	if err := t.cli.Get(context.TODO(), key, svc); err != nil {
 		return nil, err
 	}
@@ -98,26 +103,35 @@ func (t *TidbOps) WaitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Du
 			return false, err
 		}
 		err = t.cli.Get(context.TODO(), key, local)
-		if errors.IsNotFound(err) {
+		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
 		if err != nil {
 			klog.Warningf("error getting tidbcluster: %v", err)
 			return false, nil
 		}
+		if local.Status.PD.StatefulSet == nil {
+			return false, nil
+		}
 		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
 		if pdReady < pdDesired {
-			klog.V(4).Info("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			klog.V(4).Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			return false, nil
+		}
+		if local.Status.TiKV.StatefulSet == nil {
 			return false, nil
 		}
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
-			klog.V(4).Info("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			klog.V(4).Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			return false, nil
+		}
+		if local.Status.TiDB.StatefulSet == nil {
 			return false, nil
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			klog.V(4).Info("TiDB do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			klog.V(4).Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
 			return false, nil
 		}
 		return true, nil

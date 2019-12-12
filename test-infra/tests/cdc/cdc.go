@@ -27,6 +27,7 @@ import (
 	putil "github.com/pingcap/tipocket/test-infra/pkg/util"
 	"github.com/pingcap/tipocket/test-infra/tests/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 
@@ -42,9 +43,14 @@ var _ = ginkgo.Describe("cdc", func() {
 
 	var ns string
 	var c *util.E2eCli
+	var kubeCli *kubernetes.Clientset
 
 	ginkgo.BeforeEach(func() {
 		ns = f.Namespace.Name
+		e2elog.Logf("Working namespace %s", ns)
+		var err error
+		kubeCli, err = framework.LoadClientset()
+		framework.ExpectNoError(err, "Expected to load kubernetes clientset.")
 		conf, err := framework.LoadConfig()
 		framework.ExpectNoError(err, "Expected to load config.")
 		c = util.NewE2eCli(conf)
@@ -72,6 +78,9 @@ var _ = ginkgo.Describe("cdc", func() {
 		})
 		framework.ExpectNoError(err, "Expected to deploy mysql.")
 
+		err = framework.WaitForStatefulSetReplicasReady(mysql.Sts.Name, mysql.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
+		framework.ExpectNoError(err, "Expected mysql ready.")
+
 		cc, err := c.CDC.ApplyCDC(&cdc.CDCSpec{
 			Namespace: ns,
 			Name:      name,
@@ -81,15 +90,19 @@ var _ = ginkgo.Describe("cdc", func() {
 		})
 		framework.ExpectNoError(err, "Expected to deploy CDC.")
 
+		err = framework.WaitForStatefulSetReplicasReady(cc.Sts.Name, cc.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
+		framework.ExpectNoError(err, "Expected CDC ready.")
+
 		_ = &cdc.CDCJob{
 			CDC:     cc,
 			SinkURI: mysql.URI(),
 		}
+		// start CDC has to run in env that has cdc binary installed and could access PD address, run it manually is a more feasible idea now
 		//err = c.CDC.StartJob(&cdc.CDCJob{
 		//	CDC:     cc,
 		//	SinkURI: mysql.URI(),
 		//})
-		//framework.ExpectNoError(err, "Expected to start a CDC job.")
+		framework.ExpectNoError(err, "Expected to start a CDC job.")
 
 		// TODO: able to describe describe chaos in BDD-style
 		podKill := &chaosv1alpha1.PodChaos{
