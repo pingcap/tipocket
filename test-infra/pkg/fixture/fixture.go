@@ -99,9 +99,11 @@ func StorageClass(t StorageType) string {
 	}
 }
 
-func WithStorage(r *v1alpha1.Resources, size string) {
+func WithStorage(r v1alpha1.Resources, size string) v1alpha1.Resources {
 	if r.Requests == nil {
 		r.Requests = &v1alpha1.ResourceRequirement{}
 	}
 	r.Requests.Storage = size
+
+	return r
 }

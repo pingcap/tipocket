@@ -63,15 +63,15 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 				EnablePVReclaim: true,
 				PD: v1alpha1.PDSpec{
 					Replicas:         3,
-					Resources:        fixture.Small,
+					Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
 					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/pd", fixture.E2eContext.DockerRepository),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:  3,
-					Resources: fixture.Medium,
+					Replicas:         3,
+					Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						BaseImage: fmt.Sprintf("%s/tikv", fixture.E2eContext.DockerRepository),
