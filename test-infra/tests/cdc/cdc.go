@@ -114,10 +114,14 @@ var _ = ginkgo.Describe("cdc", func() {
 			Spec: chaosv1alpha1.PodChaosSpec{
 				Selector: chaosv1alpha1.SelectorSpec{
 					// Randomly kill in namespace
-					Namespaces: []string{ns},
+					Namespaces:     []string{ns},
+					LabelSelectors: map[string]string{"app.kubernetes.io/component": "tikv"},
 				},
-				Mode:     chaosv1alpha1.OnePodMode,
-				Duration: "3m",
+				Scheduler: chaosv1alpha1.SchedulerSpec{
+					Cron: "@every 1m",
+				},
+				Action: chaosv1alpha1.PodKillAction,
+				Mode:   chaosv1alpha1.OnePodMode,
 			},
 		}
 		err = c.Chaos.ApplyPodChaos(podKill)
@@ -130,7 +134,7 @@ var _ = ginkgo.Describe("cdc", func() {
 
 		targetAddr := putil.GenMysqlServiceAddress(mysql.Svc)
 
-		err = workload(sourceAddr, targetAddr, 10, "sqlsmith")
+		err = workload(sourceAddr, targetAddr, 10, "test")
 		framework.ExpectNoError(err, "Expected to run workload")
 	})
 })
