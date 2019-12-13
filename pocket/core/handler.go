@@ -3,24 +3,15 @@ package core
 import (
 	"time"
 	"math/rand"
-	"github.com/juju/errors"
-	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pocket/executor"
-	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (e *Executor) startHandler() {
-	// switch e.mode {
-	// case "single":
-	// 	e.singleTest()
-	// case "abtest":
-	// 	e.abTest()
-	// case "binlog":
-	// 	e.singleTest()
-	// default:
-	// 	panic("unhandled test mode")
-	// }
 	for {
+		if e.ifLock {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
 		var (
 			err error
 			sql = <- e.ch
@@ -28,48 +19,11 @@ func (e *Executor) startHandler() {
 		time.Sleep(2 * time.Millisecond)
 
 		// Exec SQL
-		switch sql.SQLType {
-		case types.SQLTypeReloadSchema:
-			err = e.reloadSchema()
-			if err != nil {
-				log.Fatalf("reload schema failed %+v\n", errors.ErrorStack(err))
-			}
-		case types.SQLTypeExit:
-			e.Stop("receive exit SQL signal")
-		case types.SQLTypeTxnBegin:
-			executor := e.randFreeExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-			}
-		case types.SQLTypeTxnCommit, types.SQLTypeTxnRollback:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-			}
-		case types.SQLTypeDDLCreate:
-			executor := e.tryRandFreeExecutor()
-			e.deadlockCh <- executor.GetID()
-			executor.ExecSQL(sql)
-		case types.SQLTypeDDLAlterTable:
-			executor := e.tryRandFreeExecutor()
-			e.deadlockCh <- executor.GetID()
-			executor.ExecSQL(sql)
-		case types.SQLTypeDDLCreateIndex:
-			executor := e.tryRandFreeExecutor()
-			e.deadlockCh <- executor.GetID()
-			executor.ExecSQL(sql)
-		default:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-			}
-		}
+		e.deadlockCh <- sql.executorID
+		e.findExecutor(sql.executorID).ExecSQL(sql.sql)
 
 		if err != nil {
-			e.logger.Infof("[FAIL] Exec SQL %s error %v", sql.SQLStmt, err)
+			e.logger.Infof("[FAIL] Exec SQL %s error %v", sql.sql.SQLStmt, err)
 		} else {
 			// e.logger.Infof("[SUCCESS] Exec SQL %s success", sql.SQLStmt)
 		}

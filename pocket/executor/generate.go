@@ -1,95 +1,112 @@
 package executor
 
 import (
-	"math/rand"
 	"github.com/juju/errors"
-	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
-	// smith "github.com/pingcap/tipocket/go-sqlsmith"
+	smith "github.com/pingcap/tipocket/go-sqlsmith"
 )
 
-func (e *Executor) smithGenerate() {
-	e.prepare()
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeReloadSchema,
-	}
-	log.Info("ready to generate")
-	for {
-		var (
-			err error
-			rd = rand.Intn(100)
-		)
-		// rd = 100
-		if rd == 0 {
-			err = e.generateDDLCreate()
-		} else if rd < 20 {
-			err = e.generateInsert()
-		} else if rd < 40 {
-			err = e.generateUpdate()
-		} else {
-			err = e.generateSelect()
-		}
-		if err != nil {
-			log.Fatalf("generate error %v \n", errors.ErrorStack(err))
-		}
-	}
+// ReloadSchema expose reloadSchema
+func (e *Executor) ReloadSchema() error {
+	return errors.Trace(e.reloadSchema())
 }
 
-func (e *Executor) prepare() {
-	for i := 0; i < 10; i++ {
-		if err := e.generateDDLCreate(); err != nil {
-			log.Fatal(err)
-		}
-	}
-}
-
-func (e *Executor) generateDDLCreate() error {
-	stmt, err := e.ss1.CreateTableStmt()
+func (e *Executor) reloadSchema() error {
+	schema, err := e.conn1.FetchSchema(e.dbname)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDDLCreate,
-		SQLStmt: stmt,
+	indexes := make(map[string][]string)
+	for _, col := range schema {
+		if _, ok := indexes[col[2]]; ok {
+			continue
+		}
+		index, err := e.conn1.FetchIndexes(e.dbname, col[1])
+		// may not return error here
+		// just disable indexes
+		if err != nil {
+			return errors.Trace(err)
+		}
+		indexes[col[1]] = index
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeReloadSchema,
-	}
+
+	e.ss = smith.New()
+	e.ss.LoadSchema(schema, indexes)
+	e.ss.SetDB(e.dbname)
+	e.ss.SetStable(e.opt.Stable)
 	return nil
 }
 
-func (e *Executor) generateSelect() error {
-	stmt, err := e.ss1.SelectStmt(4)
+// Generate DDL
+
+// GenerateDDLCreateTable rand create table statement
+func (e *Executor) GenerateDDLCreateTable() (*types.SQL, error) {
+	stmt, err := e.ss.CreateTableStmt()
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
+	return &types.SQL{
+		SQLType: types.SQLTypeDDLCreateTable,
+		SQLStmt: stmt,
+	}, nil
+}
+
+// GenerateDDLCreateIndex rand create index statement
+func (e *Executor) GenerateDDLCreateIndex() (*types.SQL, error) {
+	stmt, err := e.ss.CreateIndexStmt()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType: types.SQLTypeDDLCreateIndex,
+		SQLStmt: stmt,
+	}, nil
+}
+
+// GenerateDDLAlterTable rand alter table statement
+func (e *Executor) GenerateDDLAlterTable() (*types.SQL, error) {
+	stmt, err := e.ss.AlterTableStmt()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType: types.SQLTypeDDLAlterTable,
+		SQLStmt: stmt,
+	}, nil
+}
+
+// GenerateSelect rand select statement
+func (e *Executor) GenerateSelect() (*types.SQL, error) {
+	stmt, err := e.ss.SelectStmt(4)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
 		SQLType: types.SQLTypeDMLSelect,
 		SQLStmt: stmt,
-	}
-	return nil
+	}, nil
 }
 
-func (e *Executor) generateUpdate() error {
-	stmt, err := e.ss1.UpdateStmt()
+// GenerateUpdate rand update statement
+func (e *Executor) GenerateUpdate() (*types.SQL, error) {
+	stmt, err := e.ss.UpdateStmt()
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
+	return &types.SQL{
 		SQLType: types.SQLTypeDMLUpdate,
 		SQLStmt: stmt,
-	}
-	return nil	
+	}, nil
 }
 
-func (e *Executor) generateInsert() error {
-	stmt, err := e.ss1.InsertStmtAST()
+// GenerateInsert rand insert statement
+func (e *Executor) GenerateInsert() (*types.SQL, error) {
+	stmt, err := e.ss.InsertStmtAST()
 	if err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
+	return &types.SQL{
 		SQLType: types.SQLTypeDMLInsert,
 		SQLStmt: stmt,
-	}
-	return nil	
+	}, nil
 }

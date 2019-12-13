@@ -3,8 +3,9 @@ package core
 import (
 	"math/rand"
 	"time"
-	// "github.com/ngaut/log"
+	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 const (
@@ -23,7 +24,7 @@ func (e *Executor) watchDeadLock() {
 					continue
 				}
 				e.Lock()
-				// log.Info("deadlock detected")
+				log.Info("deadlock detected")
 				e.resolveDeadLock()
 				e.Unlock()
 			}
@@ -36,39 +37,34 @@ func (e *Executor) watchDeadLock() {
 }
 
 func (e *Executor) resolveDeadLock() {
-	// log.Infof("last execute ID is %d\n", lastExecID)
-	// var lastResolveExecutor *executor.Executor
-	// for _, executor := range e.executors {
-	// 	if executor.GetID() == lastExecID {
-	// 		lastResolveExecutor = executor
-	// 		continue
-	// 	}
-	// 	e.resolveDeadLockOne(executor)
-	// }
-	// e.resolveDeadLockOne(lastResolveExecutor)
+	// log.Info(e.order.GetHistroy())
 	for e.order.Next() {
 		for _, executor := range e.executors {
 			if executor.GetID() == e.order.Val() {
-				time.Sleep(2*time.Millisecond)
-				e.resolveDeadLockOne(executor)
-				time.Sleep(2*time.Millisecond)
+				time.Sleep(10*time.Millisecond)
+				go e.resolveDeadLockOne(executor)
 			}
 		}
 	}
+	e.order.Reset()
+	time.Sleep(10*time.Millisecond)
 }
 
 func (e *Executor) resolveDeadLockOne(executor *executor.Executor) {
 	if executor == nil {
 		return
 	}
-	// log.Infof("resolve lock on executor-%d, ch len %d\n", executor.GetID(), len(executor.TxnReadyCh))
+	var sql types.SQL
 	if rand.Float64() < 0.5 {
-		// log.Info("commit", len(executor.TxnReadyCh))
-		_ = executor.TxnCommit()
+		sql = types.SQL{
+			SQLType: types.SQLTypeTxnCommit,
+			SQLStmt: "COMMIT",
+		}
 	} else {
-		// log.Info("rollback", len(executor.TxnReadyCh))
-		// _ = executor.TxnCommit()
-		_ = executor.TxnRollback()
+		sql = types.SQL{
+			SQLType: types.SQLTypeTxnRollback,
+			SQLStmt: "ROLLBACK",
+		}
 	}
-	// log.Infof("resolve lock done executor-%d, ch len %d\n", executor.GetID(), len(executor.TxnReadyCh))
+	executor.ExecSQL(&sql)
 }

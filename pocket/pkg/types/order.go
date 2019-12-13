@@ -65,3 +65,9 @@ func (o *Order)Val() int {
 func (o *Order) Reset () {
 	o.history = []int{}
 }
+
+// GetHistroy get copied history slice
+func (o *Order) GetHistroy() []int {
+	h := o.history
+	return h
+}

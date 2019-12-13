@@ -19,8 +19,8 @@ func (e *Executor) smithGenerate() {
 		)
 		// rd = 100
 		if rd == 0 {
-			err = e.generateDDLCreate()
-		} else if rd < 80 {
+			err = e.generateDDLCreateTable()
+		} else if rd < 10 {
 			err = e.generateInsert()
 		} else if rd < 160 {
 			err = e.generateUpdate()
@@ -33,6 +33,7 @@ func (e *Executor) smithGenerate() {
 		} else if rd < 200 {
 			err = e.generateDDLAlterTable()
 		} else if rd < 210 {
+			// err = e.generateDDLAlterTable()
 			err = e.generateDDLCreateIndex()
 		} else {
 			// err = e.generateSelect()
@@ -46,110 +47,140 @@ func (e *Executor) smithGenerate() {
 
 func (e *Executor) prepare() {
 	for i := 0; i < 10; i++ {
-		if err := e.generateDDLCreate(); err != nil {
+		if err := e.generateDDLCreateTable(); err != nil {
 			log.Fatal(err)
 		}
 	}
+	for _, executor := range e.executors {
+		executor.ReloadSchema()
+	}
 }
 
-func (e *Executor) generateDDLCreate() error {
-	stmt, err := e.ss.CreateTableStmt()
+func (e *Executor) generateDDLCreateTable() error {
+	executor := e.tryRandFreeExecutor()
+	sql, err := executor.GenerateDDLCreateTable()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDDLCreate,
-		SQLStmt: stmt,
-	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeReloadSchema,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
 	return nil
 }
 
 func (e *Executor) generateDDLAlterTable() error {
-	stmt, err := e.ss.AlterTableStmt()
+	executor := e.tryRandFreeExecutor()
+	sql, err := executor.GenerateDDLAlterTable()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDDLAlterTable,
-		SQLStmt: stmt,
-	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeReloadSchema,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
 	return nil
 }
 
 func (e *Executor) generateDDLCreateIndex() error {
-	stmt, err := e.ss.CreateIndexStmt()
+	executor := e.tryRandFreeExecutor()
+	sql, err := executor.GenerateDDLCreateIndex()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDDLCreateIndex,
-		SQLStmt: stmt,
-	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeReloadSchema,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
 	return nil
 }
 
 func (e *Executor) generateSelect() error {
-	stmt, err := e.ss.SelectStmt(1)
+	executor := e.randBusyExecutor()
+	if executor == nil {
+		return nil
+	}
+	sql, err := executor.GenerateSelect()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDMLSelect,
-		SQLStmt: stmt,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
 	return nil
 }
 
 func (e *Executor) generateUpdate() error {
-	stmt, err := e.ss.UpdateStmt()
+	executor := e.randBusyExecutor()
+	if executor == nil {
+		return nil
+	}
+	sql, err := executor.GenerateUpdate()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDMLUpdate,
-		SQLStmt: stmt,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
-	return nil	
+	return nil
 }
 
 func (e *Executor) generateInsert() error {
-	stmt, err := e.ss.InsertStmtAST()
+	executor := e.randBusyExecutor()
+	if executor == nil {
+		return nil
+	}
+	sql, err := executor.GenerateInsert()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeDMLInsert,
-		SQLStmt: stmt,
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: sql,
 	}
 	return nil	
 }
 
 func (e *Executor) generateTxnBegin() {
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeTxnBegin,
-		SQLStmt: "BEGIN",
+	executor := e.randFreeExecutor()
+	if executor == nil {
+		return
+	}
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: &types.SQL{
+			SQLType: types.SQLTypeTxnBegin,
+			SQLStmt: "BEGIN",
+		},
 	}
 }
 
 func (e *Executor) generateTxnCommit() {
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeTxnCommit,
-		SQLStmt: "COMMIT",
+	executor := e.randBusyExecutor()
+	if executor == nil {
+		return
+	}
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: &types.SQL{
+			SQLType: types.SQLTypeTxnCommit,
+			SQLStmt: "COMMIT",
+		},
 	}
 }
 
 func (e *Executor) generateTxnRollback() {
-	e.ch <- &types.SQL{
-		SQLType: types.SQLTypeTxnRollback,
-		SQLStmt: "ROLLBACK",
+	executor := e.randBusyExecutor()
+	if executor == nil {
+		return
+	}
+	e.ch <- &execSQL{
+		executorID: executor.GetID(),
+		sql: &types.SQL{
+			SQLType: types.SQLTypeTxnRollback,
+			SQLStmt: "ROLLBACK",
+		},
 	}
 }

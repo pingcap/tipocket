@@ -24,7 +24,7 @@ func (e *Executor) singleTest() {
 			err = e.singleTestInsert(sql.SQLStmt)
 		case types.SQLTypeDMLDelete:
 			err = e.singleTestDelete(sql.SQLStmt)
-		case types.SQLTypeDDLCreate:
+		case types.SQLTypeDDLCreateTable:
 			err = e.singleTestCreateTable(sql.SQLStmt)
 		case types.SQLTypeDDLAlterTable:
 			err = e.singleTestAlterTable(sql.SQLStmt)

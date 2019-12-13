@@ -4,7 +4,7 @@ import "testing"
 
 func TestSQLSmith_CreateTable(t *testing.T) {
 	ss := New()
-	ss.LoadSchema(schema, indexes)
+	ss.LoadSchema([][5]string{}, make(map[string][]string))
 	ss.SetDB(dbname)
 	sql, _ := ss.CreateTableStmt()
 	t.Log(sql)

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"sync"
 	"github.com/pingcap/tipocket/pocket/connection"
-	"github.com/pingcap/tipocket/pocket/util"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/util"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 )
 
 func (e *Executor) abTest() {
@@ -27,13 +28,16 @@ func (e *Executor) abTest() {
 			err = e.abTestInsert(sql.SQLStmt)
 		case types.SQLTypeDMLDelete:
 			err = e.abTestDelete(sql.SQLStmt)
-		case types.SQLTypeDDLCreate:
+		case types.SQLTypeDDLCreateTable:
 			err = e.abTestCreateTable(sql.SQLStmt)
 		case types.SQLTypeDDLAlterTable:
 			err = e.abTestAlterTable(sql.SQLStmt)
 		case types.SQLTypeDDLCreateIndex:
 			err = e.abTestCreateIndex(sql.SQLStmt)
 		case types.SQLTypeTxnBegin:
+			if err := e.reloadSchema(); err != nil {
+				log.Error(err)
+			}
 			err = e.abTestTxnBegin()
 		case types.SQLTypeTxnCommit:
 			err = e.abTestTxnCommit()
