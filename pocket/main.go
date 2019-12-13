@@ -88,10 +88,6 @@ func main() {
 	}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), duration)
-	if err := exec.Start(ctx); err != nil {
-		log.Fatalf("start exec error %v", err)
-	}
-
 	go func() {
 		sc := make(chan os.Signal, 1)
 		signal.Notify(sc,
@@ -106,4 +102,8 @@ func main() {
 		cancel()
 		os.Exit(0)
 	}()
+
+	if err := exec.Start(ctx); err != nil {
+		log.Fatalf("start exec error %v", err)
+	}
 }
