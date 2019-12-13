@@ -68,7 +68,7 @@ var _ = ginkgo.Describe("cdc", func() {
 		framework.ExpectNoError(err, "Expected to deploy tidb-cluster.")
 
 		e2elog.Logf("Wait TiDB cluster ready")
-		err = c.TiDB.WaitTiDBClusterReady(tc, 5*time.Minute)
+		err = c.TiDB.WaitTiDBClusterReady(tc, 10*time.Minute)
 		framework.ExpectNoError(err, "Expected to see tidb-cluster is ready.")
 
 		e2elog.Logf("Deploy CDC")
