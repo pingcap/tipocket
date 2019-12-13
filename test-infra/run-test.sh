@@ -29,6 +29,8 @@ if [[ "${GINKGO_STREAM}" == "y" ]]; then
     ginkgo_args+=("--stream")
 fi
 
+mkdir -p /tmp/cdc-log
+
 ./bin/ginkgo ${ginkgo_args[@]:-} ./tests/bin/e2e.test -- \
 --provider=skeleton \
 --clean-start=false \

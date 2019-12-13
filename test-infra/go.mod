@@ -19,12 +19,10 @@ require (
 	github.com/pingcap/errors v0.11.4
 	github.com/pingcap/gofail v0.0.0-20181217135706-6a951c1e42c3 // indirect
 	github.com/pingcap/goleveldb v0.0.0-20191031114657-7683883cfb36 // indirect
-	github.com/pingcap/parser v0.0.0-20191212055116-12ed74961445 // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191209124143-5a0cea713a1d
 	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
 	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
-	github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191213034629-847195f429d0 // indirect
 	github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
