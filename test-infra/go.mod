@@ -10,6 +10,7 @@ require (
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920 // indirect
 	github.com/dnephin/govet v0.0.0-20171012192244-4a96d43e39d3 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/go-openapi/spec v0.19.3
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.3

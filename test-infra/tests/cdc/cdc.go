@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/tipocket/test-infra/pkg/tidb"
 	putil "github.com/pingcap/tipocket/test-infra/pkg/util"
 	"github.com/pingcap/tipocket/test-infra/tests/util"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -83,13 +84,14 @@ var _ = ginkgo.Describe("cdc", func() {
 		err = framework.WaitForStatefulSetReplicasReady(mysql.Sts.Name, mysql.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
 		framework.ExpectNoError(err, "Expected mysql ready.")
 
-		cc, err := c.CDC.ApplyCDC(&cdc.CDCSpec{
+		cdcSpec := &cdc.CDCSpec{
 			Namespace: ns,
 			Name:      name,
 			Resources: fixture.Small,
 			Replicas:  3,
 			Source:    tc,
-		})
+		}
+		cc, err := c.CDC.ApplyCDC(cdcSpec)
 		framework.ExpectNoError(err, "Expected to deploy CDC.")
 
 		err = framework.WaitForStatefulSetReplicasReady(cc.Sts.Name, cc.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
@@ -100,10 +102,10 @@ var _ = ginkgo.Describe("cdc", func() {
 			SinkURI: mysql.URI(),
 		}
 		// start CDC has to run in env that has cdc binary installed and could access PD address, run it manually is a more feasible idea now
-		//err = c.CDC.StartJob(&cdc.CDCJob{
-		//	CDC:     cc,
-		//	SinkURI: mysql.URI(),
-		//})
+		err = c.CDC.StartJob(&cdc.CDCJob{
+			CDC:     cc,
+			SinkURI: mysql.URI(),
+		}, cdcSpec)
 		framework.ExpectNoError(err, "Expected to start a CDC job.")
 
 		// TODO: able to describe describe chaos in BDD-style

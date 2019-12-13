@@ -24,7 +24,9 @@ import (
 	operatorutil "github.com/pingcap/tidb-operator/pkg/util"
 	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/test-infra/pkg/util"
+
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -88,11 +90,10 @@ func (c *CdcOps) DeleteCDC(cc *CDC) error {
 	return nil
 }
 
-func (c *CdcOps) StartJob(job *CDCJob) error {
-
+func (c *CdcOps) StartJob(job *CDCJob, spec *CDCSpec) error {
 	pdAddr := util.PDAddress(job.CDC.Source)
 	// TODO: script to ensure the cdc binary in the image and local env
-	cmd := fmt.Sprintf("cdc cli --pd-addr %s --start-ts 0 --sink-uri %s", pdAddr, job.SinkURI)
+	cmd := fmt.Sprintf("/cdc cli --pd-addr %s --start-ts 1 --sink-uri %s", pdAddr, job.SinkURI)
 	_, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 
 	// import ticdc will mess up the go mod dependencies, need to figure out why
@@ -121,7 +122,65 @@ func (c *CdcOps) StartJob(job *CDCJob) error {
 	//}
 	//klog.V(4).Infof("create changefeed ID: %s detail %+v\n", id, detail)
 	//return kv.SaveChangeFeedDetail(context.Background(), cli, detail, id)
-	return err
+	kjob, err := c.renderSyncJob(job, spec)
+	if err != nil {
+		return err
+	}
+
+	if err := c.cli.Create(context.TODO(), kjob); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c CdcOps) renderSyncJob(job *CDCJob, spec *CDCSpec) (*batchv1.Job, error) {
+	name := fmt.Sprintf("e2e-cdc-%s", spec.Name)
+	l := map[string]string{
+		"app":      "e2e-cdc",
+		"instance": name,
+		"source":   spec.Source.Name,
+	}
+	image := spec.Image
+	if image == "" {
+		image = fixture.E2eContext.CDCImage
+	}
+	pdAddr := util.PDAddress(job.CDC.Source)
+
+	cmds := []string{
+		"/cdc",
+		"cli",
+		"--pd-addr",
+		pdAddr,
+		"--start-ts",
+		"1",
+		"--sink-uri",
+		job.SinkURI,
+	}
+
+	syncJob := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: spec.Namespace,
+			Labels:    l,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "cdc-cli",
+							Image:           spec.Image,
+							ImagePullPolicy: corev1.PullIfNotPresent,
+							Command:         cmds,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return syncJob, nil
 }
 
 const (
