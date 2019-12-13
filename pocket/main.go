@@ -1,30 +1,33 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/pingcap/tipocket/pocket/core"
-	"github.com/pingcap/tipocket/pocket/executor"
-	"github.com/pingcap/tipocket/pocket/util"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/pingcap/tipocket/pocket/core"
+	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 var (
 	printVersion bool
-	dsn1        string
-	dsn2        string
-	printSchema bool
-	clearDB     bool
-	logPath     string
-	reproduce   string
-	stable      bool
-	concurrency int
-	binlog      bool
+	dsn1         string
+	dsn2         string
+	printSchema  bool
+	clearDB      bool
+	logPath      string
+	reproduce    string
+	stable       bool
+	concurrency  int
+	binlog       bool
+	duration     time.Duration
 )
 
 func init() {
@@ -38,6 +41,7 @@ func init() {
 	flag.BoolVar(&stable, "stable", false, "generate stable SQL without random or other env related expression")
 	flag.BoolVar(&binlog, "binlog", false, "enable binlog test which requires 2 dsn points but only write first")
 	flag.IntVar(&concurrency, "concurrency", 1, "test concurrency")
+	flag.DurationVar(&duration, "duration", 1*time.Hour, "the duration time to run test")
 }
 
 func main() {
@@ -48,10 +52,10 @@ func main() {
 	}
 
 	var (
-		exec *core.Executor
-		err error
+		exec           *core.Executor
+		err            error
 		executorOption = executor.Option{}
-		coreOption = core.Option{}
+		coreOption     = core.Option{}
 	)
 
 	executorOption.Clear = clearDB
@@ -82,18 +86,24 @@ func main() {
 		}
 		os.Exit(0)
 	}
-	if err := exec.Start(); err != nil {
+
+	ctx, cancel := context.WithTimeout(context.TODO(), duration)
+	if err := exec.Start(ctx); err != nil {
 		log.Fatalf("start exec error %v", err)
 	}
 
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc,
-		os.Kill,
-		os.Interrupt,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
+	go func() {
+		sc := make(chan os.Signal, 1)
+		signal.Notify(sc,
+			os.Kill,
+			os.Interrupt,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT)
 
-	log.Infof("Got signal %d to exit.", <-sc)
+		log.Infof("Got signal %d to exit.", <-sc)
+		cancel()
+		os.Exit(0)
+	}()
 }

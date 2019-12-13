@@ -1,22 +1,24 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path"
 	"regexp"
 	"sync"
-	"path"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/pingcap/tipocket/go-sqlsmith"
+	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
-	"github.com/pingcap/tipocket/pocket/connection"
-	"github.com/pingcap/tipocket/go-sqlsmith"
 )
 
 var (
-	dbnameRegex = regexp.MustCompile(`([a-z0-9A-Z_]+)$`)
+	dbnameRegex      = regexp.MustCompile(`([a-z0-9A-Z_]+)$`)
 	schemaConnOption = connection.Option{
 		Mute: true,
 	}
@@ -40,20 +42,20 @@ type Executor struct {
 	mutex           sync.Mutex
 	waitingForCheck bool
 	// DSN here is for fetch schema only
-	coreConn  *connection.Connection
-	coreExec  *executor.Executor
+	coreConn *connection.Connection
+	coreExec *executor.Executor
 }
 
 // New create Executor
 func New(dsn string, coreOpt *Option, execOpt *executor.Option) (*Executor, error) {
 	e := Executor{
-		dsn1: dsn,
-		coreOpt: coreOpt,
-		execOpt: execOpt,
-		ch: make(chan *types.SQL, 1),
+		dsn1:       dsn,
+		coreOpt:    coreOpt,
+		execOpt:    execOpt,
+		ch:         make(chan *types.SQL, 1),
 		deadlockCh: make(chan int, 1),
-		order: types.NewOrder(),
-		mode: "single",
+		order:      types.NewOrder(),
+		mode:       "single",
 	}
 
 	if coreOpt.Reproduce != "" {
@@ -63,7 +65,7 @@ func New(dsn string, coreOpt *Option, execOpt *executor.Option) (*Executor, erro
 	for i := 0; i < coreOpt.Concurrency; i++ {
 		opt := execOpt.Clone()
 		opt.ID = i + 1
-		opt.LogSuffix = fmt.Sprintf("-%d", i + 1)
+		opt.LogSuffix = fmt.Sprintf("-%d", i+1)
 		exec, err := executor.New(e.dsn1, opt)
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -76,14 +78,14 @@ func New(dsn string, coreOpt *Option, execOpt *executor.Option) (*Executor, erro
 // NewABTest create abtest Executor
 func NewABTest(dsn1, dsn2 string, coreOpt *Option, execOpt *executor.Option) (*Executor, error) {
 	e := Executor{
-		dsn1: dsn1,
-		dsn2: dsn2,
-		coreOpt: coreOpt,
-		execOpt: execOpt,
-		ch: make(chan *types.SQL, 1),
+		dsn1:       dsn1,
+		dsn2:       dsn2,
+		coreOpt:    coreOpt,
+		execOpt:    execOpt,
+		ch:         make(chan *types.SQL, 1),
 		deadlockCh: make(chan int, 1),
-		order: types.NewOrder(),
-		mode: "abtest",
+		order:      types.NewOrder(),
+		mode:       "abtest",
 	}
 	if coreOpt.Mode != "" {
 		e.mode = coreOpt.Mode
@@ -96,10 +98,10 @@ func NewABTest(dsn1, dsn2 string, coreOpt *Option, execOpt *executor.Option) (*E
 	for i := 0; i < coreOpt.Concurrency; i++ {
 		opt := execOpt.Clone()
 		opt.ID = i + 1
-		opt.LogSuffix = fmt.Sprintf("-%d", i + 1)
+		opt.LogSuffix = fmt.Sprintf("-%d", i+1)
 		var (
 			exec *executor.Executor
-			err error
+			err  error
 		)
 		switch e.mode {
 		case "abtest":
@@ -149,7 +151,7 @@ func (e *Executor) init() (*Executor, error) {
 }
 
 // Start test
-func (e *Executor) Start() error {
+func (e *Executor) Start(ctx context.Context) error {
 	if err := e.mustExec(); err != nil {
 		return errors.Trace(err)
 	}
@@ -177,7 +179,11 @@ func (e *Executor) Start() error {
 			go e.startBinlogTestDataCompare()
 		}
 	}
-	return nil
+
+	select {
+	case <-ctx.Done():
+		return nil
+	}
 }
 
 // Stop test
