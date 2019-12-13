@@ -203,6 +203,10 @@ func (s *StateFlow) walkValueExpr(node *driver.ValueExpr, table *types.Table, co
 			node.SetMysqlTime(tidbTypes.Time{
 				Time: tidbTypes.FromGoTime(util.GenerateDateItem()),
 			})
+		case "datetime":
+			node.SetMysqlTime(tidbTypes.Time{
+				Time: tidbTypes.FromGoTime(util.GenerateDateItem()),
+			})
 		}
 	}
 	return nil

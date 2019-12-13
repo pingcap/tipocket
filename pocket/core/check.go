@@ -19,8 +19,22 @@ func (e *Executor) reloadSchema() error {
 	if err != nil {
 		return errors.Trace(err)
 	}
+	indexes := make(map[string][]string)
+	for _, col := range schema {
+		if _, ok := indexes[col[2]]; ok {
+			continue
+		}
+		index, err := e.coreConn.FetchIndexes(e.dbname, col[1])
+		// may not return error here
+		// just disable indexes
+		if err != nil {
+			return errors.Trace(err)
+		}
+		indexes[col[1]] = index
+	}
+
 	e.ss = smith.New()
-	e.ss.LoadSchema(schema)
+	e.ss.LoadSchema(schema, indexes)
 	e.ss.SetDB(e.dbname)
 	e.ss.SetStable(e.coreOpt.Stable)
 	return nil
