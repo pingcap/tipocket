@@ -24,6 +24,11 @@ var (
 	}
 )
 
+type execSQL struct {
+	sql        *types.SQL
+	executorID int
+}
+
 // Executor struct
 type Executor struct {
 	dsn1            string
@@ -32,7 +37,7 @@ type Executor struct {
 	execOpt         *executor.Option
 	executors       []*executor.Executor
 	ss              *sqlsmith.SQLSmith
-	ch              chan *types.SQL
+	ch              chan *execSQL
 	logger          *logger.Logger
 	dbname          string
 	mode            string
@@ -52,7 +57,7 @@ func New(dsn string, coreOpt *Option, execOpt *executor.Option) (*Executor, erro
 		dsn1:       dsn,
 		coreOpt:    coreOpt,
 		execOpt:    execOpt,
-		ch:         make(chan *types.SQL, 1),
+		ch:         make(chan *execSQL, 1),
 		deadlockCh: make(chan int, 1),
 		order:      types.NewOrder(),
 		mode:       "single",
@@ -82,7 +87,7 @@ func NewABTest(dsn1, dsn2 string, coreOpt *Option, execOpt *executor.Option) (*E
 		dsn2:       dsn2,
 		coreOpt:    coreOpt,
 		execOpt:    execOpt,
-		ch:         make(chan *types.SQL, 1),
+		ch:         make(chan *execSQL, 1),
 		deadlockCh: make(chan int, 1),
 		order:      types.NewOrder(),
 		mode:       "abtest",

@@ -21,35 +21,7 @@ func (e *Executor) ExecStraight(sql *types.SQL, node int) {
 	// log.Infof("Node %d, Type %s, Exec %s", node, sql.SQLType, sql.SQLStmt)
 	e.logger.Infof("Node %d, Type %s, Exec %s", node, sql.SQLType, sql.SQLStmt)
 
-	switch sql.SQLType {
-	case types.SQLTypeDMLSelect:
-		err = executor.Select(sql.SQLStmt)
-	case types.SQLTypeDMLInsert:
-		err = executor.Insert(sql.SQLStmt)
-	case types.SQLTypeDMLUpdate:
-		err = executor.Update(sql.SQLStmt)
-	case types.SQLTypeDMLDelete:
-		err = executor.Delete(sql.SQLStmt)
-	case types.SQLTypeDDLCreate:
-		err = executor.CreateTable(sql.SQLStmt)
-	case types.SQLTypeDDLAlterTable:
-		err = executor.AlterTable(sql.SQLStmt)
-	case types.SQLTypeDDLCreateIndex:
-		err = executor.CreateIndex(sql.SQLStmt)
-	case types.SQLTypeTxnBegin:
-		err = executor.TxnBegin()
-	case types.SQLTypeTxnCommit:
-		err = executor.TxnCommit()
-	case types.SQLTypeTxnRollback:
-		err = executor.TxnRollback()
-	default:
-		panic("unhandled exec straight")
-	}
-
-	switch sql.SQLType {
-	case types.SQLTypeDDLCreate:
-		executor.TxnCommit()
-	}
+	executor.ExecSQL(sql)
 
 	if err != nil {
 		log.Infof("error, %+v\n", err)

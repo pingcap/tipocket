@@ -229,6 +229,7 @@ func (e *Executor) binlogTestCompareData(delay bool) (bool, error) {
 		}
 		log.Info("got sync status", syncDone)
 	}
+	time.Sleep(3 * time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(e.dbname)
 	if err != nil {

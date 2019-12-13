@@ -178,7 +178,7 @@ func parseSQLType(sql string) types.SQLType {
 		return types.SQLTypeDMLDelete
 	}
 	if strings.HasPrefix(sql, "create table") {
-		return types.SQLTypeDDLCreate
+		return types.SQLTypeDDLCreateTable
 	}
 	if strings.HasPrefix(sql, "alter table") {
 		return types.SQLTypeDDLAlterTable

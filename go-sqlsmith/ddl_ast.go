@@ -45,7 +45,8 @@ func (s *SQLSmith) alterTableSpec() *ast.AlterTableSpec {
 	case 1:
 		return s.alterTableSpecDropIndex()
 	default:
-		return s.alterTableSpecAddColumns()
+		// return s.alterTableSpecAddColumns()
+		return s.alterTableSpecDropColumn()
 	}
 }
 

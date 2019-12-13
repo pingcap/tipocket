@@ -11,7 +11,7 @@ const (
 	SQLTypeDMLUpdate
 	SQLTypeDMLInsert
 	SQLTypeDMLDelete
-	SQLTypeDDLCreate
+	SQLTypeDDLCreateTable
 	SQLTypeDDLAlterTable
 	SQLTypeDDLCreateIndex
 	SQLTypeTxnBegin
@@ -40,8 +40,8 @@ func (t SQLType) String() string {
 		return "SQLTypeDMLInsert"
 	case SQLTypeDMLDelete:
 		return "SQLTypeDMLDelete"
-	case SQLTypeDDLCreate:
-		return "SQLTypeDDLCreate"
+	case SQLTypeDDLCreateTable:
+		return "SQLTypeDDLCreateTable"
 	case SQLTypeDDLAlterTable:
 		return "SQLTypeDDLAlterTable"
 	case SQLTypeDDLCreateIndex:

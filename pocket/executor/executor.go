@@ -9,9 +9,9 @@ import (
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/go-sqlsmith"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
-	smith "github.com/pingcap/tipocket/go-sqlsmith"
 )
 
 var (
@@ -26,8 +26,7 @@ type Executor struct {
 	dsn2        string
 	conn1       *connection.Connection
 	conn2       *connection.Connection
-	ss1         *smith.SQLSmith
-	ss2         *smith.SQLSmith
+	ss          *sqlsmith.SQLSmith
 	dbname      string
 	mode        string
 	opt         *Option
@@ -61,15 +60,16 @@ func New(dsn string, opt *Option) (*Executor, error) {
 		return nil, errors.Trace(err)
 	}
 	return &Executor{
-		id: opt.ID,
-		dsn1:  dsn,
-		conn1: conn,
-		mode:  "single",
-		ch: make(chan *types.SQL, 1),
+		id:         opt.ID,
+		dsn1:       dsn,
+		conn1:      conn,
+		mode:       "single",
+		ch:         make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
-		dbname: dbnameRegex.FindString(dsn),
-		opt: opt,
-		logger: l,
+		ss:         sqlsmith.New(),
+		dbname:     dbnameRegex.FindString(dsn),
+		opt:        opt,
+		logger:     l,
 	}, nil
 }
 
@@ -101,17 +101,18 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 		return nil, errors.Trace(err)
 	}
 	return &Executor{
-		id: opt.ID,
-		dsn1:  dsn1,
-		dsn2:  dsn2,
-		conn1: conn1,
-		conn2: conn2,
-		mode:  "abtest",
-		ch: make(chan *types.SQL, 1),
+		id:         opt.ID,
+		dsn1:       dsn1,
+		dsn2:       dsn2,
+		conn1:      conn1,
+		conn2:      conn2,
+		ss:         sqlsmith.New(),
+		mode:       "abtest",
+		ch:         make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
-		dbname: dbnameRegex.FindString(dsn1),
-		opt: opt,
-		logger: l,
+		dbname:     dbnameRegex.FindString(dsn1),
+		opt:        opt,
+		logger:     l,
 	}, nil
 }
 
@@ -135,6 +136,7 @@ func (e *Executor) Start() {
 	// } else {
 	// 	go e.smithGenerate()
 	// }
+	e.TxnReadyCh <- struct{}{}
 	switch e.mode {
 	case "single":
 		e.singleTest()
