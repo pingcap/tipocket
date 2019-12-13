@@ -12,6 +12,8 @@ const (
 	SQLTypeDMLInsert
 	SQLTypeDMLDelete
 	SQLTypeDDLCreate
+	SQLTypeDDLAlterTable
+	SQLTypeDDLCreateIndex
 	SQLTypeTxnBegin
 	SQLTypeTxnCommit
 	SQLTypeTxnRollback
@@ -40,6 +42,10 @@ func (t SQLType) String() string {
 		return "SQLTypeDMLDelete"
 	case SQLTypeDDLCreate:
 		return "SQLTypeDDLCreate"
+	case SQLTypeDDLAlterTable:
+		return "SQLTypeDDLAlterTable"
+	case SQLTypeDDLCreateIndex:
+		return "SQLTypeDDLCreateIndex"
 	case SQLTypeTxnBegin:
 		return "SQLTypeTxnBegin"
 	case SQLTypeTxnCommit:

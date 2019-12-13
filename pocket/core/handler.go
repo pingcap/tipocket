@@ -21,13 +21,11 @@ func (e *Executor) startHandler() {
 	// 	panic("unhandled test mode")
 	// }
 	for {
-		if e.coreOpt.Reproduce == "" {
-			time.Sleep(2*time.Millisecond)
-		}
 		var (
 			err error
 			sql = <- e.ch
 		)
+		time.Sleep(2 * time.Millisecond)
 
 		// Exec SQL
 		switch sql.SQLType {
@@ -54,115 +52,14 @@ func (e *Executor) startHandler() {
 			executor := e.tryRandFreeExecutor()
 			e.deadlockCh <- executor.GetID()
 			executor.ExecSQL(sql)
-		default:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-			}
-		}
-
-		if err != nil {
-			e.logger.Infof("[FAIL] Exec SQL %s error %v", sql.SQLStmt, err)
-		} else {
-			// e.logger.Infof("[SUCCESS] Exec SQL %s success", sql.SQLStmt)
-		}
-	}
-}
-
-func (e *Executor) singleTest() {
-	for {
-		var (
-			err error
-			sql = <- e.ch
-		)
-
-		// Exec SQL
-		switch sql.SQLType {
-		case types.SQLTypeReloadSchema:
-			err = e.reloadSchema()
-			if err != nil {
-				log.Fatalf("reload schema failed %+v\n", errors.ErrorStack(err))
-			}
-		case types.SQLTypeExit:
-			e.Stop("receive exit SQL signal")
-		case types.SQLTypeTxnBegin:
-			executor := e.randFreeExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-				<-executor.TxnReadyCh
-			}
-		case types.SQLTypeTxnCommit, types.SQLTypeTxnRollback:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-				<-executor.TxnReadyCh
-			}
-		case types.SQLTypeDDLCreate:
+		case types.SQLTypeDDLAlterTable:
 			executor := e.tryRandFreeExecutor()
 			e.deadlockCh <- executor.GetID()
 			executor.ExecSQL(sql)
-			<-executor.TxnReadyCh
-			if executor.IfTxn() {
-				executor.ExecSQL(&types.SQL{
-					SQLType: types.SQLTypeTxnCommit,
-					SQLStmt: "COMMIT",
-				})
-				<-executor.TxnReadyCh
-			}
-		default:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-			}
-		}
-
-		if err != nil {
-			e.logger.Infof("[FAIL] Exec SQL %s error %v", sql.SQLStmt, err)
-		} else {
-			// e.logger.Infof("[SUCCESS] Exec SQL %s success", sql.SQLStmt)
-		}
-	}
-}
-
-func (e *Executor) abTest() {
-	for {
-		var (
-			err error
-			sql = <- e.ch
-		)
-
-		// Exec SQL
-		switch sql.SQLType {
-		case types.SQLTypeReloadSchema:
-			err = e.reloadSchema()
-			if err != nil {
-				log.Fatalf("reload schema failed %+v\n", errors.ErrorStack(err))
-			}
-		case types.SQLTypeExit:
-			e.Stop("receive exit SQL signal")
-		case types.SQLTypeTxnBegin:
-			executor := e.randFreeExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-				<-executor.TxnReadyCh
-			}
-		case types.SQLTypeTxnCommit, types.SQLTypeTxnRollback:
-			executor := e.randBusyExecutor()
-			if executor != nil {
-				e.deadlockCh <- executor.GetID()
-				executor.ExecSQL(sql)
-				<-executor.TxnReadyCh
-			}
-		case types.SQLTypeDDLCreate:
+		case types.SQLTypeDDLCreateIndex:
 			executor := e.tryRandFreeExecutor()
 			e.deadlockCh <- executor.GetID()
 			executor.ExecSQL(sql)
-			<-executor.TxnReadyCh
 		default:
 			executor := e.randBusyExecutor()
 			if executor != nil {

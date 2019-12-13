@@ -5,4 +5,5 @@ const (
 	createDatabaseSQL = "CREATE DATABASE %s"
 	schemaSQL = "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM information_schema.tables"
 	tableSQL = "DESC %s.%s"
+	indexSQL = "SHOW INDEX FROM %s.%s"
 )

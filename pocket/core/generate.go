@@ -30,6 +30,10 @@ func (e *Executor) smithGenerate() {
 			e.generateTxnCommit()
 		} else if rd < 190 {
 			e.generateTxnRollback()
+		} else if rd < 200 {
+			err = e.generateDDLAlterTable()
+		} else if rd < 210 {
+			err = e.generateDDLCreateIndex()
 		} else {
 			// err = e.generateSelect()
 			err = e.generateInsert()
@@ -55,6 +59,36 @@ func (e *Executor) generateDDLCreate() error {
 	}
 	e.ch <- &types.SQL{
 		SQLType: types.SQLTypeDDLCreate,
+		SQLStmt: stmt,
+	}
+	e.ch <- &types.SQL{
+		SQLType: types.SQLTypeReloadSchema,
+	}
+	return nil
+}
+
+func (e *Executor) generateDDLAlterTable() error {
+	stmt, err := e.ss.AlterTableStmt()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	e.ch <- &types.SQL{
+		SQLType: types.SQLTypeDDLAlterTable,
+		SQLStmt: stmt,
+	}
+	e.ch <- &types.SQL{
+		SQLType: types.SQLTypeReloadSchema,
+	}
+	return nil
+}
+
+func (e *Executor) generateDDLCreateIndex() error {
+	stmt, err := e.ss.CreateIndexStmt()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	e.ch <- &types.SQL{
+		SQLType: types.SQLTypeDDLCreateIndex,
 		SQLStmt: stmt,
 	}
 	e.ch <- &types.SQL{

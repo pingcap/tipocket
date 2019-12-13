@@ -13,6 +13,7 @@ func (e *Executor) singleTest() {
 			sql = <- e.ch
 		)
 		e.Lock()
+		e.logStmtTodo(sql.SQLStmt)
 
 		switch sql.SQLType {
 		case types.SQLTypeDMLSelect:
@@ -46,6 +47,7 @@ func (e *Executor) singleTest() {
 
 // SingleTestSelect expose singleTestSelect
 func (e *Executor) SingleTestSelect(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.singleTestSelect(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -54,6 +56,7 @@ func (e *Executor) SingleTestSelect(sql string) error {
 
 // SingleTestInsert expose singleTestInsert
 func (e *Executor) SingleTestInsert(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.singleTestInsert(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -62,6 +65,7 @@ func (e *Executor) SingleTestInsert(sql string) error {
 
 // SingleTestUpdate expose singleTestUpdate
 func (e *Executor) SingleTestUpdate(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.singleTestUpdate(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -70,6 +74,7 @@ func (e *Executor) SingleTestUpdate(sql string) error {
 
 // SingleTestDelete expose singleTestDelete
 func (e *Executor) SingleTestDelete(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.singleTestDelete(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -78,6 +83,7 @@ func (e *Executor) SingleTestDelete(sql string) error {
 
 // SingleTestCreateTable expose singleTestCreateTable
 func (e *Executor) SingleTestCreateTable(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.singleTestCreateTable(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -86,6 +92,7 @@ func (e *Executor) SingleTestCreateTable(sql string) error {
 
 // SingleTestTxnBegin export singleTestTxnBegin
 func (e *Executor) SingleTestTxnBegin() error {
+	e.logStmtTodo("BEGIN")
 	err := e.singleTestTxnBegin()
 	e.logStmtResult("BEGIN", err)
 	<- e.TxnReadyCh
@@ -94,6 +101,7 @@ func (e *Executor) SingleTestTxnBegin() error {
 
 // SingleTestTxnCommit export singleTestTxnCommit
 func (e *Executor) SingleTestTxnCommit() error {
+	e.logStmtTodo("COMMIT")
 	err := e.singleTestTxnCommit()
 	e.logStmtResult("COMMIT", err)
 	<- e.TxnReadyCh
@@ -102,6 +110,7 @@ func (e *Executor) SingleTestTxnCommit() error {
 
 // SingleTestTxnRollback export singleTestTxnRollback
 func (e *Executor) SingleTestTxnRollback() error {
+	e.logStmtTodo("ROLLBACK")
 	err := e.singleTestTxnRollback()
 	e.logStmtResult("ROLLBACK", err)
 	<- e.TxnReadyCh

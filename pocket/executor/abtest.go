@@ -16,6 +16,7 @@ func (e *Executor) abTest() {
 			sql = <- e.ch
 		)
 		e.Lock()
+		e.logStmtTodo(sql.SQLStmt)
 
 		switch sql.SQLType {
 		case types.SQLTypeDMLSelect:
@@ -49,6 +50,7 @@ func (e *Executor) abTest() {
 
 // ABTestSelect expose abTestSelect
 func (e *Executor) ABTestSelect(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestSelect(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -57,6 +59,7 @@ func (e *Executor) ABTestSelect(sql string) error {
 
 // ABTestInsert expose abTestInsert
 func (e *Executor) ABTestInsert(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestInsert(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -65,6 +68,7 @@ func (e *Executor) ABTestInsert(sql string) error {
 
 // ABTestUpdate expose abTestUpdate
 func (e *Executor) ABTestUpdate(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestUpdate(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -73,6 +77,7 @@ func (e *Executor) ABTestUpdate(sql string) error {
 
 // ABTestDelete expose abTestDelete
 func (e *Executor) ABTestDelete(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestDelete(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -81,6 +86,7 @@ func (e *Executor) ABTestDelete(sql string) error {
 
 // ABTestCreateTable expose abTestCreateTable
 func (e *Executor) ABTestCreateTable(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestCreateTable(sql)
 	e.logStmtResult(sql, err)
 	<- e.TxnReadyCh
@@ -89,6 +95,7 @@ func (e *Executor) ABTestCreateTable(sql string) error {
 
 // ABTestTxnBegin export abTestTxnBegin
 func (e *Executor) ABTestTxnBegin() error {
+	e.logStmtTodo("BEGIN")
 	err := e.abTestTxnBegin()
 	e.logStmtResult("BEGIN", err)
 	<- e.TxnReadyCh
@@ -97,6 +104,7 @@ func (e *Executor) ABTestTxnBegin() error {
 
 // ABTestTxnCommit export abTestTxnCommit
 func (e *Executor) ABTestTxnCommit() error {
+	e.logStmtTodo("COMMIT")
 	err := e.abTestTxnCommit()
 	e.logStmtResult("COMMIT", err)
 	<- e.TxnReadyCh
@@ -105,6 +113,7 @@ func (e *Executor) ABTestTxnCommit() error {
 
 // ABTestTxnRollback export abTestTxnRollback
 func (e *Executor) ABTestTxnRollback() error {
+	e.logStmtTodo("ROLLBACK")
 	err := e.abTestTxnRollback()
 	e.logStmtResult("ROLLBACK", err)
 	<- e.TxnReadyCh
