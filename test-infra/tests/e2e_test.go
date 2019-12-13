@@ -53,6 +53,7 @@ func handleFlags() {
 	flags.StringVar(&fixture.E2eContext.CDCImage, "cdc-image", "hub.pingcap.net/aylei/cdc:latest", "Default CDC image in e2e")
 	flags.StringVar(&fixture.E2eContext.MySQLVersion, "mysql-version", "5.6", "Default CDC image in e2e")
 	flags.StringVar(&fixture.E2eContext.DockerRepository, "docker-repo", "pingcap", "Default docker repository in e2e")
+	flags.DurationVar(&fixture.E2eContext.TimeLimit, "time-limit", 1*time.Hour, "the duration time to run workload")
 	flag.Parse()
 }
 

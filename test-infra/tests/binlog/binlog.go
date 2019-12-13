@@ -15,7 +15,7 @@ package binlog
 
 import (
 	"github.com/onsi/ginkgo"
-	"github.com/pingcap/tipocket/tests/util"
+	"github.com/pingcap/tipocket/test-infra/tests/util"
 	"k8s.io/kubernetes/test/e2e/framework"
 )
 

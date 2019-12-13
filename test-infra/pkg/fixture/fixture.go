@@ -14,8 +14,11 @@
 package fixture
 
 import (
+	"time"
+
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tipocket/test-infra/pkg/scheme"
+
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -29,6 +32,7 @@ type E2eFixture struct {
 	MySQLVersion             string
 	CDCImage                 string
 	DockerRepository         string
+	TimeLimit                time.Duration
 }
 
 var E2eContext E2eFixture
