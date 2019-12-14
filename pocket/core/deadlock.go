@@ -3,6 +3,7 @@ package core
 import (
 	"math/rand"
 	"time"
+	"sync"
 	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
@@ -38,20 +39,23 @@ func (e *Executor) watchDeadLock() {
 
 func (e *Executor) resolveDeadLock() {
 	// log.Info(e.order.GetHistroy())
+	wg := sync.WaitGroup{}
 	for e.order.Next() {
 		for _, executor := range e.executors {
 			if executor.GetID() == e.order.Val() {
 				time.Sleep(10*time.Millisecond)
-				go e.resolveDeadLockOne(executor)
+				wg.Add(1)
+				go e.resolveDeadLockOne(executor, &wg)
 			}
 		}
 	}
 	e.order.Reset()
-	time.Sleep(10*time.Millisecond)
+	wg.Wait()
 }
 
-func (e *Executor) resolveDeadLockOne(executor *executor.Executor) {
+func (e *Executor) resolveDeadLockOne(executor *executor.Executor, wg *sync.WaitGroup) {
 	if executor == nil {
+		wg.Done()
 		return
 	}
 	var sql types.SQL
@@ -66,5 +70,16 @@ func (e *Executor) resolveDeadLockOne(executor *executor.Executor) {
 			SQLStmt: "ROLLBACK",
 		}
 	}
+	// exec commit/rollback
 	executor.ExecSQL(&sql)
+	// wait for txn finish
+	go func() {
+		for true {
+			time.Sleep(time.Millisecond)
+			if !executor.IfTxn() {
+				wg.Done()
+				break
+			}
+		}
+	}()
 }
