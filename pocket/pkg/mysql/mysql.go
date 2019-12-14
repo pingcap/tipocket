@@ -97,25 +97,27 @@ func (conn *DBConnect) Begin() error {
 // Commit a transaction
 func (conn *DBConnect) Commit() error {
 	conn.Lock()
-	defer conn.Unlock()
+	defer func () {
+		conn.txn = nil
+		conn.Unlock()
+	}()
 	if conn.txn == nil {
 		return nil
 	}
-	txn := conn.txn
-	conn.txn = nil
-	return txn.Commit()
+	return conn.txn.Commit()
 }
 
 // Rollback a transaction
 func (conn *DBConnect) Rollback() error {
 	conn.Lock()
-	defer conn.Unlock()
+	defer func () {
+		conn.txn = nil
+		conn.Unlock()
+	}()
 	if conn.txn == nil {
 		return nil
 	}
-	txn := conn.txn
-	conn.txn = nil
-	return txn.Rollback()
+	return conn.txn.Rollback()
 }
 
 // CloseDB turn off db connection
