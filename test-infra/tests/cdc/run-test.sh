@@ -31,9 +31,11 @@ fi
 
 mkdir -p /tmp/cdc-log
 
-./bin/ginkgo ${ginkgo_args[@]:-} ./tests/bin/e2e.test -- \
+./bin/ginkgo ${ginkgo_args[@]:-} ./bin/e2e.test -- \
 --provider=skeleton \
 --clean-start=false \
+--docker-repo=hub.pingcap.net/pingcap \
+--tidb-version=cdc \
 --delete-namespace-on-failure=false \
 --local-storage-class=shared-nvme-disks \
 -v=4 \

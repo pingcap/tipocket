@@ -1,6 +1,5 @@
 bin
-tests/bin
-pocket/bin
+*/bin/**
 
 .idea
 vendor
