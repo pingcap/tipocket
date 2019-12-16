@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e
+package core
 
 import (
 	"fmt"
@@ -35,7 +35,6 @@ import (
 )
 
 var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
-
 	// Skip most of the "waiting for all resources ready" for now in favor of the chaos env
 	// TODO: ease the waiting constrain and do wait
 	// framework.SetupSuite()
