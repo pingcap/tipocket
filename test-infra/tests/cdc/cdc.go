@@ -14,6 +14,8 @@
 package cdc
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/onsi/ginkgo"
@@ -26,6 +28,7 @@ import (
 	"github.com/pingcap/tipocket/test-infra/pkg/tidb"
 	putil "github.com/pingcap/tipocket/test-infra/pkg/util"
 	"github.com/pingcap/tipocket/test-infra/tests/util"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -65,7 +68,7 @@ var _ = ginkgo.Describe("cdc", func() {
 		framework.ExpectNoError(err, "Expected to deploy tidb-cluster.")
 
 		e2elog.Logf("Wait TiDB cluster ready")
-		err = c.TiDB.WaitTiDBClusterReady(tc, 5*time.Minute)
+		err = c.TiDB.WaitTiDBClusterReady(tc, 10*time.Minute)
 		framework.ExpectNoError(err, "Expected to see tidb-cluster is ready.")
 
 		e2elog.Logf("Deploy CDC")
@@ -81,13 +84,14 @@ var _ = ginkgo.Describe("cdc", func() {
 		err = framework.WaitForStatefulSetReplicasReady(mysql.Sts.Name, mysql.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
 		framework.ExpectNoError(err, "Expected mysql ready.")
 
-		cc, err := c.CDC.ApplyCDC(&cdc.CDCSpec{
+		cdcSpec := &cdc.CDCSpec{
 			Namespace: ns,
 			Name:      name,
 			Resources: fixture.Small,
 			Replicas:  3,
 			Source:    tc,
-		})
+		}
+		cc, err := c.CDC.ApplyCDC(cdcSpec)
 		framework.ExpectNoError(err, "Expected to deploy CDC.")
 
 		err = framework.WaitForStatefulSetReplicasReady(cc.Sts.Name, cc.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
@@ -98,10 +102,10 @@ var _ = ginkgo.Describe("cdc", func() {
 			SinkURI: mysql.URI(),
 		}
 		// start CDC has to run in env that has cdc binary installed and could access PD address, run it manually is a more feasible idea now
-		//err = c.CDC.StartJob(&cdc.CDCJob{
-		//	CDC:     cc,
-		//	SinkURI: mysql.URI(),
-		//})
+		err = c.CDC.StartJob(&cdc.CDCJob{
+			CDC:     cc,
+			SinkURI: mysql.URI(),
+		}, cdcSpec)
 		framework.ExpectNoError(err, "Expected to start a CDC job.")
 
 		// TODO: able to describe describe chaos in BDD-style
@@ -113,10 +117,14 @@ var _ = ginkgo.Describe("cdc", func() {
 			Spec: chaosv1alpha1.PodChaosSpec{
 				Selector: chaosv1alpha1.SelectorSpec{
 					// Randomly kill in namespace
-					Namespaces: []string{ns},
+					Namespaces:     []string{ns},
+					LabelSelectors: map[string]string{"app.kubernetes.io/component": "tikv"},
 				},
-				Mode:     chaosv1alpha1.OnePodMode,
-				Duration: "3m",
+				Scheduler: chaosv1alpha1.SchedulerSpec{
+					Cron: "@every 1m",
+				},
+				Action: chaosv1alpha1.PodKillAction,
+				Mode:   chaosv1alpha1.OnePodMode,
 			},
 		}
 		err = c.Chaos.ApplyPodChaos(podKill)
@@ -129,16 +137,16 @@ var _ = ginkgo.Describe("cdc", func() {
 
 		targetAddr := putil.GenMysqlServiceAddress(mysql.Svc)
 
-		err = workload(sourceAddr, targetAddr, 10)
+		err = workload(sourceAddr, targetAddr, 10, "test", fixture.E2eContext.TimeLimit)
 		framework.ExpectNoError(err, "Expected to run workload")
 	})
 })
 
-func workload(sourceAddr string, targetAddr string, concurrency int) error {
+func workload(sourceAddr string, targetAddr string, concurrency int, dbName string, timeLimit time.Duration) error {
 	executorOption := &executor.Option{
 		Clear:  false,
 		Stable: true,
-		Log:    "./log",
+		Log:    "/tmp/cdc-log",
 	}
 
 	coreOption := &core.Option{
@@ -147,7 +155,7 @@ func workload(sourceAddr string, targetAddr string, concurrency int) error {
 		Mode:        "binlog",
 	}
 
-	exec, err := core.NewABTest(sourceAddr, targetAddr, coreOption, executorOption)
+	exec, err := core.NewABTest(genDbDsn(sourceAddr, dbName), genDbDsn(targetAddr, dbName), coreOption, executorOption)
 	if err != nil {
 		return err
 	}
@@ -156,5 +164,12 @@ func workload(sourceAddr string, targetAddr string, concurrency int) error {
 		return err
 	}
 
-	return exec.Start()
+	ctx, cancel := context.WithTimeout(context.TODO(), timeLimit)
+	defer cancel()
+
+	return exec.Start(ctx)
+}
+
+func genDbDsn(addr string, dbName string) string {
+	return fmt.Sprintf("root:@tcp(%s)/%s", addr, dbName)
 }

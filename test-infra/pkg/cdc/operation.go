@@ -16,7 +16,6 @@ package cdc
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/pingcap/errors"
@@ -24,7 +23,9 @@ import (
 	operatorutil "github.com/pingcap/tidb-operator/pkg/util"
 	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/test-infra/pkg/util"
+
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -88,40 +89,67 @@ func (c *CdcOps) DeleteCDC(cc *CDC) error {
 	return nil
 }
 
-func (c *CdcOps) StartJob(job *CDCJob) error {
+func (c *CdcOps) StartJob(job *CDCJob, spec *CDCSpec) error {
+	kjob, err := c.renderSyncJob(job, spec)
+	if err != nil {
+		return err
+	}
 
+	if err := c.cli.Create(context.TODO(), kjob); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c CdcOps) renderSyncJob(job *CDCJob, spec *CDCSpec) (*batchv1.Job, error) {
+	name := fmt.Sprintf("e2e-cdc-%s", spec.Name)
+	l := map[string]string{
+		"app":      "e2e-cdc",
+		"instance": name,
+		"source":   spec.Source.Name,
+	}
+	image := spec.Image
+	if image == "" {
+		image = fixture.E2eContext.CDCImage
+	}
 	pdAddr := util.PDAddress(job.CDC.Source)
-	// TODO: script to ensure the cdc binary in the image and local env
-	cmd := fmt.Sprintf("cdc cli --pd-addr %s --start-ts 0 --sink-uri %s", pdAddr, job.SinkURI)
-	_, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 
-	// import ticdc will mess up the go mod dependencies, need to figure out why
-	// TODO: call the go interface instead after the dependency issue get fixed
-	//cli, err := clientv3.New(clientv3.Config{
-	//	Endpoints:   []string{pdAddr},
-	//	DialTimeout: 5 * time.Second,
-	//	DialOptions: []grpc.DialOption{
-	//		grpc.WithBackoffMaxDelay(time.Second * 3),
-	//	},
-	//})
-	//if err != nil {
-	//	return err
-	//}
-	//id := uuid.New().String()
-	//startTs := job.StartTs
-	//if startTs == 0 {
-	//	startTs = oracle.EncodeTSO(time.Now().UnixNano() / int64(time.Millisecond))
-	//}
-	//detail := &model.ChangeFeedDetail{
-	//	SinkURI:    job.SinkURI,
-	//	Opts:       make(map[string]string),
-	//	CreateTime: time.Now(),
-	//	StartTs:    startTs,
-	//	TargetTs:   job.TargetTs,
-	//}
-	//klog.V(4).Infof("create changefeed ID: %s detail %+v\n", id, detail)
-	//return kv.SaveChangeFeedDetail(context.Background(), cli, detail, id)
-	return err
+	cmds := []string{
+		"/cdc",
+		"cli",
+		"--pd-addr",
+		pdAddr,
+		"--start-ts",
+		"1",
+		"--sink-uri",
+		job.SinkURI,
+	}
+
+	syncJob := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: spec.Namespace,
+			Labels:    l,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name:            "cdc-cli",
+							Image:           spec.Image,
+							ImagePullPolicy: corev1.PullAlways,
+							Command:         cmds,
+						},
+					},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+
+	return syncJob, nil
 }
 
 const (
