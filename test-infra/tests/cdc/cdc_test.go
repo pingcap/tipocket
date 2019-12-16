@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/pingcap/tipocket/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/test-infra/pkg/core"
 	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
 
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -53,4 +53,8 @@ func TestMain(m *testing.M) {
 	rand.Seed(time.Now().UnixNano())
 
 	os.Exit(m.Run())
+}
+
+func TestSuit(t *testing.T) {
+	core.RunE2ETests(t)
 }

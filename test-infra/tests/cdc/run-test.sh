@@ -31,7 +31,7 @@ fi
 
 mkdir -p /tmp/cdc-log
 
-./bin/ginkgo ${ginkgo_args[@]:-} ./bin/e2e.test -- \
+./bin/ginkgo ${ginkgo_args[@]:-} ./bin/cdc.test -- \
 --provider=skeleton \
 --clean-start=false \
 --docker-repo=hub.pingcap.net/pingcap \
