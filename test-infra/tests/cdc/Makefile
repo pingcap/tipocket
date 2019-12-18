@@ -7,4 +7,4 @@ test: test-build
 
 test-build:
 	go build -o bin/ginkgo github.com/onsi/ginkgo/ginkgo
-	go test -c -o tests/bin/e2e.test ./tests
+	go test -c -o bin/cdc.test .
