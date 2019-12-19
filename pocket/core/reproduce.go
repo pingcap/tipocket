@@ -67,6 +67,10 @@ func (e *Executor) reproduceFromDir(dir, table string) {
 	logs := e.readLogs(logFiles)
 
 	for index, l := range logs {
+		if l.GetSQL().SQLStmt == "ALTER TABLE ryapn DROP INDEX PRIMARY" {
+			log.Info("match")
+			os.Exit(0)
+		}
 		if index < len(logs) - 1 && logs[index].GetTime() == logs[index + 1].GetTime() {
 			log.Info(logs[index].GetNode(), logs[index].GetSQL())
 			log.Info(logs[index + 1].GetNode(), logs[index + 1].GetSQL())

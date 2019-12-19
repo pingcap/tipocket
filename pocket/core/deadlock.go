@@ -28,6 +28,7 @@ func (e *Executor) watchDeadLock() {
 				log.Info("deadlock detected")
 				e.resolveDeadLock()
 				e.Unlock()
+				log.Info("deadlock detected done")
 			}
 		}
 	}()
@@ -56,6 +57,7 @@ func (e *Executor) resolveDeadLock() {
 func (e *Executor) resolveDeadLockOne(executor *executor.Executor, wg *sync.WaitGroup) {
 	if executor == nil {
 		wg.Done()
+		log.Info(executor.GetID(), "done")
 		return
 	}
 	var sql types.SQL
@@ -71,13 +73,16 @@ func (e *Executor) resolveDeadLockOne(executor *executor.Executor, wg *sync.Wait
 		}
 	}
 	// exec commit/rollback
+	log.Info(executor.GetID(), "before exec, wait for done", len(executor.TxnReadyCh))
 	executor.ExecSQL(&sql)
+	log.Info(executor.GetID(), "after exec, wait for done")
 	// wait for txn finish
 	go func() {
 		for true {
 			time.Sleep(time.Millisecond)
 			if !executor.IfTxn() {
 				wg.Done()
+				log.Info(executor.GetID(), "done")
 				break
 			}
 		}

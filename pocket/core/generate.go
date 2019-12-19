@@ -1,6 +1,7 @@
 package core 
 
 import (
+	"time"
 	"math/rand"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
@@ -17,24 +18,30 @@ func (e *Executor) smithGenerate() {
 			err error
 			rd = rand.Intn(300)
 		)
-		// rd = 100
+		e.Lock()
+		log.Info(e.canExecuteDDL())
+		if e.canExecuteDDL() {
+			rd = rand.Intn(25)
+		} else {
+			if rd != 0 {
+				rd += 20
+			}
+		}
+		e.Unlock()
 		if rd == 0 {
 			err = e.generateDDLCreateTable()
 		} else if rd < 10 {
-			err = e.generateInsert()
+			err = e.generateDDLAlterTable()
+		} else if rd < 20 {
+			err = e.generateDDLCreateIndex()
+		} else if rd < 40 {
+			e.generateTxnBegin()
 		} else if rd < 160 {
 			err = e.generateUpdate()
-		} else if rd < 170 {
-			e.generateTxnBegin()
 		} else if rd < 180 {
 			e.generateTxnCommit()
 		} else if rd < 190 {
 			e.generateTxnRollback()
-		} else if rd < 200 {
-			err = e.generateDDLAlterTable()
-		} else if rd < 210 {
-			// err = e.generateDDLAlterTable()
-			err = e.generateDDLCreateIndex()
 		} else {
 			// err = e.generateSelect()
 			err = e.generateInsert()
@@ -42,6 +49,7 @@ func (e *Executor) smithGenerate() {
 		if err != nil {
 			log.Fatalf("generate error %v \n", errors.ErrorStack(err))
 		}
+		time.Sleep(time.Millisecond)
 	}
 }
 
@@ -57,7 +65,10 @@ func (e *Executor) prepare() {
 }
 
 func (e *Executor) generateDDLCreateTable() error {
-	executor := e.tryRandFreeExecutor()
+	executor := e.randFreeExecutor()
+	if executor == nil {
+		return nil
+	}
 	sql, err := executor.GenerateDDLCreateTable()
 	if err != nil {
 		return errors.Trace(err)
@@ -70,7 +81,10 @@ func (e *Executor) generateDDLCreateTable() error {
 }
 
 func (e *Executor) generateDDLAlterTable() error {
-	executor := e.tryRandFreeExecutor()
+	executor := e.randFreeExecutor()
+	if executor == nil {
+		return nil
+	}
 	sql, err := executor.GenerateDDLAlterTable()
 	if err != nil {
 		return errors.Trace(err)
@@ -83,7 +97,10 @@ func (e *Executor) generateDDLAlterTable() error {
 }
 
 func (e *Executor) generateDDLCreateIndex() error {
-	executor := e.tryRandFreeExecutor()
+	executor := e.randFreeExecutor()
+	if executor == nil {
+		return nil
+	}
 	sql, err := executor.GenerateDDLCreateIndex()
 	if err != nil {
 		return errors.Trace(err)
@@ -96,7 +113,7 @@ func (e *Executor) generateDDLCreateIndex() error {
 }
 
 func (e *Executor) generateSelect() error {
-	executor := e.randBusyExecutor()
+	executor := e.tryRandBusyExecutor()
 	if executor == nil {
 		return nil
 	}
@@ -112,7 +129,7 @@ func (e *Executor) generateSelect() error {
 }
 
 func (e *Executor) generateUpdate() error {
-	executor := e.randBusyExecutor()
+	executor := e.tryRandBusyExecutor()
 	if executor == nil {
 		return nil
 	}
@@ -128,7 +145,7 @@ func (e *Executor) generateUpdate() error {
 }
 
 func (e *Executor) generateInsert() error {
-	executor := e.randBusyExecutor()
+	executor := e.tryRandBusyExecutor()
 	if executor == nil {
 		return nil
 	}

@@ -159,7 +159,9 @@ func (e *Executor) abTestCompareData(delay bool) (bool, error) {
 	}(compareExecutor)
 
 	// commit or rollback all transactions
+	log.Info("before lock")
 	e.Lock()
+	log.Info("after lock")
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
 	e.resolveDeadLock()

@@ -4,6 +4,7 @@ import (
 	"time"
 	"math/rand"
 	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (e *Executor) startHandler() {
@@ -20,7 +21,20 @@ func (e *Executor) startHandler() {
 
 		// Exec SQL
 		e.deadlockCh <- sql.executorID
-		e.findExecutor(sql.executorID).ExecSQL(sql.sql)
+		executor := e.findExecutor(sql.executorID)
+		executor.ExecSQL(sql.sql)
+
+		// DDL should wait for execution finish
+		switch sql.sql.SQLType {
+		case types.SQLTypeTxnBegin, types.SQLTypeTxnCommit, types.SQLTypeTxnRollback,
+				 types.SQLTypeDDLCreateTable, types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
+			for {
+				if len(executor.TxnReadyCh) == 1 {
+					break
+				}
+				time.Sleep(time.Millisecond)
+			}
+		}
 
 		if err != nil {
 			e.logger.Infof("[FAIL] Exec SQL %s error %v", sql.sql.SQLStmt, err)
@@ -31,14 +45,10 @@ func (e *Executor) startHandler() {
 }
 
 func (e *Executor) randExecutor() *executor.Executor {
-	e.Lock()
-	defer e.Unlock()
 	return e.executors[rand.Intn(len(e.executors))]
 }
 
 func (e *Executor) randFreeExecutor() *executor.Executor {
-	e.Lock()
-	defer e.Unlock()
 	var notInTxns []*executor.Executor
 	for _, e := range e.executors {
 		if !e.IfTxn() {
@@ -52,8 +62,6 @@ func (e *Executor) randFreeExecutor() *executor.Executor {
 }
 
 func (e *Executor) randBusyExecutor() *executor.Executor {
-	e.Lock()
-	defer e.Unlock()
 	var InTxns []*executor.Executor
 	for _, e := range e.executors {
 		if e.IfTxn() {
@@ -80,4 +88,14 @@ func (e *Executor) tryRandBusyExecutor() *executor.Executor {
 		return e
 	}
 	return e.randExecutor()
+}
+
+// see if can execute DDL(no transactions are in process)
+func (e *Executor) canExecuteDDL() bool {
+	for _, e := range e.executors {
+		if e.IfTxn() {
+			return false
+		}
+	}
+	return true
 }

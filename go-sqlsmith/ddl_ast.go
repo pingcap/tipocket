@@ -39,15 +39,21 @@ func (s *SQLSmith) partitionStmt() *ast.PartitionOptions{
 }
 
 func (s *SQLSmith) alterTableSpec() *ast.AlterTableSpec {
-	switch util.Rd(4) {
+	switch util.Rd(2) {
 	case 0:
-		return s.alterTableSpecDropColumn()
-	case 1:
-		return s.alterTableSpecDropIndex()
+		return s.alterTableSpecAddColumns()
 	default:
-		// return s.alterTableSpecAddColumns()
-		return s.alterTableSpecDropColumn()
+		return s.alterTableSpecDropIndex()
 	}
+	// switch util.Rd(4) {
+	// case 0:
+	// 	return s.alterTableSpecDropColumn()
+	// case 1:
+	// 	return s.alterTableSpecDropIndex()
+	// default:
+	// 	// return s.alterTableSpecAddColumns()
+	// 	return s.alterTableSpecDropColumn()
+	// }
 }
 
 func (s *SQLSmith) alterTableSpecAddColumns() *ast.AlterTableSpec {
