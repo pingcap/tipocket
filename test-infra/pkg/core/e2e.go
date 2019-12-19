@@ -38,7 +38,6 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	// Skip most of the "waiting for all resources ready" for now in favor of the chaos env
 	// TODO: ease the waiting constrain and do wait
 	// framework.SetupSuite()
-
 	c, err := framework.LoadClientset()
 	if err != nil {
 		klog.Fatal("Error loading client: ", err)
@@ -89,7 +88,8 @@ func RunE2ETests(t *testing.T) {
 		if err := os.MkdirAll(framework.TestContext.ReportDir, 0755); err != nil {
 			klog.Errorf("Failed creating report directory: %v", err)
 		} else {
-			r = append(r, reporters.NewJUnitReporter(path.Join(framework.TestContext.ReportDir, fmt.Sprintf("junit_%v%02d.xml", framework.TestContext.ReportPrefix, config.GinkgoConfig.ParallelNode))))
+			r = append(r, reporters.NewJUnitReporter(path.Join(framework.TestContext.ReportDir,
+				fmt.Sprintf("junit_%v%02d.xml", framework.TestContext.ReportPrefix, config.GinkgoConfig.ParallelNode))))
 		}
 	}
 	klog.Infof("Starting e2e run %q on Ginkgo node %d", framework.RunID, config.GinkgoConfig.ParallelNode)
