@@ -29,9 +29,13 @@ if [[ "${GINKGO_STREAM}" == "y" ]]; then
     ginkgo_args+=("--stream")
 fi
 
-./bin/ginkgo ${ginkgo_args[@]:-} ./tests/bin/e2e.test -- \
+mkdir -p /tmp/cdc-log
+
+./bin/ginkgo ${ginkgo_args[@]:-} ./bin/cdc.test -- \
 --provider=skeleton \
 --clean-start=false \
+--docker-repo=hub.pingcap.net/pingcap \
+--tidb-version=cdc \
 --delete-namespace-on-failure=false \
 --local-storage-class=shared-nvme-disks \
 -v=4 \

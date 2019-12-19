@@ -47,7 +47,7 @@ func New(cli client.Client) *TidbOps {
 func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-tidb", tc.Name),
+			Name:      fmt.Sprintf("%s-tidb", tc.Name),
 			Namespace: tc.Namespace,
 		},
 	}
@@ -131,7 +131,7 @@ func (t *TidbOps) WaitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Du
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			klog.V(4).Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			klog.V(4).Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
 			return false, nil
 		}
 		return true, nil

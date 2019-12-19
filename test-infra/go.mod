@@ -4,11 +4,13 @@ go 1.13
 
 require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
+	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920 // indirect
 	github.com/dnephin/govet v0.0.0-20171012192244-4a96d43e39d3 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/go-openapi/spec v0.19.3
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.3
@@ -20,13 +22,18 @@ require (
 	github.com/pingcap/goleveldb v0.0.0-20191031114657-7683883cfb36 // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191209124143-5a0cea713a1d
-	github.com/pingcap/tipocket v0.0.0-20191211121121-579092e8ddaa
-	github.com/pingcap/tipocket/pocket v0.0.0-20191211121121-579092e8ddaa
+	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
+	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
+	github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
 	go.uber.org/goleak v0.10.0 // indirect
+	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
+	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
@@ -40,6 +47,8 @@ require (
 )
 
 replace github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610
+
+replace github.com/pingcap/tipocket/go-sqlsmith => github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 

@@ -742,6 +742,8 @@ github.com/pingcap/parser v0.0.0-20191209092800-b2410634f7ca h1:GP9VJfibCWH0BBSb
 github.com/pingcap/parser v0.0.0-20191209092800-b2410634f7ca/go.mod h1:1FNvfp9+J0wvc4kl8eGNh7Rqrxveg15jJoWo/a0uHwA=
 github.com/pingcap/parser v0.0.0-20191210055545-753e13bfdbf0 h1:BmayUSQpOj05pzVprTZ9HCoarUlap4gYNjlHijNxx8w=
 github.com/pingcap/parser v0.0.0-20191210055545-753e13bfdbf0/go.mod h1:1FNvfp9+J0wvc4kl8eGNh7Rqrxveg15jJoWo/a0uHwA=
+github.com/pingcap/parser v0.0.0-20191212055116-12ed74961445 h1:8lW5k//mcLLUjmpz6tFtAON059mpAFdf6zsGRR9uOC4=
+github.com/pingcap/parser v0.0.0-20191212055116-12ed74961445/go.mod h1:1FNvfp9+J0wvc4kl8eGNh7Rqrxveg15jJoWo/a0uHwA=
 github.com/pingcap/pd v1.1.0-beta.0.20190923032047-5c648dc365e0/go.mod h1:G/6rJpnYwM0LKMec2rI82/5Kg6GaZMvlfB+e6/tvYmI=
 github.com/pingcap/pd v1.1.0-beta.0.20191210055626-676ddd3fbd2d/go.mod h1:Z/VMtXHpkOP+MnYnk4TL5VHc3ZwO1qHwc89zDuf5n8Q=
 github.com/pingcap/pd v2.1.0-beta+incompatible/go.mod h1:nD3+EoYes4+aNNODO99ES59V83MZSI+dFbhyr667a0E=
@@ -782,10 +784,18 @@ github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 h1:cTSaVv1hue17BCPqt+
 github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33/go.mod h1:RtkHW8WbcNxj8lsbzjaILci01CtYnYbIkQhjyZWrWVI=
 github.com/pingcap/tipocket v0.0.0-20191211121121-579092e8ddaa h1:GVEgsNIdu6W9pivV/KQ/k9vF1PxxFCjm0IdwkrmXzYw=
 github.com/pingcap/tipocket v0.0.0-20191211121121-579092e8ddaa/go.mod h1:nEacBBxjk1E3jOZtfamxcLAmD/8GVGbprr7O3AgsAHs=
+github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 h1:ml1Ujg/Glrnzvjd5C+uyLD7VkCVkadmqfMlk77qCBfc=
+github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0/go.mod h1:Cuc09N1Lj7s4yajJkABtMW/3omcNQliSNaQpxReXe4c=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3 h1:9tl3n+CdgCK1+XZSxjVwTgbzufcELbpovr90/UGG9hk=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3/go.mod h1:wZi0pRHRdcbeqgji5TW8zcnnJ9F30iQN5j1IKSlS4do=
+github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191213034629-847195f429d0 h1:rY+naEdYKVTAByARWie/RrrZx1vG8pgO6h3taUmcD5o=
+github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191213034629-847195f429d0/go.mod h1:3rWcpDtIkuhPf80RQqj47J0hzTTcS4hlKwm678R1Xf4=
 github.com/pingcap/tipocket/pocket v0.0.0-20191211121121-579092e8ddaa h1:G82A6j0a0zhz2WCtjKV1NouG4WdCcTiR98SKos6oIvY=
 github.com/pingcap/tipocket/pocket v0.0.0-20191211121121-579092e8ddaa/go.mod h1:BWkdUkSXogQ0oiijVPsDokj+52FmAwRRO5G9m+UvtX0=
+github.com/pingcap/tipocket/pocket v0.0.0-20191212101358-cc70b513faf2 h1:JpcKYuHlUZr2u/RrAz36TCQMUUtIu0zUnFj3zWysvpc=
+github.com/pingcap/tipocket/pocket v0.0.0-20191212101358-cc70b513faf2/go.mod h1:BWkdUkSXogQ0oiijVPsDokj+52FmAwRRO5G9m+UvtX0=
+github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0 h1:78BiG0+Z9N7ntsskH3hvqOjOtCDTSvFh1Yp5NeAhEog=
+github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0/go.mod h1:BWkdUkSXogQ0oiijVPsDokj+52FmAwRRO5G9m+UvtX0=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
@@ -966,6 +976,8 @@ github.com/yookoala/realpath v1.0.0/go.mod h1:gJJMA9wuX7AcqLy1+ffPatSCySA1FQ2S8Y
 github.com/you06/sqlsmith-go v0.0.0-20191205065339-ef0a8db01d04/go.mod h1:93Hwm1LnxZfhdj7SyeKXgZU9ZufVmVs5DFfrP6nHI9I=
 github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610 h1:nrYl/UyqbBMhUmCoT2g4K3b77DKwPA4fvui6HR3/lBk=
 github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610/go.mod h1:N8LOrZQBeRpnWaQblZGc1tR9+Le7J2bHAGqSJ4NaNEY=
+github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02 h1:03/QFB401jG25FCTileKTAm/Z5lbRNOPqnyvSqj6sTY=
+github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02/go.mod h1:wZi0pRHRdcbeqgji5TW8zcnnJ9F30iQN5j1IKSlS4do=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.etcd.io/bbolt v1.3.3 h1:MUGmc65QhB3pIlaQ5bB4LwqSj6GIonVJXpZiaKNyaKk=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
@@ -1188,6 +1200,8 @@ golang.org/x/tools v0.0.0-20191125144606-a911d9008d1f/go.mod h1:b+2E5dAYhXwXZwtn
 golang.org/x/tools v0.0.0-20191130070609-6e064ea0cf2d/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.0.0-20191206204035-259af5ff87bd h1:Zc7EU2PqpsNeIfOoVA7hvQX4cS3YDJEs5KlfatT3hLo=
 golang.org/x/tools v0.0.0-20191206204035-259af5ff87bd/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
+golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 h1:Jybbe55FT+YYZIJGWmJIA4ZGcglFuZOduakIW3+gHXY=
+golang.org/x/tools v0.0.0-20191213032237-7093a17b0467/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7 h1:9zdDQZ7Thm29KFXgAX/+yaf3eVbP7djjWp/dXAppNCc=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gomodules.xyz/jsonpatch/v2 v2.0.1/go.mod h1:IhYNNY4jnS53ZnfE4PAmpKtDpTCj1JFXc+3mwe7XcUU=
@@ -1203,6 +1217,8 @@ google.golang.org/appengine v1.5.0 h1:KxkO13IPW4Lslp2bz+KHP2E3gtFlrIGNThxkZQ3g+4
 google.golang.org/appengine v1.5.0/go.mod h1:xpcJRLb0r/rnEns0DIKYYv+WjYCduHsrkT7/EB5XEv4=
 google.golang.org/appengine v1.6.2 h1:j8RI1yW0SkI+paT6uGwMlrMI/6zwYA6/CFil8rxOzGI=
 google.golang.org/appengine v1.6.2/go.mod h1:i06prIuMbXzDqacNJfV5OdTW448YApPu5ww/cMBSeb0=
+google.golang.org/appengine v1.6.5 h1:tycE03LOZYQNhDpS27tcQdAzLCVMaj7QT2SXxebnpCM=
+google.golang.org/appengine v1.6.5/go.mod h1:8WjMMxjGQR8xUklV/ARdw2HLXBOI7O7uCIDZVag1xfc=
 google.golang.org/genproto v0.0.0-20180608181217-32ee49c4dd80/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/genproto v0.0.0-20180731170733-daca94659cb5/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
