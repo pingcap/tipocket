@@ -6,12 +6,12 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"github.com/juju/errors"
+	"github.com/ngaut/log"
+	"github.com/pingcap/tipocket/go-sqlsmith"
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
-	"github.com/pingcap/tipocket/go-sqlsmith"
-	"github.com/juju/errors"
-	"github.com/ngaut/log"
 )
 
 var (
@@ -31,13 +31,17 @@ type Executor struct {
 	mode        string
 	opt         *Option
 	logger      *logger.Logger
-	ch          chan *types.SQL
 	stmts       []*types.SQL
 	stmtResults []*stmtResult
+	// SQL channel
+	SQLCh       chan *types.SQL
 	// Since we must ensure no other transactions commit or begin between the transaction start time points of abtest
 	// when a transaction begins/commits/rollbacks, generator wait for it ready for both A/B side
 	// This channel is for sending signal to generator when both A/B side's begin/commit/rollback are ready
 	TxnReadyCh  chan struct{}
+	// ErrCh for waiting SQL execution finish
+	// and pass execution error
+	ErrCh chan error
 }
 
 // New create Executor
@@ -59,18 +63,21 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &Executor{
+	e := Executor{
 		id:         opt.ID,
 		dsn1:       dsn,
 		conn1:      conn,
 		mode:       "single",
-		ch:         make(chan *types.SQL, 1),
+		SQLCh:      make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
+		ErrCh:      make(chan error, 1),
 		ss:         sqlsmith.New(),
 		dbname:     dbnameRegex.FindString(dsn),
 		opt:        opt,
 		logger:     l,
-	}, nil
+	}
+	go e.Start()
+	return &e, nil
 }
 
 // NewABTest create abtest Executor
@@ -100,7 +107,7 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &Executor{
+	e := Executor{
 		id:         opt.ID,
 		dsn1:       dsn1,
 		dsn2:       dsn2,
@@ -108,12 +115,15 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 		conn2:      conn2,
 		ss:         sqlsmith.New(),
 		mode:       "abtest",
-		ch:         make(chan *types.SQL, 1),
+		SQLCh:      make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
+		ErrCh:      make(chan error, 1),
 		dbname:     dbnameRegex.FindString(dsn1),
 		opt:        opt,
 		logger:     l,
-	}, nil
+	}
+	go e.Start()
+	return &e, nil
 }
 
 // func (e *Executor) init() error {
@@ -136,7 +146,6 @@ func (e *Executor) Start() {
 	// } else {
 	// 	go e.smithGenerate()
 	// }
-	e.TxnReadyCh <- struct{}{}
 	switch e.mode {
 	case "single":
 		e.singleTest()

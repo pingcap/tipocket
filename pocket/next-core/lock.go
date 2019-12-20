@@ -13,4 +13,14 @@
 
 package core
 
-func (c *Core) watchLock() {}
+// Lock wrap mutex.Lock
+func (c *Core) Lock() {
+	c.mutex.Lock()
+	c.ifLock = true
+}
+
+// Unlock wrap mutex.Unlock
+func (c *Core) Unlock() {
+	c.ifLock = false
+	c.mutex.Unlock()
+}

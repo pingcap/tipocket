@@ -14,10 +14,14 @@
 package core
 
 import (
+	"fmt"
+	"regexp"
 	"github.com/juju/errors"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 var (
+	dsnPattern = regexp.MustCompile(`([a-z0-9]+):@tcp\(([0-9.]+):([0-9]+)\)/([0-9a-zA-Z_]+)`)
 	mustExecSQLs = []string{
 		`SET @@GLOBAL.SQL_MODE="NO_ENGINE_SUBSTITUTION"`,
 		`SET @@GLOBAL.TIME_ZONE = "+8:00"`,
@@ -27,6 +31,33 @@ var (
 		`SET @@GLOBAL.explicit_defaults_for_timestamp=1`,
 	}
 )
+
+func removeDSNSchema(dsn string) string {
+	m := dsnPattern.FindStringSubmatch(dsn)
+	if len(m) != 5 {
+		return dsn
+	}
+	return fmt.Sprintf("%s:@tcp(%s:%s)/", m[1], m[2], m[3])
+}
+
+func (c *Core) prepare() error {
+	if err := c.parseDSN(); err != nil {
+		return errors.Trace(err)
+	}
+	if err := c.mustExec(); err != nil {
+		return errors.Trace(err)
+	}
+	return errors.Trace(c.prepareSchema())
+}
+
+func (c *Core) parseDSN() error {
+	m := dsnPattern.FindStringSubmatch(c.cfg.DSN1)
+	if len(m) != 5 {
+		return errors.Errorf("invalid dsn %s", c.cfg.DSN1)
+	}
+	c.dbname = m[4]
+	return nil
+}
 
 func (c *Core) mustExec() error {
 	for _, sql := range mustExecSQLsIgnoreErr {
@@ -40,9 +71,39 @@ func (c *Core) mustExec() error {
 	return nil
 }
 
+func (c *Core) prepareSchema() error {
+	dbs, err := c.coreConn.FetchDatabases()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	needClearSchema := false
+	for _, db := range dbs {
+		if db == c.dbname {
+			needClearSchema = true
+		}
+	}
+	if needClearSchema {
+		return errors.Trace(c.clearSchema())
+	}
+	return errors.Trace(c.createSchema())
+}
+
 func (c *Core) clearSchema() error {
 	if !c.cfg.Options.ClearDB {
 		return nil
 	}
-	return errors.NotImplementedf("not implemented yet")
+	if err := c.coreExecute(&types.SQL{
+		SQLStmt: fmt.Sprintf("DROP DATABASE %s", c.dbname),
+		SQLType: types.SQLTypeUnknown,
+	}); err != nil {
+		return errors.Trace(err)
+	}
+	return errors.Trace(c.createSchema())
+}
+
+func (c *Core) createSchema() error {
+	return errors.Trace(c.coreExecute(&types.SQL{
+		SQLStmt: fmt.Sprintf("CREATE DATABASE %s", c.dbname),
+		SQLType: types.SQLTypeUnknown,
+	}))
 }

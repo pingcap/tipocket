@@ -6,7 +6,8 @@ type SQLType int
 
 // SQLTypeDMLSelect
 const (
-	SQLTypeReloadSchema SQLType = iota
+	SQLTypeUnknown SQLType = iota
+	SQLTypeReloadSchema
 	SQLTypeDMLSelect
 	SQLTypeDMLUpdate
 	SQLTypeDMLInsert
@@ -19,7 +20,6 @@ const (
 	SQLTypeTxnRollback
 	SQLTypeExec
 	SQLTypeExit
-	SQLTypeUnknown
 )
 
 // SQL struct

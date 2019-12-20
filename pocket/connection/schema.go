@@ -8,6 +8,25 @@ import (
 
 var binlogSyncTablePattern = regexp.MustCompile(`^t[0-9]+$`)
 
+// FetchDatabases database list
+func (c *Connection) FetchDatabases() ([]string, error) {
+	databaseSlice := []string{}
+	
+	databases, err := c.db.Query(showDatabasesSQL)
+	if err != nil {
+		return []string{}, errors.Trace(err)
+	}
+
+	for databases.Next() {
+		var dbname string
+		if err := databases.Scan(&dbname); err != nil {
+			return []string{}, errors.Trace(err)
+		}
+		databaseSlice = append(databaseSlice, dbname)
+	}
+	return databaseSlice, nil
+}
+
 // FetchTables table list
 func (c *Connection) FetchTables(db string) ([]string, error) {
 	tableSlice := []string{}
@@ -20,7 +39,7 @@ func (c *Connection) FetchTables(db string) ([]string, error) {
 	// fetch tables need to be described
 	for tables.Next() {
 		var schemaName, tableName string
-		if err = tables.Scan(&schemaName, &tableName, new(interface{})); err != nil {
+		if err := tables.Scan(&schemaName, &tableName, new(interface{})); err != nil {
 			return []string{}, errors.Trace(err)
 		}
 		if schemaName == db {

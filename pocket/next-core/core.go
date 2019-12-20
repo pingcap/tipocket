@@ -15,35 +15,49 @@ package core
 
 import (
 	"context"
+	"sync"
 	"github.com/juju/errors"
 	"github.com/pingcap/tipocket/pocket/config"
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 // Core is for random test scheduler
 type Core struct {
-	cfg        *config.Config
-	executors  []*executor.Executor
-	deadlockCh chan int
+	// global config
+	cfg *config.Config
 	// DSN here is for fetch schema only
 	coreConn *connection.Connection
 	coreExec *executor.Executor
+	// core properties
+	dbname      string
+	executors   []*executor.Executor
+	lockWatchCh chan int
+	order       *types.Order
+	// lock
+	mutex  sync.Mutex
+	ifLock bool
 }
 
 // New creates a Core struct
 func New(cfg *config.Config) *Core {
 	return &Core{
 		cfg: cfg,
+		lockWatchCh: make(chan int),
+		order: types.NewOrder(),
 	}
 }
 
 // Start test
 func (c *Core) Start(ctx context.Context) error {
-	if err := c.initCoreConnection(); err != nil {
+	if err := c.initCoreConnectionWithoutSchema(); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.mustExec(); err != nil {
+	if err := c.prepare(); err != nil {
+		return errors.Trace(err)
+	}
+	if err := c.initCoreConnection(); err != nil {
 		return errors.Trace(err)
 	}
 	if err := c.initSubConnection(); err != nil {
@@ -51,10 +65,8 @@ func (c *Core) Start(ctx context.Context) error {
 	}
 	if c.cfg.Options.Reproduce {
 		c.reproduce()
-	} else {
-		go c.watchLock()
-		go c.startCheckConsistency()
-		c.generate(ctx)
 	}
-	return nil
+	go c.watchLock()
+	go c.startCheckConsistency()
+	return errors.Trace(c.generate(ctx))
 }

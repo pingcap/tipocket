@@ -14,56 +14,30 @@
 package core
 
 import (
-	"math/rand"
+	"github.com/juju/errors"
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (c *Core) execute(e *executor.Executor, sql *types.SQL) {
+	// wait for execute finish
+	// may not ignore the errors here
+	_ = e.ExecSQL(sql)
+	c.lockWatchCh <- e.GetID()
 }
 
-func (c *Core) randExecutor() *executor.Executor {
-	return c.executors[rand.Intn(len(c.executors))]
-}
-
-func (c *Core) randFreeExecutor() *executor.Executor {
-	var notInTxns []*executor.Executor
-	for _, e := range c.executors {
-		if !e.IfTxn() {
-			notInTxns = append(notInTxns, e)
+func (c *Core) coreExecute(sql *types.SQL) error {
+	switch c.cfg.Mode {
+	case "single", "binlog":
+		return errors.Trace(c.coreExec.GetConn().Exec(sql.SQLStmt))
+	case "abtest":
+		err1 := c.coreExec.GetConn1().Exec(sql.SQLStmt)
+		err2 := c.coreExec.GetConn2().Exec(sql.SQLStmt)
+		if err1 != nil {
+			return errors.Trace(err1)
 		}
+		return errors.Trace(err2)
+	default:
+		panic("unhandled switch")
 	}
-	if len(notInTxns) == 0 {
-		return nil
-	}
-	return notInTxns[rand.Intn(len(notInTxns))]
-}
-
-func (c *Core) randBusyExecutor() *executor.Executor {
-	var InTxns []*executor.Executor
-	for _, e := range c.executors {
-		if e.IfTxn() {
-			InTxns = append(InTxns, e)
-		}
-	}
-	if len(InTxns) == 0 {
-		return nil
-	}
-	return InTxns[rand.Intn(len(InTxns))]
-}
-
-// get free executor if exist, unless get a random executor
-func (c *Core) tryRandFreeExecutor() *executor.Executor {
-	if e := c.randFreeExecutor(); e != nil {
-		return e
-	}
-	return c.randExecutor()
-}
-
-// get free executor if exist, unless get a random executor
-func (c *Core) tryRandBusyExecutor() *executor.Executor {
-	if e := c.randBusyExecutor(); e != nil {
-		return e
-	}
-	return c.randExecutor()
 }

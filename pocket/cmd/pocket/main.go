@@ -84,7 +84,6 @@ func main() {
 	var (
 		c     *core.Core
 		err   error
-		cfg = config.Init()
 	)
 
 	if err := loadConfig(); err != nil {
@@ -108,10 +107,13 @@ func main() {
 
 		log.Infof("Got signal %d to exit.", <-sc)
 		cancel()
+		os.Exit(0)
 	}()
 
 	c = core.New(cfg)
-	c.Start(ctx)
+	if err := c.Start(ctx); err != nil {
+		log.Fatalf("start error: %+v", errors.ErrorStack(err))
+	}
 }
 
 func loadConfig() error {
@@ -120,15 +122,21 @@ func loadConfig() error {
 		actualFlags[f.Name] = true
 	})
 
+	if actualFlags[nmConfigPath] {
+		if err := cfg.Load(*configPath); err != nil {
+			return errors.Trace(err)
+		}
+	}
+
 	// global config
 	if actualFlags[nmMode] {
 		cfg.Mode = *mode
 	}
 	if actualFlags[nmDsn1] {
-		cfg.Dsn1 = *dsn1
+		cfg.DSN1 = *dsn1
 	}
 	if actualFlags[nmDsn2] {
-		cfg.Dsn2 = *dsn2
+		cfg.DSN2 = *dsn2
 	}
 	// options
 	if actualFlags[nmClearDB] {

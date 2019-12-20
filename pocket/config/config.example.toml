@@ -3,13 +3,13 @@
 # running mode
 # can be "single", "abtest" and "binlog"
 # TODO: add doc link here
-mode = "single"
+mode = "abtest"
 
 # dsn
 # running with "single" mode require dsn1
 # running with "abtest" or "binlog" mode require dsn1 and dsn2
-dsn1 = "root:@tcp(172.17.0.1:4000)/pocket"
-dsn2 = ""
+dsn1 = "root:@tcp(172.17.0.1:33306)/pocket"
+dsn2 = "root:@tcp(172.17.0.1:4000)/pocket"
 
 [options]
 # clear target database before test
@@ -23,6 +23,8 @@ reproduce = false
 # default value 3
 concurrency = 3
 # data and log path
-path = "./log"
+path = "/var/log/pocket"
 # test duration
 duration = "1h"
+# check duration
+check-duration = "3mn"

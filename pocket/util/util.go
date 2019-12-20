@@ -43,7 +43,7 @@ func ErrorMustSame(err1, err2 error) error {
 	}
 
 	if myerr1.Number != myerr2.Number {
-			return errors.Errorf("error number not same, got err1: %v and err2 %v", err1, err2)
+		return errors.Errorf("error number not same, got err1: %v and err2 %v", err1, err2)
 	}
 
 	return nil

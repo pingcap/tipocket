@@ -52,41 +52,15 @@ func (e *Executor) Delete(stmt string) error {
 	panic("unhandled select switch")
 }
 
-// CreateTable offer unified method for single & abtest
-func (e *Executor) CreateTable(stmt string) error {
+// ExecDDL offer unified method for single & abtest
+func (e *Executor) ExecDDL(stmt string) error {
 	e.Lock()
 	defer e.Unlock()
 	switch e.mode {
 	case "abtest":
-		return e.ABTestCreateTable(stmt)
+		return e.ABTestExecDDL(stmt)
 	case "single":
-		return e.SingleTestCreateTable(stmt)
-	}
-	panic("unhandled select switch")
-}
-
-// AlterTable offer unified method for single & abtest
-func (e *Executor) AlterTable(stmt string) error {
-	e.Lock()
-	defer e.Unlock()
-	switch e.mode {
-	case "abtest":
-		return e.ABTestAlterTable(stmt)
-	case "single":
-		return e.SingleTestAlterTable(stmt)
-	}
-	panic("unhandled select switch")
-}
-
-// CreateIndex offer unified method for single & abtest
-func (e *Executor) CreateIndex(stmt string) error {
-	e.Lock()
-	defer e.Unlock()
-	switch e.mode {
-	case "abtest":
-		return e.ABTestCreateIndex(stmt)
-	case "single":
-		return e.SingleTestCreateIndex(stmt)
+		return e.SingleTestExecDDL(stmt)
 	}
 	panic("unhandled select switch")
 }

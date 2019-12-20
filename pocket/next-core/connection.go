@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/tipocket/pocket/executor"
 )
 
+
 func (c *Core) generateExecutorOption(id int) *executor.Option {
 	var suffix string
 	if id > 0 {
@@ -34,19 +35,21 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 	return &opt
 }
 
-func (c *Core) initConnection(id int) (*executor.Executor, error) {
+func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 	var (
 		e *executor.Executor
 		err error
 	)
 	switch c.cfg.Mode {
 	case "single":
-		e, err = executor.New(c.cfg.Dsn1, c.generateExecutorOption(id))
+		e, err = executor.New(removeDSNSchema(c.cfg.DSN1), c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 	case "abtest", "binlog":
-		e, err = executor.NewABTest(c.cfg.Dsn1, c.cfg.Dsn2, c.generateExecutorOption(id))
+		e, err = executor.NewABTest(removeDSNSchema(c.cfg.DSN1),
+			removeDSNSchema(c.cfg.DSN2),
+			c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -54,6 +57,38 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		return nil, errors.Errorf("unhandled mode, %s", c.cfg.Mode)
 	}
 	return e, nil
+}
+
+func (c *Core) initConnection(id int) (*executor.Executor, error) {
+	var (
+		e *executor.Executor
+		err error
+	)
+	switch c.cfg.Mode {
+	case "single":
+		e, err = executor.New(c.cfg.DSN1, c.generateExecutorOption(id))
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	case "abtest", "binlog":
+		e, err = executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, c.generateExecutorOption(id))
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
+	default:
+		return nil, errors.Errorf("unhandled mode, %s", c.cfg.Mode)
+	}
+	return e, nil
+}
+
+func (c *Core) initCoreConnectionWithoutSchema() error {
+	e, err := c.initConnectionWithoutSchema(0)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	c.coreExec = e
+	c.coreConn = e.GetConn()
+	return nil
 }
 
 func (c *Core) initCoreConnection() error {
@@ -79,4 +114,10 @@ func (c *Core) initSubConnection() error {
 		c.executors = append(c.executors, e)
 	}
 	return nil
+}
+
+func (c *Core) initCompareConnection() (*executor.Executor, error) {
+	opt := c.generateExecutorOption(0)
+	opt.Mute = true
+	return executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, opt)
 }

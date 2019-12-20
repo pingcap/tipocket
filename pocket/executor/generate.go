@@ -75,8 +75,8 @@ func (e *Executor) GenerateDDLAlterTable() (*types.SQL, error) {
 	}, nil
 }
 
-// GenerateSelect rand select statement
-func (e *Executor) GenerateSelect() (*types.SQL, error) {
+// GenerateDMLSelect rand select statement
+func (e *Executor) GenerateDMLSelect() (*types.SQL, error) {
 	stmt, err := e.ss.SelectStmt(4)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -87,8 +87,8 @@ func (e *Executor) GenerateSelect() (*types.SQL, error) {
 	}, nil
 }
 
-// GenerateUpdate rand update statement
-func (e *Executor) GenerateUpdate() (*types.SQL, error) {
+// GenerateDMLUpdate rand update statement
+func (e *Executor) GenerateDMLUpdate() (*types.SQL, error) {
 	stmt, err := e.ss.UpdateStmt()
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -99,8 +99,8 @@ func (e *Executor) GenerateUpdate() (*types.SQL, error) {
 	}, nil
 }
 
-// GenerateInsert rand insert statement
-func (e *Executor) GenerateInsert() (*types.SQL, error) {
+// GenerateDMLInsert rand insert statement
+func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
 	stmt, err := e.ss.InsertStmtAST()
 	if err != nil {
 		return nil, errors.Trace(err)

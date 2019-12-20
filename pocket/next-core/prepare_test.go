@@ -11,22 +11,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package core
 
 import (
-	"time"
 	"testing"
+	"github.com/pingcap/tipocket/pocket/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseConfig(t *testing.T) {
-	config := Init()
-	config.Options.Duration.Duration = 24 * time.Hour
+func TestParseDSN(t *testing.T) {
+	c := Core{
+		cfg: &config.Config{
+			DSN1: "root:@tcp(172.17.0.1:4000)/pocket",
+		},
+	}
 
-	assert.Empty(t, config.Load("./config.example.toml"))
-	assert.Equal(t, config.Mode, "abtest")
-	assert.Equal(t, config.DSN1, "root:@tcp(172.17.0.1:33306)/pocket")
-	assert.Equal(t, config.DSN2, "root:@tcp(172.17.0.1:4000)/pocket")
-	assert.Equal(t, config.Options.Duration.Duration, time.Hour)
-	assert.Equal(t, config.Options.Path, "/var/log/pocket")
+	assert.Empty(t, c.parseDSN())
+	assert.Equal(t, c.dbname, "pocket")
 }

@@ -3,50 +3,53 @@ package executor
 import (
 	"fmt"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (e *Executor) singleTest() {
 	for {
-		var (
-			err error
-			sql = <- e.ch
-		)
-		e.Lock()
-		e.logStmtTodo(sql.SQLStmt)
-
-		switch sql.SQLType {
-		case types.SQLTypeDMLSelect:
-			err = e.singleTestSelect(sql.SQLStmt)
-		case types.SQLTypeDMLUpdate:
-			err = e.singleTestUpdate(sql.SQLStmt)
-		case types.SQLTypeDMLInsert:
-			err = e.singleTestInsert(sql.SQLStmt)
-		case types.SQLTypeDMLDelete:
-			err = e.singleTestDelete(sql.SQLStmt)
-		case types.SQLTypeDDLCreateTable:
-			err = e.singleTestCreateTable(sql.SQLStmt)
-		case types.SQLTypeDDLAlterTable:
-			err = e.singleTestAlterTable(sql.SQLStmt)
-		case types.SQLTypeDDLCreateIndex:
-			err = e.singleTestCreateIndex(sql.SQLStmt)
-		case types.SQLTypeTxnBegin:
-			err = e.singleTestTxnBegin()
-		case types.SQLTypeTxnCommit:
-			err = e.singleTestTxnCommit()
-		case types.SQLTypeTxnRollback:
-			err = e.singleTestTxnRollback()
-		case types.SQLTypeExec:
-			e.singleTestExec(sql.SQLStmt)
-		case types.SQLTypeExit:
-			e.Stop("receive exit SQL signal")
-		default:
-			panic(fmt.Sprintf("unhandled case %+v", sql))
+		for {
+			e.ErrCh <- e.execSingleTestSQL(<- e.SQLCh)
 		}
-
-		e.logStmtResult(sql.SQLStmt, err)
-		e.Unlock()
 	}
+}
+
+func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
+	var err error
+	e.logStmtTodo(sql.SQLStmt)
+
+	switch sql.SQLType {
+	case types.SQLTypeDMLSelect:
+		err = e.singleTestSelect(sql.SQLStmt)
+	case types.SQLTypeDMLUpdate:
+		err = e.singleTestUpdate(sql.SQLStmt)
+	case types.SQLTypeDMLInsert:
+		err = e.singleTestInsert(sql.SQLStmt)
+	case types.SQLTypeDMLDelete:
+		err = e.singleTestDelete(sql.SQLStmt)
+	case types.SQLTypeDDLCreateTable, types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
+		err = e.singleTestExecDDL(sql.SQLStmt)
+	case types.SQLTypeTxnBegin:
+		if err := e.reloadSchema(); err != nil {
+			log.Error(err)
+		}
+		err = e.singleTestTxnBegin()
+	case types.SQLTypeTxnCommit:
+		err = e.singleTestTxnCommit()
+	case types.SQLTypeTxnRollback:
+		err = e.singleTestTxnRollback()
+	case types.SQLTypeExec:
+		e.singleTestExec(sql.SQLStmt)
+	case types.SQLTypeExit:
+		e.Stop("receive exit SQL signal")
+	default:
+		panic(fmt.Sprintf("unhandled case %+v", sql))
+	}
+
+	e.logStmtResult(sql.SQLStmt, err)
+
+	return err
 }
 
 // SingleTestSelect expose singleTestSelect
@@ -54,7 +57,6 @@ func (e *Executor) SingleTestSelect(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.singleTestSelect(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -63,7 +65,6 @@ func (e *Executor) SingleTestInsert(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.singleTestInsert(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -72,7 +73,6 @@ func (e *Executor) SingleTestUpdate(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.singleTestUpdate(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -81,34 +81,14 @@ func (e *Executor) SingleTestDelete(sql string) error {
 	e.logStmtTodo(sql)
 	err := e.singleTestDelete(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
-// SingleTestCreateTable expose singleTestCreateTable
-func (e *Executor) SingleTestCreateTable(sql string) error {
+// SingleTestExecDDL expose singleTestExecDDL
+func (e *Executor) SingleTestExecDDL(sql string) error {
 	e.logStmtTodo(sql)
-	err := e.singleTestCreateTable(sql)
+	err := e.singleTestExecDDL(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
-	return err
-}
-
-// SingleTestAlterTable expose singleTestAlterTable
-func (e *Executor) SingleTestAlterTable(sql string) error {
-	e.logStmtTodo(sql)
-	err := e.singleTestAlterTable(sql)
-	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
-	return err
-}
-
-// SingleTestCreateIndex expose singleTestCreateIndex
-func (e *Executor) SingleTestCreateIndex(sql string) error {
-	e.logStmtTodo(sql)
-	err := e.singleTestCreateIndex(sql)
-	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -117,7 +97,6 @@ func (e *Executor) SingleTestTxnBegin() error {
 	e.logStmtTodo("BEGIN")
 	err := e.singleTestTxnBegin()
 	e.logStmtResult("BEGIN", err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -126,7 +105,6 @@ func (e *Executor) SingleTestTxnCommit() error {
 	e.logStmtTodo("COMMIT")
 	err := e.singleTestTxnCommit()
 	e.logStmtResult("COMMIT", err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -135,7 +113,6 @@ func (e *Executor) SingleTestTxnRollback() error {
 	e.logStmtTodo("ROLLBACK")
 	err := e.singleTestTxnRollback()
 	e.logStmtResult("ROLLBACK", err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -147,47 +124,28 @@ func (e *Executor) SingleTestIfTxn() bool {
 // DML
 func (e *Executor) singleTestSelect(sql string) error {
 	_, err := e.conn1.Select(sql)
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestUpdate(sql string) error {
 	err := e.conn1.Update(sql)
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestInsert(sql string) error {
 	err := e.conn1.Insert(sql)
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestDelete(sql string) error {
 	err := e.conn1.Delete(sql)
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 // DDL
-func (e *Executor) singleTestCreateTable(sql string) error {
+func (e *Executor) singleTestExecDDL(sql string) error {
 	err := e.conn1.ExecDDL(sql)
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
-	return errors.Trace(err)
-}
-
-func (e *Executor) singleTestAlterTable(sql string) error {
-	err := e.conn1.ExecDDL(sql)
-	// continue generate
-	e.TxnReadyCh <- struct{}{}
-	return errors.Trace(err)
-}
-
-func (e *Executor) singleTestCreateIndex(sql string) error {
-	err := e.conn1.ExecDDL(sql)
-	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
@@ -199,21 +157,18 @@ func (e *Executor) singleTestExec(sql string) {
 func (e *Executor) singleTestTxnBegin() error {
 	err := e.conn1.Begin()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestTxnCommit() error {
 	err := e.conn1.Commit()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestTxnRollback() error {
 	err := e.conn1.Rollback()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return errors.Trace(err)
 }
 

@@ -23,25 +23,26 @@ import (
 
 // Options struct
 type Options struct {
-	ClearDB     bool           `toml:"clear-db"`
-	Stable      bool           `toml:"stable"`
-	Reproduce   bool           `toml:"reproduce"`
-	Concurrency int            `toml:"concurrency"`
-	Path        string         `toml:"path"`
-	Duration    types.Duration `toml:"duration"`
+	ClearDB       bool           `toml:"clear-db"`
+	Stable        bool           `toml:"stable"`
+	Reproduce     bool           `toml:"reproduce"`
+	Concurrency   int            `toml:"concurrency"`
+	Path          string         `toml:"path"`
+	Duration      types.Duration `toml:"duration"`
+	CheckDuration types.Duration `toml:"check-duration"`
 }
 
 // Config struct
 type Config struct {
 	Mode    string  `toml:"mode"`
-	Dsn1    string  `toml:"dsn1"`
-	Dsn2    string  `toml:"dsn2"`
+	DSN1    string  `toml:"dsn1"`
+	DSN2    string  `toml:"dsn2"`
 	Options Options `toml:"options"`
 }
 
 var initConfig = Config{
 	Mode: "single",
-	Dsn1: "127.0.0.1:4000",
+	DSN1: "root:@tcp(172.17.0.1:4000)/pocket",
 	Options: Options{
 		ClearDB: false,
 		Stable: false,
@@ -50,6 +51,9 @@ var initConfig = Config{
 		Path: "./log",
 		Duration: types.Duration{
 			Duration: time.Hour,
+		},
+		CheckDuration: types.Duration{
+			Duration: time.Minute,
 		},
 	},
 }
