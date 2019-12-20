@@ -153,6 +153,7 @@ github.com/pingcap/tipb v0.0.0-20191209114032-7413402f9829/go.mod h1:RtkHW8WbcNx
 github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 h1:cTSaVv1hue17BCPqt+sURADTFSMpSD26ZuvKRyYIjJs=
 github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33/go.mod h1:RtkHW8WbcNxj8lsbzjaILci01CtYnYbIkQhjyZWrWVI=
 github.com/pingcap/tipocket v0.0.0-20191208084301-86ec5cb87a60 h1:+ObwOi+fIyZ0ROjLzUNJL4lPU4TjroS09UnpdDPbxq0=
+github.com/pingcap/tipocket v0.0.0-20191218112423-aebd26969052 h1:4Dw0zAuWsjEJsjoB4OzhilTt0Yinz/3gnVY8zZ5JRKw=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3 h1:9tl3n+CdgCK1+XZSxjVwTgbzufcELbpovr90/UGG9hk=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3/go.mod h1:wZi0pRHRdcbeqgji5TW8zcnnJ9F30iQN5j1IKSlS4do=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209122549-dc7dbc1100a3 h1:2U/ChzQkgh58euvSRGulxdKoh0t6yhnK1dDsY+wj2CQ=
