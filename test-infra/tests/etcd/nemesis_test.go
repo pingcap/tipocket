@@ -15,7 +15,7 @@ package etcd
 
 import (
 	"fmt"
-	chaosv1alpha1 "github.com/pingcap/chaos-operator/api/v1alpha1"
+	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
 	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
 

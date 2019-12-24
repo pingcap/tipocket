@@ -6,44 +6,43 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
 	github.com/coreos/bbolt v1.3.3 // indirect
+	github.com/coreos/etcd v3.3.17+incompatible // indirect
 	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920 // indirect
 	github.com/dnephin/govet v0.0.0-20171012192244-4a96d43e39d3 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
-	github.com/pingcap/advanced-statefulset v0.1.0
-	github.com/pingcap/chaos v0.0.0-20190710112158-c86faf4b3719
-	github.com/pingcap/chaos-operator v0.0.0-20191210023407-138b9bd96642
-	github.com/pingcap/errors v0.11.4
+	github.com/pingcap/advanced-statefulset v0.2.2
+	github.com/pingcap/chaos-mesh v0.0.0-20191224064238-48f8c08a450c
+	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/gofail v0.0.0-20181217135706-6a951c1e42c3 // indirect
 	github.com/pingcap/goleveldb v0.0.0-20191031114657-7683883cfb36 // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191209124143-5a0cea713a1d
+	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
 	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
 	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
-	github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
-	go.etcd.io/etcd v3.3.18+incompatible
-	go.uber.org/goleak v0.10.0 // indirect
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20190320044326-77d4b742cdbf
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
 	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/component-base v0.0.0
+	k8s.io/csi-api v0.0.0-00010101000000-000000000000 // indirect
 	k8s.io/klog v1.0.0
-	k8s.io/kubernetes v1.16.3
-	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
+	k8s.io/kubernetes v1.16.0
+	k8s.io/node-api v0.0.0-00010101000000-000000000000 // indirect
+	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	sigs.k8s.io/controller-runtime v0.4.0
 	vbom.ml/util v0.0.0-20180919145318-efcd4e0f9787 // indirect
 )

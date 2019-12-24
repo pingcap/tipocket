@@ -16,10 +16,8 @@ package suit
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/pingcap/tipocket/test-infra/pkg/control"

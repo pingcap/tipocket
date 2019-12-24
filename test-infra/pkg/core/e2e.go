@@ -56,7 +56,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	return nil
 }, func(data []byte) {
 	// Run on all Ginkgo nodes
-	framework.SetupSuitePerGignkgoNode()
+	framework.SetupSuitePerGinkgoNode()
 })
 
 var _ = ginkgo.SynchronizedAfterSuite(func() {

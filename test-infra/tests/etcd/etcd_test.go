@@ -46,7 +46,6 @@ func handleFlags() {
 	framework.RegisterCommonFlags(flags)
 	framework.RegisterClusterFlags(flags)
 	flags.StringVar(&fixture.E2eContext.LocalVolumeStorageClass, "local-storage-class", "local-storage", "Preferred local volume storageclass of the e2e env")
-	flags.StringVar(&fixture.E2eContext.DockerRepository, "docker-repo", "pingcap", "Default docker repository in e2e")
 	flags.DurationVar(&fixture.E2eContext.TimeLimit, "time-limit", 10*time.Minute, "the duration time to run workload")
 	flags.StringVar(&fixture.E2eContext.Nemesis, "nemesis", "", "the nemesis to inject")
 	flags.IntVar(&fixture.E2eContext.Round, "round", 3, "client test request count")
