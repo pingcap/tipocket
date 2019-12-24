@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -89,6 +88,23 @@ func (e *ETCDOps) DeleteETCD(etcd *ETCD) error {
 	}
 
 	return nil
+}
+
+func (e *ETCDOps) GetNodes(etcd *ETCD) ([]string, error) {
+	pods := &corev1.PodList{}
+	listOptions := &client.ListOptions{
+		Namespace: etcd.Sts.Namespace,
+	}
+	if err := e.cli.List(context.TODO(), pods, listOptions); err != nil {
+		return nil, nil
+	}
+
+	var nodes []string
+	for _, pod := range pods.Items {
+		nodes = append(nodes, pod.Status.PodIP)
+	}
+
+	return nodes, nil
 }
 
 func (e *ETCDOps) renderETCD(spec *ETCDSpec) (*ETCD, error) {

@@ -6,8 +6,6 @@ import (
 
 // Config is the configuration for the controller.
 type Config struct {
-	// DB is the name which we want to run.
-	DB string
 	// Nodes are address of nodes.
 	Nodes []string
 

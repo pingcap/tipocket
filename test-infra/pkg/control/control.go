@@ -37,14 +37,6 @@ func NewController(
 ) *Controller {
 	cfg.adjust()
 
-	if len(cfg.DB) == 0 {
-		log.Fatalf("empty database")
-	}
-
-	if db := core.GetDB(cfg.DB); db == nil {
-		log.Fatalf("database %s is not registered", cfg.DB)
-	}
-
 	c := new(Controller)
 	c.cfg = cfg
 	c.ctx, c.cancel = context.WithCancel(ctx)
@@ -131,29 +123,6 @@ func (c *Controller) syncExec(f func(i int)) {
 	}
 	wg.Wait()
 }
-
-// func (c *Controller) setUpDB() {
-// 	log.Printf("begin to set up database")
-// 	c.syncExec(func(i int) {
-// 		log.Printf("begin to set up database on %s", c.cfg.Nodes[i])
-// 		db := core.GetDB(c.cfg.DB)
-// 		err := db.SetUp(c.ctx, c.cfg.Nodes, c.cfg.Nodes[i])
-// 		if err != nil {
-// 			log.Fatalf("setup db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i], err)
-// 		}
-// 	})
-// }
-
-// func (c *Controller) tearDownDB() {
-// 	log.Printf("begin to tear down database")
-// 	c.syncExec(func(i int) {
-// 		log.Printf("being to tear down database on %s", c.cfg.Nodes[i])
-// 		db := core.GetDB(c.cfg.DB)
-// 		if err := db.TearDown(c.ctx, c.cfg.Nodes, c.cfg.Nodes[i]); err != nil {
-// 			log.Printf("tear down db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i], err)
-// 		}
-// 	})
-// }
 
 func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")

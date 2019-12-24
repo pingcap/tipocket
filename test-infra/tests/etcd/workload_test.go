@@ -14,13 +14,19 @@
 package etcd
 
 import (
-	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
+	"context"
 	"time"
 
 	"github.com/onsi/ginkgo"
 
+	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
+	"github.com/pingcap/tipocket/test-infra/pkg/check/porcupine"
+	"github.com/pingcap/tipocket/test-infra/pkg/control"
 	"github.com/pingcap/tipocket/test-infra/pkg/etcd"
 	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/test-infra/pkg/model"
+	"github.com/pingcap/tipocket/test-infra/pkg/suit"
+	"github.com/pingcap/tipocket/test-infra/pkg/verify"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
 
@@ -69,9 +75,34 @@ var _ = ginkgo.Describe("etcd", func() {
 		framework.ExpectNoError(err, "Expected etcd ready.")
 
 		nemesis := nemesisMap[fixture.E2eContext.Nemesis]
-		err = nemesis(c.chaos, ns)
+		err = nemesis(c.chaos, ns, name)
 		framework.ExpectNoError(err, "Expected to apply nemesis.")
 
+		nodes, err := c.etcd.GetNodes(et)
+		framework.ExpectNoError(err, "Expected get etcd nodes")
+
+		cfg := control.Config{
+			RunRound:     fixture.E2eContext.Round,
+			RunTime:      fixture.E2eContext.TimeLimit,
+			RequestCount: fixture.E2eContext.RequestCount,
+			History:      fixture.E2eContext.HistoryFile,
+		}
+
+		creator := RegisterClientCreator{}
+
+		verifySuit := verify.Suit{
+			Checker: porcupine.Checker{},
+			Model:   model.RegisterModel(),
+			Parser:  model.RegisterParser(),
+		}
+
+		suit := suit.Suit{
+			Config:        &cfg,
+			ClientCreator: creator,
+			VerifySuit:    verifySuit,
+		}
+
+		suit.Run(context.Background(), nodes)
 	})
 })
 

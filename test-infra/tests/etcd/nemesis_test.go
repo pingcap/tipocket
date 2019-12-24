@@ -14,6 +14,7 @@
 package etcd
 
 import (
+	"fmt"
 	chaosv1alpha1 "github.com/pingcap/chaos-operator/api/v1alpha1"
 
 	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
@@ -23,13 +24,14 @@ import (
 
 var nemesisMap = make(map[string]NemesisFunc)
 
-type NemesisFunc func(cli *chaos.Chaos, ns string) error
+type NemesisFunc func(cli *chaos.Chaos, ns string, name string) error
 
 func init() {
 	nemesisMap["kill-pod"] = KillPod
+	nemesisMap["network-delay"] = NetworkDelay
 }
 
-func KillPod(cli *chaos.Chaos, ns string) error {
+func KillPod(cli *chaos.Chaos, ns string, name string) error {
 	podkill := &chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "pod-kill-etcd",
@@ -51,8 +53,47 @@ func KillPod(cli *chaos.Chaos, ns string) error {
 	return cli.ApplyPodChaos(podkill)
 }
 
-func networkDelay(cli *chaos.Chaos, ns string) error {
+func NetworkDelay(cli *chaos.Chaos, ns string, name string) error {
 	delay := &chaosv1alpha1.NetworkChaos{
-
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "network-delay-etcd",
+			Namespace: ns,
+		},
+		Spec: chaosv1alpha1.NetworkChaosSpec{
+			Action: chaosv1alpha1.DelayAction,
+			Mode:   chaosv1alpha1.OnePodMode,
+			Selector: chaosv1alpha1.SelectorSpec{
+				Pods: map[string][]string{
+					ns: []string{
+						fmt.Sprintf("%s-0", name),
+						fmt.Sprintf("%s-1", name),
+						fmt.Sprintf("%s-2", name),
+					},
+				},
+			},
+			Duration: "10s",
+			Scheduler: chaosv1alpha1.SchedulerSpec{
+				Cron: "@every 20s",
+			},
+			Delay: &chaosv1alpha1.DelaySpec{
+				Latency:     "200ms",
+				Correlation: "1",
+				Jitter:      "10ms",
+			},
+			Direction: chaosv1alpha1.Both,
+			Target: chaosv1alpha1.PartitionTarget{
+				TargetSelector: chaosv1alpha1.SelectorSpec{
+					Pods: map[string][]string{
+						ns: []string{
+							fmt.Sprintf("%s-3", name),
+							fmt.Sprintf("%s-4", name),
+						},
+					},
+				},
+				TargetMode: chaosv1alpha1.OnePodMode,
+			},
+		},
 	}
+
+	return cli.ApplyNetChaos(delay)
 }
