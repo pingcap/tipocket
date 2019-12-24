@@ -25,6 +25,7 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/gomega"
 	runtimeutils "k8s.io/apimachinery/pkg/util/runtime"
+
 	"k8s.io/component-base/logs"
 	"k8s.io/klog"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -55,7 +56,7 @@ var _ = ginkgo.SynchronizedBeforeSuite(func() []byte {
 	return nil
 }, func(data []byte) {
 	// Run on all Ginkgo nodes
-	framework.SetupSuitePerGinkgoNode()
+	framework.SetupSuitePerGignkgoNode()
 })
 
 var _ = ginkgo.SynchronizedAfterSuite(func() {

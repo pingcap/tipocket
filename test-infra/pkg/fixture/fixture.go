@@ -33,6 +33,8 @@ type E2eFixture struct {
 	CDCImage                 string
 	DockerRepository         string
 	TimeLimit                time.Duration
+	Nemesis                  string
+	Workload                 string
 }
 
 var E2eContext E2eFixture

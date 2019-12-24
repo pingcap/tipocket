@@ -34,7 +34,6 @@ type E2eCli struct {
 }
 
 func NewE2eCli(conf *rest.Config) *E2eCli {
-
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		e2elog.Failf("error creating kube-client: %v", err)

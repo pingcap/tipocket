@@ -4,18 +4,20 @@ go 1.13
 
 require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
+	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
 	github.com/coreos/bbolt v1.3.3 // indirect
 	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920 // indirect
 	github.com/dnephin/govet v0.0.0-20171012192244-4a96d43e39d3 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/go-openapi/spec v0.19.3
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	github.com/pingcap/advanced-statefulset v0.1.0
+	github.com/pingcap/chaos v0.0.0-20190710112158-c86faf4b3719
 	github.com/pingcap/chaos-operator v0.0.0-20191210023407-138b9bd96642
 	github.com/pingcap/errors v0.11.4
 	github.com/pingcap/gofail v0.0.0-20181217135706-6a951c1e42c3 // indirect
@@ -25,7 +27,6 @@ require (
 	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
 	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
 	github.com/pingcap/tipocket/pocket v0.0.0-20191213034629-847195f429d0
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
