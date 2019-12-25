@@ -25,7 +25,7 @@ import (
 	"github.com/ngaut/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/pingcap/tipocket/pocket/config"
-	"github.com/pingcap/tipocket/pocket/next-core"
+	"github.com/pingcap/tipocket/pocket/core"
 	"github.com/pingcap/tipocket/pocket/util"
 )
 
@@ -82,8 +82,8 @@ func main() {
 	}
 
 	var (
-		c     *core.Core
-		err   error
+		c   *core.Core
+		err error
 	)
 
 	if err := loadConfig(); err != nil {

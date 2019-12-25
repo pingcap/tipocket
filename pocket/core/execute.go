@@ -26,6 +26,21 @@ func (c *Core) execute(e *executor.Executor, sql *types.SQL) {
 	c.lockWatchCh <- e.GetID()
 }
 
+func (c *Core) getExecuteByID(id int) *executor.Executor {
+	for _, e := range c.executors {
+		if e.GetID() == id {
+			return e
+		}
+	}
+	return nil
+}
+
+func (c *Core) executeByID(id int, sql *types.SQL) {
+	if e := c.getExecuteByID(id); e != nil {
+		c.execute(e, sql)
+	}
+}
+
 func (c *Core) coreExecute(sql *types.SQL) error {
 	switch c.cfg.Mode {
 	case "single", "binlog":

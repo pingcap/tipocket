@@ -1,7 +1,21 @@
+// Copyright 2019 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package core
 
 import (
 	"bufio"
+	"context"
 	"io/ioutil"
 	"os"
 	"path"
@@ -19,34 +33,26 @@ import (
 var (
 	abTestLogPattern = regexp.MustCompile(`ab-test-[0-9]+\.log`)
 	binlogTestLogPattern = regexp.MustCompile(`single-test-[0-9]+\.log`)
-	todoSQLPattern = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(TODO)\] Exec SQL (.*)$`)
+	todoSQLPattern = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(SUCCESS)\] Exec SQL (.*) success$`)
 	execIDPattern = regexp.MustCompile(`^.*?(ab|single)-test-([0-9]+).log$`)
 	timeLayout = `2006/01/02 15:04:05.000 -07:00`
 )
 
-func (e *Executor) reproduce() {
-	reproduceParams := strings.Split(e.coreOpt.Reproduce, ":")
+func (c *Core) reproduce(ctx context.Context) error {
 	var (
-		dir string
-		table string
+		dir   = c.cfg.Options.Path
+		table = ""
 	)
-
-	if len(reproduceParams) >= 1 {
-		dir = reproduceParams[0]
-	}
-	if len(reproduceParams) >= 2 {
-		table = reproduceParams[1]
-	}
 
 	if dir == "" {
 		log.Fatal("empty dir")
 	} else if !util.DirExists(dir) {
 		log.Fatal("invalid dir, not exist or not a dir")
 	}
-	e.reproduceFromDir(dir, table)
+	return c.reproduceFromDir(dir, table)
 }
 
-func (e *Executor) reproduceFromDir(dir, table string) {
+func (c *Core) reproduceFromDir(dir, table string) error {
 	var logFiles []string
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -54,9 +60,9 @@ func (e *Executor) reproduceFromDir(dir, table string) {
 	}
 	for _, f := range files {
 		match := false
-		if e.mode == "abtest" && abTestLogPattern.MatchString(f.Name()) {
+		if c.cfg.Mode == "abtest" && abTestLogPattern.MatchString(f.Name()) {
 			match = true
-		} else if e.mode == "binlog" && binlogTestLogPattern .MatchString(f.Name()) {
+		} else if c.cfg.Mode == "binlog" && binlogTestLogPattern.MatchString(f.Name()) {
 			match = true
 		}
 		if match {
@@ -64,19 +70,22 @@ func (e *Executor) reproduceFromDir(dir, table string) {
 		}
 	}
 
-	logs := e.readLogs(logFiles)
+	logs, err := c.readLogs(logFiles)
+	if err != nil {
+		return errors.Trace(err)
+	}
 
+	log.Info(len(logs), "logs")
 	for index, l := range logs {
-		if l.GetSQL().SQLStmt == "ALTER TABLE ryapn DROP INDEX PRIMARY" {
-			log.Info("match")
-			os.Exit(0)
+		// if index < len(logs) - 1 && logs[index].GetTime() == logs[index + 1].GetTime() {
+		// 	log.Info(logs[index].GetNode(), logs[index].GetSQL())
+		// 	log.Info(logs[index + 1].GetNode(), logs[index + 1].GetSQL())
+		// 	log.Fatal("time mess")
+		// }
+		if index % 100 == 0 {
+			log.Info(index, "/", len(logs))
 		}
-		if index < len(logs) - 1 && logs[index].GetTime() == logs[index + 1].GetTime() {
-			log.Info(logs[index].GetNode(), logs[index].GetSQL())
-			log.Info(logs[index + 1].GetNode(), logs[index + 1].GetSQL())
-			log.Fatal("time mess")
-		}
-		e.ExecStraight(l.GetSQL(), l.GetNode())
+		c.executeByID(l.GetNode(), l.GetSQL())
 		// if rand.Float64() < 0.1 {	
 		// 	ch := make(chan struct{}, 1)
 		// 	go e.abTestCompareDataWithoutCommit(ch)
@@ -85,26 +94,27 @@ func (e *Executor) reproduceFromDir(dir, table string) {
 	}
 	log.Info("final check")
 	// e.abTestCompareData(false)
-	result, err := e.checkConsistency(false)
+	result, err := c.checkConsistency(false)
 	if err == nil {
 		log.Infof("consistency check %t\n", result)
 	}
-	os.Exit(0)
+	return nil
 }
 
-func (e *Executor) readLogs (logFiles []string) []*types.Log {
+func (c *Core) readLogs(logFiles []string) ([]*types.Log, error) {
 	var serilizedLogs []*types.Log
 	for _, file := range logFiles {
-		logs, err := e.readLogFile(file)
-		if err == nil {
-			serilizedLogs = append(serilizedLogs, logs...)
+		logs, err := readLogFile(file)
+		if err != nil {
+			return serilizedLogs, errors.Trace(err)
 		}
+		serilizedLogs = append(serilizedLogs, logs...)
 	}
 	sort.Sort(types.ByLog(serilizedLogs))
-	return serilizedLogs
+	return serilizedLogs, nil
 }
 
-func (e *Executor) readLogFile(logFile string) ([]*types.Log, error) {
+func readLogFile(logFile string) ([]*types.Log, error) {
 	var (
 		execID = parseExecNumber(logFile)
 		logs []*types.Log

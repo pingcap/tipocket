@@ -123,7 +123,7 @@ func (s *StateFlow) walkResultSetNode(node ast.ResultSetNode) *types.Table {
 
 func (s *StateFlow) walkTableName(node *ast.TableName, fn bool) *types.Table {
 	table := s.randTable(false, fn)
-	node.Schema = model.NewCIStr(table.DB)
+	// node.Schema = model.NewCIStr(table.DB)
 	node.Name = model.NewCIStr(table.Table)
 	return table
 }
@@ -251,7 +251,7 @@ func (s *StateFlow) walkColumns(columns *[]*ast.ColumnName, table *types.Table) 
 }
 
 func (s *StateFlow) walkLists(lists *[][]ast.ExprNode, columns []*types.Column) {
-	count := util.Rd(20)
+	count := util.RdRange(1, 20)
 	for i := 0; i < count; i++ {
 		*lists = append(*lists, s.makeList(columns))	
 	}

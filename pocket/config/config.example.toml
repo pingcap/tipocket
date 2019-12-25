@@ -27,4 +27,4 @@ path = "/var/log/pocket"
 # test duration
 duration = "1h"
 # check duration
-check-duration = "3mn"
+check-duration = "3m"

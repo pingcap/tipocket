@@ -23,12 +23,11 @@ require (
 	github.com/pingcap/goleveldb v0.0.0-20191031114657-7683883cfb36 // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
-	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
 	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
 	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
+	go.uber.org/goleak v0.10.0 // indirect
 	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
@@ -47,7 +46,7 @@ require (
 
 replace github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610
 
-replace github.com/pingcap/tipocket/go-sqlsmith => github.com/you06/tipocket/go-sqlsmith v0.0.0-20191209063433-0cdfd1ff9a02
+replace github.com/pingcap/tipocket/go-sqlsmith => ../go-sqlsmith
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 
@@ -100,3 +99,5 @@ replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20
 replace k8s.io/node-api => k8s.io/node-api v0.0.0-20190918163711-2299658ad911
 
 replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
+
+replace github.com/pingcap/tipocket/pocket => ../pocket

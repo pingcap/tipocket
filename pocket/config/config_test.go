@@ -28,5 +28,6 @@ func TestParseConfig(t *testing.T) {
 	assert.Equal(t, config.DSN1, "root:@tcp(172.17.0.1:33306)/pocket")
 	assert.Equal(t, config.DSN2, "root:@tcp(172.17.0.1:4000)/pocket")
 	assert.Equal(t, config.Options.Duration.Duration, time.Hour)
+	assert.Equal(t, config.Options.CheckDuration.Duration, 3*time.Minute)
 	assert.Equal(t, config.Options.Path, "/var/log/pocket")
 }
