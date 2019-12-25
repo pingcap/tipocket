@@ -6,7 +6,7 @@ require (
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
 	github.com/coreos/bbolt v1.3.3 // indirect
-	github.com/coreos/etcd v3.3.17+incompatible // indirect
+	github.com/coreos/etcd v3.3.17+incompatible
 	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8 // indirect
 	github.com/daviddengcn/go-colortext v0.0.0-20180409174941-186a3d44e920 // indirect
@@ -29,7 +29,6 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
-	go.etcd.io/etcd v0.5.0-alpha.5.0.20190320044326-77d4b742cdbf
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
 	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
 	google.golang.org/appengine v1.6.5 // indirect

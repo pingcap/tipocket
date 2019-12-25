@@ -21,9 +21,8 @@ import (
 	"strconv"
 	"time"
 
-	"go.etcd.io/etcd/clientv3"
-
 	"github.com/anishathalye/porcupine"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/pingcap/tipocket/test-infra/pkg/core"
 	"github.com/pingcap/tipocket/test-infra/pkg/model"
 )
