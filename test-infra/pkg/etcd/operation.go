@@ -40,8 +40,6 @@ func New(cli client.Client) *ETCDOps {
 	return &ETCDOps{cli}
 }
 
-
-
 type ETCDSpec struct {
 	Name      string
 	Namespace string
@@ -118,12 +116,16 @@ func (e *ETCDOps) renderETCD(spec *ETCDSpec) (*ETCD, error) {
 
 	var q resource.Quantity
 	var err error
-	if spec.Resource.Requests != nil {
-		size := spec.Resource.Requests.Storage
-		q, err = resource.ParseQuantity(size)
-		if err != nil {
-			return nil, fmt.Errorf("cant' get storage size for mysql: %v", err)
+	if spec.Resource.Requests == nil {
+		spec.Resource.Requests = &v1alpha1.ResourceRequirement{
+			Storage: "10G",
 		}
+	}
+
+	size := spec.Resource.Requests.Storage
+	q, err = resource.ParseQuantity(size)
+	if err != nil {
+		return nil, fmt.Errorf("cant' get storage size for mysql: %v", err)
 	}
 
 	return &ETCD{

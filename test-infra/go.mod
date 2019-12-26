@@ -26,7 +26,6 @@ require (
 	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
 	github.com/pingcap/tipocket v0.0.0-20191213034629-847195f429d0 // indirect
 	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
 	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
