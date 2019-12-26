@@ -57,8 +57,8 @@ var _ = ginkgo.Describe("etcd", func() {
 		c = newClient(conf)
 	})
 
-	ginkgo.It("should tolerant random pod kill chaos", func() {
-		name := "etcd-pod-kill"
+	ginkgo.It("register workload", func() {
+		name := "etcd-register"
 
 		// ETCD source
 		et, err := c.etcd.ApplyETCD(&etcd.ETCDSpec{
@@ -74,9 +74,11 @@ var _ = ginkgo.Describe("etcd", func() {
 		err = framework.WaitForStatefulSetReplicasReady(et.Sts.Name, et.Sts.Namespace, kubeCli, 10*time.Second, 5*time.Minute)
 		framework.ExpectNoError(err, "Expected etcd ready.")
 
-		nemesis := nemesisMap[fixture.E2eContext.Nemesis]
-		err = nemesis(c.chaos, ns, name)
-		framework.ExpectNoError(err, "Expected to apply nemesis.")
+		nemesis, ok := nemesisMap[fixture.E2eContext.Nemesis]
+		if ok {
+			err = nemesis(c.chaos, ns, name)
+			framework.ExpectNoError(err, "Expected to apply nemesis.")
+		}
 
 		nodes, err := c.etcd.GetNodes(et)
 		framework.ExpectNoError(err, "Expected get etcd nodes")
