@@ -157,7 +157,7 @@ func (e *ETCDOps) renderETCD(spec *ETCDSpec) (*ETCD, error) {
 				Selector: &metav1.LabelSelector{
 					MatchLabels: l,
 				},
-				ServiceName: spec.Name,
+				ServiceName: name,
 				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{{
 					ObjectMeta: metav1.ObjectMeta{Name: "datadir"},
 					Spec: corev1.PersistentVolumeClaimSpec{
@@ -190,7 +190,7 @@ func (e *ETCDOps) renderETCD(spec *ETCDSpec) (*ETCD, error) {
 							Env: []corev1.EnvVar{
 								{Name: "ETCDCTL_API", Value: "3"},
 								{Name: "INITIAL_CLUSTER_SIZE", Value: fmt.Sprintf("%d", spec.Replicas)},
-								{Name: "SET_NAME", Value: spec.Name},
+								{Name: "SET_NAME", Value: name},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "datadir", MountPath: "/var/run/etcd"},
@@ -253,7 +253,7 @@ eps() {
 }
 
 member_hash() {
-	etcdctl $AUTH_OPTIONS member list | grephttp://${HOSTNAME}.${SET_NAME}:2380 | cut -d':' -f1 | cut -d'[' -f1
+	etcdctl $AUTH_OPTIONS member list | grep http://${HOSTNAME}.${SET_NAME}:2380 | cut -d':' -f1 | cut -d'[' -f1
 }
 
 # we should wait for other pods to be up before trying to join
