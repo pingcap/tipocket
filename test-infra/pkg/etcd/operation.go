@@ -317,7 +317,9 @@ if [ "${SET_ID}" -ge ${INITIAL_CLUSTER_SIZE} ]; then
  		--data-dir /var/run/etcd/default.etcd \
  		--initial-advertise-peer-urls http://${HOSTNAME}.${SET_NAME}:2380 \
  		--initial-cluster ${ETCD_INITIAL_CLUSTER} \
- 		--initial-cluster-state ${ETCD_INITIAL_CLUSTER_STATE}
+ 		--initial-cluster-state ${ETCD_INITIAL_CLUSTER_STATE} \
+		--auto-compaction-mode revision \	
+		--auto-compaction-retention 1000
                     
 fi
 
@@ -337,7 +339,9 @@ exec etcd --name ${HOSTNAME} \
  	--initial-cluster-token etcd-cluster-1 \
  	--initial-cluster ${PEERS} \
  	--initial-cluster-state new \
- 	--data-dir /var/run/etcd/default.etcd
+ 	--data-dir /var/run/etcd/default.etcd \
+	--auto-compaction-mode revision \	
+	--auto-compaction-retention 1000
 `,
 							},
 						}},

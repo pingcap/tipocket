@@ -28,6 +28,7 @@ type NemesisFunc func(cli *chaos.Chaos, ns string, name string) error
 func init() {
 	nemesisMap["kill-pod"] = KillPod
 	nemesisMap["network-delay"] = NetworkDelay
+	nemesisMap["network-partition"] = NetworkPartition
 }
 
 func KillPod(cli *chaos.Chaos, ns string, name string) error {
@@ -60,15 +61,10 @@ func NetworkDelay(cli *chaos.Chaos, ns string, name string) error {
 		},
 		Spec: chaosv1alpha1.NetworkChaosSpec{
 			Action: chaosv1alpha1.DelayAction,
-			Mode:   chaosv1alpha1.OnePodMode,
+			Mode:   chaosv1alpha1.FixedPodMode,
+			Value:  "2",
 			Selector: chaosv1alpha1.SelectorSpec{
-				Pods: map[string][]string{
-					ns: []string{
-						fmt.Sprintf("%s-0", name),
-						fmt.Sprintf("%s-1", name),
-						fmt.Sprintf("%s-2", name),
-					},
-				},
+				Namespaces: []string{ns},
 			},
 			Duration: "10s",
 			Scheduler: chaosv1alpha1.SchedulerSpec{
@@ -78,6 +74,34 @@ func NetworkDelay(cli *chaos.Chaos, ns string, name string) error {
 				Latency:     "200ms",
 				Correlation: "1",
 				Jitter:      "10ms",
+			},
+		},
+	}
+
+	return cli.ApplyNetChaos(delay)
+}
+
+func NetworkPartition(cli *chaos.Chaos, ns string, name string) error {
+	delay := &chaosv1alpha1.NetworkChaos{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "partition",
+			Namespace: ns,
+		},
+		Spec: chaosv1alpha1.NetworkChaosSpec{
+			Action: chaosv1alpha1.PartitionAction,
+			Mode:   chaosv1alpha1.AllPodMode,
+			Selector: chaosv1alpha1.SelectorSpec{
+				Pods: map[string][]string{
+					ns: []string{
+						fmt.Sprintf("%s-0", name),
+						fmt.Sprintf("%s-1", name),
+						fmt.Sprintf("%s-2", name),
+					},
+				},
+			},
+			Duration: "30s",
+			Scheduler: chaosv1alpha1.SchedulerSpec{
+				Cron: "@every 2m",
 			},
 			Direction: chaosv1alpha1.Both,
 			Target: chaosv1alpha1.PartitionTarget{
@@ -89,7 +113,7 @@ func NetworkDelay(cli *chaos.Chaos, ns string, name string) error {
 						},
 					},
 				},
-				TargetMode: chaosv1alpha1.OnePodMode,
+				TargetMode: chaosv1alpha1.AllPodMode,
 			},
 		},
 	}
