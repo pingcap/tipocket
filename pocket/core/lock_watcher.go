@@ -37,7 +37,7 @@ func (c *Core) watchLock() {
 					continue
 				}
 				c.Lock()
-				c.resolveDeadLock()
+				c.resolveDeadLock(false)
 				c.Unlock()
 			}
 		}
@@ -48,9 +48,9 @@ func (c *Core) watchLock() {
 	}
 }
 
-func (c *Core) resolveDeadLock() {
+func (c *Core) resolveDeadLock(all bool) {
 	// log.Info(e.order.GetHistroy())
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 	for c.order.Next() {
 		for _, executor := range c.executors {
 			if executor.GetID() == c.order.Val() {
@@ -59,6 +59,10 @@ func (c *Core) resolveDeadLock() {
 				go c.resolveDeadLockOne(executor, &wg)
 			}
 		}
+	}
+	if all {
+		wg.Add(1)
+		go c.resolveDeadLockOne(c.nowExec, &wg)
 	}
 	c.order.Reset()
 	wg.Wait()

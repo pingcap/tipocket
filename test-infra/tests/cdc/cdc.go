@@ -159,4 +159,3 @@ func workload(sourceAddr string, targetAddr string, concurrency int, dbName stri
 func genDbDsn(addr string, dbName string) string {
 	return fmt.Sprintf("root:@tcp(%s)/%s", addr, dbName)
 }
-

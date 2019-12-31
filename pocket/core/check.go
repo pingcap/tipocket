@@ -122,7 +122,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	log.Info("after lock")
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
-	c.resolveDeadLock()
+	c.resolveDeadLock(true)
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	if err != nil {
 		c.Unlock()
@@ -173,7 +173,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	log.Info("locked")
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
-	c.resolveDeadLock()
+	c.resolveDeadLock(true)
 	log.Info("resolve lock done")
 
 	// insert a table and wait for the sync job is done
@@ -184,7 +184,8 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		time.Sleep(time.Second)
 		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
 		if err != nil {
-			return false, errors.Trace(err)
+			log.Error(err)
+			// return false, errors.Trace(err)
 		}
 		for _, t := range tables {
 			if t == table {

@@ -93,7 +93,7 @@ func (c *Core) generateSQL() {
 	if err != nil {
 		log.Fatalf("generate SQL error, %+v", errors.ErrorStack(err))
 	}
-
+	c.nowExec = e
 	if e != nil && sql != nil {
 		c.execute(e, sql)
 	}

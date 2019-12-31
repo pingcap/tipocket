@@ -32,6 +32,7 @@ type Core struct {
 	coreExec *executor.Executor
 	// core properties
 	dbname      string
+	nowExec     *executor.Executor
 	executors   []*executor.Executor
 	lockWatchCh chan int
 	order       *types.Order
