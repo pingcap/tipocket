@@ -13,14 +13,19 @@
 
 package core
 
-// Lock wrap mutex.Lock
-func (c *Core) Lock() {
-	c.mutex.Lock()
-	c.ifLock = true
-}
+import (
+	"testing"
+	"github.com/pingcap/tipocket/pocket/config"
+	"github.com/stretchr/testify/assert"
+)
 
-// Unlock wrap mutex.Unlock
-func (c *Core) Unlock() {
-	c.ifLock = false
-	c.mutex.Unlock()
+func TestParseDSN(t *testing.T) {
+	c := Core{
+		cfg: &config.Config{
+			DSN1: "root:@tcp(172.17.0.1:4000)/pocket",
+		},
+	}
+
+	assert.Empty(t, c.parseDSN())
+	assert.Equal(t, c.dbname, "pocket")
 }

@@ -6,12 +6,12 @@ import (
 	"os"
 	"regexp"
 	"sync"
+	"github.com/juju/errors"
+	"github.com/ngaut/log"
+	"github.com/pingcap/tipocket/go-sqlsmith"
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
-	"github.com/juju/errors"
-	"github.com/ngaut/log"
-	smith "github.com/pingcap/tipocket/go-sqlsmith"
 )
 
 var (
@@ -26,19 +26,22 @@ type Executor struct {
 	dsn2        string
 	conn1       *connection.Connection
 	conn2       *connection.Connection
-	ss1         *smith.SQLSmith
-	ss2         *smith.SQLSmith
+	ss          *sqlsmith.SQLSmith
 	dbname      string
 	mode        string
 	opt         *Option
 	logger      *logger.Logger
-	ch          chan *types.SQL
 	stmts       []*types.SQL
 	stmtResults []*stmtResult
+	// SQL channel
+	SQLCh       chan *types.SQL
 	// Since we must ensure no other transactions commit or begin between the transaction start time points of abtest
 	// when a transaction begins/commits/rollbacks, generator wait for it ready for both A/B side
 	// This channel is for sending signal to generator when both A/B side's begin/commit/rollback are ready
 	TxnReadyCh  chan struct{}
+	// ErrCh for waiting SQL execution finish
+	// and pass execution error
+	ErrCh chan error
 }
 
 // New create Executor
@@ -60,17 +63,21 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &Executor{
-		id: opt.ID,
-		dsn1:  dsn,
-		conn1: conn,
-		mode:  "single",
-		ch: make(chan *types.SQL, 1),
+	e := Executor{
+		id:         opt.ID,
+		dsn1:       dsn,
+		conn1:      conn,
+		mode:       "single",
+		SQLCh:      make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
-		dbname: dbnameRegex.FindString(dsn),
-		opt: opt,
-		logger: l,
-	}, nil
+		ErrCh:      make(chan error, 1),
+		ss:         sqlsmith.New(),
+		dbname:     dbnameRegex.FindString(dsn),
+		opt:        opt,
+		logger:     l,
+	}
+	go e.Start()
+	return &e, nil
 }
 
 // NewABTest create abtest Executor
@@ -100,19 +107,23 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return &Executor{
-		id: opt.ID,
-		dsn1:  dsn1,
-		dsn2:  dsn2,
-		conn1: conn1,
-		conn2: conn2,
-		mode:  "abtest",
-		ch: make(chan *types.SQL, 1),
+	e := Executor{
+		id:         opt.ID,
+		dsn1:       dsn1,
+		dsn2:       dsn2,
+		conn1:      conn1,
+		conn2:      conn2,
+		ss:         sqlsmith.New(),
+		mode:       "abtest",
+		SQLCh:      make(chan *types.SQL, 1),
 		TxnReadyCh: make(chan struct{}, 1),
-		dbname: dbnameRegex.FindString(dsn1),
-		opt: opt,
-		logger: l,
-	}, nil
+		ErrCh:      make(chan error, 1),
+		dbname:     dbnameRegex.FindString(dsn1),
+		opt:        opt,
+		logger:     l,
+	}
+	go e.Start()
+	return &e, nil
 }
 
 // func (e *Executor) init() error {

@@ -90,16 +90,11 @@ func (e *Executor) ExecIgnoreErr(sql string) {
 	case "single":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
-	case "abtest":
+	case "abtest", "binlog":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
 		_ = e.conn2.Exec(sql)
 		_ = e.conn2.Commit()
-	// case "binlog":
-	// 	_ = e.conn1.Exec(sql)
-	// 	_ = e.conn1.Commit()
-	// 	_ = e.conn2.Exec(sql)
-	// 	_ = e.conn2.Commit()
 	default:
 		panic(fmt.Sprintf("unhandled reconnect switch , mode: %s", e.mode))
 	}

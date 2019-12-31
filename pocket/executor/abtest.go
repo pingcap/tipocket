@@ -3,111 +3,117 @@ package executor
 import (
 	"fmt"
 	"sync"
-	"github.com/pingcap/tipocket/pocket/connection"
-	"github.com/pingcap/tipocket/pocket/util"
-	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
+	"github.com/pingcap/tipocket/pocket/connection"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 func (e *Executor) abTest() {
 	for {
-		var (
-			err error
-			sql = <- e.ch
-		)
-		e.Lock()
-
-		switch sql.SQLType {
-		case types.SQLTypeDMLSelect:
-			err = e.abTestSelect(sql.SQLStmt)
-		case types.SQLTypeDMLUpdate:
-			err = e.abTestUpdate(sql.SQLStmt)
-		case types.SQLTypeDMLInsert:
-			err = e.abTestInsert(sql.SQLStmt)
-		case types.SQLTypeDMLDelete:
-			err = e.abTestDelete(sql.SQLStmt)
-		case types.SQLTypeDDLCreate:
-			err = e.abTestCreateTable(sql.SQLStmt)
-		case types.SQLTypeTxnBegin:
-			err = e.abTestTxnBegin()
-		case types.SQLTypeTxnCommit:
-			err = e.abTestTxnCommit()
-		case types.SQLTypeTxnRollback:
-			err = e.abTestTxnRollback()
-		case types.SQLTypeExec:
-			e.abTestExec(sql.SQLStmt)
-		case types.SQLTypeExit:
-			e.Stop("receive exit SQL signal")
-		default:
-			panic(fmt.Sprintf("unhandled case %+v", sql))
-		}
-
-		e.logStmtResult(sql.SQLStmt, err)
-		e.Unlock()
+		e.ErrCh <- e.execABTestSQL(<- e.SQLCh)
 	}
+}
+
+func (e *Executor) execABTestSQL(sql *types.SQL) error {
+	var err error
+	e.logStmtTodo(sql.SQLStmt)
+
+	switch sql.SQLType {
+	case types.SQLTypeDMLSelect:
+		err = e.abTestSelect(sql.SQLStmt)
+	case types.SQLTypeDMLUpdate:
+		err = e.abTestUpdate(sql.SQLStmt)
+	case types.SQLTypeDMLInsert:
+		err = e.abTestInsert(sql.SQLStmt)
+	case types.SQLTypeDMLDelete:
+		err = e.abTestDelete(sql.SQLStmt)
+	case types.SQLTypeDDLCreateTable, types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
+		err = e.abTestExecDDL(sql.SQLStmt)
+	case types.SQLTypeTxnBegin:
+		if err := e.reloadSchema(); err != nil {
+			log.Error(err)
+		}
+		err = e.abTestTxnBegin()
+	case types.SQLTypeTxnCommit:
+		err = e.abTestTxnCommit()
+	case types.SQLTypeTxnRollback:
+		err = e.abTestTxnRollback()
+	case types.SQLTypeExec:
+		e.abTestExec(sql.SQLStmt)
+	case types.SQLTypeExit:
+		e.Stop("receive exit SQL signal")
+	default:
+		panic(fmt.Sprintf("unhandled case %+v", sql))
+	}
+
+	e.logStmtResult(sql.SQLStmt, err)
+
+	return err
 }
 
 // ABTestSelect expose abTestSelect
 func (e *Executor) ABTestSelect(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestSelect(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestInsert expose abTestInsert
 func (e *Executor) ABTestInsert(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestInsert(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestUpdate expose abTestUpdate
 func (e *Executor) ABTestUpdate(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestUpdate(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestDelete expose abTestDelete
 func (e *Executor) ABTestDelete(sql string) error {
+	e.logStmtTodo(sql)
 	err := e.abTestDelete(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
-// ABTestCreateTable expose abTestCreateTable
-func (e *Executor) ABTestCreateTable(sql string) error {
-	err := e.abTestCreateTable(sql)
+// ABTestExecDDL expose abTestExecDDL
+func (e *Executor) ABTestExecDDL(sql string) error {
+	e.logStmtTodo(sql)
+	err := e.abTestExecDDL(sql)
 	e.logStmtResult(sql, err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestTxnBegin export abTestTxnBegin
 func (e *Executor) ABTestTxnBegin() error {
+	e.logStmtTodo("BEGIN")
 	err := e.abTestTxnBegin()
 	e.logStmtResult("BEGIN", err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestTxnCommit export abTestTxnCommit
 func (e *Executor) ABTestTxnCommit() error {
+	e.logStmtTodo("COMMIT")
 	err := e.abTestTxnCommit()
 	e.logStmtResult("COMMIT", err)
-	<- e.TxnReadyCh
 	return err
 }
 
 // ABTestTxnRollback export abTestTxnRollback
 func (e *Executor) ABTestTxnRollback() error {
+	e.logStmtTodo("ROLLBACK")
 	err := e.abTestTxnRollback()
 	e.logStmtResult("ROLLBACK", err)
-	<- e.TxnReadyCh
 	return err
 }
 
@@ -135,7 +141,6 @@ func (e *Executor) abTestSelect(sql string) error {
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
 
 	// log.Info("select abtest err", err1, err2)
 	if err := util.ErrorMustSame(err1, err2); err != nil {
@@ -185,12 +190,8 @@ func (e *Executor) abTestUpdate(sql string) error {
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
 
-	if err := util.ErrorMustSame(err1, err2); err != nil {
-		return err
-	}
-	return nil
+	return util.ErrorMustSame(err1, err2)
 }
 
 func (e *Executor) abTestInsert(sql string) error {
@@ -201,20 +202,16 @@ func (e *Executor) abTestInsert(sql string) error {
 	)
 	wg.Add(2)
 	go func() {
-		err1 = e.conn1.Update(sql)
+		err1 = e.conn1.Insert(sql)
 		wg.Done()
 	}()
 	go func() {
-		err2 = e.conn2.Update(sql)
+		err2 = e.conn2.Insert(sql)
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
 
-	if err := util.ErrorMustSame(err1, err2); err != nil {
-		return err
-	}
-	return nil
+	return util.ErrorMustSame(err1, err2)
 }
 
 func (e *Executor) abTestDelete(sql string) error {
@@ -225,24 +222,19 @@ func (e *Executor) abTestDelete(sql string) error {
 	)
 	wg.Add(2)
 	go func() {
-		err1 = e.conn1.Update(sql)
+		err1 = e.conn1.Delete(sql)
 		wg.Done()
 	}()
 	go func() {
-		err2 = e.conn2.Update(sql)
+		err2 = e.conn2.Delete(sql)
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
-
-	if err := util.ErrorMustSame(err1, err2); err != nil {
-		return err
-	}
-	return nil
+	return util.ErrorMustSame(err1, err2)
 }
 
 // DDL
-func (e *Executor) abTestCreateTable(sql string) error {
+func (e *Executor) abTestExecDDL(sql string) error {
 	var (
 		wg sync.WaitGroup
 		err1 error
@@ -260,7 +252,6 @@ func (e *Executor) abTestCreateTable(sql string) error {
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
 	return util.ErrorMustSame(err1, err2)
 }
 
@@ -279,7 +270,6 @@ func (e *Executor) abTestExec(sql string) {
 		wg.Done()
 	}()
 	wg.Wait()
-	e.TxnReadyCh <- struct{}{}
 }
 
 func (e *Executor) abTestTxnBegin() error {
@@ -290,7 +280,6 @@ func (e *Executor) abTestTxnBegin() error {
 	err1 = e.conn1.Begin()
 	err2 = e.conn2.Begin()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return util.ErrorMustSame(err1, err2)
 }
 
@@ -302,7 +291,6 @@ func (e *Executor) abTestTxnCommit() error {
 	err1 = e.conn1.Commit()
 	err2 = e.conn2.Commit()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return util.ErrorMustSame(err1, err2)
 }
 
@@ -314,7 +302,6 @@ func (e *Executor) abTestTxnRollback() error {
 	err1 = e.conn1.Rollback()
 	err2 = e.conn2.Rollback()
 	// continue generate
-	e.TxnReadyCh <- struct{}{}
 	return util.ErrorMustSame(err1, err2)
 }
 

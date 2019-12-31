@@ -72,11 +72,12 @@ func (s *StateFlow) walkCreateIndexStmt(node *ast.CreateIndexStmt) *types.Table 
 	node.Table.Name = model.NewCIStr(table.Table)
 	node.IndexName = util.RdStringChar(5)
 	for _, column := range table.Columns {
-		node.IndexColNames = append(node.IndexColNames, &ast.IndexColName{
-			Column: &ast.ColumnName{
-				Name: model.NewCIStr(column.Column),
-			},
-		})
+		node.IndexPartSpecifications = append(node.IndexPartSpecifications,
+			&ast.IndexPartSpecification{
+				Column: &ast.ColumnName{
+					Name: model.NewCIStr(column.Column),
+				},
+			})
 	}
 	return nil
 }
@@ -108,7 +109,7 @@ func (s *StateFlow) makeColumnOption(column *types.Column, option ast.ColumnOpti
 func (s *StateFlow) makeConstraintPrimaryKey(node *ast.CreateTableStmt, column *types.Column) {
 	for _, constraint := range node.Constraints {
 		if constraint.Tp == ast.ConstraintPrimaryKey {
-			constraint.Keys = append(constraint.Keys, &ast.IndexColName{
+			constraint.Keys = append(constraint.Keys, &ast.IndexPartSpecification{
 				Column: &ast.ColumnName{
 					Name: model.NewCIStr(column.Column),
 				},
@@ -118,7 +119,7 @@ func (s *StateFlow) makeConstraintPrimaryKey(node *ast.CreateTableStmt, column *
 	}
 	node.Constraints = append(node.Constraints, &ast.Constraint{
 		Tp: ast.ConstraintPrimaryKey,
-		Keys: []*ast.IndexColName{
+		Keys: []*ast.IndexPartSpecification{
 			{
 				Column: &ast.ColumnName{
 					Name: model.NewCIStr(column.Column),

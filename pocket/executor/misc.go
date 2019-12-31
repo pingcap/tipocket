@@ -17,6 +17,10 @@ func (e *Executor) PrintSchema() error {
 	return nil
 }
 
+func (e *Executor) logStmtTodo(stmt string) {
+	e.logger.Infof("[TODO] Exec SQL %s", stmt)
+}
+
 func (e *Executor) logStmtResult(stmt string, err error) {
 	if err != nil {
 		e.logger.Infof("[FAIL] Exec SQL %s error %v", stmt, err)

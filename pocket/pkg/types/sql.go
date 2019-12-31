@@ -6,18 +6,20 @@ type SQLType int
 
 // SQLTypeDMLSelect
 const (
-	SQLTypeReloadSchema SQLType = iota
+	SQLTypeUnknown SQLType = iota
+	SQLTypeReloadSchema
 	SQLTypeDMLSelect
 	SQLTypeDMLUpdate
 	SQLTypeDMLInsert
 	SQLTypeDMLDelete
-	SQLTypeDDLCreate
+	SQLTypeDDLCreateTable
+	SQLTypeDDLAlterTable
+	SQLTypeDDLCreateIndex
 	SQLTypeTxnBegin
 	SQLTypeTxnCommit
 	SQLTypeTxnRollback
 	SQLTypeExec
 	SQLTypeExit
-	SQLTypeUnknown
 )
 
 // SQL struct
@@ -38,8 +40,12 @@ func (t SQLType) String() string {
 		return "SQLTypeDMLInsert"
 	case SQLTypeDMLDelete:
 		return "SQLTypeDMLDelete"
-	case SQLTypeDDLCreate:
-		return "SQLTypeDDLCreate"
+	case SQLTypeDDLCreateTable:
+		return "SQLTypeDDLCreateTable"
+	case SQLTypeDDLAlterTable:
+		return "SQLTypeDDLAlterTable"
+	case SQLTypeDDLCreateIndex:
+		return "SQLTypeDDLCreateIndex"
 	case SQLTypeTxnBegin:
 		return "SQLTypeTxnBegin"
 	case SQLTypeTxnCommit:

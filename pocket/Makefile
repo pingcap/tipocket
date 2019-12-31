@@ -18,10 +18,10 @@ GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
 default: build
 
-build: client
+build: pocket
 
-client:
-	$(GOBUILD) $(GOMOD) -o bin/pocket *.go
+pocket:
+	$(GOBUILD) $(GOMOD) -o bin/pocket cmd/pocket/*.go
 
 clean:
 	@rm -rf bin/*
@@ -29,4 +29,4 @@ clean:
 test:
 	$(GOTEST) ./...
 
-.PHONY: all clean client test
+.PHONY: all clean pocket test

@@ -20,8 +20,8 @@ import (
 
 	"github.com/onsi/ginkgo"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	"github.com/pingcap/tipocket/pocket/config"
 	"github.com/pingcap/tipocket/pocket/core"
-	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/test-infra/pkg/cdc"
 	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/test-infra/pkg/mysql"
@@ -143,34 +143,19 @@ var _ = ginkgo.Describe("cdc", func() {
 })
 
 func workload(sourceAddr string, targetAddr string, concurrency int, dbName string, timeLimit time.Duration) error {
-	executorOption := &executor.Option{
-		Clear:  false,
-		Stable: true,
-		Log:    "/tmp/cdc-log",
-	}
-
-	coreOption := &core.Option{
-		Concurrency: concurrency,
-		Stable:      true,
-		Mode:        "binlog",
-	}
-
-	exec, err := core.NewABTest(genDbDsn(sourceAddr, dbName), genDbDsn(targetAddr, dbName), coreOption, executorOption)
-	if err != nil {
-		return err
-	}
-
-	if err := exec.PrintSchema(); err != nil {
-		return err
-	}
+	cfg := config.Init()
+	cfg.Mode = "binlog"
+	cfg.Options.Concurrency = concurrency
+	cfg.Options.Stable = true
+	cfg.Options.Path = "/tmp/cdc-log"
+	cfg.Options.ClearDB = false
 
 	ctx, cancel := context.WithTimeout(context.TODO(), timeLimit)
 	defer cancel()
 
-	return exec.Start(ctx)
+	return core.New(cfg).Start(ctx)
 }
 
 func genDbDsn(addr string, dbName string) string {
 	return fmt.Sprintf("root:@tcp(%s)/%s", addr, dbName)
 }
-

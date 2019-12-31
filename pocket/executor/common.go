@@ -52,15 +52,15 @@ func (e *Executor) Delete(stmt string) error {
 	panic("unhandled select switch")
 }
 
-// CreateTable offer unified method for single & abtest
-func (e *Executor) CreateTable(stmt string) error {
+// ExecDDL offer unified method for single & abtest
+func (e *Executor) ExecDDL(stmt string) error {
 	e.Lock()
 	defer e.Unlock()
 	switch e.mode {
 	case "abtest":
-		return e.ABTestCreateTable(stmt)
+		return e.ABTestExecDDL(stmt)
 	case "single":
-		return e.SingleTestCreateTable(stmt)
+		return e.SingleTestExecDDL(stmt)
 	}
 	panic("unhandled select switch")
 }
