@@ -8,7 +8,6 @@ require (
 	github.com/pingcap/parser v0.0.0-20191210060830-bdf23a7ade01
 	github.com/pingcap/tidb v1.1.0-beta.0.20191106105829-1b72ce5987b3
 	github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 // indirect
-	github.com/pingcap/tipocket/pocket v0.0.0-00010101000000-000000000000
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
