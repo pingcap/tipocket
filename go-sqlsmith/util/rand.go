@@ -44,8 +44,19 @@ func RdFloat64() float64 {
 }
 
 func RdDate() time.Time {
-	min := time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	min := time.Date(1970, 1, 0, 0, 0, 1, 0, time.UTC).Unix()
 	max := time.Date(2100, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	delta := max - min
+
+	sec := seed.Int63n(delta) + min
+	return time.Unix(sec, 0)
+}
+
+// RdTimestamp return same format as RdDate except rand range
+// TIMESTAMP has a range of '1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' 
+func RdTimestamp() time.Time {
+	min := time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Date(2038, 1, 19, 3, 14, 7, 0, time.UTC).Unix()
 	delta := max - min
 
 	sec := seed.Int63n(delta) + min
@@ -108,18 +119,20 @@ func RdDataLen(columnType string) int {
 }
 
 func RdColumnOptions(t string) []ast.ColumnOptionType {
-	switch t {
-	case "timestamp":
-		return RdDateColumnOptions()
-	}
-
-	return []ast.ColumnOptionType{}
+	return RdDateColumnOptions(t)
 }
 
-func RdDateColumnOptions() (options []ast.ColumnOptionType) {
-	options = append(options, ast.ColumnOptionNotNull)
-	if Rd(2) == 0 {
-		options = append(options, ast.ColumnOptionDefaultValue)
+func RdDateColumnOptions(t string) (options []ast.ColumnOptionType) {
+	if Rd(3) == 0 {
+		options = append(options, ast.ColumnOptionNotNull)
+	} else if Rd(2) == 0 {
+		options = append(options, ast.ColumnOptionNull)
+	}
+	switch t {
+	case "varchar", "timestamp", "datetime", "int":
+		if Rd(2) == 0 {
+			options = append(options, ast.ColumnOptionDefaultValue)
+		}
 	}
 	return
 }

@@ -21,7 +21,7 @@ import (
 )
 
 func TestSQLSmith_Walker(t *testing.T) {
-	ss := New()
+	ss := new()
 	ss.LoadSchema(schema, indexes)
 
 	ss.SetDB(dbname)
@@ -70,7 +70,7 @@ func TestSQLSmith_Walker(t *testing.T) {
 	}
 
 	ss.SetDB("community")
-	sql, err :=	ss.Walk(&node)
+	sql, _, err :=	ss.Walk(&node)
 
 	if err != nil {
 		t.Fatalf("walk error %v", err)

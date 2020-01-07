@@ -25,25 +25,26 @@ import (
 // SelectStmt make random select statement SQL
 func (s *SQLSmith) SelectStmt(depth int) (string, error) {
 	tree := s.selectStmt(depth)
-	return s.Walk(tree)
+	stmt, _, err := s.Walk(tree)
+	return stmt, err
 }
 
 // UpdateStmt make random update statement SQL
-func (s *SQLSmith) UpdateStmt() (string, error) {
+func (s *SQLSmith) UpdateStmt() (string, string, error) {
 	tree := s.updateStmt()
 	return s.Walk(tree)
 }
 
-// InsertStmtAST implement insert statement from AST
-func (s *SQLSmith) InsertStmtAST() (string, error) {
+// InsertStmt implement insert statement from AST
+func (s *SQLSmith) InsertStmt(fn bool) (string, string, error) {
 	tree := s.insertStmt()
 	return s.Walk(tree)
 }
 
-// InsertStmt make random insert statement SQL
-func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
+// InsertStmtStr make random insert statement SQL
+func (s *SQLSmith) InsertStmtStr(fn bool) (string, string, error) {
 	if s.currDB == "" {
-		return "", errors.New("no table selected")
+		return "", "", errors.New("no table selected")
 	}
 	var table *types.Table
 	rdTableIndex := s.rd(len(s.Databases[s.currDB].Tables))
@@ -72,7 +73,7 @@ func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
 			builtinFn := builtin.GenerateFuncCallExpr(nil, s.rd(3), s.stable)
 			builtinStr, err := util.BufferOut(builtinFn)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			vals = append(vals, builtinStr)
 		} else {
@@ -83,5 +84,5 @@ func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
 		table.Table,
 		strings.Join(columnNames, ", "),
 		strings.Join(vals, ", "))
-	return sql, nil
+	return sql, table.Table, nil
 }

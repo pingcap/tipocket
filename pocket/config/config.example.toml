@@ -22,9 +22,15 @@ reproduce = false
 # running concurrency
 # default value 3
 concurrency = 3
+# init-table defines the tables init in before start
+init-table = 10
 # data and log path
 path = "/var/log/pocket"
 # test duration
 duration = "1h"
 # check duration
 check-duration = "3m"
+# allow online DDL
+# true in binlog test and abtest between TiDBs
+# false in abtest between TiDB and MySQL
+online-ddl = false

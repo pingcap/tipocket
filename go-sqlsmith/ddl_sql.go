@@ -13,21 +13,31 @@
 
 package sqlsmith
 
+import (
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
+)
 
 // CreateTableStmt create table
 func (s *SQLSmith) CreateTableStmt() (string, error) {
 	tree := s.createTableStmt()
-	return s.Walk(tree)
+	stmt, _, err := s.Walk(tree)
+	return stmt, err
 }
 
 // AlterTableStmt alter table
-func (s *SQLSmith) AlterTableStmt() (string, error) {
+func (s *SQLSmith) AlterTableStmt(opt *generator.DDLOptions) (string, error) {
+	s.setOnlineOtherTables(opt)
+	defer s.freeOnlineOtherTables()
 	tree := s.alterTableStmt()
-	return s.Walk(tree)
+	stmt, _, err := s.Walk(tree)
+	return stmt, err
 }
 
 // CreateIndexStmt create index
-func (s *SQLSmith) CreateIndexStmt() (string, error) {
+func (s *SQLSmith) CreateIndexStmt(opt *generator.DDLOptions) (string, error) {
+	s.setOnlineOtherTables(opt)
+	defer s.freeOnlineOtherTables()
 	tree := s.createIndexStmt()
-	return s.Walk(tree)
+	stmt, _, err := s.Walk(tree)
+	return stmt, err
 }

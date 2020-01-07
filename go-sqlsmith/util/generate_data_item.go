@@ -20,7 +20,13 @@ import (
 	"strings"
 	"github.com/pingcap/parser/mysql"
 	tidbTypes "github.com/pingcap/tidb/types"
+	"github.com/satori/go.uuid"
 )
+
+// GetUUID return uuid
+func GetUUID() string {
+	return strings.ToUpper(uuid.NewV4().String())
+}
 
 // GenerateRandDataItem rand data item with rand type
 func GenerateRandDataItem() interface{} {
@@ -78,7 +84,7 @@ func GenerateDataItem(columnType string) interface{} {
 }
 
 func GenerateStringItem() string {
-	return strings.ToUpper(RdString(Rd(100)))
+	return strings.ToUpper(RdStringChar(Rd(100)))
 }
 
 func GenerateIntItem() int {
@@ -91,6 +97,14 @@ func GenerateFloatItem() float64 {
 
 func GenerateDateItem() time.Time {
 	t := RdDate()
+	for ifDaylightTime(t) {
+		t = RdDate()
+	}
+	return t
+}
+
+func GenerateTimestampItem() time.Time {
+	t := RdTimestamp()
 	for ifDaylightTime(t) {
 		t = RdDate()
 	}

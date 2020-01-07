@@ -41,12 +41,12 @@ func TestSQLSmith_Update(t *testing.T) {
 	ss.SetDB(dbname)
 
 	for i := 0; i < 1000; i++ {
-		sql, err := ss.UpdateStmt()
+		sql, _, err := ss.UpdateStmt()
 		if err != nil {
 			t.Log(sql, err)
 		}
 	}
-	sql, _ := ss.UpdateStmt()
+	sql, _, _ := ss.UpdateStmt()
 	t.Log(sql)
 }
 
@@ -57,11 +57,11 @@ func TestSQLSmith_Insert(t *testing.T) {
 	ss.SetDB(dbname)
 
 	for i := 0; i < 1000; i++ {
-		sql, err := ss.InsertStmtAST()
+		sql, _, err := ss.InsertStmt(false)
 		if err != nil {
 			t.Log(sql, err)
 		}
 	}
-	sql, err := ss.InsertStmtAST()
+	sql, _, err := ss.InsertStmt(false)
 	t.Log(sql, err)
 }

@@ -36,8 +36,9 @@ const (
 
 // SQL struct
 type SQL struct {
-	SQLType SQLType
-	SQLStmt string
+	SQLType     SQLType
+	SQLStmt     string
+	SQLTable    string
 }
 
 func (t SQLType) String() string {

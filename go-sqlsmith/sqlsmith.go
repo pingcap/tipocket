@@ -22,6 +22,7 @@ import (
 	"github.com/pingcap/tipocket/go-sqlsmith/stateflow"
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 
 	// _ "github.com/pingcap/tidb/types/parser_driver"
 )
@@ -40,7 +41,11 @@ type SQLSmith struct {
 }
 
 // New create SQLSmith instance
-func New() *SQLSmith {
+func New() generator.Generator {
+	return new()
+}
+
+func new() *SQLSmith {
 	return &SQLSmith{
 		Rand:      rand.New(rand.NewSource(time.Now().UnixNano())),
 		Databases: make(map[string]*types.Database),
@@ -83,10 +88,12 @@ func (s *SQLSmith) SetStable(stable bool) {
 }
 
 // Walk will walk the tree and fillin tables and columns data
-func (s *SQLSmith) Walk(tree ast.Node) (string, error) {
-	node := stateflow.New(s.GetDB(s.currDB), s.stable).WalkTree(tree)
+func (s *SQLSmith) Walk(tree ast.Node) (string, string, error) {
+	node, table, err := stateflow.New(s.GetDB(s.currDB), s.stable).WalkTree(tree)
+	if err != nil {
+		return "", "", errors.Trace(err)
+	}
 	s.debugPrintf("node AST %+v\n", node)
 	sql, err := util.BufferOut(node)
-	// if sql ==
-	return sql, errors.Trace(err)
+	return sql, table, errors.Trace(err)
 }

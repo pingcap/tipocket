@@ -20,31 +20,30 @@ import (
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pocket/executor"
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
 )
 
-const (
-	initTableCount = 10
-)
-
-func (c *Core) generate(ctx context.Context) error {
+func (c *Core) generate(ctx context.Context, readyCh *chan struct{}) error {
 	if err := c.beforeGenerate(); err != nil {
 		return errors.Trace(err)
 	}
-	log.Info("start generate")
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			c.generateSQL()
-		}
+
+	log.Info("init done, start generate")
+	*readyCh <- struct{}{}
+	for{
+	select {
+	case <- ctx.Done():
+		return nil
+	default:
+		c.generateSQL()
+	}
 	}
 }
 
 func (c *Core) beforeGenerate() error {
-	for i := 0; i < initTableCount; i++ {
+	for i := 0; i < c.cfg.Options.InitTable; i++ {
 		sql, e, err := c.generateDDLCreateTable()
 		if err != nil {
 			return errors.Trace(err)
@@ -93,7 +92,9 @@ func (c *Core) generateSQL() {
 	}
 
 	if err != nil {
-		log.Fatalf("generate SQL error, %+v", errors.ErrorStack(err))
+		// log.Fatalf("generate SQL error, %+v", errors.ErrorStack(err))
+		log.Errorf("generate SQL error, %+v", errors.ErrorStack(err))
+		return
 	}
 	c.nowExec = e
 	if e != nil && sql != nil {
@@ -114,27 +115,27 @@ func (c *Core) generateDDLCreateTable() (*types.SQL, *executor.Executor, error) 
 }
 
 func (c *Core) generateDDLAlterTable() (*types.SQL, *executor.Executor, error) {
-	executor := c.tryRandFreeExecutor()
-	if executor == nil {
+	e := c.tryRandFreeExecutor()
+	if e == nil {
 		return nil, nil, nil
 	}
-	sql, err := executor.GenerateDDLAlterTable()
+	sql, err := e.GenerateDDLAlterTable(c.getDDLOptions(e))
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	return sql, executor, nil
+	return sql, e, nil
 }
 
 func (c *Core) generateDDLCreateIndex() (*types.SQL, *executor.Executor, error) {
-	executor := c.tryRandFreeExecutor()
-	if executor == nil {
+	e := c.tryRandFreeExecutor()
+	if e == nil {
 		return nil, nil, nil
 	}
-	sql, err := executor.GenerateDDLCreateIndex()
+	sql, err := e.GenerateDDLCreateIndex(c.getDDLOptions(e))
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	return sql, executor, nil
+	return sql, e, nil
 }
 
 func (c *Core) generateTxnBegin() (*types.SQL, *executor.Executor, error) {
@@ -238,4 +239,31 @@ func (c *Core) tryRandBusyExecutor() *executor.Executor {
 		return e
 	}
 	return c.randExecutor()
+}
+
+func (c *Core) getDDLOptions(exec *executor.Executor) *generator.DDLOptions {
+	tables := []string{}
+	if c.cfg.Options.OnlineDDL {
+		return &generator.DDLOptions{
+			OnlineDDL: true,
+			Tables: tables,
+		}
+	}
+	for _, e := range c.executors {
+		if e == exec {
+			continue
+		}
+		for _, o := range e.OnlineTable {
+			for _, t := range tables {
+				if o == t {
+					continue
+				}
+			}
+			tables = append(tables, o)
+		}
+	}
+	return &generator.DDLOptions{
+		OnlineDDL: false,
+		Tables: tables,
+	}
 }

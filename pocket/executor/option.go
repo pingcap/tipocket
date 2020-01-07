@@ -22,6 +22,7 @@ type Option struct {
 	Reproduce string
 	Stable    bool
 	Mute      bool
+	OnlineDDL bool
 }
 
 // Clone option

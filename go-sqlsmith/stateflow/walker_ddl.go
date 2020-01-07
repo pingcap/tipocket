@@ -15,11 +15,11 @@ package stateflow
 
 import (
 	"fmt"
+	"github.com/juju/errors"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
 	parserTypes "github.com/pingcap/parser/types"
 	tidbTypes "github.com/pingcap/tidb/types"
-	"github.com/pingcap/tipocket/go-sqlsmith/builtin"
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
 	"github.com/pingcap/tidb/types/parser_driver"
@@ -61,7 +61,7 @@ func (s *StateFlow) walkCreateTableStmt(node *ast.CreateTableStmt) *types.Table 
 }
 
 func (s *StateFlow) walkAlterTableStmt(node *ast.AlterTableStmt) *types.Table {
-	table := s.randOriginTable()
+	table := s.randTable(false, false, false)
 	node.Table.Name = model.NewCIStr(table.Table)
 	// we support only one spec now
 	// unless TiDB will print error
@@ -80,8 +80,11 @@ func (s *StateFlow) walkAlterTableStmt(node *ast.AlterTableStmt) *types.Table {
 	return table
 }
 
-func (s *StateFlow) walkCreateIndexStmt(node *ast.CreateIndexStmt) *types.Table {
-	table := s.randTable(false, false)
+func (s *StateFlow) walkCreateIndexStmt(node *ast.CreateIndexStmt) (*types.Table, error) {
+	table := s.randTable(false, false, false)
+	if table == nil {
+		return nil, errors.New("no table available")
+	}
 	node.Table.Name = model.NewCIStr(table.Table)
 	node.IndexName = util.RdStringChar(5)
 	for _, column := range table.Columns {
@@ -92,7 +95,7 @@ func (s *StateFlow) walkCreateIndexStmt(node *ast.CreateIndexStmt) *types.Table 
 				},
 			})
 	}
-	return nil
+	return table, nil
 }
 
 func (s *StateFlow) makeFieldType(t string, l int) *parserTypes.FieldType {
@@ -113,7 +116,10 @@ func (s *StateFlow) makeColumnOption(column *types.Column, option ast.ColumnOpti
 		Tp: option,
 	}
 	if option == ast.ColumnOptionDefaultValue {
-		columnOption.Expr = builtin.GenerateTypeFuncCallExpr(column.DataType)
+		// columnOption.Expr = builtin.GenerateTypeFuncCallExpr(column.DataType)
+		node := driver.ValueExpr{}
+		s.walkValueExpr(&node, nil, column)
+		columnOption.Expr = &node
 	}
 	return &columnOption
 }

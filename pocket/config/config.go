@@ -28,9 +28,11 @@ type Options struct {
 	Stable        bool           `toml:"stable"`
 	Reproduce     bool           `toml:"reproduce"`
 	Concurrency   int            `toml:"concurrency"`
+	InitTable     int            `toml:"init-table"`
 	Path          string         `toml:"path"`
 	Duration      types.Duration `toml:"duration"`
 	CheckDuration types.Duration `toml:"check-duration"`
+	OnlineDDL     bool           `toml:"online-ddl"`
 }
 
 // Config struct
@@ -49,6 +51,7 @@ var initConfig = Config{
 		Stable:      false,
 		Reproduce:   false,
 		Concurrency: 3,
+		InitTable:   10,
 		Path:        "./log",
 		Duration: types.Duration{
 			Duration: time.Hour,
@@ -56,6 +59,7 @@ var initConfig = Config{
 		CheckDuration: types.Duration{
 			Duration: time.Minute,
 		},
+		OnlineDDL: true,
 	},
 }
 

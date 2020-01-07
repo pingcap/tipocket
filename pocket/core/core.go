@@ -70,6 +70,10 @@ func (c *Core) Start(ctx context.Context) error {
 	if c.cfg.Options.Reproduce {
 		return c.reproduce(ctx)
 	}
-	go c.startCheckConsistency()
-	return errors.Trace(c.generate(ctx))
+	initTableReadyCh := make(chan struct{}, 1)
+	go func () {
+		<- initTableReadyCh
+		go c.startCheckConsistency()
+	}()
+	return errors.Trace(c.generate(ctx, &initTableReadyCh))
 }

@@ -83,12 +83,13 @@ var (
 		{"community", "users", "BASE TABLE", "user", "varchar(255)"},
 		{"community", "users", "BASE TABLE", "team_id", "int(11)"},
 	}
-	dbname = "community"
+	dbname  = "community"
 	indexes = make(map[string][]string)
+	tables  = []string{"comments", "picks", "pulls", "tasks", "teams", "users"}
 )
 
 func TestSQLSmith_Schema_TableMerge(t *testing.T) {
-	ss := New()
+	ss := new()
 	indexes["users"] = []string{"idx1", "idx2"}
 	ss.LoadSchema(schema, indexes)
 	ss.SetDB(dbname)

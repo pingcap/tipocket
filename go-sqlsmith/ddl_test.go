@@ -13,7 +13,10 @@
 
 package sqlsmith
 
-import "testing"
+import (
+	"testing"
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
+)
 
 func TestSQLSmith_CreateTable(t *testing.T) {
 	ss := New()
@@ -29,7 +32,7 @@ func TestSQLSmith_AlterTable(t *testing.T) {
 	ss.LoadSchema(schema, indexes)
 	ss.SetDB(dbname)
 
-	sql, _ := ss.AlterTableStmt()
+	sql, _ := ss.AlterTableStmt(&generator.DDLOptions{OnlineDDL:true})
 	t.Log(sql)
 }
 
@@ -38,6 +41,6 @@ func TestSQLSmith_CreateIndex(t *testing.T) {
 	ss.LoadSchema(schema, indexes)
 	ss.SetDB(dbname)
 
-	sql, _ := ss.CreateIndexStmt()
+	sql, _ := ss.CreateIndexStmt(&generator.DDLOptions{OnlineDDL:true})
 	t.Log(sql)
 }

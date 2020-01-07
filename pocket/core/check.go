@@ -141,7 +141,10 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	// go on other transactions
 	// defer can be removed
 	// but here we use it for protect environment
-	defer c.Unlock()
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+	}()
 
 	// delay will hold on this snapshot and check it later
 	if delay {

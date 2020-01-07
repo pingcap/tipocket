@@ -16,7 +16,7 @@ package sqlsmith
 import "testing"
 
 func TestSQLSmith_DataGenerator(t *testing.T) {
-	ss := New()
+	ss := new()
 
 	ss.LoadSchema(schema, indexes)
 

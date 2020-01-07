@@ -16,7 +16,6 @@ package executor
 import (
 	"github.com/juju/errors"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
-
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
@@ -48,6 +47,7 @@ func (e *Executor) reloadSchema() error {
 	e.ss.LoadSchema(schema, indexes)
 	e.ss.SetDB(e.dbname)
 	e.ss.SetStable(e.opt.Stable)
+	e.BeginWithOnlineTables()
 	return nil
 }
 
@@ -66,8 +66,8 @@ func (e *Executor) GenerateDDLCreateTable() (*types.SQL, error) {
 }
 
 // GenerateDDLCreateIndex rand create index statement
-func (e *Executor) GenerateDDLCreateIndex() (*types.SQL, error) {
-	stmt, err := e.ss.CreateIndexStmt()
+func (e *Executor) GenerateDDLCreateIndex(opt *generator.DDLOptions) (*types.SQL, error) {
+	stmt, err := e.ss.CreateIndexStmt(opt)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -78,8 +78,8 @@ func (e *Executor) GenerateDDLCreateIndex() (*types.SQL, error) {
 }
 
 // GenerateDDLAlterTable rand alter table statement
-func (e *Executor) GenerateDDLAlterTable() (*types.SQL, error) {
-	stmt, err := e.ss.AlterTableStmt()
+func (e *Executor) GenerateDDLAlterTable(opt *generator.DDLOptions) (*types.SQL, error) {
+	stmt, err := e.ss.AlterTableStmt(opt)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -103,24 +103,38 @@ func (e *Executor) GenerateDMLSelect() (*types.SQL, error) {
 
 // GenerateDMLUpdate rand update statement
 func (e *Executor) GenerateDMLUpdate() (*types.SQL, error) {
-	stmt, err := e.ss.UpdateStmt()
+	stmt, table, err := e.ss.UpdateStmt()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
 		SQLType: types.SQLTypeDMLUpdate,
 		SQLStmt: stmt,
+		SQLTable: table,
 	}, nil
 }
 
 // GenerateDMLInsert rand insert statement
 func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
-	stmt, err := e.ss.InsertStmtAST()
+	stmt, table, err := e.ss.InsertStmt(false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
 		SQLType: types.SQLTypeDMLInsert,
 		SQLStmt: stmt,
+		SQLTable: table,
 	}, nil
+}
+
+// BeginWithOnlineTables begins transaction with online tables
+func (e *Executor) BeginWithOnlineTables() {
+	e.OnlineTable = e.ss.BeginWithOnlineTables(&generator.DMLOptions{
+		OnlineTable: e.opt.OnlineDDL,
+	})
+}
+
+// EndTransaction clear online tables
+func (e *Executor) EndTransaction() {
+	e.OnlineTable = e.ss.EndTransaction()
 }

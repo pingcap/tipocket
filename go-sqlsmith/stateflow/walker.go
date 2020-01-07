@@ -24,28 +24,39 @@ import (
 )
 
 // WalkTree parse
-func (s *StateFlow) WalkTree(node ast.Node) ast.Node {
-	s.walkTree(node)
-	return node
+func (s *StateFlow) WalkTree(node ast.Node) (ast.Node, string, error) {
+	var (
+		t, err = s.walkTree(node)
+		table  = ""
+	)
+	if t != nil {
+		table = t.Table
+	}
+	return node, table, err
 }
 
-func (s *StateFlow) walkTree(node ast.Node) {
+func (s *StateFlow) walkTree(node ast.Node) (*types.Table, error) {
+	var (
+		table *types.Table
+		err   error
+	)
 	switch node := node.(type) {
 	// DML
 	case *ast.SelectStmt:
-		_ = s.walkSelectStmt(node)
+		table = s.walkSelectStmt(node)
 	case *ast.UpdateStmt:
-		_ = s.walkUpdateStmt(node)
+		table = s.walkUpdateStmt(node)
 	case *ast.InsertStmt:
-		_ = s.walkInsertStmt(node)
+		table = s.walkInsertStmt(node)
 	// DDL
 	case *ast.CreateTableStmt:
-		_ = s.walkCreateTableStmt(node)
+		table = s.walkCreateTableStmt(node)
 	case *ast.AlterTableStmt:
-		_ = s.walkAlterTableStmt(node)
+		table = s.walkAlterTableStmt(node)
 	case *ast.CreateIndexStmt:
-		_ = s.walkCreateIndexStmt(node)
+		table, err = s.walkCreateIndexStmt(node)
 	}
+	return table, err
 }
 
 func (s *StateFlow) walkSelectStmt(node *ast.SelectStmt) *types.Table {
@@ -71,9 +82,9 @@ func (s *StateFlow) walkSelectStmt(node *ast.SelectStmt) *types.Table {
 }
 
 func (s *StateFlow) walkUpdateStmt(node *ast.UpdateStmt) *types.Table {
-	table := s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false)
+	table := s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false, true)
 	for len(table.Columns) == 0 {
-		table = s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false)
+		table = s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false, true)
 	}
 	s.walkAssignmentList(&node.List, table)
 	s.walkExprNode(node.Where, table, nil)
@@ -85,7 +96,7 @@ func (s *StateFlow) walkUpdateStmt(node *ast.UpdateStmt) *types.Table {
 }
 
 func (s *StateFlow) walkInsertStmt(node *ast.InsertStmt) *types.Table {
-	table := s.walkTableName(node.Table.TableRefs.Left.(*ast.TableName), false)	
+	table := s.walkTableName(node.Table.TableRefs.Left.(*ast.TableName), false, true)	
 	columns := s.walkColumns(&node.Columns, table)
 	s.walkLists(&node.Lists, columns)
 	return nil
@@ -119,7 +130,7 @@ func (s *StateFlow) walkOnStmt(node *ast.OnCondition, table1, table2 *types.Tabl
 func (s *StateFlow) walkResultSetNode(node ast.ResultSetNode) *types.Table {
 	switch node := node.(type) {
 	case *ast.TableName:
-		return s.walkTableName(node, true)
+		return s.walkTableName(node, true, false)
 	case *ast.TableSource:
 		n := node
 		if node, ok := node.Source.(*ast.SelectStmt); ok {
@@ -134,8 +145,8 @@ func (s *StateFlow) walkResultSetNode(node ast.ResultSetNode) *types.Table {
 	return nil
 }
 
-func (s *StateFlow) walkTableName(node *ast.TableName, fn bool) *types.Table {
-	table := s.randTable(false, fn)
+func (s *StateFlow) walkTableName(node *ast.TableName, fn bool, online bool) *types.Table {
+	table := s.randTable(false, fn, online)
 	// node.Schema = model.NewCIStr(table.DB)
 	node.Name = model.NewCIStr(table.Table)
 	return table
@@ -214,7 +225,7 @@ func (s *StateFlow) walkValueExpr(node *driver.ValueExpr, table *types.Table, co
 			node.SetFloat64(util.GenerateFloatItem())
 		case "timestamp":
 			node.SetMysqlTime(tidbTypes.Time{
-				Time: tidbTypes.FromGoTime(util.GenerateDateItem()),
+				Time: tidbTypes.FromGoTime(util.GenerateTimestampItem()),
 			})
 		case "datetime":
 			node.SetMysqlTime(tidbTypes.Time{
@@ -222,7 +233,7 @@ func (s *StateFlow) walkValueExpr(node *driver.ValueExpr, table *types.Table, co
 			})
 		}
 	}
-	return nil
+	return table
 }
 
 func (s *StateFlow) walkAssignmentList(list *[]*ast.Assignment, table *types.Table) {
@@ -230,7 +241,7 @@ func (s *StateFlow) walkAssignmentList(list *[]*ast.Assignment, table *types.Tab
 	for _, column := range columns {
 		// TODO: specify primary key in type Table
 		// to avoid this hard coding
-		if column.Column == "id" {
+		if column.Column == "id" || column.Column == "uuid" {
 			continue
 		}
 		assignment := ast.Assignment{
@@ -276,7 +287,11 @@ func (s *StateFlow) makeList(columns []*types.Column) []ast.ExprNode {
 		if column.Column == "id" {
 			continue
 		}
-		list = append(list, ast.NewValueExpr(util.GenerateDataItem(column.DataType)))
+		if column.Column == "uuid" {
+			list = append(list, ast.NewValueExpr(util.GetUUID()))
+		} else {
+			list = append(list, ast.NewValueExpr(util.GenerateDataItem(column.DataType)))
+		}
 	}
 	return list
 }

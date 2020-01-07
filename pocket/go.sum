@@ -190,6 +190,7 @@ github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33 h1:cTSaVv1hue17BCPqt+
 github.com/pingcap/tipb v0.0.0-20191209145133-44f75c9bef33/go.mod h1:RtkHW8WbcNxj8lsbzjaILci01CtYnYbIkQhjyZWrWVI=
 github.com/pingcap/tipocket v0.0.0-20191208084301-86ec5cb87a60 h1:+ObwOi+fIyZ0ROjLzUNJL4lPU4TjroS09UnpdDPbxq0=
 github.com/pingcap/tipocket v0.0.0-20191218112423-aebd26969052 h1:4Dw0zAuWsjEJsjoB4OzhilTt0Yinz/3gnVY8zZ5JRKw=
+github.com/pingcap/tipocket v0.0.0-20191231064915-8e21b5aafad8 h1:/zJ1Caqq7bkkukQm8m4Cd/pGXs3nj0NJ1U+HyMn1MZM=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3 h1:9tl3n+CdgCK1+XZSxjVwTgbzufcELbpovr90/UGG9hk=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209080639-888e6e27b5c3/go.mod h1:wZi0pRHRdcbeqgji5TW8zcnnJ9F30iQN5j1IKSlS4do=
 github.com/pingcap/tipocket/go-sqlsmith v0.0.0-20191209122549-dc7dbc1100a3 h1:2U/ChzQkgh58euvSRGulxdKoh0t6yhnK1dDsY+wj2CQ=
@@ -214,6 +215,8 @@ github.com/remyoudompheng/bigfft v0.0.0-20190512091148-babf20351dd7/go.mod h1:qq
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237 h1:HQagqIiBmr8YXawX/le3+O26N+vPPC1PtjaF3mwnook=
 github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
+github.com/satori/go.uuid v1.2.0 h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=
+github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
 github.com/sergi/go-diff v1.0.1-0.20180205163309-da645544ed44/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
 github.com/shirou/gopsutil v2.18.10+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/gopsutil v2.19.10+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=

@@ -20,12 +20,16 @@ import (
 
 // Table defines database table
 type Table struct {
-	DB string
-	Table string
+	DB          string
+	Table       string
 	OriginTable string
-	Type string
-	Columns map[string]*Column
-	Indexes []string
+	Type        string
+	Columns     map[string]*Column
+	Indexes     []string
+	// Online is for self obtain
+	Online      bool
+	// OnlineOther is for other instances obtain
+	OnlineOther bool
 }
 
 type byColumn []*Column
