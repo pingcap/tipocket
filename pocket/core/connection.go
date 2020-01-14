@@ -15,10 +15,11 @@ package core
 
 import (
 	"fmt"
+
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pocket/executor"
 )
-
 
 func (c *Core) generateExecutorOption(id int) *executor.Option {
 	var suffix string
@@ -26,18 +27,18 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 		suffix = fmt.Sprintf("-%d", id)
 	}
 	opt := executor.Option{
-		ID: id,
-		Log: c.cfg.Options.Path,
+		ID:        id,
+		Log:       c.cfg.Options.Path,
 		LogSuffix: suffix,
-		Stable: c.cfg.Options.Stable,
-		Mute: !c.cfg.Options.Reproduce,
+		Stable:    c.cfg.Options.Stable,
+		Mute:      !c.cfg.Options.Reproduce,
 	}
 	return &opt
 }
 
 func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 	var (
-		e *executor.Executor
+		e   *executor.Executor
 		err error
 	)
 	switch c.cfg.Mode {

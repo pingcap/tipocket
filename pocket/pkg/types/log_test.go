@@ -1,9 +1,10 @@
 package types
 
 import (
-	"time"
 	"sort"
 	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 )
 

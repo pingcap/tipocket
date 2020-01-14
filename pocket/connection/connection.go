@@ -2,21 +2,23 @@ package connection
 
 import (
 	"fmt"
+
+	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/mysql"
-	"github.com/juju/errors"
 )
 
 // Option struct
 type Option struct {
-	Log string
+	Log  string
 	Mute bool
 }
 
 // Connection define connection struct
 type Connection struct {
 	logger *logger.Logger
-	db *mysql.DBConnect
+	db     *mysql.DBConnect
 }
 
 // New create Connection instance from dsn
@@ -31,7 +33,7 @@ func New(dsn string, opt *Option) (*Connection, error) {
 	}
 	return &Connection{
 		logger: l,
-		db: db,
+		db:     db,
 	}, nil
 }
 

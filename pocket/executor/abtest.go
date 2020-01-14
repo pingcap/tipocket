@@ -3,8 +3,10 @@ package executor
 import (
 	"fmt"
 	"sync"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
@@ -12,7 +14,7 @@ import (
 
 func (e *Executor) abTest() {
 	for {
-		e.ErrCh <- e.execABTestSQL(<- e.SQLCh)
+		e.ErrCh <- e.execABTestSQL(<-e.SQLCh)
 	}
 }
 
@@ -125,7 +127,7 @@ func (e *Executor) ABTestIfTxn() bool {
 // DML
 func (e *Executor) abTestSelect(sql string) error {
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		res1 [][]*connection.QueryItem
 		res2 [][]*connection.QueryItem
 		err1 error
@@ -157,7 +159,7 @@ func (e *Executor) abTestSelect(sql string) error {
 		)
 
 		if len(row1) != len(row1) {
-			return errors.Errorf("column number not match res1: %d, res2: %d", len(res1), len(res2))	
+			return errors.Errorf("column number not match res1: %d, res2: %d", len(res1), len(res2))
 		}
 
 		for rIndex := range row1 {
@@ -176,7 +178,7 @@ func (e *Executor) abTestSelect(sql string) error {
 
 func (e *Executor) abTestUpdate(sql string) error {
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		err1 error
 		err2 error
 	)
@@ -196,7 +198,7 @@ func (e *Executor) abTestUpdate(sql string) error {
 
 func (e *Executor) abTestInsert(sql string) error {
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		err1 error
 		err2 error
 	)
@@ -216,7 +218,7 @@ func (e *Executor) abTestInsert(sql string) error {
 
 func (e *Executor) abTestDelete(sql string) error {
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		err1 error
 		err2 error
 	)
@@ -236,7 +238,7 @@ func (e *Executor) abTestDelete(sql string) error {
 // DDL
 func (e *Executor) abTestExecDDL(sql string) error {
 	var (
-		wg sync.WaitGroup
+		wg   sync.WaitGroup
 		err1 error
 		err2 error
 	)

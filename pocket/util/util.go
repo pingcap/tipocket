@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"time"
+
 	"github.com/juju/errors"
+
 	// "github.com/ngaut/log"
 	"github.com/go-sql-driver/mysql"
 )
@@ -54,7 +56,7 @@ func ErrorMustSame(err1, err2 error) error {
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
-			return false
+		return false
 	}
 	return !info.IsDir()
 }
@@ -63,7 +65,7 @@ func FileExists(filename string) bool {
 func DirExists(dir string) bool {
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-			return false
+		return false
 	}
 	return info.IsDir()
 }

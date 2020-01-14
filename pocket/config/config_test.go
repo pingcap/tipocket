@@ -14,8 +14,9 @@
 package config
 
 import (
-	"time"
 	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 )
 

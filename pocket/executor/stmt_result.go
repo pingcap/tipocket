@@ -4,7 +4,7 @@ import (
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
-type stmtResult struct{
+type stmtResult struct {
 	sql *types.SQL
 	err error
 }
@@ -25,7 +25,6 @@ func (e *Executor) commitLog(sql *types.SQL, err error) {
 	// if stmt == e.stmts[0] {
 	// 	e.stmts = e.stmts[1:]
 	// }
-
 
 	// if err != nil {
 	// 	e.logger.Infof("[FAIL] Exec SQL %s error %v", stmt, err)

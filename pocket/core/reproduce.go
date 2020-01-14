@@ -20,22 +20,24 @@ import (
 	"os"
 	"path"
 	"regexp"
-	"strings"
-	"strconv"
-	"time"
 	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/pocket/util"
+
 	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 var (
-	abTestLogPattern = regexp.MustCompile(`ab-test-[0-9]+\.log`)
+	abTestLogPattern     = regexp.MustCompile(`ab-test-[0-9]+\.log`)
 	binlogTestLogPattern = regexp.MustCompile(`single-test-[0-9]+\.log`)
-	todoSQLPattern = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(SUCCESS)\] Exec SQL (.*) success$`)
-	execIDPattern = regexp.MustCompile(`^.*?(ab|single)-test-([0-9]+).log$`)
-	timeLayout = `2006/01/02 15:04:05.000 -07:00`
+	todoSQLPattern       = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(SUCCESS)\] Exec SQL (.*) success$`)
+	execIDPattern        = regexp.MustCompile(`^.*?(ab|single)-test-([0-9]+).log$`)
+	timeLayout           = `2006/01/02 15:04:05.000 -07:00`
 )
 
 func (c *Core) reproduce(ctx context.Context) error {
@@ -82,11 +84,11 @@ func (c *Core) reproduceFromDir(dir, table string) error {
 		// 	log.Info(logs[index + 1].GetNode(), logs[index + 1].GetSQL())
 		// 	log.Fatal("time mess")
 		// }
-		if index % 100 == 0 {
+		if index%100 == 0 {
 			log.Info(index, "/", len(logs))
 		}
 		c.executeByID(l.GetNode(), l.GetSQL())
-		// if rand.Float64() < 0.1 {	
+		// if rand.Float64() < 0.1 {
 		// 	ch := make(chan struct{}, 1)
 		// 	go e.abTestCompareDataWithoutCommit(ch)
 		// 	<- ch
@@ -117,7 +119,7 @@ func (c *Core) readLogs(logFiles []string) ([]*types.Log, error) {
 func readLogFile(logFile string) ([]*types.Log, error) {
 	var (
 		execID = parseExecNumber(logFile)
-		logs []*types.Log
+		logs   []*types.Log
 	)
 	f, err := os.Open(logFile)
 	if err != nil {
@@ -149,11 +151,11 @@ func parseExecNumber(filePath string) int {
 		return 0
 	}
 	return id
-} 
+}
 
 func parseLog(line string, node int) (*types.Log, error) {
 	var (
-		m []string
+		m   []string
 		log types.Log
 	)
 

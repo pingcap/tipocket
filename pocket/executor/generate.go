@@ -2,8 +2,9 @@ package executor
 
 import (
 	"github.com/juju/errors"
-	"github.com/pingcap/tipocket/pocket/pkg/types"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
+
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 // ReloadSchema expose reloadSchema

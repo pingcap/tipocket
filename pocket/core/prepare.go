@@ -16,12 +16,14 @@ package core
 import (
 	"fmt"
 	"regexp"
+
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 var (
-	dsnPattern = regexp.MustCompile(`([a-z0-9]+):@tcp\(([0-9.]+):([0-9]+)\)/([0-9a-zA-Z_]+)`)
+	dsnPattern   = regexp.MustCompile(`([a-z0-9]+):@tcp\(([0-9.]+):([0-9]+)\)/([0-9a-zA-Z_]+)`)
 	mustExecSQLs = []string{
 		`SET @@GLOBAL.SQL_MODE="NO_ENGINE_SUBSTITUTION"`,
 		// `SET @@GLOBAL.TIME_ZONE = "+8:00"`,

@@ -19,8 +19,10 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"github.com/ngaut/log"
+
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
@@ -62,7 +64,7 @@ func (c *Core) checkConsistency(delay bool) (bool, error) {
 		result, err = true, nil
 	}
 	return result, errors.Trace(err)
-} 
+}
 
 // abTestCompareDataWithoutCommit take snapshot without other transactions all committed
 // this function can run async and channel is for waiting taking snapshot complete
@@ -86,8 +88,8 @@ func (c *Core) abTestCompareDataWithoutCommit(ch chan struct{}) {
 	}
 	begin := util.CurrentTimeStrAsLog()
 	ch <- struct{}{}
-	
-	time.Sleep(time.Duration(rand.Intn(1000))*time.Millisecond)
+
+	time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond)
 	if err != nil {
 		log.Fatal("get schema err %+v", errors.ErrorStack(err))
 	}
@@ -143,9 +145,9 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 
 	// delay will hold on this snapshot and check it later
 	if delay {
-		time.Sleep(time.Duration(rand.Intn(5))*time.Second)
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	}
-	
+
 	return c.compareData(compareExecutor, schema)
 }
 
@@ -214,9 +216,9 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 
 	// delay will hold on this snapshot and check it later
 	if delay {
-		time.Sleep(time.Duration(rand.Intn(5))*time.Second)
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 	}
-	
+
 	return c.compareData(compareExecutor, schema)
 }
 
@@ -232,7 +234,7 @@ func (c *Core) compareData(beginnedConnect *executor.Executor, schema [][5]strin
 	return true, nil
 }
 
-func makeCompareSQLs (schema [][5]string) []string {
+func makeCompareSQLs(schema [][5]string) []string {
 	rowCountSQLs := []string{}
 	columnDataSQLs := []string{}
 	tables := make(map[string][]string)
@@ -257,7 +259,7 @@ func makeCompareSQLs (schema [][5]string) []string {
 	return append(rowCountSQLs, columnDataSQLs...)
 }
 
-func generateWaitTable () (string, string) {
+func generateWaitTable() (string, string) {
 	sec := time.Now().Unix()
 	table := fmt.Sprintf("t%d", sec)
 	return table, fmt.Sprintf("CREATE TABLE %s(id int)", table)

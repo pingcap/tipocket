@@ -2,13 +2,15 @@ package executor
 
 import (
 	"fmt"
-	"path"
 	"os"
+	"path"
 	"regexp"
 	"sync"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/go-sqlsmith"
+
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
@@ -34,11 +36,11 @@ type Executor struct {
 	stmts       []*types.SQL
 	stmtResults []*stmtResult
 	// SQL channel
-	SQLCh       chan *types.SQL
+	SQLCh chan *types.SQL
 	// Since we must ensure no other transactions commit or begin between the transaction start time points of abtest
 	// when a transaction begins/commits/rollbacks, generator wait for it ready for both A/B side
 	// This channel is for sending signal to generator when both A/B side's begin/commit/rollback are ready
-	TxnReadyCh  chan struct{}
+	TxnReadyCh chan struct{}
 	// ErrCh for waiting SQL execution finish
 	// and pass execution error
 	ErrCh chan error
@@ -53,7 +55,7 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	}
 
 	conn, err := connection.New(dsn, &connection.Option{
-		Log: connLogPath,
+		Log:  connLogPath,
 		Mute: opt.Mute,
 	})
 	if err != nil {
@@ -90,14 +92,14 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	}
 
 	conn1, err := connection.New(dsn1, &connection.Option{
-		Log: conn1LogPath,
+		Log:  conn1LogPath,
 		Mute: opt.Mute,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	conn2, err := connection.New(dsn2, &connection.Option{
-		Log: conn2LogPath,
+		Log:  conn2LogPath,
 		Mute: opt.Mute,
 	})
 	if err != nil {

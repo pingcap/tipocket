@@ -3,8 +3,8 @@ package types
 // BySQL implement sort interface for string
 type BySQL []string
 
-func (a BySQL) Len() int           { return len(a) }
-func (a BySQL) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a BySQL) Len() int      { return len(a) }
+func (a BySQL) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a BySQL) Less(i, j int) bool {
 	var (
 		bi = []byte(a[i])
@@ -21,7 +21,7 @@ func (a BySQL) Less(i, j int) bool {
 
 func min(a, b int) int {
 	if a < b {
-			return a
+		return a
 	}
 	return b
 }

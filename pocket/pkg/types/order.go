@@ -3,6 +3,7 @@ package types
 import (
 	"sync"
 )
+
 // Without general type, the "container/list" will not be graceful
 
 // Order for log executor orders
@@ -16,18 +17,18 @@ type Order struct {
 func NewOrder() *Order {
 	o := &Order{
 		history: []int{},
-		index: -1,
+		index:   -1,
 	}
 	return o
 }
 
-// Push push a history, will move the id to end of 
-func (o *Order)Push(id int) {
+// Push push a history, will move the id to end of
+func (o *Order) Push(id int) {
 	o.Lock()
 	defer o.Unlock()
 	for index, i := range o.history {
 		if i == id {
-			if index == len(o.history) - 1 {
+			if index == len(o.history)-1 {
 				return
 			}
 			o.history = append(o.history[:index], o.history[index+1:]...)
@@ -37,12 +38,12 @@ func (o *Order)Push(id int) {
 }
 
 // Start reset index
-func (o *Order)Start() {
+func (o *Order) Start() {
 	o.index = -1
 }
 
 // Next is for walking through
-func (o *Order)Next() bool {
+func (o *Order) Next() bool {
 	if o.index == -1 {
 		o.Lock()
 	}
@@ -57,12 +58,12 @@ func (o *Order)Next() bool {
 }
 
 // Val return value for current index
-func (o *Order)Val() int {
+func (o *Order) Val() int {
 	return o.history[o.index]
 }
 
 // Reset history
-func (o *Order) Reset () {
+func (o *Order) Reset() {
 	o.history = []int{}
 }
 

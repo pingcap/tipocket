@@ -2,15 +2,17 @@ package executor
 
 import (
 	"fmt"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
 func (e *Executor) singleTest() {
 	for {
 		for {
-			e.ErrCh <- e.execSingleTestSQL(<- e.SQLCh)
+			e.ErrCh <- e.execSingleTestSQL(<-e.SQLCh)
 		}
 	}
 }

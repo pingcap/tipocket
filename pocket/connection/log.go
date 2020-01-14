@@ -2,6 +2,7 @@ package connection
 
 import (
 	"time"
+
 	"github.com/ngaut/log"
 )
 

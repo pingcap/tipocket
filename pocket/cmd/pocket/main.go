@@ -24,6 +24,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+
 	"github.com/pingcap/tipocket/pocket/config"
 	"github.com/pingcap/tipocket/pocket/core"
 	"github.com/pingcap/tipocket/pocket/util"
@@ -33,18 +34,18 @@ import (
 var (
 	// global
 	nmPrintVersion = "V"
-	nmConfigPath = "config"
+	nmConfigPath   = "config"
 	// connection
 	nmMode = "mode"
 	nmDsn1 = "dsn1"
 	nmDsn2 = "dsn2"
 	// common options
-	nmClearDB = "clear"
-	nmStable = "stable"
-	nmReproduce = "reproduce"
+	nmClearDB     = "clear"
+	nmStable      = "stable"
+	nmReproduce   = "reproduce"
 	nmConcurrency = "concurrency"
-	nmPath = "log"
-	nmDuration = "duration"
+	nmPath        = "log"
+	nmDuration    = "duration"
 	// misc
 	nmPrintSchema = "schema"
 )
