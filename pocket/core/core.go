@@ -71,8 +71,8 @@ func (c *Core) Start(ctx context.Context) error {
 		return c.reproduce(ctx)
 	}
 	initTableReadyCh := make(chan struct{}, 1)
-	go func () {
-		<- initTableReadyCh
+	go func() {
+		<-initTableReadyCh
 		go c.startCheckConsistency()
 	}()
 	return errors.Trace(c.generate(ctx, &initTableReadyCh))

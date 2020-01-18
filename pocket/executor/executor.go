@@ -25,9 +25,9 @@ import (
 	"github.com/pingcap/tipocket/go-sqlsmith"
 
 	"github.com/pingcap/tipocket/pocket/connection"
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
-	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 )
 
 var (
@@ -57,7 +57,7 @@ type Executor struct {
 	TxnReadyCh chan struct{}
 	// ErrCh for waiting SQL execution finish
 	// and pass execution error
-	ErrCh       chan error
+	ErrCh chan error
 	// OnlineTable record tables which are manipulated in transaction for avoiding online DDL
 	OnlineTable []string
 }

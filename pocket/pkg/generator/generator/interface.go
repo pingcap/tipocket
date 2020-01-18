@@ -10,7 +10,7 @@ type Generator interface {
 	// record[3] column name
 	// record[4] column type
 	// indexes map table name to index string slice
-	LoadSchema (records [][5]string, indexes map[string][]string)
+	LoadSchema(records [][5]string, indexes map[string][]string)
 	// SetDB set operation database
 	// the generated SQLs after this will be under this database
 	SetDB(db string)
@@ -65,5 +65,5 @@ type DDLOptions struct {
 	// if OnlineDDL is set to false
 	// Tables contains all online tables which should not be modified with DDL
 	// pocket will collect them from other generator instances
-	Tables    []string
+	Tables []string
 }

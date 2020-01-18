@@ -15,12 +15,12 @@ package executor
 
 import (
 	"fmt"
-	"strings"
-	"github.com/ngaut/log"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
+	"strings"
 )
 
 // ReloadSchema expose reloadSchema
@@ -100,8 +100,8 @@ func (e *Executor) GenerateDMLSelect() (*types.SQL, error) {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLSelect,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLSelect,
+		SQLStmt:  stmt,
 		SQLTable: table,
 	}, nil
 }
@@ -113,8 +113,8 @@ func (e *Executor) GenerateDMLSelectForUpdate() (*types.SQL, error) {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLSelectForUpdate,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLSelectForUpdate,
+		SQLStmt:  stmt,
 		SQLTable: table,
 	}, nil
 }
@@ -130,8 +130,8 @@ func (e *Executor) GenerateDMLUpdate() (*types.SQL, error) {
 		log.Info(e.conn1.FetchSchema(e.dbname))
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLUpdate,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLUpdate,
+		SQLStmt:  stmt,
 		SQLTable: table,
 	}, nil
 }
@@ -143,8 +143,8 @@ func (e *Executor) GenerateDMLDelete() (*types.SQL, error) {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLDelete,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLDelete,
+		SQLStmt:  stmt,
 		SQLTable: table,
 	}, nil
 }
@@ -156,8 +156,8 @@ func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLInsert,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLInsert,
+		SQLStmt:  stmt,
 		SQLTable: table,
 	}, nil
 }
@@ -166,8 +166,8 @@ func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
 func (e *Executor) GenerateSleep() *types.SQL {
 	duration := util.Rd(25)
 	return &types.SQL{
-		SQLType: types.SQLTypeSleep,
-		SQLStmt: fmt.Sprintf("SELECT SLEEP(%d)", duration),
+		SQLType:  types.SQLTypeSleep,
+		SQLStmt:  fmt.Sprintf("SELECT SLEEP(%d)", duration),
 		ExecTime: duration,
 	}
 }

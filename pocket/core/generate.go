@@ -59,7 +59,7 @@ func (c *Core) runGenerateSQL(ctx context.Context) {
 	if c.cfg.Options.Serialize {
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 				c.serializeGenerateSQL()
@@ -81,7 +81,7 @@ func (c *Core) runGenerateSQL(ctx context.Context) {
 func (c *Core) runGenerateSQLWithExecutor(ctx context.Context, e *executor.Executor) {
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 			for c.ifLock {
@@ -94,9 +94,9 @@ func (c *Core) runGenerateSQLWithExecutor(ctx context.Context, e *executor.Execu
 
 func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
 	var (
-		sql  *types.SQL
-		err  error
-		rd = util.Rd(350)
+		sql *types.SQL
+		err error
+		rd  = util.Rd(350)
 	)
 	if rd == 0 {
 		// sql, err = e.GenerateDDLCreateTable()
@@ -151,7 +151,7 @@ func (c *Core) serializeGenerateSQL() {
 		sql *types.SQL
 		err error
 		e   *executor.Executor
-		rd  = util.Rd(300)
+		rd  = util.Rd(350)
 	)
 
 	if rd == 0 {
@@ -366,7 +366,7 @@ func (c *Core) getDDLOptions(exec *executor.Executor) *generator.DDLOptions {
 	if c.cfg.Options.OnlineDDL {
 		return &generator.DDLOptions{
 			OnlineDDL: true,
-			Tables: tables,
+			Tables:    tables,
 		}
 	}
 	for _, e := range c.executors {
@@ -384,6 +384,6 @@ func (c *Core) getDDLOptions(exec *executor.Executor) *generator.DDLOptions {
 	}
 	return &generator.DDLOptions{
 		OnlineDDL: false,
-		Tables: tables,
+		Tables:    tables,
 	}
 }

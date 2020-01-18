@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	matchDB = regexp.MustCompile("([0-9a-zA-Z]+)$")
+	matchDB    = regexp.MustCompile("([0-9a-zA-Z]+)$")
 	selectStmt = "SELECT * FROM %s"
 )
 

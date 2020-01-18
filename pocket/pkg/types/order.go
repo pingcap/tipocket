@@ -81,13 +81,13 @@ func (o *Order) Reset() {
 }
 
 // GetHistroy get copied history slice
-func (o *Order) GetHistroy () []int {
+func (o *Order) GetHistroy() []int {
 	h := o.history
 	return h
 }
 
 // Has given value in order list
-func (o *Order) Has (i int) bool {
+func (o *Order) Has(i int) bool {
 	o.Lock()
 	defer o.Unlock()
 	for _, h := range o.history {
