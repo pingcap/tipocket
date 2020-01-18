@@ -3,6 +3,7 @@ package connection
 import (
 	"fmt"
 	"regexp"
+
 	"github.com/juju/errors"
 )
 
@@ -11,7 +12,7 @@ var binlogSyncTablePattern = regexp.MustCompile(`^t[0-9]+$`)
 // FetchDatabases database list
 func (c *Connection) FetchDatabases() ([]string, error) {
 	databaseSlice := []string{}
-	
+
 	databases, err := c.db.Query(showDatabasesSQL)
 	if err != nil {
 		return []string{}, errors.Trace(err)
@@ -52,7 +53,7 @@ func (c *Connection) FetchTables(db string) ([]string, error) {
 // FetchSchema get schema of given database from database
 func (c *Connection) FetchSchema(db string) ([][5]string, error) {
 	var (
-		schema [][5]string
+		schema     [][5]string
 		tablesInDB [][3]string
 	)
 	tables, err := c.db.Query(schemaSQL)
@@ -77,8 +78,8 @@ func (c *Connection) FetchSchema(db string) ([][5]string, error) {
 	for _, table := range tablesInDB {
 		var (
 			schemaName = table[0]
-			tableName = table[1]
-			tableType = table[2]
+			tableName  = table[1]
+			tableType  = table[2]
 		)
 		columns, err := c.FetchColumns(schemaName, tableName)
 		if err != nil {

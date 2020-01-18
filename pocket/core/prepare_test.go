@@ -15,8 +15,10 @@ package core
 
 import (
 	"testing"
-	"github.com/pingcap/tipocket/pocket/config"
+
 	"github.com/stretchr/testify/assert"
+
+	"github.com/pingcap/tipocket/pocket/config"
 )
 
 func TestParseDSN(t *testing.T) {

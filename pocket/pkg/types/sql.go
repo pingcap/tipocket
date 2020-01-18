@@ -1,6 +1,5 @@
 package types
 
-
 // SQLType enums for SQL types
 type SQLType int
 

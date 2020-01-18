@@ -2,6 +2,7 @@ package connection
 
 import (
 	"time"
+
 	"github.com/ngaut/log"
 )
 
@@ -28,7 +29,7 @@ func (c *Connection) Select(stmt string, args ...interface{}) ([][]*QueryItem, e
 		if err := rows.Scan(rowResultSets...); err != nil {
 			log.Info(err)
 		}
-		for index, resultItem := range(rowResultSets) {
+		for index, resultItem := range rowResultSets {
 			r := *resultItem.(*interface{})
 			item := QueryItem{
 				ValType: columnTypes[index],

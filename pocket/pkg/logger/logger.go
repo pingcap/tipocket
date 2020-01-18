@@ -3,30 +3,32 @@ package logger
 import (
 	"fmt"
 	"os"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pocket/util"
 )
 
 // Logger struct
 type Logger struct {
 	logPath string
-	print bool
-	mute bool
+	print   bool
+	mute    bool
 }
 
 // New init Logger struct
 func New(logPath string, mute bool) (*Logger, error) {
 	logger := Logger{
 		logPath: logPath,
-		print: logPath == "",
-		mute: mute,
+		print:   logPath == "",
+		mute:    mute,
 	}
 
 	return logger.init()
 }
 
-func (l *Logger)init() (*Logger, error) {
+func (l *Logger) init() (*Logger, error) {
 	if l.print || l.mute {
 		return l, nil
 	}
@@ -36,7 +38,7 @@ func (l *Logger)init() (*Logger, error) {
 	return l, nil
 }
 
-func (l *Logger)writeLine(line string) error {
+func (l *Logger) writeLine(line string) error {
 	line = fmt.Sprintf("%s %s", util.CurrentTimeStrAsLog(), line)
 	if l.mute {
 		return nil
@@ -48,7 +50,7 @@ func (l *Logger)writeLine(line string) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	defer func () {
+	defer func() {
 		if err := f.Close(); err != nil {
 			log.Error(err)
 		}

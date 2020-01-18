@@ -103,4 +103,3 @@ func (e *Executor) TxnRollback() error {
 	}
 	panic("unhandled txn rollback switch")
 }
-

@@ -29,4 +29,8 @@ clean:
 test:
 	$(GOTEST) ./...
 
-.PHONY: all clean pocket test
+# Run go fmt against code
+fmt:
+	$(GO) fmt ./...
+
+.PHONY: all clean pocket test fmt

@@ -15,8 +15,9 @@ package core
 
 import (
 	"math/rand"
-	"time"
 	"sync"
+	"time"
+
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
@@ -43,7 +44,7 @@ func (c *Core) watchLock() {
 		}
 	}()
 	for {
-		c.order.Push(<- c.lockWatchCh)
+		c.order.Push(<-c.lockWatchCh)
 		lastExecTime = time.Now()
 	}
 }
@@ -54,7 +55,7 @@ func (c *Core) resolveDeadLock(all bool) {
 	for c.order.Next() {
 		for _, executor := range c.executors {
 			if executor.GetID() == c.order.Val() {
-				time.Sleep(10*time.Millisecond)
+				time.Sleep(10 * time.Millisecond)
 				wg.Add(1)
 				go c.resolveDeadLockOne(executor, &wg)
 			}

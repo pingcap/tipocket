@@ -15,8 +15,10 @@ package core
 
 import (
 	"context"
+
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
@@ -31,13 +33,13 @@ func (c *Core) generate(ctx context.Context) error {
 		return errors.Trace(err)
 	}
 	log.Info("start generate")
-	for{
-	select {
-	case <- ctx.Done():
-		return nil
-	default:
-		c.generateSQL()
-	}
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+			c.generateSQL()
+		}
 	}
 }
 
@@ -65,10 +67,10 @@ func (c *Core) generateSQL() {
 	c.Unlock()
 	// TODO: SQL type rate config
 	var (
-		sql  *types.SQL
-		err  error
-		e    *executor.Executor
-		rd = util.Rd(300)
+		sql *types.SQL
+		err error
+		e   *executor.Executor
+		rd  = util.Rd(300)
 	)
 
 	if rd == 0 {

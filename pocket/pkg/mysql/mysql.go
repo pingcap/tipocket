@@ -1,9 +1,9 @@
 package mysql
 
 import (
-	"sync"
 	"context"
 	"database/sql"
+	"sync"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -97,7 +97,7 @@ func (conn *DBConnect) Begin() error {
 // Commit a transaction
 func (conn *DBConnect) Commit() error {
 	conn.Lock()
-	defer func () {
+	defer func() {
 		conn.txn = nil
 		conn.Unlock()
 	}()
@@ -110,7 +110,7 @@ func (conn *DBConnect) Commit() error {
 // Rollback a transaction
 func (conn *DBConnect) Rollback() error {
 	conn.Lock()
-	defer func () {
+	defer func() {
 		conn.txn = nil
 		conn.Unlock()
 	}()
@@ -168,7 +168,7 @@ func OpenDB(dsn string, maxIdleConns int) (*DBConnect, error) {
 	db.SetMaxIdleConns(maxIdleConns)
 	// log.Info("DB opens successfully")
 	return &DBConnect{
-		db: db,
+		db:  db,
 		dsn: dsn,
 	}, nil
 }

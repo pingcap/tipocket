@@ -2,6 +2,7 @@ package connection
 
 import (
 	"database/sql"
+
 	"github.com/juju/errors"
 )
 

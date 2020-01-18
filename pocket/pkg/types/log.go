@@ -15,8 +15,8 @@ type Log struct {
 // ByLog implement sort interface for log
 type ByLog []*Log
 
-func (a ByLog) Len() int           { return len(a) }
-func (a ByLog) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByLog) Len() int      { return len(a) }
+func (a ByLog) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByLog) Less(i, j int) bool {
 	return a[i].GetTime().Before(a[j].GetTime())
 }

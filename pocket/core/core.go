@@ -16,7 +16,9 @@ package core
 import (
 	"context"
 	"sync"
+
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pocket/config"
 	"github.com/pingcap/tipocket/pocket/connection"
 	"github.com/pingcap/tipocket/pocket/executor"
@@ -44,9 +46,9 @@ type Core struct {
 // New creates a Core struct
 func New(cfg *config.Config) *Core {
 	return &Core{
-		cfg: cfg,
+		cfg:         cfg,
 		lockWatchCh: make(chan int),
-		order: types.NewOrder(),
+		order:       types.NewOrder(),
 	}
 }
 

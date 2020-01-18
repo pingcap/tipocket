@@ -18,6 +18,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
 
@@ -44,11 +45,11 @@ var initConfig = Config{
 	Mode: "single",
 	DSN1: "root:@tcp(172.17.0.1:4000)/pocket",
 	Options: Options{
-		ClearDB: false,
-		Stable: false,
-		Reproduce: false,
+		ClearDB:     false,
+		Stable:      false,
+		Reproduce:   false,
 		Concurrency: 3,
-		Path: "./log",
+		Path:        "./log",
 		Duration: types.Duration{
 			Duration: time.Hour,
 		},
@@ -63,7 +64,7 @@ func Init() *Config {
 	return initConfig.Copy()
 }
 
-// Load config from file 
+// Load config from file
 func (c *Config) Load(path string) error {
 	_, err := toml.DecodeFile(path, c)
 	return errors.Trace(err)
