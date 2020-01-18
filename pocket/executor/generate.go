@@ -183,3 +183,27 @@ func (e *Executor) BeginWithOnlineTables() {
 func (e *Executor) EndTransaction() {
 	e.OnlineTable = e.ss.EndTransaction()
 }
+
+// GenerateTxnBegin start transaction
+func (e *Executor) GenerateTxnBegin() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnBegin,
+		SQLStmt: "BEGIN",
+	}
+}
+
+// GenerateTxnCommit commit transaction
+func (e *Executor) GenerateTxnCommit() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnCommit,
+		SQLStmt: "COMMIT",
+	}
+}
+
+// GenerateTxnRollback rollback transaction
+func (e *Executor) GenerateTxnRollback() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnRollback,
+		SQLStmt: "ROLLBACK",
+	}
+}

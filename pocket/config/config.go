@@ -69,6 +69,22 @@ var initConfig = Config{
 		OnlineDDL: true,
 		Serialize: false,
 	},
+	Generator: Generator{
+		SQLSmith: SQLSmith{
+			TxnBegin:           20,
+			TxnCommit:          20,
+			TxnRollback:        10,
+			DDLCreateTable:     1,
+			DDLAlterTable:      10,
+			DDLCreateIndex:     10,
+			DMLSelect:          10,
+			DMLSelectForUpdate: 30,
+			DMLDelete:          10,
+			DMLUpdate:          120,
+			DMLInsert:          120,
+			Sleep:              10,
+		},
+	},
 }
 
 // Init get default Config

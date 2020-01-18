@@ -21,10 +21,12 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
+// Rd same to rand.Intn
 func Rd (n int) int {
 	return rand.Intn(n)
 }
 
+// RdRange rand int in range
 func RdRange (n, m int) int {
 	if n == m {
 		return n
@@ -35,10 +37,12 @@ func RdRange (n, m int) int {
 	return n + rand.Intn(m - n)
 }
 
+// RdFloat64 rand float64
 func RdFloat64() float64 {
 	return rand.Float64()
 }
 
+// RdDate rand date
 func RdDate() time.Time {
 	min := time.Date(1970, 1, 0, 0, 0, 1, 0, time.UTC).Unix()
 	max := time.Date(2100, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
@@ -59,6 +63,7 @@ func RdTimestamp() time.Time {
 	return time.Unix(sec, 0)
 }
 
+// RdString rand string with given length
 func RdString (length int) string {
 	res := ""
 	for i := 0; i < length; i++ {
@@ -73,6 +78,7 @@ func RdString (length int) string {
 	return res
 }
 
+// RdStringChar rand string with given length, letter chars only
 func RdStringChar (length int) string {
 	res := ""
 	for i := 0; i < length; i++ {
@@ -82,6 +88,7 @@ func RdStringChar (length int) string {
 	return res
 }
 
+// RdType rand data type
 func RdType () string {
 	switch Rd(6) {
 	case 0:
@@ -96,8 +103,9 @@ func RdType () string {
 	return "int"
 }
 
-func RdDataLen(columnType string) int {
-	switch columnType {
+// RdDataLen rand data with given type
+func RdDataLen(t string) int {
+	switch t {
 	case "int":
 		return RdRange(8, 20)
 	case "varchar":
@@ -114,11 +122,8 @@ func RdDataLen(columnType string) int {
 	return 10
 }
 
-func RdColumnOptions(t string) []ast.ColumnOptionType {
-	return RdDateColumnOptions(t)
-}
-
-func RdDateColumnOptions(t string) (options []ast.ColumnOptionType) {
+// RdColumnOptions for rand column option with given type
+func RdColumnOptions(t string) (options []ast.ColumnOptionType) {
 	if Rd(3) == 0 {
 		options = append(options, ast.ColumnOptionNotNull)
 	} else if Rd(2) == 0 {
@@ -133,6 +138,7 @@ func RdDateColumnOptions(t string) (options []ast.ColumnOptionType) {
 	return
 }
 
+// RdCharset rand charset
 func RdCharset() string {
 	switch Rd(4) {
 	default:

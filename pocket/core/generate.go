@@ -92,45 +92,122 @@ func (c *Core) runGenerateSQLWithExecutor(ctx context.Context, e *executor.Execu
 	}
 }
 
+func (c *Core) randSQLType() types.SQLType {
+	// FIXME: use reflect and calc it only once in init
+	all := 0
+	all = all + c.cfg.Generator.SQLSmith.TxnBegin
+	all = all + c.cfg.Generator.SQLSmith.TxnCommit
+	all = all + c.cfg.Generator.SQLSmith.TxnRollback
+	all = all + c.cfg.Generator.SQLSmith.DDLCreateTable
+	all = all + c.cfg.Generator.SQLSmith.DDLAlterTable
+	all = all + c.cfg.Generator.SQLSmith.DDLCreateIndex
+	all = all + c.cfg.Generator.SQLSmith.DMLSelect
+	all = all + c.cfg.Generator.SQLSmith.DMLSelectForUpdate
+	all = all + c.cfg.Generator.SQLSmith.DMLDelete
+	all = all + c.cfg.Generator.SQLSmith.DMLUpdate
+	all = all + c.cfg.Generator.SQLSmith.DMLInsert
+	all = all + c.cfg.Generator.SQLSmith.Sleep
+
+	val := util.Rd(all)
+	if val < c.cfg.Generator.SQLSmith.TxnBegin {
+		return types.SQLTypeTxnBegin
+	}
+	val = val - c.cfg.Generator.SQLSmith.TxnBegin
+
+	if val < c.cfg.Generator.SQLSmith.TxnCommit {
+		return types.SQLTypeTxnCommit
+	}
+	val = val - c.cfg.Generator.SQLSmith.TxnCommit
+
+	if val < c.cfg.Generator.SQLSmith.TxnRollback {
+		return types.SQLTypeTxnRollback
+	}
+	val = val - c.cfg.Generator.SQLSmith.TxnRollback
+
+	if val < c.cfg.Generator.SQLSmith.DDLCreateTable {
+		return types.SQLTypeDDLCreateTable
+	}
+	val = val - c.cfg.Generator.SQLSmith.DDLCreateTable
+
+	if val < c.cfg.Generator.SQLSmith.DDLAlterTable {
+		return types.SQLTypeDDLAlterTable
+	}
+	val = val - c.cfg.Generator.SQLSmith.DDLAlterTable
+
+	if val < c.cfg.Generator.SQLSmith.DDLCreateIndex {
+		return types.SQLTypeDDLCreateIndex
+	}
+	val = val - c.cfg.Generator.SQLSmith.DDLCreateIndex
+
+	if val < c.cfg.Generator.SQLSmith.DMLSelect {
+		return types.SQLTypeDMLSelect
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLSelect
+
+	if val < c.cfg.Generator.SQLSmith.DMLSelectForUpdate {
+		return types.SQLTypeDMLSelectForUpdate
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLSelectForUpdate
+
+	if val < c.cfg.Generator.SQLSmith.DMLDelete {
+		return types.SQLTypeDMLDelete
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLDelete
+
+	if val < c.cfg.Generator.SQLSmith.DMLUpdate {
+		return types.SQLTypeDMLUpdate
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLUpdate
+
+	if val < c.cfg.Generator.SQLSmith.DMLDelete {
+		return types.SQLTypeDMLDelete
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLDelete
+
+	if val < c.cfg.Generator.SQLSmith.DMLInsert {
+		return types.SQLTypeDMLInsert
+	}
+	val = val - c.cfg.Generator.SQLSmith.DMLInsert
+
+	if val < c.cfg.Generator.SQLSmith.Sleep {
+		return types.SQLTypeSleep
+	}
+	val = val - c.cfg.Generator.SQLSmith.Sleep
+
+	return types.SQLTypeUnknown
+}
+
 func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
 	var (
 		sql *types.SQL
 		err error
-		rd  = util.Rd(350)
 	)
-	if rd == 0 {
-		// sql, err = e.GenerateDDLCreateTable()
+
+	switch c.randSQLType() {
+	case types.SQLTypeDDLCreateTable:
 		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
-	} else if rd < 10 {
+	case types.SQLTypeDDLAlterTable:
 		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
-	} else if rd < 20 {
+	case types.SQLTypeDDLCreateIndex:
 		sql, err = e.GenerateDDLCreateIndex(c.getDDLOptions(e))
-	} else if rd < 40 {
-		sql = &types.SQL{
-			SQLType: types.SQLTypeTxnBegin,
-			SQLStmt: "BEGIN",
-		}
-	} else if rd < 160 {
-		sql, err = e.GenerateDMLUpdate()
-	} else if rd < 180 {
-		sql = &types.SQL{
-			SQLType: types.SQLTypeTxnCommit,
-			SQLStmt: "COMMIT",
-		}
-	} else if rd < 190 {
-		sql = &types.SQL{
-			SQLType: types.SQLTypeTxnRollback,
-			SQLStmt: "ROLLBACK",
-		}
-	} else if rd < 220 {
-		sql, err = e.GenerateDMLSelectForUpdate()
-	} else if rd < 230 {
-		sql, err = e.GenerateDMLDelete()
-	} else if rd < 240 {
-		sql = e.GenerateSleep()
-	} else {
-		// err = e.generateSelect()
+	case types.SQLTypeTxnBegin:
+		sql = e.GenerateTxnBegin()
+	case types.SQLTypeTxnCommit:
+		sql = e.GenerateTxnCommit()
+	case types.SQLTypeTxnRollback:
+		sql = e.GenerateTxnRollback()
+	case types.SQLTypeDMLInsert:
 		sql, err = e.GenerateDMLInsert()
+	case types.SQLTypeDMLUpdate:
+		sql, err = e.GenerateDMLUpdate()
+	case types.SQLTypeDMLSelect:
+		sql, err = e.GenerateDMLSelect()
+	case types.SQLTypeDMLSelectForUpdate:
+		sql, err = e.GenerateDMLSelectForUpdate()
+	case types.SQLTypeDMLDelete:
+		sql, err = e.GenerateDMLDelete()
+	case types.SQLTypeSleep:
+		sql = e.GenerateSleep()
 	}
 
 	if err != nil {
@@ -151,32 +228,33 @@ func (c *Core) serializeGenerateSQL() {
 		sql *types.SQL
 		err error
 		e   *executor.Executor
-		rd  = util.Rd(350)
 	)
 
-	if rd == 0 {
-		sql, e, err = c.generateDDLCreateTable()
-	} else if rd < 10 {
+	switch c.randSQLType() {
+	case types.SQLTypeDDLCreateTable:
 		sql, e, err = c.generateDDLAlterTable()
-	} else if rd < 20 {
+	case types.SQLTypeDDLAlterTable:
+		sql, e, err = c.generateDDLAlterTable()
+	case types.SQLTypeDDLCreateIndex:
 		sql, e, err = c.generateDDLCreateIndex()
-	} else if rd < 40 {
+	case types.SQLTypeTxnBegin:
 		sql, e, err = c.generateTxnBegin()
-	} else if rd < 160 {
-		sql, e, err = c.generateDMLUpdate()
-	} else if rd < 180 {
+	case types.SQLTypeTxnCommit:
 		sql, e, err = c.generateTxnCommit()
-	} else if rd < 190 {
+	case types.SQLTypeTxnRollback:
 		sql, e, err = c.generateTxnRollback()
-	} else if rd < 220 {
-		sql, e, err = c.generateDMLSelectForUpdate()
-	} else if rd < 230 {
-		sql, e, err = c.generateDMLDelete()
-	} else if rd < 240 {
-		sql, e, err = c.generateSleep()
-	} else {
-		// err = e.generateSelect()
+	case types.SQLTypeDMLInsert:
 		sql, e, err = c.generateDMLInsert()
+	case types.SQLTypeDMLUpdate:
+		sql, e, err = c.generateDMLUpdate()
+	case types.SQLTypeDMLSelect:
+		sql, e, err = c.generateDMLSelect()
+	case types.SQLTypeDMLSelectForUpdate:
+		sql, e, err = c.generateDMLSelectForUpdate()
+	case types.SQLTypeDMLDelete:
+		sql, e, err = c.generateDMLDelete()
+	case types.SQLTypeSleep:
+		sql, e, err = c.generateSleep()
 	}
 
 	if err != nil {
@@ -231,10 +309,7 @@ func (c *Core) generateTxnBegin() (*types.SQL, *executor.Executor, error) {
 	if executor == nil {
 		return nil, nil, nil
 	}
-	return &types.SQL{
-		SQLType: types.SQLTypeTxnBegin,
-		SQLStmt: "BEGIN",
-	}, executor, nil
+	return executor.GenerateTxnBegin(), executor, nil
 }
 
 func (c *Core) generateTxnCommit() (*types.SQL, *executor.Executor, error) {
@@ -242,10 +317,7 @@ func (c *Core) generateTxnCommit() (*types.SQL, *executor.Executor, error) {
 	if executor == nil {
 		return nil, nil, nil
 	}
-	return &types.SQL{
-		SQLType: types.SQLTypeTxnCommit,
-		SQLStmt: "COMMIT",
-	}, executor, nil
+	return executor.GenerateTxnCommit(), executor, nil
 }
 
 func (c *Core) generateTxnRollback() (*types.SQL, *executor.Executor, error) {
@@ -253,10 +325,19 @@ func (c *Core) generateTxnRollback() (*types.SQL, *executor.Executor, error) {
 	if executor == nil {
 		return nil, nil, nil
 	}
-	return &types.SQL{
-		SQLType: types.SQLTypeTxnRollback,
-		SQLStmt: "ROLLBACK",
-	}, executor, nil
+	return executor.GenerateTxnRollback(), executor, nil
+}
+
+func (c *Core) generateDMLSelect() (*types.SQL, *executor.Executor, error) {
+	executor := c.tryRandBusyExecutor()
+	if executor == nil {
+		return nil, nil, nil
+	}
+	sql, err := executor.GenerateDMLSelect()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return sql, executor, nil
 }
 
 func (c *Core) generateDMLSelectForUpdate() (*types.SQL, *executor.Executor, error) {

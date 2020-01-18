@@ -83,18 +83,22 @@ func GenerateDataItem(columnType string) interface{} {
 	return res
 }
 
+// GenerateStringItem generate string item
 func GenerateStringItem() string {
 	return strings.ToUpper(RdStringChar(Rd(100)))
 }
 
+// GenerateIntItem generate int item
 func GenerateIntItem() int {
 	return Rd(2147483647)
 }
 
+// GenerateFloatItem generate float item
 func GenerateFloatItem() float64 {
 	return float64(Rd(100000)) * RdFloat64()
 }
 
+// GenerateDateItem generate date item
 func GenerateDateItem() time.Time {
 	t := RdDate()
 	for ifDaylightTime(t) {
@@ -103,6 +107,7 @@ func GenerateDateItem() time.Time {
 	return t
 }
 
+// GenerateTimestampItem generate timestamp item
 func GenerateTimestampItem() time.Time {
 	t := RdTimestamp()
 	for ifDaylightTime(t) {
@@ -111,6 +116,7 @@ func GenerateTimestampItem() time.Time {
 	return t
 }
 
+// GenerateTiDBDateItem generate date item
 func GenerateTiDBDateItem() tidbTypes.Time {
 	// return tidbTypes.Time{
 	// 	Time: tidbTypes.FromGoTime(GenerateDateItem()),
