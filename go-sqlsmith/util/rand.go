@@ -21,12 +21,8 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-var (
-	seed = rand.New(rand.NewSource(time.Now().UnixNano()))
-)
-
 func Rd (n int) int {
-	return seed.Intn(n)
+	return rand.Intn(n)
 }
 
 func RdRange (n, m int) int {
@@ -36,11 +32,11 @@ func RdRange (n, m int) int {
 	if m < n {
 		n, m = m, n
 	}
-	return n + seed.Intn(m - n)
+	return n + rand.Intn(m - n)
 }
 
 func RdFloat64() float64 {
-	return seed.Float64()
+	return rand.Float64()
 }
 
 func RdDate() time.Time {
@@ -48,7 +44,7 @@ func RdDate() time.Time {
 	max := time.Date(2100, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
 	delta := max - min
 
-	sec := seed.Int63n(delta) + min
+	sec := rand.Int63n(delta) + min
 	return time.Unix(sec, 0)
 }
 
@@ -59,7 +55,7 @@ func RdTimestamp() time.Time {
 	max := time.Date(2038, 1, 19, 3, 14, 7, 0, time.UTC).Unix()
 	delta := max - min
 
-	sec := seed.Int63n(delta) + min
+	sec := rand.Int63n(delta) + min
 	return time.Unix(sec, 0)
 }
 

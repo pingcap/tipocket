@@ -14,9 +14,13 @@
 package executor
 
 import (
+	"fmt"
+	"strings"
+	"github.com/ngaut/log"
 	"github.com/juju/errors"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/util"
 )
 
 // ReloadSchema expose reloadSchema
@@ -91,13 +95,27 @@ func (e *Executor) GenerateDDLAlterTable(opt *generator.DDLOptions) (*types.SQL,
 
 // GenerateDMLSelect rand select statement
 func (e *Executor) GenerateDMLSelect() (*types.SQL, error) {
-	stmt, err := e.ss.SelectStmt(4)
+	stmt, table, err := e.ss.SelectStmt(4)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
 		SQLType: types.SQLTypeDMLSelect,
 		SQLStmt: stmt,
+		SQLTable: table,
+	}, nil
+}
+
+// GenerateDMLSelectForUpdate rand update statement
+func (e *Executor) GenerateDMLSelectForUpdate() (*types.SQL, error) {
+	stmt, table, err := e.ss.SelectForUpdateStmt(4)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType: types.SQLTypeDMLSelectForUpdate,
+		SQLStmt: stmt,
+		SQLTable: table,
 	}, nil
 }
 
@@ -107,8 +125,25 @@ func (e *Executor) GenerateDMLUpdate() (*types.SQL, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	if strings.HasPrefix(stmt, "UPDATE s0") {
+		log.Info(stmt, table)
+		log.Info(e.conn1.FetchSchema(e.dbname))
+	}
 	return &types.SQL{
 		SQLType: types.SQLTypeDMLUpdate,
+		SQLStmt: stmt,
+		SQLTable: table,
+	}, nil
+}
+
+// GenerateDMLDelete rand update statement
+func (e *Executor) GenerateDMLDelete() (*types.SQL, error) {
+	stmt, table, err := e.ss.DeleteStmt()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType: types.SQLTypeDMLDelete,
 		SQLStmt: stmt,
 		SQLTable: table,
 	}, nil
@@ -125,6 +160,16 @@ func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
 		SQLStmt: stmt,
 		SQLTable: table,
 	}, nil
+}
+
+// GenerateSleep rand insert statement
+func (e *Executor) GenerateSleep() *types.SQL {
+	duration := util.Rd(25)
+	return &types.SQL{
+		SQLType: types.SQLTypeSleep,
+		SQLStmt: fmt.Sprintf("SELECT SLEEP(%d)", duration),
+		ExecTime: duration,
+	}
 }
 
 // BeginWithOnlineTables begins transaction with online tables

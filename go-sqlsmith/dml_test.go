@@ -20,22 +20,37 @@ import (
 
 
 func TestSQLSmith_Select(t *testing.T) {
-	ss := New()
+	ss := new()
 	ss.LoadSchema(schema, indexes)
 
 	ss.SetDB(dbname)
 	for i := 0; i < 500; i++ {
-		sql, err := ss.SelectStmt(1 + rand.Intn(5))
+		sql, _, err := ss.SelectStmt(1 + rand.Intn(5))
 		if err != nil {
 			t.Log(sql, err)
 		}
 	}
-	sql, _ := ss.SelectStmt(6)
+	sql, _, _ := ss.SelectStmt(1)
+	t.Log(sql)
+}
+
+func TestSQLSmith_SelectForUpdateStmt(t *testing.T) {
+	ss := new()
+	ss.LoadSchema(schema, indexes)
+
+	ss.SetDB(dbname)
+	for i := 0; i < 500; i++ {
+		sql, _, err := ss.SelectForUpdateStmt(1 + rand.Intn(5))
+		if err != nil {
+			t.Log(sql, err)
+		}
+	}
+	sql, _, _ := ss.SelectForUpdateStmt(6)
 	t.Log(sql)
 }
 
 func TestSQLSmith_Update(t *testing.T) {
-	ss := New()
+	ss := new()
 	ss.LoadSchema(schema, indexes)
 
 	ss.SetDB(dbname)
@@ -51,7 +66,7 @@ func TestSQLSmith_Update(t *testing.T) {
 }
 
 func TestSQLSmith_Insert(t *testing.T) {
-	ss := New()
+	ss := new()
 	ss.LoadSchema(schema, indexes)
 
 	ss.SetDB(dbname)
@@ -63,5 +78,21 @@ func TestSQLSmith_Insert(t *testing.T) {
 		}
 	}
 	sql, _, err := ss.InsertStmt(false)
+	t.Log(sql, err)
+}
+
+func TestSQLSmith_Delete(t *testing.T) {
+	ss := new()
+	ss.LoadSchema(schema, indexes)
+
+	ss.SetDB(dbname)
+
+	for i := 0; i < 1000; i++ {
+		sql, _, err := ss.DeleteStmt()
+		if err != nil {
+			t.Log(sql, err)
+		}
+	}
+	sql, _, err := ss.DeleteStmt()
 	t.Log(sql, err)
 }

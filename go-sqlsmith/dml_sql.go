@@ -23,10 +23,15 @@ import (
 )
 
 // SelectStmt make random select statement SQL
-func (s *SQLSmith) SelectStmt(depth int) (string, error) {
+func (s *SQLSmith) SelectStmt(depth int) (string, string, error) {
 	tree := s.selectStmt(depth)
-	stmt, _, err := s.Walk(tree)
-	return stmt, err
+	return s.Walk(tree)
+}
+
+// SelectForUpdateStmt make random select statement SQL with for update lock
+func (s *SQLSmith) SelectForUpdateStmt(depth int) (string, string, error) {
+	tree := s.selectForUpdateStmt(depth)
+	return s.Walk(tree)
 }
 
 // UpdateStmt make random update statement SQL
@@ -38,6 +43,12 @@ func (s *SQLSmith) UpdateStmt() (string, string, error) {
 // InsertStmt implement insert statement from AST
 func (s *SQLSmith) InsertStmt(fn bool) (string, string, error) {
 	tree := s.insertStmt()
+	return s.Walk(tree)
+}
+
+// DeleteStmt implement delete statement from AST
+func (s *SQLSmith) DeleteStmt() (string, string, error) {
+	tree := s.deleteStmt()
 	return s.Walk(tree)
 }
 

@@ -26,9 +26,9 @@ func (s *SQLSmith) createTableStmt() ast.Node {
 		Constraints: []*ast.Constraint{},
 		Options: []*ast.TableOption{},
 	}
-	if util.Rd(4) == 0 {
-		createTableNode.Partition = s.partitionStmt()
-	}
+	// if util.Rd(4) == 0 {
+	// 	createTableNode.Partition = s.partitionStmt()
+	// }
 
 	return &createTableNode
 }

@@ -33,14 +33,21 @@ type Options struct {
 	Duration      types.Duration `toml:"duration"`
 	CheckDuration types.Duration `toml:"check-duration"`
 	OnlineDDL     bool           `toml:"online-ddl"`
+	Serialize     bool           `toml:"serialize"`
+}
+
+// Generator Config
+type Generator struct {
+	SQLSmith SQLSmith
 }
 
 // Config struct
 type Config struct {
-	Mode    string  `toml:"mode"`
-	DSN1    string  `toml:"dsn1"`
-	DSN2    string  `toml:"dsn2"`
-	Options Options `toml:"options"`
+	Mode      string    `toml:"mode"`
+	DSN1      string    `toml:"dsn1"`
+	DSN2      string    `toml:"dsn2"`
+	Options   Options   `toml:"options"`
+	Generator Generator `toml:"generator"`
 }
 
 var initConfig = Config{
@@ -60,6 +67,7 @@ var initConfig = Config{
 			Duration: time.Minute,
 		},
 		OnlineDDL: true,
+		Serialize: false,
 	},
 }
 

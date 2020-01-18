@@ -77,6 +77,8 @@ func main() {
 func compare(r1 [][]*connection.QueryItem, r2 [][]*connection.QueryItem) {
 	if len(r1) != len(r2) {
 		compareUUID(r1, r2)
+	} else {
+		compareByUUID(r1, r2)
 	}
 }
 
@@ -103,6 +105,31 @@ func compareUUID(r1 [][]*connection.QueryItem, r2 [][]*connection.QueryItem) {
 	}
 }
 
+func compareByUUID(r1 [][]*connection.QueryItem, r2 [][]*connection.QueryItem) {
+	var (
+		uuids    = getUUIDColumn(r1)
+		uuid1Map = getUUIDMap(r1)
+		uuid2Map = getUUIDMap(r2)
+	)
+
+	for _, uuid := range uuids {
+		line1 := uuid1Map[uuid]
+		line2, ok := uuid2Map[uuid]
+		if !ok {
+			log.Fatalf("uuid %s not found in target 2", uuid)
+		}
+		for _, item1 := range line1 {
+			for _, item2 := range line2 {
+				if item1.ValType.Name() == item2.ValType.Name() {
+					if item1.ValString != item2.ValString {
+						log.Fatalf("uuid %s data inconsistency", uuid)
+					}
+				}
+			}
+		}
+	}
+}
+
 func getUUIDColumn(r [][]*connection.QueryItem) []string {
 	uuid := []string{}
 	for _, line := range r {
@@ -113,4 +140,16 @@ func getUUIDColumn(r [][]*connection.QueryItem) []string {
 		}
 	}
 	return uuid
+}
+
+func getUUIDMap(r [][]*connection.QueryItem) map[string][]*connection.QueryItem {
+	m := make(map[string][]*connection.QueryItem)
+	for _, line := range r {
+		for _, item := range line {
+			if item.ValType.Name() == "uuid" {
+				m[item.ValString] = line
+			}
+		}
+	}
+	return m
 }

@@ -39,11 +39,16 @@ func (s *SQLSmith) selectStmt(depth int) ast.Node {
 	} else {
 		selectStmtNode.Where = s.binaryOperationExpr(util.Rd(depth), 1)
 	}
-	
 
 	selectStmtNode.From = s.tableRefsClause(depth)
 
 	return &selectStmtNode
+}
+
+func (s *SQLSmith) selectForUpdateStmt(depth int) ast.Node {
+	node := s.selectStmt(depth)
+	node.(*ast.SelectStmt).LockTp = ast.SelectLockForUpdate
+	return node
 }
 
 func (s *SQLSmith) updateStmt() ast.Node {
@@ -77,6 +82,21 @@ func (s *SQLSmith) insertStmt() ast.Node {
 		Columns: []*ast.ColumnName{},
 	}
 	return &insertStmtNode
+}
+
+func (s *SQLSmith) deleteStmt() ast.Node {
+	deleteStmtNode := ast.DeleteStmt{
+		TableRefs: s.tableRefsClause(1),
+	}
+
+	whereRand := s.rd(10)
+	if whereRand < 8 {
+		deleteStmtNode.Where = s.binaryOperationExpr(whereRand, 0)
+	} else {
+		deleteStmtNode.Where = ast.NewValueExpr(1)
+	}
+
+	return &deleteStmtNode
 }
 
 func (s *SQLSmith) tableRefsClause(depth int) *ast.TableRefsClause {

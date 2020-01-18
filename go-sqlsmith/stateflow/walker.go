@@ -48,6 +48,8 @@ func (s *StateFlow) walkTree(node ast.Node) (*types.Table, error) {
 		table = s.walkUpdateStmt(node)
 	case *ast.InsertStmt:
 		table = s.walkInsertStmt(node)
+	case *ast.DeleteStmt:
+		table = s.walkDeleteStmt(node)
 	// DDL
 	case *ast.CreateTableStmt:
 		table = s.walkCreateTableStmt(node)
@@ -96,9 +98,15 @@ func (s *StateFlow) walkUpdateStmt(node *ast.UpdateStmt) *types.Table {
 }
 
 func (s *StateFlow) walkInsertStmt(node *ast.InsertStmt) *types.Table {
-	table := s.walkTableName(node.Table.TableRefs.Left.(*ast.TableName), false, true)	
+	table := s.walkTableName(node.Table.TableRefs.Left.(*ast.TableName), false, true)
 	columns := s.walkColumns(&node.Columns, table)
 	s.walkLists(&node.Lists, columns)
+	return nil
+}
+
+func (s *StateFlow) walkDeleteStmt(node *ast.DeleteStmt) *types.Table {
+	table := s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false, true)
+	s.walkExprNode(node.Where, table, nil)
 	return nil
 }
 
@@ -224,13 +232,9 @@ func (s *StateFlow) walkValueExpr(node *driver.ValueExpr, table *types.Table, co
 		case "float":
 			node.SetFloat64(util.GenerateFloatItem())
 		case "timestamp":
-			node.SetMysqlTime(tidbTypes.Time{
-				Time: tidbTypes.FromGoTime(util.GenerateTimestampItem()),
-			})
+			node.SetMysqlTime(tidbTypes.NewTime(tidbTypes.FromGoTime(util.GenerateTimestampItem()), 0, 0))
 		case "datetime":
-			node.SetMysqlTime(tidbTypes.Time{
-				Time: tidbTypes.FromGoTime(util.GenerateDateItem()),
-			})
+			node.SetMysqlTime(tidbTypes.NewTime(tidbTypes.FromGoTime(util.GenerateTimestampItem()), 0, 0))
 		}
 	}
 	return table

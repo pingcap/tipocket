@@ -183,7 +183,9 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 
 	// insert a table and wait for the sync job is done
 	table, tableStmt := generateWaitTable()
-	compareExecutor.SingleTestExecDDL(tableStmt)
+	for compareExecutor.SingleTestExecDDL(tableStmt) != nil {
+		time.Sleep(time.Second)
+	}
 	syncDone := false
 	for !syncDone {
 		time.Sleep(time.Second)

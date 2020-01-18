@@ -255,9 +255,7 @@ func (s *StateFlow) walkPartitionDefinitionsString(definitions *[]*ast.Partition
 func (s *StateFlow) walkPartitionDefinitionsDatetime(definitions *[]*ast.PartitionDefinition) {
 	for i := 0; i < len(datetimePartition); i += util.RdRange(1, 3) {
 		val := driver.ValueExpr{}
-		val.SetMysqlTime(tidbTypes.Time{
-			Time: tidbTypes.FromGoTime(util.TimeMustParse(timeParseFormat, datetimePartition[i])),
-		})
+		val.SetMysqlTime(tidbTypes.NewTime(tidbTypes.FromGoTime(util.TimeMustParse(timeParseFormat, datetimePartition[i])), 0, 0))
 		*definitions = append(*definitions, &ast.PartitionDefinition{
 				Name: model.NewCIStr(fmt.Sprintf("p%d", i)),
 				Clause: &ast.PartitionDefinitionClauseLessThan{
@@ -275,9 +273,7 @@ func (s *StateFlow) walkPartitionDefinitionsDatetime(definitions *[]*ast.Partiti
 func (s *StateFlow) walkPartitionDefinitionsTimestamp(definitions *[]*ast.PartitionDefinition) {
 	for i := 0; i < len(timestampPartition); i += util.RdRange(1, 3) {
 		val := driver.ValueExpr{}
-		val.SetMysqlTime(tidbTypes.Time{
-			Time: tidbTypes.FromGoTime(util.TimeMustParse(timeParseFormat, timestampPartition[i])),
-		})
+		val.SetMysqlTime(tidbTypes.NewTime(tidbTypes.FromGoTime(util.GenerateTimestampItem()), 0, 0))
 		*definitions = append(*definitions, &ast.PartitionDefinition{
 				Name: model.NewCIStr(fmt.Sprintf("p%d", i)),
 				Clause: &ast.PartitionDefinitionClauseLessThan{

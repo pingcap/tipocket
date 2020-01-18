@@ -27,22 +27,27 @@ const (
 )
 
 func (c *Core) watchLock() {
+	// check lock for too long only in Serialize mode
 	lastExecTime := time.Now()
-	go func() {
-		ticker := time.Tick(time.Second)
-		for range ticker {
-			if time.Now().Sub(lastExecTime).Seconds() > maxExecuteTime {
-				// deadlock detected
-				if c.ifLock {
-					// if the core goroutine block in another lock, skip deadlock
-					continue
+	// if not in Serialize mode, the lock should be resolved by other connections themselves
+	// so only resolve lock for Serialize mode
+	if c.cfg.Options.Serialize {
+		go func() {
+			ticker := time.Tick(time.Second)
+			for range ticker {
+				if time.Now().Sub(lastExecTime).Seconds() > maxExecuteTime {
+					// deadlock detected
+					if c.ifLock {
+						// if the core goroutine block in another lock, skip deadlock
+						continue
+					}
+					c.Lock()
+					c.resolveDeadLock(false)
+					c.Unlock()
 				}
-				c.Lock()
-				c.resolveDeadLock(false)
-				c.Unlock()
 			}
-		}
-	}()
+		}()
+	}
 	for {
 		c.order.Push(<-c.lockWatchCh)
 		lastExecTime = time.Now()
@@ -52,6 +57,10 @@ func (c *Core) watchLock() {
 func (c *Core) resolveDeadLock(all bool) {
 	// log.Info(e.order.GetHistroy())
 	var wg sync.WaitGroup
+	if all && c.nowExec != nil && c.order.Has(c.nowExec.GetID()) {
+		wg.Add(1)
+		go c.resolveDeadLockOne(c.nowExec, &wg)
+	}
 	for c.order.Next() {
 		for _, executor := range c.executors {
 			if executor.GetID() == c.order.Val() {
@@ -60,10 +69,6 @@ func (c *Core) resolveDeadLock(all bool) {
 				go c.resolveDeadLockOne(executor, &wg)
 			}
 		}
-	}
-	if all {
-		wg.Add(1)
-		go c.resolveDeadLockOne(c.nowExec, &wg)
 	}
 	c.order.Reset()
 	wg.Wait()

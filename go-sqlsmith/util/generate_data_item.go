@@ -112,10 +112,11 @@ func GenerateTimestampItem() time.Time {
 }
 
 func GenerateTiDBDateItem() tidbTypes.Time {
-	return tidbTypes.Time{
-		Time: tidbTypes.FromGoTime(GenerateDateItem()),
-		Type: mysql.TypeDatetime,
-	}
+	// return tidbTypes.Time{
+	// 	Time: tidbTypes.FromGoTime(GenerateDateItem()),
+	// 	Type: mysql.TypeDatetime,
+	// }
+	return tidbTypes.NewTime(tidbTypes.FromGoTime(GenerateDateItem()), mysql.TypeDatetime, 0)
 }
 
 func ifDaylightTime(t time.Time) bool {

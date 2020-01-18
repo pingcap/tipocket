@@ -58,7 +58,19 @@ func min(a, b int) int {
 
 // Clone copy table struct
 func (t *Table) Clone() *Table {
-	newTable := *t
+	newTable := Table{
+		DB: t.DB,
+		Table: t.Table,
+		OriginTable: t.OriginTable,
+		Type: t.Type,
+		Columns: make(map[string]*Column),
+		Indexes: t.Indexes,
+		Online: t.Online,
+		OnlineOther: t.OnlineOther,
+	}
+	for k, column := range t.Columns {
+		newTable.Columns[k] = column.Clone()
+	}
 	return &newTable
 }
 

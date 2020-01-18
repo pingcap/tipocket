@@ -32,14 +32,8 @@ func (c *Core) generate(ctx context.Context, readyCh *chan struct{}) error {
 
 	log.Info("init done, start generate")
 	*readyCh <- struct{}{}
-	for{
-	select {
-	case <- ctx.Done():
-		return nil
-	default:
-		c.generateSQL()
-	}
-	}
+	c.runGenerateSQL(ctx)
+	return nil
 }
 
 func (c *Core) beforeGenerate() error {
@@ -61,7 +55,95 @@ func (c *Core) beforeGenerate() error {
 	return nil
 }
 
-func (c *Core) generateSQL() {
+func (c *Core) runGenerateSQL(ctx context.Context) {
+	if c.cfg.Options.Serialize {
+		for {
+			select {
+			case <- ctx.Done():
+				return
+			default:
+				c.serializeGenerateSQL()
+			}
+		}
+	} else {
+		wg := sync.WaitGroup{}
+		for _, e := range c.executors {
+			wg.Add(1)
+			go func(e *executor.Executor) {
+				c.runGenerateSQLWithExecutor(ctx, e)
+				wg.Done()
+			}(e)
+		}
+		wg.Wait()
+	}
+}
+
+func (c *Core) runGenerateSQLWithExecutor(ctx context.Context, e *executor.Executor) {
+	for {
+		select {
+		case <- ctx.Done():
+			return
+		default:
+			for c.ifLock {
+				time.Sleep(time.Second)
+			}
+			c.generateSQLWithExecutor(e)
+		}
+	}
+}
+
+func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
+	var (
+		sql  *types.SQL
+		err  error
+		rd = util.Rd(350)
+	)
+	if rd == 0 {
+		// sql, err = e.GenerateDDLCreateTable()
+		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
+	} else if rd < 10 {
+		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
+	} else if rd < 20 {
+		sql, err = e.GenerateDDLCreateIndex(c.getDDLOptions(e))
+	} else if rd < 40 {
+		sql = &types.SQL{
+			SQLType: types.SQLTypeTxnBegin,
+			SQLStmt: "BEGIN",
+		}
+	} else if rd < 160 {
+		sql, err = e.GenerateDMLUpdate()
+	} else if rd < 180 {
+		sql = &types.SQL{
+			SQLType: types.SQLTypeTxnCommit,
+			SQLStmt: "COMMIT",
+		}
+	} else if rd < 190 {
+		sql = &types.SQL{
+			SQLType: types.SQLTypeTxnRollback,
+			SQLStmt: "ROLLBACK",
+		}
+	} else if rd < 220 {
+		sql, err = e.GenerateDMLSelectForUpdate()
+	} else if rd < 230 {
+		sql, err = e.GenerateDMLDelete()
+	} else if rd < 240 {
+		sql = e.GenerateSleep()
+	} else {
+		// err = e.generateSelect()
+		sql, err = e.GenerateDMLInsert()
+	}
+
+	if err != nil {
+		// log.Fatalf("generate SQL error, %+v", errors.ErrorStack(err))
+		log.Errorf("generate SQL error, %+v", errors.ErrorStack(err))
+		return
+	}
+	if sql != nil {
+		c.execute(e, sql)
+	}
+}
+
+func (c *Core) serializeGenerateSQL() {
 	c.Lock()
 	c.Unlock()
 	// TODO: SQL type rate config
@@ -86,6 +168,12 @@ func (c *Core) generateSQL() {
 		sql, e, err = c.generateTxnCommit()
 	} else if rd < 190 {
 		sql, e, err = c.generateTxnRollback()
+	} else if rd < 220 {
+		sql, e, err = c.generateDMLSelectForUpdate()
+	} else if rd < 230 {
+		sql, e, err = c.generateDMLDelete()
+	} else if rd < 240 {
+		sql, e, err = c.generateSleep()
 	} else {
 		// err = e.generateSelect()
 		sql, e, err = c.generateDMLInsert()
@@ -171,6 +259,18 @@ func (c *Core) generateTxnRollback() (*types.SQL, *executor.Executor, error) {
 	}, executor, nil
 }
 
+func (c *Core) generateDMLSelectForUpdate() (*types.SQL, *executor.Executor, error) {
+	executor := c.tryRandBusyExecutor()
+	if executor == nil {
+		return nil, nil, nil
+	}
+	sql, err := executor.GenerateDMLSelectForUpdate()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return sql, executor, nil
+}
+
 func (c *Core) generateDMLInsert() (*types.SQL, *executor.Executor, error) {
 	executor := c.tryRandBusyExecutor()
 	if executor == nil {
@@ -193,6 +293,26 @@ func (c *Core) generateDMLUpdate() (*types.SQL, *executor.Executor, error) {
 		return nil, nil, errors.Trace(err)
 	}
 	return sql, executor, nil
+}
+
+func (c *Core) generateDMLDelete() (*types.SQL, *executor.Executor, error) {
+	executor := c.tryRandBusyExecutor()
+	if executor == nil {
+		return nil, nil, nil
+	}
+	sql, err := executor.GenerateDMLDelete()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return sql, executor, nil
+}
+
+func (c *Core) generateSleep() (*types.SQL, *executor.Executor, error) {
+	executor := c.tryRandBusyExecutor()
+	if executor == nil {
+		return nil, nil, nil
+	}
+	return executor.GenerateSleep(), executor, nil
 }
 
 func (c *Core) randExecutor() *executor.Executor {

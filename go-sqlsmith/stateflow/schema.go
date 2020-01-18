@@ -84,7 +84,8 @@ func (s *StateFlow) randTable(newName bool, fn bool, online bool) (*types.Table)
 	if len(tables) == 0 {
 		return nil
 	}
-	return tables[util.Rd(len(tables))]
+
+	return tables[util.Rd(len(tables))].Clone()
 }
 
 func (s *StateFlow) randOfflineTable(newName bool, fn bool) (*types.Table) {
@@ -99,7 +100,7 @@ func (s *StateFlow) randOfflineTable(newName bool, fn bool) (*types.Table) {
 	if len(tables) == 0 {
 		return nil
 	}
-	return tables[util.Rd(len(tables))]
+	return tables[util.Rd(len(tables))].Clone()
 }
 
 func (s *StateFlow) randOriginTable() *types.Table {
