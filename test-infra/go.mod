@@ -28,7 +28,6 @@ require (
 	github.com/twinj/uuid v1.0.0 // indirect
 	github.com/uber-go/atomic v1.4.0 // indirect
 	go.uber.org/goleak v0.10.0 // indirect
-	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/square/go-jose.v2 v2.3.0 // indirect
 	k8s.io/api v0.0.0
