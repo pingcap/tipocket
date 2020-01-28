@@ -171,15 +171,12 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		}
 	}(compareExecutor)
 
-	log.Info("before lock")
 	// commit or rollback all transactions
 	// lock here before get snapshot
 	c.Lock()
-	log.Info("locked")
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
 	c.resolveDeadLock(true)
-	log.Info("resolve lock done")
 
 	// insert a table and wait for the sync job is done
 	table, tableStmt := generateWaitTable()
@@ -201,12 +198,13 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		}
 		log.Info("got sync status", syncDone)
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
-	if err != nil {
-		c.Unlock()
-		return false, errors.Trace(err)
+	for err != nil {
+		schema, err = compareExecutor.GetConn().FetchSchema(c.dbname)
+		// c.Unlock()
+		// return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()

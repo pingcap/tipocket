@@ -34,6 +34,7 @@ type Options struct {
 	CheckDuration types.Duration `toml:"check-duration"`
 	OnlineDDL     bool           `toml:"online-ddl"`
 	Serialize     bool           `toml:"serialize"`
+	GeneralLog    bool           `toml:"general-log"`
 }
 
 // Generator Config
@@ -66,8 +67,9 @@ var initConfig = Config{
 		CheckDuration: types.Duration{
 			Duration: time.Minute,
 		},
-		OnlineDDL: true,
-		Serialize: false,
+		OnlineDDL:  true,
+		Serialize:  false,
+		GeneralLog: false,
 	},
 	Generator: Generator{
 		SQLSmith: SQLSmith{

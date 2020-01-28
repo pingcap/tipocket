@@ -15,14 +15,15 @@ package executor
 
 // Option struct
 type Option struct {
-	ID        int
-	Clear     bool
-	Log       string
-	LogSuffix string
-	Reproduce string
-	Stable    bool
-	Mute      bool
-	OnlineDDL bool
+	ID         int
+	Clear      bool
+	Log        string
+	LogSuffix  string
+	Reproduce  string
+	Stable     bool
+	Mute       bool
+	OnlineDDL  bool
+	GeneralLog bool
 }
 
 // Clone option

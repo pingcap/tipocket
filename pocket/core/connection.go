@@ -27,12 +27,13 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 		suffix = fmt.Sprintf("-%d", id)
 	}
 	opt := executor.Option{
-		ID:        id,
-		Log:       c.cfg.Options.Path,
-		LogSuffix: suffix,
-		Stable: c.cfg.Options.Stable,
-		Mute: c.cfg.Options.Reproduce,
-		OnlineDDL: c.cfg.Options.OnlineDDL,
+		ID:         id,
+		Log:        c.cfg.Options.Path,
+		LogSuffix:  suffix,
+		Stable:     c.cfg.Options.Stable,
+		Mute:       c.cfg.Options.Reproduce,
+		OnlineDDL:  c.cfg.Options.OnlineDDL,
+		GeneralLog: c.cfg.Options.GeneralLog,
 	}
 	return &opt
 }

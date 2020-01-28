@@ -82,7 +82,11 @@ func (s *StateFlow) randTable(newName bool, fn bool, online bool) (*types.Table)
 	}
 
 	if len(tables) == 0 {
-		return nil
+		// return nil
+		// FIXME: nil not panic
+		for _, table := range s.db.Tables {
+			tables = append(tables, table)
+		}
 	}
 
 	return tables[util.Rd(len(tables))].Clone()

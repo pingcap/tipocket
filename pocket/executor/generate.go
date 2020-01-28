@@ -18,8 +18,8 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
-	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
+	"github.com/pingcap/tipocket/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pocket/util"
 	"strings"
 )

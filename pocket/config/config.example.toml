@@ -39,6 +39,8 @@ online-ddl = false
 # and all connections will execute SQLs in the same time
 # this will also makes it harder to debug from logs
 serialize = false
+# turn to true will enable TiDB's general log
+general-log = false
 
 [generator]
 [generator.sqlsmith]

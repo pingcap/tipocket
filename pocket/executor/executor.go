@@ -71,8 +71,9 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	}
 
 	conn, err := connection.New(dsn, &connection.Option{
-		Log:  connLogPath,
-		Mute: opt.Mute,
+		Log:        connLogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -108,15 +109,17 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	}
 
 	conn1, err := connection.New(dsn1, &connection.Option{
-		Log:  conn1LogPath,
-		Mute: opt.Mute,
+		Log:        conn1LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	conn2, err := connection.New(dsn2, &connection.Option{
-		Log:  conn2LogPath,
-		Mute: opt.Mute,
+		Log:        conn2LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
