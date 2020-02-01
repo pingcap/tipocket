@@ -16,10 +16,10 @@ package sqlsmith
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/pingcap/tipocket/go-sqlsmith/builtin"
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
+	"strings"
 )
 
 // SelectStmt make random select statement SQL

@@ -78,7 +78,7 @@ func (s *SQLSmith) insertStmt() ast.Node {
 				Left: &ast.TableName{},
 			},
 		},
-		Lists: [][]ast.ExprNode{},
+		Lists:   [][]ast.ExprNode{},
 		Columns: []*ast.ColumnName{},
 	}
 	return &insertStmtNode
@@ -121,8 +121,8 @@ func (s *SQLSmith) tableRefsClause(depth int) *ast.TableRefsClause {
 			tableRefsClause.TableRefs.On = &ast.OnCondition{
 				Expr: &ast.BinaryOperationExpr{
 					Op: opcode.EQ,
-					L: &ast.ColumnNameExpr{},
-					R: &ast.ColumnNameExpr{},
+					L:  &ast.ColumnNameExpr{},
+					R:  &ast.ColumnNameExpr{},
 				},
 			}
 		}
@@ -143,7 +143,7 @@ func (s *SQLSmith) binaryOperationExpr(depth, complex int) ast.ExprNode {
 		default:
 			node.Op = opcode.LogicAnd
 		}
-		node.L = s.binaryOperationExpr(depth - 1, complex)
+		node.L = s.binaryOperationExpr(depth-1, complex)
 		node.R = s.binaryOperationExpr(0, complex)
 	} else {
 		if complex > 0 {
@@ -194,13 +194,13 @@ func (s *SQLSmith) patternInExpr() *ast.PatternInExpr {
 
 	return &ast.PatternInExpr{
 		Expr: &ast.ColumnNameExpr{},
-		Sel: s.subqueryExpr(),
+		Sel:  s.subqueryExpr(),
 	}
 }
 
 func (s *SQLSmith) subqueryExpr() *ast.SubqueryExpr {
 	return &ast.SubqueryExpr{
-		Query: s.selectStmt(1),
+		Query:     s.selectStmt(1),
 		MultiRows: true,
 	}
 }
@@ -228,7 +228,7 @@ func (s *SQLSmith) exprNode(cons bool) ast.ExprNode {
 // 	}
 // 	var binaryOperation *ast.BinaryOperationExpr
 // 	for i := 0; i < whereCount; i++ {
-// 		binaryOperation = 
+// 		binaryOperation =
 // 	}
 // 	return binaryOperation
 // }

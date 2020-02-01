@@ -23,21 +23,20 @@ import (
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
 	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
-
 	// _ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 // SQLSmith defines SQLSmith struct
 type SQLSmith struct {
-	depth int
-	maxDepth int
-	Rand *rand.Rand
-	Databases map[string]*types.Database
+	depth         int
+	maxDepth      int
+	Rand          *rand.Rand
+	Databases     map[string]*types.Database
 	subTableIndex int
-	Node ast.Node
-	currDB string
-	debug bool
-	stable bool
+	Node          ast.Node
+	currDB        string
+	debug         bool
+	stable        bool
 }
 
 // New create SQLSmith instance

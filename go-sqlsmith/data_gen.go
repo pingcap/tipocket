@@ -16,9 +16,9 @@ package sqlsmith
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
+	"strings"
 )
 
 // BatchData generate testing data by schema in given batch
@@ -50,7 +50,7 @@ func (s *SQLSmith) BatchData(total, batchSize int) ([]string, error) {
 				line = append(line, util.GenerateDataItemString(column.DataType))
 			}
 			lines = append(lines, line)
-			count ++
+			count++
 			if count >= batchSize {
 				count = 0
 				sqls = append(sqls, makeSQL(table, columns, lines))
@@ -83,7 +83,7 @@ func mapFn(arr [][]string, fn func([]string) string) []string {
 		res = append(res, fn(item))
 	}
 	return res
-} 
+}
 
 func (s *SQLSmith) generateDataItem(columnType string) string {
 	switch columnType {
@@ -110,7 +110,7 @@ func (s *SQLSmith) generateIntItem() string {
 }
 
 func (s *SQLSmith) generateFloatItem() string {
-	return fmt.Sprintf("%f", float64(s.rd(100000)) * s.rdFloat64())
+	return fmt.Sprintf("%f", float64(s.rd(100000))*s.rdFloat64())
 }
 
 func (s *SQLSmith) generateDateItem() string {

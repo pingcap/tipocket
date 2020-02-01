@@ -26,9 +26,11 @@ type Table struct {
 	Type        string
 	Columns     map[string]*Column
 	Indexes     []string
-	// Online is for self obtain
+	// Online is for self obtain,
+	// which means this table is online and will be manipulated in a txn
 	Online      bool
-	// OnlineOther is for other instances obtain
+	// OnlineOther is for other instances obtain,
+	// which means this table is being manipulated in other txns and should not be a DDL table
 	OnlineOther bool
 }
 

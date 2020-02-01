@@ -26,11 +26,11 @@ func TestSQLSmith_Walker(t *testing.T) {
 
 	ss.SetDB(dbname)
 
-	// walker should fill in 
+	// walker should fill in
 	// ast.FieldList
 	// ast.ColumnNameExpr
 	// ast.TableName
-	
+
 	joinSub := ast.TableSource{
 		Source: &ast.SelectStmt{
 			SelectStmtOpts: &ast.SelectStmtOpts{
@@ -56,13 +56,13 @@ func TestSQLSmith_Walker(t *testing.T) {
 		},
 		From: &ast.TableRefsClause{
 			TableRefs: &ast.Join{
-				Left: &ast.TableName{},
+				Left:  &ast.TableName{},
 				Right: &joinSub,
 				On: &ast.OnCondition{
 					Expr: &ast.BinaryOperationExpr{
 						Op: opcode.EQ,
-						L: &ast.ColumnNameExpr{},
-						R: &ast.ColumnNameExpr{},
+						L:  &ast.ColumnNameExpr{},
+						R:  &ast.ColumnNameExpr{},
 					},
 				},
 			},
@@ -70,7 +70,7 @@ func TestSQLSmith_Walker(t *testing.T) {
 	}
 
 	ss.SetDB("community")
-	sql, _, err :=	ss.Walk(&node)
+	sql, _, err := ss.Walk(&node)
 
 	if err != nil {
 		t.Fatalf("walk error %v", err)

@@ -18,15 +18,15 @@ import (
 	"time"
 )
 
-func (s *SQLSmith) rd (n int) int {
+func (s *SQLSmith) rd(n int) int {
 	return s.Rand.Intn(n)
 }
 
-func (s *SQLSmith) rdRange (n, m int) int {
+func (s *SQLSmith) rdRange(n, m int) int {
 	if m < n {
 		n, m = m, n
 	}
-	return n + s.Rand.Intn(m - n)
+	return n + s.Rand.Intn(m-n)
 }
 
 func (s *SQLSmith) rdFloat64() float64 {
@@ -48,7 +48,7 @@ func (s *SQLSmith) getSubTableName() string {
 	return name
 }
 
-func (s *SQLSmith) rdString (length int) string {
+func (s *SQLSmith) rdString(length int) string {
 	res := ""
 	for i := 0; i < length; i++ {
 		charCode := s.rdRange(33, 127)

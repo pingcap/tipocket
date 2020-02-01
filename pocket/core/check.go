@@ -185,7 +185,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	syncDone := false
 	for !syncDone {
-		time.Sleep(time.Second)
+		time.Sleep(10 * time.Second)
 		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
 		if err != nil {
 			log.Error(err)
@@ -198,7 +198,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		}
 		log.Info("got sync status", syncDone)
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	for err != nil {

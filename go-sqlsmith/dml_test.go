@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-
+// TestSQLSmith_Select tests select statment
 func TestSQLSmith_Select(t *testing.T) {
 	ss := new()
 	ss.LoadSchema(schema, indexes)
@@ -34,6 +34,7 @@ func TestSQLSmith_Select(t *testing.T) {
 	t.Log(sql)
 }
 
+// TestSQLSmith_SelectForUpdateStmt tests select for update statement
 func TestSQLSmith_SelectForUpdateStmt(t *testing.T) {
 	ss := new()
 	ss.LoadSchema(schema, indexes)
@@ -49,6 +50,7 @@ func TestSQLSmith_SelectForUpdateStmt(t *testing.T) {
 	t.Log(sql)
 }
 
+// TestSQLSmith_Update tests update statement
 func TestSQLSmith_Update(t *testing.T) {
 	ss := new()
 	ss.LoadSchema(schema, indexes)
@@ -65,6 +67,7 @@ func TestSQLSmith_Update(t *testing.T) {
 	t.Log(sql)
 }
 
+// TestSQLSmith_Insert tests insert statment
 func TestSQLSmith_Insert(t *testing.T) {
 	ss := new()
 	ss.LoadSchema(schema, indexes)
@@ -81,6 +84,7 @@ func TestSQLSmith_Insert(t *testing.T) {
 	t.Log(sql, err)
 }
 
+// TestSQLSmith_Delete tests delete statment
 func TestSQLSmith_Delete(t *testing.T) {
 	ss := new()
 	ss.LoadSchema(schema, indexes)

@@ -14,8 +14,8 @@
 package sqlsmith
 
 import (
-	"strings"
 	"regexp"
+	"strings"
 
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
@@ -29,7 +29,7 @@ const typeRegex = `\(\d+\)`
 // record[2] table type
 // record[3] column name
 // record[4] column type
-func (s *SQLSmith) LoadSchema (records [][5]string, indexes map[string][]string) {
+func (s *SQLSmith) LoadSchema(records [][5]string, indexes map[string][]string) {
 	// init databases
 	for _, record := range records {
 		dbname := record[0]
@@ -43,23 +43,23 @@ func (s *SQLSmith) LoadSchema (records [][5]string, indexes map[string][]string)
 		}
 		if _, ok := s.Databases[dbname]; !ok {
 			s.Databases[dbname] = &types.Database{
-				Name: dbname,
+				Name:   dbname,
 				Tables: make(map[string]*types.Table),
 			}
 		}
 		if _, ok := s.Databases[dbname].Tables[tableName]; !ok {
 			s.Databases[dbname].Tables[tableName] = &types.Table{
-				DB: dbname,
-				Table: tableName,
-				Type: tableType,
+				DB:      dbname,
+				Table:   tableName,
+				Type:    tableType,
 				Columns: make(map[string]*types.Column),
 				Indexes: index,
 			}
 		}
 		if _, ok := s.Databases[dbname].Tables[tableName].Columns[columnName]; !ok {
 			s.Databases[dbname].Tables[tableName].Columns[columnName] = &types.Column{
-				DB: dbname,
-				Table: tableName,
+				DB:     dbname,
+				Table:  tableName,
 				Column: columnName,
 				// remove the data size in type definition
 				DataType: regexp.MustCompile(typeRegex).ReplaceAllString(strings.ToLower(columnType), ""),
@@ -74,7 +74,7 @@ func (s *SQLSmith) BeginWithOnlineTables(opt *generator.DMLOptions) []string {
 		return []string{}
 	}
 	var (
-		res    = []string{}	
+		res    = []string{}
 		db     = s.GetDB(s.GetCurrDBName())
 		tables = db.RandTables()
 	)
@@ -89,7 +89,7 @@ func (s *SQLSmith) BeginWithOnlineTables(opt *generator.DMLOptions) []string {
 // EndTransaction ends transaction and set every table offline
 func (s *SQLSmith) EndTransaction() []string {
 	var (
-		res    = []string{}	
+		res    = []string{}
 		db     = s.GetDB(s.GetCurrDBName())
 		tables = db.Tables
 	)
@@ -115,7 +115,7 @@ func (s *SQLSmith) setOnlineOtherTables(opt *generator.DDLOptions) {
 }
 
 // freeOnlinetherTables clear online tables obtain by other instances
-func (s* SQLSmith) freeOnlineOtherTables() {
+func (s *SQLSmith) freeOnlineOtherTables() {
 	db := s.GetDB(s.currDB)
 	for _, table := range db.Tables {
 		table.OnlineOther = false
