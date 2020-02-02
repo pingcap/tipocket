@@ -21,6 +21,7 @@ const (
 	SQLTypeUnknown SQLType = iota
 	SQLTypeReloadSchema
 	SQLTypeDMLSelect
+	SQLTypeDMLSelectForUpdate
 	SQLTypeDMLUpdate
 	SQLTypeDMLInsert
 	SQLTypeDMLDelete
@@ -32,12 +33,17 @@ const (
 	SQLTypeTxnRollback
 	SQLTypeExec
 	SQLTypeExit
+	SQLTypeSleep
 )
 
 // SQL struct
 type SQL struct {
-	SQLType SQLType
-	SQLStmt string
+	SQLType  SQLType
+	SQLStmt  string
+	SQLTable string
+	// ExecTime is for avoid lock watched interference before time out
+	// useful for sleep statement
+	ExecTime int
 }
 
 func (t SQLType) String() string {
@@ -46,6 +52,8 @@ func (t SQLType) String() string {
 		return "SQLTypeReloadSchema"
 	case SQLTypeDMLSelect:
 		return "SQLTypeDMLSelect"
+	case SQLTypeDMLSelectForUpdate:
+		return "SQLTypeDMLSelectForUpdate"
 	case SQLTypeDMLUpdate:
 		return "SQLTypeDMLUpdate"
 	case SQLTypeDMLInsert:
@@ -68,6 +76,8 @@ func (t SQLType) String() string {
 		return "SQLTypeExec"
 	case SQLTypeExit:
 		return "SQLTypeExit"
+	case SQLTypeSleep:
+		return "SQLTypeSleep"
 	default:
 		return "SQLTypeUnknown"
 	}

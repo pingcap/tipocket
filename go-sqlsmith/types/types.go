@@ -13,8 +13,30 @@
 
 package types 
 
+import (
+	"github.com/pingcap/tipocket/go-sqlsmith/util"
+)
+
 // Database defines database database
 type Database struct {
-	Name string
+	Name   string
+	Online bool
 	Tables map[string]*Table
+}
+
+// RandTables rand tables
+func (d *Database) RandTables() []*Table {
+	tables := []*Table{}
+	for _, t := range d.Tables {
+		if util.RdFloat64() < 0.3 {
+			tables = append(tables, t)
+		}
+	}
+	if len(tables) == 0 {
+		for _, t := range d.Tables {
+			tables = append(tables, t)
+			return tables
+		}
+	}
+	return tables
 }

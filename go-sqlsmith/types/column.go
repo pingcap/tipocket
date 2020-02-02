@@ -31,8 +31,18 @@ type Column struct {
 
 // Clone makes a replica of column
 func (c *Column) Clone() *Column {
-	column := *c
-	return &column
+	return &Column{
+		DB: c.DB,
+		Table: c.Table,
+		OriginTable: c.OriginTable,
+		Column: c.Column,
+		OriginColumn: c.OriginColumn,
+		DataType: c.DataType,
+		DataLen: c.DataLen,
+		Func: c.Func,
+		NewFunc: c.NewFunc,
+		Options: c.Options,
+	}
 }
 
 // AddOption add option for column

@@ -18,10 +18,13 @@ GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
 default: build
 
-build: pocket
+build: pocket compare
 
 pocket:
 	$(GOBUILD) $(GOMOD) -o bin/pocket cmd/pocket/*.go
+
+compare:
+	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 clean:
 	@rm -rf bin/*
@@ -33,4 +36,4 @@ test:
 fmt:
 	$(GO) fmt ./...
 
-.PHONY: all clean pocket test fmt
+.PHONY: all clean pocket compare test fmt

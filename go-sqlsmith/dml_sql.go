@@ -16,34 +16,46 @@ package sqlsmith
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/pingcap/tipocket/go-sqlsmith/builtin"
 	"github.com/pingcap/tipocket/go-sqlsmith/types"
 	"github.com/pingcap/tipocket/go-sqlsmith/util"
+	"strings"
 )
 
 // SelectStmt make random select statement SQL
-func (s *SQLSmith) SelectStmt(depth int) (string, error) {
+func (s *SQLSmith) SelectStmt(depth int) (string, string, error) {
 	tree := s.selectStmt(depth)
 	return s.Walk(tree)
 }
 
+// SelectForUpdateStmt make random select statement SQL with for update lock
+func (s *SQLSmith) SelectForUpdateStmt(depth int) (string, string, error) {
+	tree := s.selectForUpdateStmt(depth)
+	return s.Walk(tree)
+}
+
 // UpdateStmt make random update statement SQL
-func (s *SQLSmith) UpdateStmt() (string, error) {
+func (s *SQLSmith) UpdateStmt() (string, string, error) {
 	tree := s.updateStmt()
 	return s.Walk(tree)
 }
 
-// InsertStmtAST implement insert statement from AST
-func (s *SQLSmith) InsertStmtAST() (string, error) {
+// InsertStmt implement insert statement from AST
+func (s *SQLSmith) InsertStmt(fn bool) (string, string, error) {
 	tree := s.insertStmt()
 	return s.Walk(tree)
 }
 
-// InsertStmt make random insert statement SQL
-func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
+// DeleteStmt implement delete statement from AST
+func (s *SQLSmith) DeleteStmt() (string, string, error) {
+	tree := s.deleteStmt()
+	return s.Walk(tree)
+}
+
+// InsertStmtStr make random insert statement SQL
+func (s *SQLSmith) InsertStmtStr(fn bool) (string, string, error) {
 	if s.currDB == "" {
-		return "", errors.New("no table selected")
+		return "", "", errors.New("no table selected")
 	}
 	var table *types.Table
 	rdTableIndex := s.rd(len(s.Databases[s.currDB].Tables))
@@ -72,7 +84,7 @@ func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
 			builtinFn := builtin.GenerateFuncCallExpr(nil, s.rd(3), s.stable)
 			builtinStr, err := util.BufferOut(builtinFn)
 			if err != nil {
-				return "", err
+				return "", "", err
 			}
 			vals = append(vals, builtinStr)
 		} else {
@@ -83,5 +95,5 @@ func (s *SQLSmith) InsertStmt(fn bool) (string, error) {
 		table.Table,
 		strings.Join(columnNames, ", "),
 		strings.Join(vals, ", "))
-	return sql, nil
+	return sql, table.Table, nil
 }

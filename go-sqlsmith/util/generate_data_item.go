@@ -20,7 +20,13 @@ import (
 	"strings"
 	"github.com/pingcap/parser/mysql"
 	tidbTypes "github.com/pingcap/tidb/types"
+	"github.com/satori/go.uuid"
 )
+
+// GetUUID return uuid
+func GetUUID() string {
+	return strings.ToUpper(uuid.NewV4().String())
+}
 
 // GenerateRandDataItem rand data item with rand type
 func GenerateRandDataItem() interface{} {
@@ -77,18 +83,22 @@ func GenerateDataItem(columnType string) interface{} {
 	return res
 }
 
+// GenerateStringItem generate string item
 func GenerateStringItem() string {
-	return strings.ToUpper(RdString(Rd(100)))
+	return strings.ToUpper(RdStringChar(Rd(100)))
 }
 
+// GenerateIntItem generate int item
 func GenerateIntItem() int {
 	return Rd(2147483647)
 }
 
+// GenerateFloatItem generate float item
 func GenerateFloatItem() float64 {
 	return float64(Rd(100000)) * RdFloat64()
 }
 
+// GenerateDateItem generate date item
 func GenerateDateItem() time.Time {
 	t := RdDate()
 	for ifDaylightTime(t) {
@@ -97,11 +107,22 @@ func GenerateDateItem() time.Time {
 	return t
 }
 
-func GenerateTiDBDateItem() tidbTypes.Time {
-	return tidbTypes.Time{
-		Time: tidbTypes.FromGoTime(GenerateDateItem()),
-		Type: mysql.TypeDatetime,
+// GenerateTimestampItem generate timestamp item
+func GenerateTimestampItem() time.Time {
+	t := RdTimestamp()
+	for ifDaylightTime(t) {
+		t = RdDate()
 	}
+	return t
+}
+
+// GenerateTiDBDateItem generate date item
+func GenerateTiDBDateItem() tidbTypes.Time {
+	// return tidbTypes.Time{
+	// 	Time: tidbTypes.FromGoTime(GenerateDateItem()),
+	// 	Type: mysql.TypeDatetime,
+	// }
+	return tidbTypes.NewTime(tidbTypes.FromGoTime(GenerateDateItem()), mysql.TypeDatetime, 0)
 }
 
 func ifDaylightTime(t time.Time) bool {

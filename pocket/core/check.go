@@ -141,7 +141,10 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	// go on other transactions
 	// defer can be removed
 	// but here we use it for protect environment
-	defer c.Unlock()
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+	}()
 
 	// delay will hold on this snapshot and check it later
 	if delay {
@@ -168,22 +171,21 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		}
 	}(compareExecutor)
 
-	log.Info("before lock")
 	// commit or rollback all transactions
 	// lock here before get snapshot
 	c.Lock()
-	log.Info("locked")
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
 	c.resolveDeadLock(true)
-	log.Info("resolve lock done")
 
 	// insert a table and wait for the sync job is done
 	table, tableStmt := generateWaitTable()
-	compareExecutor.SingleTestExecDDL(tableStmt)
+	for compareExecutor.SingleTestExecDDL(tableStmt) != nil {
+		time.Sleep(time.Second)
+	}
 	syncDone := false
 	for !syncDone {
-		time.Sleep(time.Second)
+		time.Sleep(10 * time.Second)
 		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
 		if err != nil {
 			log.Error(err)
@@ -196,12 +198,13 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		}
 		log.Info("got sync status", syncDone)
 	}
-	time.Sleep(3 * time.Second)
+	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
-	if err != nil {
-		c.Unlock()
-		return false, errors.Trace(err)
+	for err != nil {
+		schema, err = compareExecutor.GetConn().FetchSchema(c.dbname)
+		// c.Unlock()
+		// return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()

@@ -22,9 +22,38 @@ reproduce = false
 # running concurrency
 # default value 3
 concurrency = 3
+# init-table defines the tables init in before start
+init-table = 10
 # data and log path
 path = "/var/log/pocket"
 # test duration
 duration = "1h"
 # check duration
 check-duration = "3m"
+# allow online DDL
+# true in binlog test and abtest between TiDBs
+# false in abtest between TiDB and MySQL
+online-ddl = false
+# if serialize is on, there will be only one action in the same time
+# turn to false can increase the actual concurrency
+# and all connections will execute SQLs in the same time
+# this will also makes it harder to debug from logs
+serialize = false
+# turn to true will enable TiDB's general log
+general-log = false
+
+[generator]
+[generator.sqlsmith]
+# balance of each type of generated sql
+txn-begin = 20
+txn-commit = 20
+txn-rollback = 10
+ddl-create-table = 1
+ddl-alter-table = 10
+ddl-create-index = 10
+dml-select = 10
+dml-select-for-update = 30
+dml-delete = 10
+dml-update = 120
+dml-insert = 120
+sleep = 10

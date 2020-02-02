@@ -25,6 +25,7 @@ import (
 	"github.com/pingcap/tipocket/go-sqlsmith"
 
 	"github.com/pingcap/tipocket/pocket/connection"
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 	"github.com/pingcap/tipocket/pocket/pkg/logger"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
 )
@@ -41,7 +42,7 @@ type Executor struct {
 	dsn2        string
 	conn1       *connection.Connection
 	conn2       *connection.Connection
-	ss          *sqlsmith.SQLSmith
+	ss          generator.Generator
 	dbname      string
 	mode        string
 	opt         *Option
@@ -57,6 +58,8 @@ type Executor struct {
 	// ErrCh for waiting SQL execution finish
 	// and pass execution error
 	ErrCh chan error
+	// OnlineTable record tables which are manipulated in transaction for avoiding online DDL
+	OnlineTable []string
 }
 
 // New create Executor
@@ -68,8 +71,9 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	}
 
 	conn, err := connection.New(dsn, &connection.Option{
-		Log:  connLogPath,
-		Mute: opt.Mute,
+		Log:        connLogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -105,20 +109,22 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	}
 
 	conn1, err := connection.New(dsn1, &connection.Option{
-		Log:  conn1LogPath,
-		Mute: opt.Mute,
+		Log:        conn1LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	conn2, err := connection.New(dsn2, &connection.Option{
-		Log:  conn2LogPath,
-		Mute: opt.Mute,
+		Log:        conn2LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	l, err := logger.New(executorLogPath, false)
+	l, err := logger.New(executorLogPath, opt.Mute)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

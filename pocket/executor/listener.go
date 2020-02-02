@@ -23,6 +23,18 @@ import (
 func (e *Executor) ExecSQL(sql *types.SQL) error {
 	e.Lock()
 	defer e.Unlock()
+	// e.parseOnlineTable(sql)
 	e.SQLCh <- sql
 	return errors.Trace(<-e.ErrCh)
 }
+
+// func (e *Executor)parseOnlineTable(sql *types.SQL) {
+// 	switch sql.SQLType {
+// 	case types.SQLTypeTxnCommit, types.SQLTypeTxnRollback:
+// 		e.OnlineTable = []string{}
+// 	default:
+// 		if sql.SQLTable != "" {
+// 			e.OnlineTable = append(e.OnlineTable, sql.SQLTable)
+// 		}
+// 	}
+// }
