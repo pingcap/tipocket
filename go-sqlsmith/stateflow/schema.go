@@ -72,22 +72,39 @@ func (s *StateFlow) randTableFromTable(table *types.Table, newName bool, fn bool
 	return &newTable
 }
 
-func (s *StateFlow) randTable(newName bool, fn bool) (*types.Table) {
-	newTable := new(types.Table)
-	tables := s.db.Tables
-	index := 0
-	k := util.Rd(len(tables))
-	for _, table := range tables {
-		if index == k {
-			for len(newTable.Columns) == 0 {
-				newTable = s.randTableFromTable(table, newName, fn)
-			}
-			return newTable
+func (s *StateFlow) randTable(newName bool, fn bool, online bool) (*types.Table) {
+	tables := []*types.Table{}
+	for _, table := range s.db.Tables {
+		// get online tables
+		if !online || !s.db.Online || table.Online {
+			tables = append(tables, table)
 		}
-		index++
 	}
-	// should not reach here
-	return nil
+
+	if len(tables) == 0 {
+		// return nil
+		// FIXME: nil not panic
+		for _, table := range s.db.Tables {
+			tables = append(tables, table)
+		}
+	}
+
+	return tables[util.Rd(len(tables))].Clone()
+}
+
+func (s *StateFlow) randOfflineTable(newName bool, fn bool) (*types.Table) {
+	tables := []*types.Table{}
+	for _, table := range s.db.Tables {
+		// avoid online tables
+		if !table.OnlineOther {
+			tables = append(tables, table)
+		}
+	}
+
+	if len(tables) == 0 {
+		return nil
+	}
+	return tables[util.Rd(len(tables))].Clone()
 }
 
 func (s *StateFlow) randOriginTable() *types.Table {
@@ -196,6 +213,13 @@ func (s *StateFlow) randNewTable() *types.Table {
 	}
 	table.Columns["id"].AddOption(ast.ColumnOptionNotNull)
 	table.Columns["id"].AddOption(ast.ColumnOptionAutoIncrement)
+	table.Columns["uuid"] = &types.Column{
+		DB: table.DB,
+		Table: table.Table,
+		Column: "uuid",
+		DataType: "varchar",
+		DataLen: 253,
+	}
 	columnCount := util.RdRange(4, 20)
 	for i := 0; i < columnCount; i++ {
 		col := s.randNewColumn()
@@ -207,6 +231,7 @@ func (s *StateFlow) randNewTable() *types.Table {
 	return &table
 }
 
+// TIMESTAMP with CURRENT_TIMESTAMP in ALTER TABLE will make difference by design in binlog test
 func (s *StateFlow) randNewColumn() *types.Column {
 	columnName := util.RdStringChar(util.RdRange(5, 10))
 	columnType := util.RdType()

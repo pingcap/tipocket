@@ -22,6 +22,6 @@ func TestSQLSmith_ToSQL(t *testing.T) {
 	ss.SetDB(dbname)
 
 	ss.SetDB("community")
-	sql, _ := ss.SelectStmt(3)
+	sql, _, _ := ss.SelectStmt(3)
 	t.Log(sql)
 }

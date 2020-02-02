@@ -21,14 +21,12 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-var (
-	seed = rand.New(rand.NewSource(time.Now().UnixNano()))
-)
-
+// Rd same to rand.Intn
 func Rd (n int) int {
-	return seed.Intn(n)
+	return rand.Intn(n)
 }
 
+// RdRange rand int in range
 func RdRange (n, m int) int {
 	if n == m {
 		return n
@@ -36,22 +34,36 @@ func RdRange (n, m int) int {
 	if m < n {
 		n, m = m, n
 	}
-	return n + seed.Intn(m - n)
+	return n + rand.Intn(m - n)
 }
 
+// RdFloat64 rand float64
 func RdFloat64() float64 {
-	return seed.Float64()
+	return rand.Float64()
 }
 
+// RdDate rand date
 func RdDate() time.Time {
-	min := time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	min := time.Date(1970, 1, 0, 0, 0, 1, 0, time.UTC).Unix()
 	max := time.Date(2100, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
 	delta := max - min
 
-	sec := seed.Int63n(delta) + min
+	sec := rand.Int63n(delta) + min
 	return time.Unix(sec, 0)
 }
 
+// RdTimestamp return same format as RdDate except rand range
+// TIMESTAMP has a range of '1970-01-01 00:00:01' UTC to '2038-01-19 03:14:07' 
+func RdTimestamp() time.Time {
+	min := time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Date(2038, 1, 19, 3, 14, 7, 0, time.UTC).Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	return time.Unix(sec, 0)
+}
+
+// RdString rand string with given length
 func RdString (length int) string {
 	res := ""
 	for i := 0; i < length; i++ {
@@ -66,6 +78,7 @@ func RdString (length int) string {
 	return res
 }
 
+// RdStringChar rand string with given length, letter chars only
 func RdStringChar (length int) string {
 	res := ""
 	for i := 0; i < length; i++ {
@@ -75,6 +88,7 @@ func RdStringChar (length int) string {
 	return res
 }
 
+// RdType rand data type
 func RdType () string {
 	switch Rd(6) {
 	case 0:
@@ -89,8 +103,9 @@ func RdType () string {
 	return "int"
 }
 
-func RdDataLen(columnType string) int {
-	switch columnType {
+// RdDataLen rand data with given type
+func RdDataLen(t string) int {
+	switch t {
 	case "int":
 		return RdRange(8, 20)
 	case "varchar":
@@ -107,23 +122,23 @@ func RdDataLen(columnType string) int {
 	return 10
 }
 
-func RdColumnOptions(t string) []ast.ColumnOptionType {
-	switch t {
-	case "timestamp":
-		return RdDateColumnOptions()
+// RdColumnOptions for rand column option with given type
+func RdColumnOptions(t string) (options []ast.ColumnOptionType) {
+	if Rd(3) == 0 {
+		options = append(options, ast.ColumnOptionNotNull)
+	} else if Rd(2) == 0 {
+		options = append(options, ast.ColumnOptionNull)
 	}
-
-	return []ast.ColumnOptionType{}
-}
-
-func RdDateColumnOptions() (options []ast.ColumnOptionType) {
-	options = append(options, ast.ColumnOptionNotNull)
-	if Rd(2) == 0 {
-		options = append(options, ast.ColumnOptionDefaultValue)
+	switch t {
+	case "varchar", "timestamp", "datetime", "int":
+		if Rd(2) == 0 {
+			options = append(options, ast.ColumnOptionDefaultValue)
+		}
 	}
 	return
 }
 
+// RdCharset rand charset
 func RdCharset() string {
 	switch Rd(4) {
 	default:

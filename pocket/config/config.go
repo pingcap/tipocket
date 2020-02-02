@@ -28,17 +28,27 @@ type Options struct {
 	Stable        bool           `toml:"stable"`
 	Reproduce     bool           `toml:"reproduce"`
 	Concurrency   int            `toml:"concurrency"`
+	InitTable     int            `toml:"init-table"`
 	Path          string         `toml:"path"`
 	Duration      types.Duration `toml:"duration"`
 	CheckDuration types.Duration `toml:"check-duration"`
+	OnlineDDL     bool           `toml:"online-ddl"`
+	Serialize     bool           `toml:"serialize"`
+	GeneralLog    bool           `toml:"general-log"`
+}
+
+// Generator Config
+type Generator struct {
+	SQLSmith SQLSmith
 }
 
 // Config struct
 type Config struct {
-	Mode    string  `toml:"mode"`
-	DSN1    string  `toml:"dsn1"`
-	DSN2    string  `toml:"dsn2"`
-	Options Options `toml:"options"`
+	Mode      string    `toml:"mode"`
+	DSN1      string    `toml:"dsn1"`
+	DSN2      string    `toml:"dsn2"`
+	Options   Options   `toml:"options"`
+	Generator Generator `toml:"generator"`
 }
 
 var initConfig = Config{
@@ -49,12 +59,32 @@ var initConfig = Config{
 		Stable:      false,
 		Reproduce:   false,
 		Concurrency: 3,
+		InitTable:   10,
 		Path:        "./log",
 		Duration: types.Duration{
 			Duration: time.Hour,
 		},
 		CheckDuration: types.Duration{
 			Duration: time.Minute,
+		},
+		OnlineDDL:  true,
+		Serialize:  false,
+		GeneralLog: false,
+	},
+	Generator: Generator{
+		SQLSmith: SQLSmith{
+			TxnBegin:           20,
+			TxnCommit:          20,
+			TxnRollback:        10,
+			DDLCreateTable:     1,
+			DDLAlterTable:      10,
+			DDLCreateIndex:     10,
+			DMLSelect:          10,
+			DMLSelectForUpdate: 30,
+			DMLDelete:          10,
+			DMLUpdate:          120,
+			DMLInsert:          120,
+			Sleep:              10,
 		},
 	},
 }

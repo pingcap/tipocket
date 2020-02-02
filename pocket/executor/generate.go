@@ -14,10 +14,14 @@
 package executor
 
 import (
+	"fmt"
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 	smith "github.com/pingcap/tipocket/go-sqlsmith"
-
+	"github.com/pingcap/tipocket/pocket/pkg/generator/generator"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
+	"github.com/pingcap/tipocket/pocket/util"
+	"strings"
 )
 
 // ReloadSchema expose reloadSchema
@@ -48,6 +52,7 @@ func (e *Executor) reloadSchema() error {
 	e.ss.LoadSchema(schema, indexes)
 	e.ss.SetDB(e.dbname)
 	e.ss.SetStable(e.opt.Stable)
+	e.BeginWithOnlineTables()
 	return nil
 }
 
@@ -66,8 +71,8 @@ func (e *Executor) GenerateDDLCreateTable() (*types.SQL, error) {
 }
 
 // GenerateDDLCreateIndex rand create index statement
-func (e *Executor) GenerateDDLCreateIndex() (*types.SQL, error) {
-	stmt, err := e.ss.CreateIndexStmt()
+func (e *Executor) GenerateDDLCreateIndex(opt *generator.DDLOptions) (*types.SQL, error) {
+	stmt, err := e.ss.CreateIndexStmt(opt)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -78,8 +83,8 @@ func (e *Executor) GenerateDDLCreateIndex() (*types.SQL, error) {
 }
 
 // GenerateDDLAlterTable rand alter table statement
-func (e *Executor) GenerateDDLAlterTable() (*types.SQL, error) {
-	stmt, err := e.ss.AlterTableStmt()
+func (e *Executor) GenerateDDLAlterTable(opt *generator.DDLOptions) (*types.SQL, error) {
+	stmt, err := e.ss.AlterTableStmt(opt)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -91,36 +96,115 @@ func (e *Executor) GenerateDDLAlterTable() (*types.SQL, error) {
 
 // GenerateDMLSelect rand select statement
 func (e *Executor) GenerateDMLSelect() (*types.SQL, error) {
-	stmt, err := e.ss.SelectStmt(4)
+	stmt, table, err := e.ss.SelectStmt(4)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLSelect,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLSelect,
+		SQLStmt:  stmt,
+		SQLTable: table,
+	}, nil
+}
+
+// GenerateDMLSelectForUpdate rand update statement
+func (e *Executor) GenerateDMLSelectForUpdate() (*types.SQL, error) {
+	stmt, table, err := e.ss.SelectForUpdateStmt(4)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType:  types.SQLTypeDMLSelectForUpdate,
+		SQLStmt:  stmt,
+		SQLTable: table,
 	}, nil
 }
 
 // GenerateDMLUpdate rand update statement
 func (e *Executor) GenerateDMLUpdate() (*types.SQL, error) {
-	stmt, err := e.ss.UpdateStmt()
+	stmt, table, err := e.ss.UpdateStmt()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	if strings.HasPrefix(stmt, "UPDATE s0") {
+		log.Info(stmt, table)
+		log.Info(e.conn1.FetchSchema(e.dbname))
+	}
+	return &types.SQL{
+		SQLType:  types.SQLTypeDMLUpdate,
+		SQLStmt:  stmt,
+		SQLTable: table,
+	}, nil
+}
+
+// GenerateDMLDelete rand update statement
+func (e *Executor) GenerateDMLDelete() (*types.SQL, error) {
+	stmt, table, err := e.ss.DeleteStmt()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLUpdate,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLDelete,
+		SQLStmt:  stmt,
+		SQLTable: table,
 	}, nil
 }
 
 // GenerateDMLInsert rand insert statement
 func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
-	stmt, err := e.ss.InsertStmtAST()
+	stmt, table, err := e.ss.InsertStmt(false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDMLInsert,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDMLInsert,
+		SQLStmt:  stmt,
+		SQLTable: table,
 	}, nil
+}
+
+// GenerateSleep rand insert statement
+func (e *Executor) GenerateSleep() *types.SQL {
+	duration := util.Rd(25)
+	return &types.SQL{
+		SQLType:  types.SQLTypeSleep,
+		SQLStmt:  fmt.Sprintf("SELECT SLEEP(%d)", duration),
+		ExecTime: duration,
+	}
+}
+
+// BeginWithOnlineTables begins transaction with online tables
+func (e *Executor) BeginWithOnlineTables() {
+	e.OnlineTable = e.ss.BeginWithOnlineTables(&generator.DMLOptions{
+		OnlineTable: e.opt.OnlineDDL,
+	})
+}
+
+// EndTransaction clear online tables
+func (e *Executor) EndTransaction() {
+	e.OnlineTable = e.ss.EndTransaction()
+}
+
+// GenerateTxnBegin start transaction
+func (e *Executor) GenerateTxnBegin() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnBegin,
+		SQLStmt: "BEGIN",
+	}
+}
+
+// GenerateTxnCommit commit transaction
+func (e *Executor) GenerateTxnCommit() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnCommit,
+		SQLStmt: "COMMIT",
+	}
+}
+
+// GenerateTxnRollback rollback transaction
+func (e *Executor) GenerateTxnRollback() *types.SQL {
+	return &types.SQL{
+		SQLType: types.SQLTypeTxnRollback,
+		SQLStmt: "ROLLBACK",
+	}
 }

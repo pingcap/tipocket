@@ -35,7 +35,7 @@ func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
 	e.logStmtTodo(sql.SQLStmt)
 
 	switch sql.SQLType {
-	case types.SQLTypeDMLSelect:
+	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:
 		err = e.singleTestSelect(sql.SQLStmt)
 	case types.SQLTypeDMLUpdate:
 		err = e.singleTestUpdate(sql.SQLStmt)
@@ -54,7 +54,7 @@ func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
 		err = e.singleTestTxnCommit()
 	case types.SQLTypeTxnRollback:
 		err = e.singleTestTxnRollback()
-	case types.SQLTypeExec:
+	case types.SQLTypeExec, types.SQLTypeSleep:
 		e.singleTestExec(sql.SQLStmt)
 	case types.SQLTypeExit:
 		e.Stop("receive exit SQL signal")

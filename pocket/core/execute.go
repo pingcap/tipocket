@@ -15,6 +15,7 @@ package core
 
 import (
 	"github.com/juju/errors"
+	"time"
 
 	"github.com/pingcap/tipocket/pocket/executor"
 	"github.com/pingcap/tipocket/pocket/pkg/types"
@@ -23,6 +24,13 @@ import (
 func (c *Core) execute(e *executor.Executor, sql *types.SQL) {
 	// wait for execute finish
 	// may not ignore the errors here
+	if c.cfg.Options.Serialize && sql.ExecTime != 0 {
+		c.Lock()
+		go func() {
+			time.Sleep(time.Duration(sql.ExecTime) * time.Second)
+			c.Unlock()
+		}()
+	}
 	_ = e.ExecSQL(sql)
 	c.lockWatchCh <- e.GetID()
 }

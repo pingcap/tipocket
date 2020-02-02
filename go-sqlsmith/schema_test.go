@@ -14,11 +14,11 @@
 package sqlsmith
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-
+// test schema
 var (
 	schema = [][5]string{
 		{"community", "comments", "BASE TABLE", "id", "int(11)"},
@@ -83,12 +83,14 @@ var (
 		{"community", "users", "BASE TABLE", "user", "varchar(255)"},
 		{"community", "users", "BASE TABLE", "team_id", "int(11)"},
 	}
-	dbname = "community"
+	dbname  = "community"
 	indexes = make(map[string][]string)
+	tables  = []string{"comments", "picks", "pulls", "tasks", "teams", "users"}
 )
 
-func TestSQLSmith_Schema_TableMerge(t *testing.T) {
-	ss := New()
+// TestSQLSmith_LoadIndexes tests with load table indexes
+func TestSQLSmith_LoadIndexes(t *testing.T) {
+	ss := new()
 	indexes["users"] = []string{"idx1", "idx2"}
 	ss.LoadSchema(schema, indexes)
 	ss.SetDB(dbname)

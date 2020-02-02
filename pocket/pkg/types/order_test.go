@@ -38,6 +38,8 @@ func TestOrder(t *testing.T) {
 	o.Push(10)
 	o.Push(11)
 	o.Push(11)
+	assert.False(t, o.Has(100))
+	assert.True(t, o.Has(11))
 	orders = []int{}
 	for o.Next() {
 		orders = append(orders, o.Val())

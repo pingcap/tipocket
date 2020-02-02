@@ -20,3 +20,5 @@ vendor/
 .vscode
 *.swap
 *.swp
+
+test-scripts

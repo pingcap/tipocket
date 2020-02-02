@@ -20,12 +20,18 @@ import (
 
 // Table defines database table
 type Table struct {
-	DB string
-	Table string
+	DB          string
+	Table       string
 	OriginTable string
-	Type string
-	Columns map[string]*Column
-	Indexes []string
+	Type        string
+	Columns     map[string]*Column
+	Indexes     []string
+	// Online is for self obtain,
+	// which means this table is online and will be manipulated in a txn
+	Online      bool
+	// OnlineOther is for other instances obtain,
+	// which means this table is being manipulated in other txns and should not be a DDL table
+	OnlineOther bool
 }
 
 type byColumn []*Column
@@ -54,7 +60,19 @@ func min(a, b int) int {
 
 // Clone copy table struct
 func (t *Table) Clone() *Table {
-	newTable := *t
+	newTable := Table{
+		DB: t.DB,
+		Table: t.Table,
+		OriginTable: t.OriginTable,
+		Type: t.Type,
+		Columns: make(map[string]*Column),
+		Indexes: t.Indexes,
+		Online: t.Online,
+		OnlineOther: t.OnlineOther,
+	}
+	for k, column := range t.Columns {
+		newTable.Columns[k] = column.Clone()
+	}
 	return &newTable
 }
 

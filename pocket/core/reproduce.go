@@ -35,7 +35,7 @@ import (
 var (
 	abTestLogPattern     = regexp.MustCompile(`ab-test-[0-9]+\.log`)
 	binlogTestLogPattern = regexp.MustCompile(`single-test-[0-9]+\.log`)
-	todoSQLPattern       = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(SUCCESS)\] Exec SQL (.*) success$`)
+	todoSQLPattern       = regexp.MustCompile(`^\[([0-9]{4}\/[0-9]{2}\/[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3} [+-][0-9]{2}:[0-9]{2})\] \[(TODO)\] Exec SQL (.*)$`)
 	execIDPattern        = regexp.MustCompile(`^.*?(ab|single)-test-([0-9]+).log$`)
 	timeLayout           = `2006/01/02 15:04:05.000 -07:00`
 )

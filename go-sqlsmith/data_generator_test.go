@@ -15,8 +15,9 @@ package sqlsmith
 
 import "testing"
 
+// TestSQLSmith_DataGenerator tests with data generator
 func TestSQLSmith_DataGenerator(t *testing.T) {
-	ss := New()
+	ss := new()
 
 	ss.LoadSchema(schema, indexes)
 
@@ -27,5 +28,4 @@ func TestSQLSmith_DataGenerator(t *testing.T) {
 	for sqls := gen.Next(); len(sqls) != 0; sqls = gen.Next() {
 		t.Log(sqls)
 	}
-	// t.Log("rd string", ss.randString(ss.rd(100)))
 }
