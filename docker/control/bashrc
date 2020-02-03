@@ -1,0 +1,14 @@
+cat <<EOF
+Welcome to Chaos on Docker
+===========================
+
+This container runs the Chaos tests in sub-containers.
+
+You are currently in the base dir of the git repo for Chaos.
+
+To run a test:
+   make
+   ./bin/chaos-tidb
+EOF
+
+cd /go/src/github.com/pingcap/tipocket

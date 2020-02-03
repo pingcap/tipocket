@@ -2,7 +2,9 @@ bin
 */bin/**
 
 .idea
+.DS_Store
 vendor
 test-infra/vendor
 
 .vscode
+
