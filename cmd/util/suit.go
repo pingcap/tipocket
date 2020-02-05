@@ -57,16 +57,6 @@ func (suit *Suit) Run(ctx context.Context) {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
 
-	//if len(nodes) != 0 {
-	//	suit.Config.Nodes = nodes
-	//} else {
-	//	// By default, we run TiKV/TiDB cluster on 5 nodes.
-	//	for i := 1; i <= 5; i++ {
-	//		name := fmt.Sprintf("n%d", i)
-	//		suit.Config.Nodes = append(suit.Config.Nodes, name)
-	//	}
-	//}
-
 	c := control.NewController(
 		sctx,
 		suit.Config,

@@ -5,8 +5,13 @@ import (
 	"encoding/json"
 )
 
-// Node is the service access point in K8s, it's maybe podIP:port or CLUSTER-IP:port
+// Node is the service endpoint in K8s, it's maybe podIP:port or CLUSTER-IP:port
 type Node struct {
+	// Cluster k8s' namespace
+	Namespace string
+	// Pod's name
+	PodName string
+
 	IP   string
 	Port string
 }
