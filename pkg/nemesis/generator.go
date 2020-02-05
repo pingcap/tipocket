@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
+
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -12,7 +14,7 @@ type killGenerator struct {
 	name string
 }
 
-func (g killGenerator) Generate(nodes []string) []*core.NemesisOperation {
+func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	n := 1
 	switch g.name {
 	case "minor_kill":
@@ -32,7 +34,7 @@ func (g killGenerator) Name() string {
 	return g.name
 }
 
-func killNodes(db string, nodes []string, n int) []*core.NemesisOperation {
+func killNodes(db string, nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
 	// randomly shuffle the indecies and get the first n nodes to be partitioned.
@@ -60,7 +62,7 @@ type dropGenerator struct {
 	name string
 }
 
-func (g dropGenerator) Generate(nodes []string) []*core.NemesisOperation {
+func (g dropGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	n := 1
 	switch g.name {
 	case "minor_drop":
@@ -79,7 +81,7 @@ func (g dropGenerator) Name() string {
 	return g.name
 }
 
-func partitionNodes(nodes []string, n int) []*core.NemesisOperation {
+func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
 	// randomly shuffle the indecies and get the first n nodes to be partitioned.
@@ -87,7 +89,7 @@ func partitionNodes(nodes []string, n int) []*core.NemesisOperation {
 
 	partNodes := make([]string, n)
 	for i := 0; i < n; i++ {
-		partNodes[i] = nodes[indices[i]]
+		partNodes[i] = nodes[indices[i]].IP
 	}
 
 	for i := 0; i < len(nodes); i++ {

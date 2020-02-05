@@ -3,22 +3,24 @@ package core
 import (
 	"context"
 	"fmt"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // DB allows Chaos to set up and tear down database.
 type DB interface {
 	// SetUp initializes the database.
-	SetUp(ctx context.Context, nodes []string, node string) error
+	SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
 	// TearDown tears down the database.
-	TearDown(ctx context.Context, nodes []string, node string) error
+	TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
 	// Start starts the database
-	Start(ctx context.Context, node string) error
+	Start(ctx context.Context, node cluster.Node) error
 	// Stop stops the database
-	Stop(ctx context.Context, node string) error
+	Stop(ctx context.Context, node cluster.Node) error
 	// Kill kills the database
-	Kill(ctx context.Context, node string) error
+	Kill(ctx context.Context, node cluster.Node) error
 	// IsRunning checks whether the database is running or not
-	IsRunning(ctx context.Context, node string) bool
+	IsRunning(ctx context.Context, node cluster.Node) bool
 	// Name returns the unique name for the database
 	Name() string
 }
@@ -28,32 +30,32 @@ type NoopDB struct {
 }
 
 // SetUp initializes the database.
-func (NoopDB) SetUp(ctx context.Context, nodes []string, node string) error {
+func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return nil
 }
 
 // TearDown tears down the datase.
-func (NoopDB) TearDown(ctx context.Context, nodes []string, node string) error {
+func (NoopDB) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return nil
 }
 
 // Start starts the database
-func (NoopDB) Start(ctx context.Context, node string) error {
+func (NoopDB) Start(ctx context.Context, node cluster.Node) error {
 	return nil
 }
 
 // Stop stops the database
-func (NoopDB) Stop(ctx context.Context, node string) error {
+func (NoopDB) Stop(ctx context.Context, node cluster.Node) error {
 	return nil
 }
 
 // Kill kills the database
-func (NoopDB) Kill(ctx context.Context, node string) error {
+func (NoopDB) Kill(ctx context.Context, node cluster.Node) error {
 	return nil
 }
 
 // IsRunning checks whether the database is running or not
-func (NoopDB) IsRunning(ctx context.Context, node string) bool {
+func (NoopDB) IsRunning(ctx context.Context, node cluster.Node) bool {
 	return true
 }
 

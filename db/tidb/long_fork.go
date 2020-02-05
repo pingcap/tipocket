@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
+
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 )
@@ -39,11 +41,11 @@ var (
 	lfState = struct {
 		mu      sync.Mutex
 		nextKey uint64
-		workers map[string]uint64
+		workers map[*cluster.Node]uint64
 	}{
 		mu:      sync.Mutex{},
 		nextKey: 0,
-		workers: make(map[string]uint64),
+		workers: make(map[*cluster.Node]uint64),
 	}
 )
 
@@ -51,7 +53,7 @@ type longForkClient struct {
 	db         *sql.DB
 	r          *rand.Rand
 	tableCount int
-	node       string
+	node       cluster.Node
 }
 
 func lfTableNames(tableCount int) []string {
@@ -71,9 +73,9 @@ func lfKey2Table(tableCount int, key uint64) string {
 	return fmt.Sprintf("txn_lf_%d", hash%tableCount)
 }
 
-func (c *longForkClient) SetUp(ctx context.Context, nodes []string, node string) error {
+func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:4000)/test", node))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%s)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
@@ -103,11 +105,11 @@ func (c *longForkClient) SetUp(ctx context.Context, nodes []string, node string)
 	return nil
 }
 
-func (c *longForkClient) TearDown(ctx context.Context, nodes []string, node string) error {
+func (c *longForkClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return c.db.Close()
 }
 
-func (c *longForkClient) Invoke(ctx context.Context, node string, r interface{}) interface{} {
+func (c *longForkClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
 	arg := r.(lfRequest)
 	if arg.Kind == lfWrite {
 
@@ -155,9 +157,9 @@ func (c *longForkClient) NextRequest() interface{} {
 	lfState.mu.Lock()
 	defer lfState.mu.Unlock()
 
-	key, present := lfState.workers[c.node]
+	key, present := lfState.workers[&c.node]
 	if present {
-		delete(lfState.workers, c.node)
+		delete(lfState.workers, &c.node)
 		return lfRequest{Kind: lfRead, Keys: makeKeysInGroup(c.r, lfGroupSize, key)}
 	}
 
@@ -176,7 +178,7 @@ func (c *longForkClient) NextRequest() interface{} {
 
 	key = lfState.nextKey
 	lfState.nextKey++
-	lfState.workers[c.node] = key
+	lfState.workers[&c.node] = key
 	return lfRequest{Kind: lfWrite, Keys: []uint64{key}}
 }
 
@@ -199,7 +201,7 @@ type LongForkClientCreator struct {
 }
 
 // Create creates a new longForkClient.
-func (LongForkClientCreator) Create(node string) core.Client {
+func (LongForkClientCreator) Create(node cluster.Node) core.Client {
 	return &longForkClient{
 		tableCount: 7,
 		node:       node,

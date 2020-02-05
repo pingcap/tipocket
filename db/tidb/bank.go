@@ -10,7 +10,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
+
 	"github.com/anishathalye/porcupine"
+
 	pchecker "github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
@@ -30,9 +33,9 @@ type bankClient struct {
 	accountNum int
 }
 
-func (c *bankClient) SetUp(ctx context.Context, nodes []string, node string) error {
+func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:4000)/test", node))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%s)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
@@ -63,7 +66,7 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []string, node string) err
 	return nil
 }
 
-func (c *bankClient) TearDown(ctx context.Context, nodes []string, node string) error {
+func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return c.db.Close()
 }
 
@@ -98,7 +101,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *bankClient) Invoke(ctx context.Context, node string, r interface{}) interface{} {
+func (c *bankClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -197,7 +200,7 @@ type BankClientCreator struct {
 }
 
 // Create creates a client.
-func (BankClientCreator) Create(node string) core.Client {
+func (BankClientCreator) Create(node cluster.Node) core.Client {
 	return &bankClient{
 		accountNum: accountNum,
 	}

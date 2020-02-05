@@ -54,5 +54,5 @@ func main() {
 		Nemesises:     *nemesises,
 		VerifySuit:    verifySuit,
 	}
-	suit.Run(context.Background(), []string{})
+	suit.Run(context.Background())
 }

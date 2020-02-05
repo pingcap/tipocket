@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/anishathalye/porcupine"
+
 	"github.com/pingcap/tipocket/pkg/core"
 )
 

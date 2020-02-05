@@ -46,12 +46,12 @@ func main() {
 	switch *clientCase {
 	case "bank":
 		creator = tidb.BankClientCreator{}
-	case "multi_bank":
-		creator = tidb.MultiBankClientCreator{}
+	//case "multi_bank":
+	//	creator = tidb.MultiBankClientCreator{}
 	case "long_fork":
 		creator = tidb.LongForkClientCreator{}
-	case "sequential":
-		creator = tidb.SequentialClientCreator{}
+	//case "sequential":
+	//	creator = tidb.SequentialClientCreator{}
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
@@ -68,10 +68,10 @@ func main() {
 		checker = tidb.LongForkChecker()
 		parser = tidb.LongForkParser()
 		model = nil
-	case "sequential_checker":
-		checker = tidb.NewSequentialChecker()
-		parser = tidb.NewSequentialParser()
-		model = nil
+	//case "sequential_checker":
+	//	checker = tidb.NewSequentialChecker()
+	//	parser = tidb.NewSequentialParser()
+	//	model = nil
 	default:
 		log.Fatalf("invalid checker %s", *checkerNames)
 	}
@@ -87,5 +87,5 @@ func main() {
 		Nemesises:     *nemesises,
 		VerifySuit:    verifySuit,
 	}
-	suit.Run(context.Background(), []string{})
+	suit.Run(context.Background())
 }

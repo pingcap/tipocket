@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // Nemesis injects failure and disturbs the database.
@@ -14,9 +16,9 @@ type Nemesis interface {
 	// TearDown(ctx context.Context, node string) error
 
 	// Invoke executes the nemesis
-	Invoke(ctx context.Context, node string, args ...string) error
+	Invoke(ctx context.Context, node cluster.Node, args ...string) error
 	// Recover recovers the nemesis
-	Recover(ctx context.Context, node string, args ...string) error
+	Recover(ctx context.Context, node cluster.Node, args ...string) error
 	// Name returns the unique name for the nemesis
 	Name() string
 }
@@ -36,12 +38,12 @@ type NoopNemesis struct {
 // }
 
 // Invoke executes the nemesis
-func (NoopNemesis) Invoke(ctx context.Context, node string, args ...string) error {
+func (NoopNemesis) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
 	return nil
 }
 
 // Recover recovers the nemesis
-func (NoopNemesis) Recover(ctx context.Context, node string, args ...string) error {
+func (NoopNemesis) Recover(ctx context.Context, node cluster.Node, args ...string) error {
 	return nil
 }
 
@@ -85,7 +87,7 @@ type NemesisOperation struct {
 type NemesisGenerator interface {
 	// Generate generates the nemesis operation for all nodes.
 	// Every node will be assigned a nemesis operation.
-	Generate(nodes []string) []*NemesisOperation
+	Generate(nodes []cluster.Node) []*NemesisOperation
 	Name() string
 }
 
