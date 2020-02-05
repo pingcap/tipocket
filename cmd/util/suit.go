@@ -2,7 +2,7 @@ package util
 
 import (
 	"context"
-	"fmt"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"os"
 	"os/signal"
@@ -18,6 +18,8 @@ import (
 // Suit is a basic chaos testing suit with configurations to run chaos.
 type Suit struct {
 	*control.Config
+	// Provisioner deploy the SUT cluster
+	cluster.Provisioner
 	core.ClientCreator
 	// nemesis, seperated by comma.
 	Nemesises string
@@ -26,7 +28,8 @@ type Suit struct {
 }
 
 // Run runs the suit.
-func (suit *Suit) Run(ctx context.Context, nodes []string) {
+func (suit *Suit) Run(ctx context.Context) {
+	var err error
 	var nemesisGens []core.NemesisGenerator
 	for _, name := range strings.Split(suit.Nemesises, ",") {
 		var g core.NemesisGenerator
@@ -49,15 +52,20 @@ func (suit *Suit) Run(ctx context.Context, nodes []string) {
 
 	sctx, cancel := context.WithCancel(ctx)
 
-	if len(nodes) != 0 {
-		suit.Config.Nodes = nodes
-	} else {
-		// By default, we run TiKV/TiDB cluster on 5 nodes.
-		for i := 1; i <= 5; i++ {
-			name := fmt.Sprintf("n%d", i)
-			suit.Config.Nodes = append(suit.Config.Nodes, name)
-		}
+	err, suit.Config.Nodes = suit.Provisioner.SetUp(sctx, nil)
+	if err != nil {
+		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
+
+	//if len(nodes) != 0 {
+	//	suit.Config.Nodes = nodes
+	//} else {
+	//	// By default, we run TiKV/TiDB cluster on 5 nodes.
+	//	for i := 1; i <= 5; i++ {
+	//		name := fmt.Sprintf("n%d", i)
+	//		suit.Config.Nodes = append(suit.Config.Nodes, name)
+	//	}
+	//}
 
 	c := control.NewController(
 		sctx,

@@ -1,6 +1,7 @@
 package control
 
 import (
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"time"
 )
 
@@ -9,7 +10,7 @@ type Config struct {
 	// DB is the name which we want to run.
 	DB string
 	// Nodes are address of nodes.
-	Nodes []string
+	Nodes []cluster.Node
 
 	// RunRound controls how many round the controller runs tests.
 	RunRound int

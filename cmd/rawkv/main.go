@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"time"
 
@@ -54,5 +55,5 @@ func main() {
 		Nemesises:     *nemesises,
 		VerifySuit:    verifySuit,
 	}
-	suit.Run(context.Background(), []string{})
+	suit.Run(context.Background(), []cluster.Node{})
 }

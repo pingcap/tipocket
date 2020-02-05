@@ -1,6 +1,9 @@
 package cluster
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Node is the service access point in K8s, it's maybe podIP:port or CLUSTER-IP:port
 type Node struct {
@@ -8,8 +11,10 @@ type Node struct {
 	Port string
 }
 
-// Provisioner provides APIs for deploy/destroy a cluster
+// Provisioner provides a collection of APIs to deploy/destroy a cluster
 type Provisioner interface {
-	Deploy(spec json.RawMessage) (error, []Node)
-	Destroy() error
+	// SetUp sets up cluster, returns err or all nodes info
+	SetUp(ctx context.Context, spec json.RawMessage) (error, []Node)
+	// TearDown tears down the cluster
+	TearDown() error
 }

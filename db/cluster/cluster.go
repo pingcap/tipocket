@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"path"
 	"strconv"
@@ -39,19 +40,19 @@ var (
 // Note: Cluster does not implement `core.DB` interface.
 type Cluster struct {
 	once           sync.Once
-	nodes          []string
+	nodes          []cluster.Node
 	installBlocker util.BlockRunner
 	IncludeTidb    bool
 }
 
 // SetUp initializes the database.
-func (cluster *Cluster) SetUp(ctx context.Context, nodes []string, node string) error {
+func (cluster *Cluster) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	// Try kill all old servers
 	if cluster.IncludeTidb {
-		ssh.Exec(ctx, node, "killall", "-9", "tidb-server")
+		ssh.Exec(ctx, node.IP, "killall", "-9", "tidb-server")
 	}
-	ssh.Exec(ctx, node, "killall", "-9", "tikv-server")
-	ssh.Exec(ctx, node, "killall", "-9", "pd-server")
+	ssh.Exec(ctx, node.IP, "killall", "-9", "tikv-server")
+	ssh.Exec(ctx, node.IP, "killall", "-9", "pd-server")
 
 	cluster.once.Do(func() {
 		cluster.nodes = nodes
@@ -62,16 +63,16 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []string, node string) 
 
 	var err error
 	cluster.installBlocker.Run(func() {
-		if !util.IsFileExist(ctx, node, deployDir) {
-			err = util.InstallArchive(ctx, node, archiveURL, deployDir)
+		if !util.IsFileExist(ctx, node.IP, deployDir) {
+			err = util.InstallArchive(ctx, node.IP, archiveURL, deployDir)
 		}
 	})
 	if err != nil {
 		return err
 	}
 
-	util.Mkdir(ctx, node, path.Join(deployDir, "conf"))
-	util.Mkdir(ctx, node, path.Join(deployDir, "log"))
+	util.Mkdir(ctx, node.IP, path.Join(deployDir, "conf"))
+	util.Mkdir(ctx, node.IP, path.Join(deployDir, "log"))
 
 	pdCfs := []string{
 		"tick-interval=\"100ms\"",
@@ -81,7 +82,7 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []string, node string) 
 		"max-replicas=3",
 	}
 
-	if err := util.WriteFile(ctx, node, pdConfig, strconv.Quote(strings.Join(pdCfs, "\n"))); err != nil {
+	if err := util.WriteFile(ctx, node.IP, pdConfig, strconv.Quote(strings.Join(pdCfs, "\n"))); err != nil {
 		return err
 	}
 
@@ -101,7 +102,7 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []string, node string) 
 		"region-split-keys = 2",
 	}
 
-	if err := util.WriteFile(ctx, node, tikvConfig, strconv.Quote(strings.Join(tikvCfs, "\n"))); err != nil {
+	if err := util.WriteFile(ctx, node.IP, tikvConfig, strconv.Quote(strings.Join(tikvCfs, "\n"))); err != nil {
 		return err
 	}
 
@@ -113,21 +114,21 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []string, node string) 
 		"max-txn-time-use = 590",
 	}
 
-	if err := util.WriteFile(ctx, node, tidbConfig, strconv.Quote(strings.Join(tidbCfs, "\n"))); err != nil {
+	if err := util.WriteFile(ctx, node.IP, tidbConfig, strconv.Quote(strings.Join(tidbCfs, "\n"))); err != nil {
 		return err
 	}
 
-	return cluster.start(ctx, node, true)
+	return cluster.start(ctx, node.IP, true)
 }
 
 // TearDown tears down the database.
-func (cluster *Cluster) TearDown(ctx context.Context, nodes []string, node string) error {
+func (cluster *Cluster) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return cluster.Kill(ctx, node)
 }
 
 // Start starts the database
-func (cluster *Cluster) Start(ctx context.Context, node string) error {
-	return cluster.start(ctx, node, false)
+func (cluster *Cluster) Start(ctx context.Context, node cluster.Node) error {
+	return cluster.start(ctx, node.IP, false)
 }
 
 func (cluster *Cluster) start(ctx context.Context, node string, inSetUp bool) error {
@@ -245,22 +246,22 @@ WAIT:
 }
 
 // Stop stops the database
-func (cluster *Cluster) Stop(ctx context.Context, node string) error {
+func (cluster *Cluster) Stop(ctx context.Context, node cluster.Node) error {
 	if cluster.IncludeTidb {
-		if err := util.StopDaemon(ctx, node, tidbBinary, path.Join(deployDir, "tidb.pid")); err != nil {
+		if err := util.StopDaemon(ctx, node.IP, tidbBinary, path.Join(deployDir, "tidb.pid")); err != nil {
 			return err
 		}
 	}
 
-	if err := util.StopDaemon(ctx, node, tikvBinary, path.Join(deployDir, "tikv.pid")); err != nil {
+	if err := util.StopDaemon(ctx, node.IP, tikvBinary, path.Join(deployDir, "tikv.pid")); err != nil {
 		return err
 	}
 
-	return util.StopDaemon(ctx, node, pdBinary, path.Join(deployDir, "pd.pid"))
+	return util.StopDaemon(ctx, node.IP, pdBinary, path.Join(deployDir, "pd.pid"))
 }
 
 // Kill kills the database
-func (cluster *Cluster) Kill(ctx context.Context, node string) error {
+func (cluster *Cluster) Kill(ctx context.Context, node cluster.Node) error {
 	if cluster.IncludeTidb {
 		if err := util.KillDaemon(ctx, node, tidbBinary, path.Join(deployDir, "tidb.pid")); err != nil {
 			return err
@@ -275,11 +276,11 @@ func (cluster *Cluster) Kill(ctx context.Context, node string) error {
 }
 
 // IsRunning checks whether the database is running or not
-func (cluster *Cluster) IsRunning(ctx context.Context, node string) bool {
+func (cluster *Cluster) IsRunning(ctx context.Context, node cluster.Node) bool {
 	if cluster.IncludeTidb {
-		return util.IsDaemonRunning(ctx, node, tidbBinary, path.Join(deployDir, "tidb.pid"))
+		return util.IsDaemonRunning(ctx, node.IP, tidbBinary, path.Join(deployDir, "tidb.pid"))
 	}
-	return util.IsDaemonRunning(ctx, node, tidbBinary, path.Join(deployDir, "tikv.pid"))
+	return util.IsDaemonRunning(ctx, node.IP, tidbBinary, path.Join(deployDir, "tikv.pid"))
 }
 
 // Name returns the unique name for the database
