@@ -2,6 +2,7 @@ package nemesis
 
 import (
 	"context"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/core"

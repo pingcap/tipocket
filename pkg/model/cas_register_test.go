@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/anishathalye/porcupine"
+
 	"github.com/pingcap/tipocket/pkg/core"
 )
 

@@ -3,13 +3,14 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/util"
 	"github.com/pingcap/tipocket/pkg/util/ssh"

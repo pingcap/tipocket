@@ -3,12 +3,13 @@ package util
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/util/ssh"
 )

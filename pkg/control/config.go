@@ -1,8 +1,9 @@
 package control
 
 import (
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // Config is the configuration for the controller.

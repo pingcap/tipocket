@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/anishathalye/porcupine"
-	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/model"
 	"github.com/pingcap/tidb/kv"
 	"github.com/pingcap/tidb/store/tikv"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/model"
 )
 
 var (
@@ -27,7 +29,7 @@ type registerClient struct {
 	r  *rand.Rand
 }
 
-func (c *registerClient) SetUp(ctx context.Context, nodes []string, node string) error {
+func (c *registerClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	driver := tikv.Driver{}
 	db, err := driver.Open(fmt.Sprintf("tikv://%s:2379?disableGC=true", node))
@@ -58,7 +60,7 @@ func (c *registerClient) SetUp(ctx context.Context, nodes []string, node string)
 	return tx.Commit(ctx)
 }
 
-func (c *registerClient) TearDown(ctx context.Context, nodes []string, node string) error {
+func (c *registerClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	var err error
 	closeOnce.Do(func() {
 		// It's a workaround for `panic: close of closed channel`.
@@ -113,7 +115,7 @@ func (c *registerClient) invokeWrite(ctx context.Context, r model.RegisterReques
 	return model.RegisterResponse{}
 }
 
-func (c *registerClient) Invoke(ctx context.Context, node string, r interface{}) interface{} {
+func (c *registerClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
 	arg := r.(model.RegisterRequest)
 	if arg.Op == model.RegisterRead {
 		return c.invokeRead(ctx, arg)
@@ -170,6 +172,6 @@ type RegisterClientCreator struct {
 }
 
 // Create creates a client.
-func (RegisterClientCreator) Create(node string) core.Client {
+func (RegisterClientCreator) Create(node cluster.Node) core.Client {
 	return &registerClient{}
 }

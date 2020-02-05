@@ -1,9 +1,10 @@
 package nemesis
 
 import (
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"math/rand"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/core"
 )

@@ -5,13 +5,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"math/rand"
 	"sort"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
+
 	"github.com/anishathalye/porcupine"
+
 	pchecker "github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"

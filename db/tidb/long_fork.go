@@ -6,13 +6,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"hash/fnv"
 	"log"
 	"math/rand"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"

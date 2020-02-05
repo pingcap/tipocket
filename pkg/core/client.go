@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
@@ -49,10 +50,14 @@ type noopClient struct {
 }
 
 // SetUp sets up the client.
-func (noopClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error { return nil }
+func (noopClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+	return nil
+}
 
 // TearDown tears down the client.
-func (noopClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error { return nil }
+func (noopClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+	return nil
+}
 
 // Invoke invokes a request to the database.
 func (noopClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {

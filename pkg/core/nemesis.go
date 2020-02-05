@@ -3,8 +3,9 @@ package core
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // Nemesis injects failure and disturbs the database.

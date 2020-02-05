@@ -2,12 +2,13 @@ package util
 
 import (
 	"context"
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
