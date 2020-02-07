@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
+
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -20,7 +22,7 @@ func TestControl(t *testing.T) {
 		RunRound:     3,
 		DB:           "noop",
 		History:      "/tmp/chaos/a.log",
-		Nodes:        []string{"n1", "n2"},
+		Nodes:        []cluster.Node{{IP: "n1", Port: "4000"}, {IP: "n2", Port: "4000"}},
 	}
 
 	defer os.Remove("/tmp/chaos/a.log")
