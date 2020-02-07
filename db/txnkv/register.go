@@ -81,7 +81,7 @@ func (c *registerClient) invokeRead(ctx context.Context, r model.RegisterRequest
 	}
 	defer tx.Rollback()
 
-	val, err := tx.Get(register)
+	val, err := tx.Get(ctx, register)
 	if err != nil {
 		return model.RegisterResponse{Unknown: true}
 	}
@@ -143,7 +143,7 @@ func (c *registerClient) DumpState(ctx context.Context) (interface{}, error) {
 	}
 	defer tx.Rollback()
 
-	val, err := tx.Get(register)
+	val, err := tx.Get(ctx, register)
 	if err != nil {
 		return nil, err
 	}

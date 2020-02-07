@@ -101,7 +101,7 @@ func (NoopNemesisGenerator) Name() string {
 }
 
 //Generate generates the nemesis operation for the nodes.
-func (NoopNemesisGenerator) Generate(nodes []string) []*NemesisOperation {
+func (NoopNemesisGenerator) Generate(nodes []cluster.Node) []*NemesisOperation {
 	ops := make([]*NemesisOperation, len(nodes))
 	for i := 0; i < len(ops); i++ {
 		ops[i] = &NemesisOperation{

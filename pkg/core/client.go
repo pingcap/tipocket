@@ -41,7 +41,7 @@ type NoopClientCreator struct {
 }
 
 // Create creates the client.
-func (NoopClientCreator) Create(node string) Client {
+func (NoopClientCreator) Create(node cluster.Node) Client {
 	return noopClient{}
 }
 
