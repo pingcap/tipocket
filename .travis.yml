@@ -6,16 +6,9 @@ go:
 
 jobs:
   include:
-    - name: "pocket-test"
+    - name: "tipocket"
       stage: test
-      before_install:
-        - cd pocket
       script:
+        - make fmt
         - make test
         - make build
-    - name: "go-sqlsmith-test"
-      stage: test
-      before_install:
-        - cd go-sqlsmith
-      script:
-        - go test -v ./...
