@@ -7,11 +7,6 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|github.com/pingcap/tipocket/||'
 
-FILES     := $$(find . -name "*.go" | grep -vE "vendor")
-GOFILTER  := grep -vE 'vendor|render.Delims|bindata_assetfs|testutil|\.pb\.go'
-GOCHECKER := $(GOFILTER) | awk '{ print } END { if (NR > 0) { exit 1 } }'
-GOLINT    := go list ./... | grep -vE 'vendor' | xargs -L1 -I {} golint {} 2>&1 | $(GOCHECKER)
-
 LDFLAGS += -X "github.com/pingcap/tipocket/pocket/util.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
 LDFLAGS += -X "github.com/pingcap/tipocket/pocket/util.BuildHash=$(shell git rev-parse HEAD)"
 
@@ -26,16 +21,16 @@ build: fmt chaos verifier
 chaos: rawkv tidb txnkv
 
 tidb:
-	GO111MODULE=on go build -o bin/chaos-tidb cmd/tidb/main.go
+	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
 
 rawkv:
-	GO111MODULE=on go build -o bin/chaos-rawkv cmd/rawkv/main.go
+	$(GOBUILD) $(GOMOD) -o bin/chaos-rawkv cmd/rawkv/main.go
 
 txnkv:
-	GO111MODULE=on go build -o bin/chaos-txnkv cmd/txnkv/main.go
+	$(GOBUILD) $(GOMOD) -o bin/chaos-txnkv cmd/txnkv/main.go
 
 verifier:
-	GO111MODULE=on go build -o bin/chaos-verifier cmd/verifier/main.go
+	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
 
 pocket:
 	$(GOBUILD) $(GOMOD) -o bin/pocket cmd/pocket/*.go
