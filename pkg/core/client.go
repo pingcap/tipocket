@@ -13,7 +13,7 @@ type UnknownResponse interface {
 }
 
 // Client applies the request to the database.
-// Client is used in contorl.
+// Client is used in control.
 // You should define your own client for your database.
 type Client interface {
 	// SetUp sets up the client.

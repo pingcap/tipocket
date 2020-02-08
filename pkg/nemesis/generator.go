@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
-
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -37,7 +36,7 @@ func (g killGenerator) Name() string {
 func killNodes(db string, nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
-	// randomly shuffle the indecies and get the first n nodes to be partitioned.
+	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
 
 	for i := 0; i < n; i++ {
@@ -84,7 +83,7 @@ func (g dropGenerator) Name() string {
 func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
-	// randomly shuffle the indecies and get the first n nodes to be partitioned.
+	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
 
 	partNodes := make([]string, n)

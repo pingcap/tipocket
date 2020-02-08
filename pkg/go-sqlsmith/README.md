@@ -6,7 +6,7 @@ Go version of [SQLsmith](https://github.com/anse1/sqlsmith).
 
 ```go
 import (
-	sqlsmith_go "github.com/pingcap/tipocket/go-sqlsmith"
+	sqlsmith_go "github.com/pingcap/tipocket/pkg/go-sqlsmith"
 )
 
 func gosmith() {
