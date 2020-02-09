@@ -1,4 +1,4 @@
-<img src="static/logo.png" alt="chaos_logo" width="400"/>
+<img src="https://github.com/pingcap/chaos-mesh/blob/master/static/logo.png" alt="chaos_logo" width="400"/>
 
 # Command Line Usages of Chaos
 If  you deploy TiDB clusters with Ansible, Chaos Mesh is not applicable. In this case, you can still do chaos experiments using command line. This document walks you through the command usages of the typical chaos experiments. In the end, we provide a demo script to show a full chaos experiment using command line.
@@ -66,7 +66,7 @@ sudo ipset add pa1 172.16.4.67
     <img src="../static/network-partition-output.png" alt="network-delay" width="600"/>
 
 ## I/O chaos
-I/O chaos injects I/O delay and I/O errors such as “No space left in device” and “No such file”. I/O chaos injection requires two binaries—- [injuredfs](../static/injuredfs) (I/O inject server) and [injuredfs_client](../static/injuredfs_client) (I/O inject client). For more information on the injection methods and errors, refer to [Chaos Mesh documentation](https://github.com/pingcap/chaos-mesh/blob/master/doc/io_chaos.md#common-linux-system-errors).
+I/O chaos injects I/O delay and I/O errors such as “No space left in device” and “No such file”. I/O chaos injection requires two binaries—- [injuredfs](https://raw.githubusercontent.com/pingcap/tipocket/master/static/injuredfs) (I/O inject server) and [injuredfs_client](https://raw.githubusercontent.com/pingcap/tipocket/master/static/injuredfs_client) (I/O inject client). For more information on the injection methods and errors, refer to [Chaos Mesh documentation](https://github.com/pingcap/chaos-mesh/blob/master/doc/io_chaos.md#common-linux-system-errors).
 
 <bold>To do I/O chaos</bold> (using TiKV as an example):
 1. Initialize the target file system (fs) for chaos:
