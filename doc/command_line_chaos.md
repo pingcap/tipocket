@@ -11,6 +11,7 @@ The `kill process` chaos kills the specified process.The following example kills
 The netem chaos simulates package delay/loss/duplicate/corruption over network. Assuming the network interface is “bond0”, use the following command to do Netem chaos: 
 
 `sudo tc qdisc add dev bond0 root netem $cmd`
+
 You can substitute the  $cmd argument with one of the following:
 - delay 20ms
 - loss 3%
@@ -20,8 +21,10 @@ You can substitute the  $cmd argument with one of the following:
 You can specify a degree value for the network delay/loss/duplicate/corruption based on your requirements. For example, delay 20ms simulates a network delay of 20ms.
 
 Sample example:
+
 `sudo tc qdisc add dev bond0 root netem delay 40ms`
-<img src="static/network-delay.png" alt="network-delay" width="800"/>
+
+<img src="../static/network-delay.png" alt="network-delay" width="800"/>
 
 When you complete the experiment, use the following command to clear it:
 `sudo tc qdisc del dev bond0 roots`
@@ -39,7 +42,7 @@ sudo ipset -N pa1 hash:ip
 sudo ipset add pa1 172.16.4.67
 ```
 2. Set the incoming rule or outcoming rule as desired:
-- Set incoming rule:
+    - Set incoming rule:
 ```
 # add the incoming rule to drop all packets from the source IP set of “pa1”
 sudo iptables -A INPUT -m set --match-set pa1 src -j DROP -w 5
@@ -47,9 +50,9 @@ sudo iptables -A INPUT -m set --match-set pa1 src -j DROP -w 5
 # if chaos finishes, clear the rule using:
 sudo iptables -D INPUT -m set --match-set pa1 src -j DROP -w 5
 ```
-<img src="static/network-partition-input.png" alt="network-delay" width="800"/>
+<img src="../static/network-partition-input.png" alt="network-delay" width="800"/>
 
-- Set outcoming rule:
+    - Set outcoming rule:
 ```
 # set the outcoming rule to drop all packets sent to the destination IP set of “pa1”
 sudo iptables -A OUTPUT -m set --match-set pa1 dst -j DROP -w 5
@@ -57,7 +60,7 @@ sudo iptables -A OUTPUT -m set --match-set pa1 dst -j DROP -w 5
 # if chaos finishes, clear the rule using:
 sudo iptables -D OUTPUT -m set --match-set pa1 dst -j DROP -w 5
 ```
-<img src="static/network-partition-output.png" alt="network-delay" width="800"/>
+<img src="../static/network-partition-output.png" alt="network-delay" width="800"/>
 
 ## I/O chaos
 I/O chaos injects I/O delay and I/O errors such as “No space left in device” and “No such file”. I/O chaos injection requires two binaries— injuredfs (I/O inject server) and injuredfs_client (I/O inject client). For more information on the injection methods and errors, refer to [Chaos Mesh documentation](https://github.com/pingcap/chaos-mesh/blob/master/doc/io_chaos.md#common-linux-system-errors).
@@ -94,7 +97,7 @@ chmod +x injuredfs_client
 ```
 
 Sample output for I/O error chaos:
-<img src="static/io.png" alt="io-chaos" width="800"/>
+<img src="../static/io.png" alt="io-chaos" width="800"/>
 
 ## time jump
 The time jump chaos makes time jump forward or backward to inject time sync errors.
