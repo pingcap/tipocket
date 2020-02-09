@@ -24,7 +24,7 @@ Sample example:
 
 `sudo tc qdisc add dev bond0 root netem delay 40ms`
 
-<img src="../static/network-delay.png" alt="network-delay" width="800"/>
+<img src="../static/network-delay.png" alt="network-delay" width="600"/>
 
 When you complete the experiment, use the following command to clear it:
 
@@ -51,7 +51,7 @@ sudo ipset add pa1 172.16.4.67
     # if chaos finishes, clear the rule using:
     sudo iptables -D INPUT -m set --match-set pa1 src -j DROP -w 5
     ```
-    <img src="../static/network-partition-input.png" alt="network-delay" width="800"/>
+    <img src="../static/network-partition-input.png" alt="network-delay" width="600"/>
 
     - Set outcoming rule:
     ```
@@ -61,7 +61,7 @@ sudo ipset add pa1 172.16.4.67
     # if chaos finishes, clear the rule using:
     sudo iptables -D OUTPUT -m set --match-set pa1 dst -j DROP -w 5
     ```
-    <img src="../static/network-partition-output.png" alt="network-delay" width="800"/>
+    <img src="../static/network-partition-output.png" alt="network-delay" width="600"/>
 
 ## I/O chaos
 I/O chaos injects I/O delay and I/O errors such as “No space left in device” and “No such file”. I/O chaos injection requires two binaries— injuredfs (I/O inject server) and injuredfs_client (I/O inject client). For more information on the injection methods and errors, refer to [Chaos Mesh documentation](https://github.com/pingcap/chaos-mesh/blob/master/doc/io_chaos.md#common-linux-system-errors).
@@ -98,7 +98,7 @@ chmod +x injuredfs_client
 ```
 
 Sample output for I/O error chaos:
-<img src="../static/io.png" alt="io-chaos" width="800"/>
+<img src="../static/io.png" alt="io-chaos" width="600"/>
 
 ## time jump
 The time jump chaos makes time jump forward or backward to inject time sync errors.
