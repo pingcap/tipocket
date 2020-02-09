@@ -27,6 +27,7 @@ Sample example:
 <img src="../static/network-delay.png" alt="network-delay" width="800"/>
 
 When you complete the experiment, use the following command to clear it:
+
 `sudo tc qdisc del dev bond0 roots`
 
 ## network partition
@@ -43,24 +44,24 @@ sudo ipset add pa1 172.16.4.67
 ```
 2. Set the incoming rule or outcoming rule as desired:
     - Set incoming rule:
-```
-# add the incoming rule to drop all packets from the source IP set of “pa1”
-sudo iptables -A INPUT -m set --match-set pa1 src -j DROP -w 5
+    ```
+    # add the incoming rule to drop all packets from the source IP set of “pa1”
+    sudo iptables -A INPUT -m set --match-set pa1 src -j DROP -w 5
 
-# if chaos finishes, clear the rule using:
-sudo iptables -D INPUT -m set --match-set pa1 src -j DROP -w 5
-```
-<img src="../static/network-partition-input.png" alt="network-delay" width="800"/>
+    # if chaos finishes, clear the rule using:
+    sudo iptables -D INPUT -m set --match-set pa1 src -j DROP -w 5
+    ```
+    <img src="../static/network-partition-input.png" alt="network-delay" width="800"/>
 
     - Set outcoming rule:
-```
-# set the outcoming rule to drop all packets sent to the destination IP set of “pa1”
-sudo iptables -A OUTPUT -m set --match-set pa1 dst -j DROP -w 5
+    ```
+    # set the outcoming rule to drop all packets sent to the destination IP set of “pa1”
+    sudo iptables -A OUTPUT -m set --match-set pa1 dst -j DROP -w 5
 
-# if chaos finishes, clear the rule using:
-sudo iptables -D OUTPUT -m set --match-set pa1 dst -j DROP -w 5
-```
-<img src="../static/network-partition-output.png" alt="network-delay" width="800"/>
+    # if chaos finishes, clear the rule using:
+    sudo iptables -D OUTPUT -m set --match-set pa1 dst -j DROP -w 5
+    ```
+    <img src="../static/network-partition-output.png" alt="network-delay" width="800"/>
 
 ## I/O chaos
 I/O chaos injects I/O delay and I/O errors such as “No space left in device” and “No such file”. I/O chaos injection requires two binaries— injuredfs (I/O inject server) and injuredfs_client (I/O inject client). For more information on the injection methods and errors, refer to [Chaos Mesh documentation](https://github.com/pingcap/chaos-mesh/blob/master/doc/io_chaos.md#common-linux-system-errors).
