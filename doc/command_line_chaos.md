@@ -100,6 +100,7 @@ chmod +x injuredfs_client
 ```
 
 Sample output for I/O error chaos:
+
 <img src="../static/io.png" alt="io-chaos" width="600"/>
 
 ## time jump
