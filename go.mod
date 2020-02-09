@@ -5,13 +5,15 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
+	github.com/coreos/etcd v3.3.17+incompatible
 	github.com/dgraph-io/ristretto v0.0.1 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/jeremywohl/flatten v0.0.0-20190921043622-d936035e55cf // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
-	github.com/lithammer/dedent v1.1.0
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.7.1
 	github.com/pingcap/advanced-statefulset v0.2.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200207073207-757280b5c05c
 	github.com/pingcap/check v0.0.0-20191216031241-8a5a85928f12 // indirect
@@ -24,6 +26,7 @@ require (
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
 	github.com/pingcap/tipb v0.0.0-20191227083941-3996eff010dc // indirect
+	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
 	github.com/pingcap/tipocket/test-infra v0.0.0-20200209133414-35206e8483b6
 	github.com/renstrom/dedent v1.1.0 // indirect
 
@@ -32,9 +35,11 @@ require (
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20191023171146-3cf2f69b5738 // indirect
 	go.uber.org/automaxprocs v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
+	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v0.17.2
+	k8s.io/component-base v0.17.2
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.17.2
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
@@ -44,7 +49,7 @@ require (
 replace (
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 	github.com/russross/blackfriday => github.com/russross/blackfriday v1.5.2
-	github.com/uber-go/atomic => go.uber.org/atomic v1.5.1
+	github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
 	k8s.io/api => k8s.io/api v0.17.2
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.2
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.2 // v0.0.0-20190913080033-27d36303b655
