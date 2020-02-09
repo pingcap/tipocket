@@ -12,13 +12,13 @@ type Node struct {
 	PodName string
 
 	IP   string
-	Port string
+	Port uint
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
 type Provisioner interface {
 	// SetUp sets up cluster, returns err or all nodes info
-	SetUp(ctx context.Context, spec interface{}) (error, []Node)
+	SetUp(ctx context.Context, spec interface{}) ([]Node, error)
 	// TearDown tears down the cluster
 	TearDown() error
 }
