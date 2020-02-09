@@ -2,9 +2,15 @@ package nemesis
 
 import (
 	"context"
+	"github.com/pingcap/chaos-mesh/api/v1alpha1"
+	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
+	"k8s.io/client-go/rest"
+
+	"k8s.io/kubernetes/test/e2e/framework"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
-
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
@@ -12,13 +18,17 @@ import (
 type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
-	db := core.GetDB(args[0])
-	return db.Kill(ctx, node)
+	//db := core.GetDB(args[0])
+	//return db.Kill(ctx, node)
+	c := createClient(node.Namespace)
+	return PodChaos(c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
-	db := core.GetDB(args[0])
-	return db.Start(ctx, node)
+	//db := core.GetDB(args[0])
+	//return db.Start(ctx, node)
+	c := createClient(node.Namespace)
+	return CancelPodChaos(c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Name() string {
@@ -54,4 +64,25 @@ func (drop) Name() string {
 func init() {
 	core.RegisterNemesis(kill{})
 	core.RegisterNemesis(drop{})
+}
+
+func newClient(conf *rest.Config) *Chaos {
+	kubeCli, err :=  client.New(conf, client.Options{
+		Scheme: scheme.Scheme,
+	})
+	if err != nil {
+		e2elog.Failf("error creating kube-client: %v", err)
+	}
+	return &Chaos{
+		cli: kubeCli,
+	}
+}
+
+func createClient(ns string) *Chaos {
+	e2elog.Logf("Working namespace %s", ns)
+	var err error
+	conf, err := framework.LoadConfig()
+	framework.ExpectNoError(err, "Expected to load config.")
+	c := newClient(conf)
+	return c
 }
