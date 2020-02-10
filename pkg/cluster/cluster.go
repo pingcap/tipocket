@@ -12,7 +12,7 @@ type Node struct {
 	PodName string
 
 	IP   string
-	Port uint
+	Port int32
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
