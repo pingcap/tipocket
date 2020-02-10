@@ -19,7 +19,7 @@ import (
 
 	"github.com/anishathalye/porcupine"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
 )
 
 // Checker is a linearizability checker powered by Porcupine.

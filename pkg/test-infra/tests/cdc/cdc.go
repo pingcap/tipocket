@@ -21,21 +21,20 @@ import (
 	"github.com/onsi/ginkgo"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
-	"github.com/pingcap/tipocket/pocket/config"
-	"github.com/pingcap/tipocket/pocket/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/cdc"
-	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/test-infra/pkg/mysql"
-	"github.com/pingcap/tipocket/test-infra/pkg/tidb"
-	putil "github.com/pingcap/tipocket/test-infra/pkg/util"
-	"github.com/pingcap/tipocket/test-infra/tests/util"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
+	"github.com/pingcap/tipocket/pkg/pocket/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/cdc"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/mysql"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	putil "github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
-
-	_ "github.com/pingcap/tidb/types/parser_driver"
+	//_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
 var _ = ginkgo.Describe("cdc", func() {

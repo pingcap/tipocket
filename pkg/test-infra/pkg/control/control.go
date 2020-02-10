@@ -20,9 +20,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/history"
-	"github.com/pingcap/tipocket/test-infra/pkg/verify"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/history"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/verify"
 )
 
 // Controller controls the whole cluster. It sends request to the database,

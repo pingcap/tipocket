@@ -17,7 +17,7 @@ import (
 	"github.com/onsi/ginkgo"
 	"k8s.io/kubernetes/test/e2e/framework"
 
-	"github.com/pingcap/tipocket/test-infra/tests/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
 )
 
 var _ = ginkgo.Describe("binlog", func() {
