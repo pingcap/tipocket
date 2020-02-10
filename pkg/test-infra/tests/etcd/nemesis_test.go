@@ -18,7 +18,7 @@ import (
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/chaos"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,7 +44,7 @@ func KillPod(cli *chaos.Chaos, ns string, name string) error {
 				// Randomly kill in namespace
 				Namespaces: []string{ns},
 			},
-			Scheduler: chaosv1alpha1.SchedulerSpec{
+			Scheduler: &chaosv1alpha1.SchedulerSpec{
 				Cron: "@every 30s",
 			},
 			Action: chaosv1alpha1.PodKillAction,
@@ -68,8 +68,8 @@ func NetworkDelay(cli *chaos.Chaos, ns string, name string) error {
 			Selector: chaosv1alpha1.SelectorSpec{
 				Namespaces: []string{ns},
 			},
-			Duration: "10s",
-			Scheduler: chaosv1alpha1.SchedulerSpec{
+			//Duration: "10s",
+			Scheduler: &chaosv1alpha1.SchedulerSpec{
 				Cron: "@every 20s",
 			},
 			Delay: &chaosv1alpha1.DelaySpec{
@@ -101,8 +101,8 @@ func NetworkPartition(cli *chaos.Chaos, ns string, name string) error {
 					},
 				},
 			},
-			Duration: "30s",
-			Scheduler: chaosv1alpha1.SchedulerSpec{
+			//Duration: "30s",
+			Scheduler: &chaosv1alpha1.SchedulerSpec{
 				Cron: "@every 2m",
 			},
 			Direction: chaosv1alpha1.Both,

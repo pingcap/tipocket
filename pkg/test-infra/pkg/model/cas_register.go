@@ -16,8 +16,8 @@ package model
 import (
 	"encoding/json"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/history"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/history"
 )
 
 // CasOp is an operation.

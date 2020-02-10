@@ -75,7 +75,7 @@ func lfKey2Table(tableCount int, key uint64) string {
 
 func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%s)/test", node.IP, node.Port))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.Node, node c
 		return nil
 	}
 
-	log.Printf("begin to create %v tables on node %s", c.tableCount, node)
+	log.Printf("begin to create %v tables on node %+v", c.tableCount, node)
 	for _, tableName := range lfTableNames(c.tableCount) {
 		log.Printf("try to drop table %s", tableName)
 		if _, err = db.ExecContext(ctx,

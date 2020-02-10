@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	operatorutil "github.com/pingcap/tidb-operator/pkg/util"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/test-infra/pkg/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"

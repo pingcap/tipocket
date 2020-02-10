@@ -16,8 +16,8 @@ package verify
 import (
 	"log"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/history"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/history"
 )
 
 // Suit collects a checker, a model and a parser.

@@ -24,8 +24,8 @@ import (
 	"github.com/anishathalye/porcupine"
 	"github.com/coreos/etcd/clientv3"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/model"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/model"
 )
 
 var (

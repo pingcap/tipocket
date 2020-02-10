@@ -22,7 +22,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
 )
 
 // opRecord is similar to core.Operation, but it stores data in json.RawMessage
