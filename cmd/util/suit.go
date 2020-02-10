@@ -26,7 +26,7 @@ type Suit struct {
 	Nemesises string
 
 	VerifySuit verify.Suit
-	
+
 	// cluster definition
 	Cluster interface{}
 }

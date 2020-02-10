@@ -28,7 +28,6 @@ require (
 	github.com/pingcap/tipb v0.0.0-20191227083941-3996eff010dc // indirect
 	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
 	github.com/pingcap/tipocket/test-infra v0.0.0-20200209133414-35206e8483b6
-	github.com/renstrom/dedent v1.1.0 // indirect
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.4.0
@@ -47,7 +46,6 @@ require (
 )
 
 replace (
-	github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 	github.com/russross/blackfriday => github.com/russross/blackfriday v1.5.2
 	github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
 	k8s.io/api => k8s.io/api v0.17.2
