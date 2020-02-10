@@ -60,7 +60,7 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []cluster.Node, node cl
 		cluster.installBlocker.Init(len(nodes))
 	})
 
-	log.Printf("install archieve on node %s", node)
+	log.Printf("install archieve on node %d", node)
 
 	var err error
 	cluster.installBlocker.Run(func() {

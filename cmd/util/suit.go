@@ -26,6 +26,9 @@ type Suit struct {
 	Nemesises string
 
 	VerifySuit verify.Suit
+
+	// cluster definition
+	Cluster interface{}
 }
 
 // Run runs the suit.
@@ -53,10 +56,12 @@ func (suit *Suit) Run(ctx context.Context) {
 
 	sctx, cancel := context.WithCancel(ctx)
 
-	err, suit.Config.Nodes = suit.Provisioner.SetUp(sctx, nil)
+	suit.Config.Nodes, err = suit.Provisioner.SetUp(sctx, suit.Cluster)
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
+	log.Println("deploy cluster success")
+	os.Exit(0)
 
 	c := control.NewController(
 		sctx,
