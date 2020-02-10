@@ -19,7 +19,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
 )
 
 func TestRecordAndReadHistory(t *testing.T) {

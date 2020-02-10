@@ -19,14 +19,14 @@ import (
 
 	"github.com/onsi/ginkgo"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/chaos"
-	"github.com/pingcap/tipocket/test-infra/pkg/check/porcupine"
-	"github.com/pingcap/tipocket/test-infra/pkg/control"
-	"github.com/pingcap/tipocket/test-infra/pkg/etcd"
-	"github.com/pingcap/tipocket/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/test-infra/pkg/model"
-	"github.com/pingcap/tipocket/test-infra/pkg/suit"
-	"github.com/pingcap/tipocket/test-infra/pkg/verify"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/chaos"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/check/porcupine"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/control"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/etcd"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/model"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/suit"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/verify"
 
 	_ "github.com/pingcap/tidb/types/parser_driver"
 

@@ -20,9 +20,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pingcap/tipocket/test-infra/pkg/control"
-	"github.com/pingcap/tipocket/test-infra/pkg/core"
-	"github.com/pingcap/tipocket/test-infra/pkg/verify"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/control"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/verify"
 )
 
 // Suit is a basic chaos testing suit with configurations to run chaos.

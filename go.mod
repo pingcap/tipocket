@@ -6,11 +6,12 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
 	github.com/coreos/etcd v3.3.17+incompatible
+	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
 	github.com/dgraph-io/ristretto v0.0.1 // indirect
 	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
-	github.com/jeremywohl/flatten v0.0.0-20190921043622-d936035e55cf // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
+	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.1
@@ -26,32 +27,32 @@ require (
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
 	github.com/pingcap/tipb v0.0.0-20191227083941-3996eff010dc // indirect
-	github.com/pingcap/tipocket/pocket v0.0.0-20191218112423-aebd26969052
-	github.com/pingcap/tipocket/test-infra v0.0.0-20200209133414-35206e8483b6
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.4.0
+	github.com/twinj/uuid v1.0.0 // indirect
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20191023171146-3cf2f69b5738 // indirect
 	go.uber.org/automaxprocs v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
 	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
-	k8s.io/api v0.17.2
-	k8s.io/apimachinery v0.17.2
-	k8s.io/client-go v0.17.2
-	k8s.io/component-base v0.17.2
+	k8s.io/api v0.0.0
+	k8s.io/apimachinery v0.0.0
+	k8s.io/client-go v0.0.0
+	k8s.io/component-base v0.16.0
 	k8s.io/klog v1.0.0
-	k8s.io/kubernetes v1.17.2
+	k8s.io/kubernetes v1.16.0
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	sigs.k8s.io/controller-runtime v0.4.0
 )
 
 replace (
+	github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610
 	github.com/russross/blackfriday => github.com/russross/blackfriday v1.5.2
 	github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
-	k8s.io/api => k8s.io/api v0.17.2
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.2
-	k8s.io/apimachinery => k8s.io/apimachinery v0.17.2 // v0.0.0-20190913080033-27d36303b655
-	k8s.io/apiserver => k8s.io/apiserver v0.17.2
+	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20190918162238-f783a3654da8
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20190918163234-a9c1f33e9fb9
