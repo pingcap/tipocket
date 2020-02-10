@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"context"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -92,8 +91,6 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.T
 		}
 		nodes[i] = node
 	}
-
-	log.Println(nodes)
 
 	return nodes, err
 }
