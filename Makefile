@@ -18,7 +18,7 @@ all: build
 
 build: fmt chaos verifier
 
-chaos: rawkv tidb txnkv
+chaos: tidb
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
