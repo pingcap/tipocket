@@ -6,35 +6,21 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
 	github.com/coreos/etcd v3.3.17+incompatible
-	github.com/coreos/gofail v0.0.0-20190801230047-ad7f989257ca // indirect
-	github.com/dgraph-io/ristretto v0.0.1 // indirect
-	github.com/elazarl/go-bindata-assetfs v1.0.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
-	github.com/myesui/uuid v1.0.0 // indirect
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.1
 	github.com/pingcap/advanced-statefulset v0.2.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200207073207-757280b5c05c
-	github.com/pingcap/check v0.0.0-20191216031241-8a5a85928f12 // indirect
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
-	github.com/pingcap/goleveldb v0.0.0-20191226122134-f82aafb29989 // indirect
-	github.com/pingcap/kvproto v0.0.0-20200102065152-5d51d93be892 // indirect
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
-	github.com/pingcap/sysutil v0.0.0-20191216090214-5f9620d22b3b // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
-	github.com/pingcap/tipb v0.0.0-20191227083941-3996eff010dc // indirect
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.4.0
-	github.com/twinj/uuid v1.0.0 // indirect
-	go.etcd.io/etcd v0.5.0-alpha.5.0.20191023171146-3cf2f69b5738 // indirect
-	go.uber.org/automaxprocs v1.2.0 // indirect
-	golang.org/x/crypto v0.0.0-20191206172530-e9b2fee46413 // indirect
-	gopkg.in/stretchr/testify.v1 v1.2.2 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
@@ -46,7 +32,9 @@ require (
 )
 
 replace (
-	github.com/pingcap/tidb => github.com/you06/tidb v1.1.0-beta.0.20191107083526-0edcbcc52610
+	github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
+	github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82
+
 	github.com/russross/blackfriday => github.com/russross/blackfriday v1.5.2
 	github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
