@@ -60,7 +60,7 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []cluster.Node, node cl
 		cluster.installBlocker.Init(len(nodes))
 	})
 
-	log.Printf("install archieve on node %d", node)
+	log.Printf("install archieve on node %+v", node)
 
 	var err error
 	cluster.installBlocker.Run(func() {
@@ -137,7 +137,7 @@ func (cluster *Cluster) start(ctx context.Context, node string, inSetUp bool) er
 
 	initialClusterArgs := make([]string, len(cluster.nodes))
 	for i, n := range cluster.nodes {
-		initialClusterArgs[i] = fmt.Sprintf("%s=http://%s:2380", n, n)
+		initialClusterArgs[i] = fmt.Sprintf("%s=http://%s:2380", n.IP, n.IP)
 	}
 	pdArgs := []string{
 		fmt.Sprintf("--name=%s", node),
@@ -168,7 +168,7 @@ func (cluster *Cluster) start(ctx context.Context, node string, inSetUp bool) er
 
 	pdEndpoints := make([]string, len(cluster.nodes))
 	for i, n := range cluster.nodes {
-		pdEndpoints[i] = fmt.Sprintf("%s:2379", n)
+		pdEndpoints[i] = fmt.Sprintf("%s:2379", n.IP)
 	}
 
 	// Before starting TiKV, we should ensure PD cluster is ready.

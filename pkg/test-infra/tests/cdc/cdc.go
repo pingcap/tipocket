@@ -120,7 +120,7 @@ var _ = ginkgo.Describe("cdc", func() {
 					Namespaces:     []string{ns},
 					LabelSelectors: map[string]string{"app.kubernetes.io/component": "tikv"},
 				},
-				Scheduler: chaosv1alpha1.SchedulerSpec{
+				Scheduler: &chaosv1alpha1.SchedulerSpec{
 					Cron: "@every 1m",
 				},
 				Action: chaosv1alpha1.PodKillAction,
