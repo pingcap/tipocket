@@ -41,11 +41,11 @@ var (
 	lfState = struct {
 		mu      sync.Mutex
 		nextKey uint64
-		workers map[*cluster.Node]uint64
+		workers map[*cluster.ClientNode]uint64
 	}{
 		mu:      sync.Mutex{},
 		nextKey: 0,
-		workers: make(map[*cluster.Node]uint64),
+		workers: make(map[*cluster.ClientNode]uint64),
 	}
 )
 
@@ -53,7 +53,7 @@ type longForkClient struct {
 	db         *sql.DB
 	r          *rand.Rand
 	tableCount int
-	node       cluster.Node
+	node       cluster.ClientNode
 }
 
 func lfTableNames(tableCount int) []string {
@@ -73,7 +73,7 @@ func lfKey2Table(tableCount int, key uint64) string {
 	return fmt.Sprintf("txn_lf_%d", hash%tableCount)
 }
 
-func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
@@ -201,9 +201,10 @@ type LongForkClientCreator struct {
 }
 
 // Create creates a new longForkClient.
-func (LongForkClientCreator) Create(node cluster.Node) core.Client {
+func (LongForkClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &longForkClient{
 		tableCount: 7,
+		r:          rand.New(rand.NewSource(time.Now().UnixNano())),
 		node:       node,
 	}
 }

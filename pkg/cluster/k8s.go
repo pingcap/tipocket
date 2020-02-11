@@ -36,7 +36,7 @@ func NewK8sProvisioner() (Provisioner, error) {
 }
 
 // SetUp sets up cluster, returns err or all nodes info
-func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]Node, error) {
+func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error) {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
 		return k.setUpTiDBCluster(ctx, s)
@@ -50,50 +50,51 @@ func (k *K8sProvisioner) TearDown() error {
 	return nil
 }
 
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.TiDBClusterRecommendation) ([]Node, error) {
+func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.TiDBClusterRecommendation) ([]Node, []ClientNode, error) {
 	var (
-		nodes []Node
-		err   error
+		nodes       []Node
+		clientNodes []ClientNode
+		err         error
 	)
 
 	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
 	if err != nil {
-		return nodes, err
+		return nodes, clientNodes, err
 	}
 
 	// TODO: use ctx for wait end
 	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommand.TidbCluster, 10*time.Minute)
 	if err != nil {
-		return nodes, err
+		return nodes, clientNodes, err
 	}
 
 	err = k.E2eCli.TiDB.ApplyTiDBService(recommand.Service)
 	if err != nil {
-		return nodes, err
+		return nodes, clientNodes, err
 	}
 
 	pods, err := k.E2eCli.TiDB.GetNodes(recommand.TidbCluster.ObjectMeta.Namespace)
 	if err != nil {
-		return nodes, err
+		return nodes, clientNodes, err
 	}
 	nodes = parseNodeFromPodList(pods)
 
 	k8sNodes, err := k.E2eCli.GetNodes()
 	if err != nil {
-		return nodes, err
+		return nodes, clientNodes, err
 	}
-	nodeIP := getNodeIP(k8sNodes)
 
 	svc, err := k.E2eCli.TiDB.GetTiDBServiceByMeta(&recommand.Service.ObjectMeta)
-	for i, node := range nodes {
-		if tidbRegex.MatchString(node.PodName) {
-			node.IP = nodeIP
-			node.Port = getTiDBNodePort(svc)
-		}
-		nodes[i] = node
+	if err != nil {
+		return nodes, clientNodes, err
 	}
+	clientNodes = append(clientNodes, ClientNode{
+		Namespace: svc.ObjectMeta.Namespace,
+		IP:        getNodeIP(k8sNodes),
+		Port:      getTiDBNodePort(svc),
+	})
 
-	return nodes, err
+	return nodes, clientNodes, err
 }
 
 func parseNodeFromPodList(pods *corev1.PodList) []Node {

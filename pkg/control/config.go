@@ -10,8 +10,10 @@ import (
 type Config struct {
 	// DB is the name which we want to run.
 	DB string
-	// Nodes are address of nodes.
+	// Nodes are addresses of nodes.
 	Nodes []cluster.Node
+	// ClientNode are addresses of client usage.
+	ClientNodes []cluster.ClientNode
 
 	// RunRound controls how many round the controller runs tests.
 	RunRound int

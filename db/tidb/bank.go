@@ -33,7 +33,7 @@ type bankClient struct {
 	accountNum int
 }
 
-func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
@@ -200,9 +200,10 @@ type BankClientCreator struct {
 }
 
 // Create creates a client.
-func (BankClientCreator) Create(node cluster.Node) core.Client {
+func (BankClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &bankClient{
 		accountNum: accountNum,
+		r:          rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 

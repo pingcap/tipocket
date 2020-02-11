@@ -62,7 +62,7 @@ func NewController(
 	c.nemesisGenerators = nemesisGenerators
 	c.suit = verifySuit
 
-	for _, node := range c.cfg.Nodes {
+	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))
 	}
 
@@ -78,7 +78,7 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
-	c.setUpDB()
+	// c.setUpDB()
 	c.setUpClient()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
@@ -109,7 +109,7 @@ ROUND:
 		requestCount := int64(c.cfg.RequestCount)
 		log.Printf("total request count %d", requestCount)
 
-		n := len(c.cfg.Nodes)
+		n := len(c.cfg.ClientNodes)
 		var clientWg sync.WaitGroup
 		clientWg.Add(n)
 		for i := 0; i < n; i++ {
@@ -144,7 +144,7 @@ ROUND:
 
 func (c *Controller) syncExec(f func(i int)) {
 	var wg sync.WaitGroup
-	n := len(c.cfg.Nodes)
+	n := len(c.cfg.ClientNodes)
 	wg.Add(n)
 	for i := 0; i < n; i++ {
 		go func(i int) {
@@ -158,11 +158,11 @@ func (c *Controller) syncExec(f func(i int)) {
 func (c *Controller) setUpDB() {
 	log.Printf("begin to set up database")
 	c.syncExec(func(i int) {
-		log.Printf("begin to set up database on %s", c.cfg.Nodes[i].IP)
+		log.Printf("begin to set up database on %s", c.cfg.Nodes[i])
 		db := core.GetDB(c.cfg.DB)
 		err := db.SetUp(c.ctx, c.cfg.Nodes, c.cfg.Nodes[i])
 		if err != nil {
-			log.Fatalf("setup db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i].IP, err)
+			log.Fatalf("setup db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i], err)
 		}
 	})
 }
@@ -170,10 +170,10 @@ func (c *Controller) setUpDB() {
 func (c *Controller) tearDownDB() {
 	log.Printf("begin to tear down database")
 	c.syncExec(func(i int) {
-		log.Printf("being to tear down database on %s", c.cfg.Nodes[i].IP)
+		log.Printf("being to tear down database on %s", c.cfg.Nodes[i])
 		db := core.GetDB(c.cfg.DB)
 		if err := db.TearDown(c.ctx, c.cfg.Nodes, c.cfg.Nodes[i]); err != nil {
-			log.Printf("tear down db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i].IP, err)
+			log.Printf("tear down db %s at node %s failed %v", c.cfg.DB, c.cfg.Nodes[i], err)
 		}
 	})
 }
@@ -182,10 +182,10 @@ func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")
 	c.syncExec(func(i int) {
 		client := c.clients[i]
-		node := c.cfg.Nodes[i]
-		log.Printf("begin to set up db client for node %+v", node)
-		if err := client.SetUp(c.ctx, c.cfg.Nodes, node); err != nil {
-			log.Fatalf("set up db client for node %+v failed %v", node, err)
+		node := c.cfg.ClientNodes[i]
+		log.Printf("begin to set up db client for node %s", node)
+		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
+			log.Fatalf("set up db client for node %s failed %v", node, err)
 		}
 	})
 }
@@ -195,9 +195,9 @@ func (c *Controller) tearDownClient() {
 	c.syncExec(func(i int) {
 		client := c.clients[i]
 		node := c.cfg.Nodes[i]
-		log.Printf("begin to tear down db client for node %+v", node)
+		log.Printf("begin to tear down db client for node %s", node)
 		if err := client.TearDown(c.ctx, c.cfg.Nodes, node); err != nil {
-			log.Printf("tear down db client for node %+v failed %v", node, err)
+			log.Printf("tear down db client for node %s failed %v", node, err)
 		}
 	})
 }
@@ -207,8 +207,8 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 	defer cancel()
 
 	for _, client := range c.clients {
-		for _, node := range c.cfg.Nodes {
-			log.Printf("begin to dump on node %+v", node)
+		for _, node := range c.cfg.ClientNodes {
+			log.Printf("begin to dump on node %s", node)
 			sum, err := client.DumpState(ctx)
 			if err == nil {
 				recorder.RecordState(sum)
@@ -228,7 +228,7 @@ func (c *Controller) onClientLoop(
 	client := c.clients[i]
 	node := c.cfg.Nodes[i]
 
-	log.Printf("begin to run command on node %+v", node)
+	log.Printf("begin to run command on node %s", node)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -241,9 +241,9 @@ func (c *Controller) onClientLoop(
 			log.Fatalf("record request %v failed %v", request, err)
 		}
 
-		log.Printf("%+v: call %+v", node, request)
+		log.Printf("%s: call %+v", node, request)
 		response := client.Invoke(ctx, node, request)
-		log.Printf("%+v: return %+v", node, response)
+		log.Printf("%s: return %+v", node, response)
 		isUnknown := true
 		if v, ok := response.(core.UnknownResponse); ok {
 			isUnknown = v.IsUnknown()
@@ -311,9 +311,9 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 
 	node := c.cfg.Nodes[index]
 
-	log.Printf("run nemesis %s on %+v", op.Type, node)
+	log.Printf("run nemesis %s on %s", op.Type, node)
 	if err := nemesis.Invoke(ctx, node, op.InvokeArgs...); err != nil {
-		log.Printf("run nemesis %s on %+v failed: %v", op.Type, node, err)
+		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 
 	select {
@@ -321,6 +321,6 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	case <-ctx.Done():
 	}
 	if err := nemesis.Recover(ctx, node, op.RecoverArgs...); err != nil {
-		log.Printf("run nemesis %s on %+v failed: %v", op.Type, node, err)
+		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 }
