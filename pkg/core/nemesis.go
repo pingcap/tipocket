@@ -8,6 +8,13 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
+type ChaosKind string
+
+const (
+	PodFailure ChaosKind = "Pod-Failure"
+	PodKill    ChaosKind = "Pod-Kill"
+)
+
 // Nemesis injects failure and disturbs the database.
 type Nemesis interface {
 	// // SetUp initializes the nemesis
@@ -73,7 +80,7 @@ func GetNemesis(name string) Nemesis {
 // NemesisOperation is nemesis operation used in control.
 type NemesisOperation struct {
 	// Nemesis name
-	Name string
+	Type ChaosKind
 	// Nemesis invoke args
 	InvokeArgs []string
 	// Nemesis recover args
@@ -105,7 +112,8 @@ func (NoopNemesisGenerator) Generate(nodes []cluster.Node) []*NemesisOperation {
 	ops := make([]*NemesisOperation, len(nodes))
 	for i := 0; i < len(ops); i++ {
 		ops[i] = &NemesisOperation{
-			Name:        "noop",
+			// noop do nothing
+			Type:        "noop",
 			InvokeArgs:  nil,
 			RecoverArgs: nil,
 			RunTime:     0,

@@ -42,7 +42,6 @@ func initE2eContext() {
 func main() {
 	flag.Parse()
 	initE2eContext()
-
 	go func() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()

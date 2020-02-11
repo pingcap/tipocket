@@ -46,9 +46,9 @@ func (c *Chaos) CancelNetChaos(nc *v1alpha1.NetworkChaos) error {
 	return c.cli.Delete(context.TODO(), nc)
 }
 
-func (c *Chaos) ApplyPodChaos(pc *v1alpha1.PodChaos) error {
+func (c *Chaos) ApplyPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error {
 	desired := pc.DeepCopy()
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), c.cli, pc, func() error {
+	_, err := controllerutil.CreateOrUpdate(ctx, c.cli, pc, func() error {
 		pc.Spec = desired.Spec
 		return nil
 	})
@@ -56,6 +56,6 @@ func (c *Chaos) ApplyPodChaos(pc *v1alpha1.PodChaos) error {
 }
 
 // Delete the pod chaos using Client.
-func (c *Chaos) CancelPodChaos(pc *v1alpha1.PodChaos) error {
-	return c.cli.Delete(context.TODO(), pc)
+func (c *Chaos) CancelPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error {
+	return c.cli.Delete(ctx, pc)
 }

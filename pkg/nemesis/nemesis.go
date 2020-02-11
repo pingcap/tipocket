@@ -20,17 +20,13 @@ import (
 type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
-	//db := core.GetDB(args[0])
-	//return db.Kill(ctx, node)
 	c := createClient(node.Namespace)
-	return PodChaos(c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return PodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
-	//db := core.GetDB(args[0])
-	//return db.Start(ctx, node)
 	c := createClient(node.Namespace)
-	return CancelPodChaos(c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return CancelPodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Name() string {

@@ -1,6 +1,8 @@
 package nemesis
 
 import (
+	"context"
+
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,16 +28,16 @@ func podTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1a
 	}
 }
 
-func PodChaos(cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
+func PodChaos(ctx context.Context, cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
 	podchaos := podTag(ns, name, chaos)
 
-	return cli.ApplyPodChaos(&podchaos)
+	return cli.ApplyPodChaos(ctx, &podchaos)
 }
 
-func CancelPodChaos(cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
+func CancelPodChaos(ctx context.Context, cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
 	podchaos := podTag(ns, name, chaos)
 
-	return cli.CancelPodChaos(&podchaos)
+	return cli.CancelPodChaos(ctx, &podchaos)
 }
 
 //func NetworkDelay(cli *Chaos, ns string, name string) error {

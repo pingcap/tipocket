@@ -46,6 +46,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		case "random_kill", "all_kill", "minor_kill", "major_kill":
 			g = nemesis.NewKillGenerator(suit.Config.DB, name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
+			log.Fatal("Unimplemented")
 			g = nemesis.NewDropGenerator(name)
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
