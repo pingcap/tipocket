@@ -31,4 +31,3 @@ func init() {
 	utilruntime.Must(kubescheme.AddToScheme(Scheme))
 	utilruntime.Must(chaosoperatorv1alpha1.AddToScheme(Scheme))
 }
-

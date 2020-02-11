@@ -2,9 +2,11 @@ package nemesis
 
 import (
 	"context"
+
 	"github.com/pingcap/chaos-mesh/api/v1alpha1"
-	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
 	"k8s.io/client-go/rest"
+
+	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
 
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
@@ -67,7 +69,7 @@ func init() {
 }
 
 func newClient(conf *rest.Config) *Chaos {
-	kubeCli, err :=  client.New(conf, client.Options{
+	kubeCli, err := client.New(conf, client.Options{
 		Scheme: scheme.Scheme,
 	})
 	if err != nil {
