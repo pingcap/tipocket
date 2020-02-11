@@ -62,7 +62,7 @@ func NewController(
 	c.nemesisGenerators = nemesisGenerators
 	c.suit = verifySuit
 
-	for _, node := range c.cfg.Nodes {
+	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))
 	}
 
@@ -78,7 +78,7 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
-	c.setUpDB()
+	// c.setUpDB()
 	c.setUpClient()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
@@ -109,7 +109,7 @@ ROUND:
 		requestCount := int64(c.cfg.RequestCount)
 		log.Printf("total request count %d", requestCount)
 
-		n := len(c.cfg.Nodes)
+		n := len(c.cfg.ClientNodes)
 		var clientWg sync.WaitGroup
 		clientWg.Add(n)
 		for i := 0; i < n; i++ {
@@ -144,7 +144,7 @@ ROUND:
 
 func (c *Controller) syncExec(f func(i int)) {
 	var wg sync.WaitGroup
-	n := len(c.cfg.Nodes)
+	n := len(c.cfg.ClientNodes)
 	wg.Add(n)
 	for i := 0; i < n; i++ {
 		go func(i int) {
@@ -182,9 +182,9 @@ func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")
 	c.syncExec(func(i int) {
 		client := c.clients[i]
-		node := c.cfg.Nodes[i]
+		node := c.cfg.ClientNodes[i]
 		log.Printf("begin to set up db client for node %s", node)
-		if err := client.SetUp(c.ctx, c.cfg.Nodes, node); err != nil {
+		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
 			log.Fatalf("set up db client for node %s failed %v", node, err)
 		}
 	})
@@ -207,7 +207,7 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 	defer cancel()
 
 	for _, client := range c.clients {
-		for _, node := range c.cfg.Nodes {
+		for _, node := range c.cfg.ClientNodes {
 			log.Printf("begin to dump on node %s", node)
 			sum, err := client.DumpState(ctx)
 			if err == nil {

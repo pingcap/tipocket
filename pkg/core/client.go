@@ -17,7 +17,7 @@ type UnknownResponse interface {
 // You should define your own client for your database.
 type Client interface {
 	// SetUp sets up the client.
-	SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
+	SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error
 	// TearDown tears down the client.
 	TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
 	// Invoke invokes a request to the database.
@@ -33,7 +33,7 @@ type Client interface {
 // The control will create one client for one node.
 type ClientCreator interface {
 	// Create creates the client.
-	Create(node cluster.Node) Client
+	Create(node cluster.ClientNode) Client
 }
 
 // NoopClientCreator creates a noop client.
@@ -50,7 +50,7 @@ type noopClient struct {
 }
 
 // SetUp sets up the client.
-func (noopClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (noopClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 
@@ -56,11 +57,14 @@ func (suit *Suit) Run(ctx context.Context) {
 
 	sctx, cancel := context.WithCancel(ctx)
 
-	suit.Config.Nodes, err = suit.Provisioner.SetUp(sctx, suit.Cluster)
+	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, suit.Cluster)
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
 	log.Println("deploy cluster success")
+
+	// sleep 10s to make sure nodeport works and tidb is ready
+	time.Sleep(10 * time.Second)
 
 	c := control.NewController(
 		sctx,

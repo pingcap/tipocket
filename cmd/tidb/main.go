@@ -31,9 +31,11 @@ var (
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion = flag.String("image-version", "latest", "image version")
+	storageClass = flag.String("storage-class", "local-storage", "storage class name")
 )
 
 func initE2eContext() {
+	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
 	fixture.E2eContext.HubAddress = *hub
 	fixture.E2eContext.DockerRepository = "pingcap"
 	fixture.E2eContext.ImageVersion = *imageVersion

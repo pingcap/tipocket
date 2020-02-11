@@ -7,3 +7,6 @@ vendor
 test-infra/vendor
 
 .vscode
+
+# bank log files
+history.log*
