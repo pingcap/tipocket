@@ -61,7 +61,6 @@ func (suit *Suit) Run(ctx context.Context) {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
 	log.Println("deploy cluster success")
-	os.Exit(0)
 
 	c := control.NewController(
 		sctx,

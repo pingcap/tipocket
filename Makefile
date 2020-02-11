@@ -16,9 +16,9 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket compare
+build: fmt chaos verifier
 
-chaos: tidb rawkv txnkv
+chaos: tidb
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go

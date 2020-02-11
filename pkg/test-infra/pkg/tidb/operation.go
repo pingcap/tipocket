@@ -64,6 +64,58 @@ func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, err
 	return svc, nil
 }
 
+func (t *TidbOps) GetTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
+	svc := &corev1.Service{
+		ObjectMeta: *meta,
+	}
+	key, err := client.ObjectKeyFromObject(svc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.cli.Get(context.TODO(), key, svc); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
+}
+
+func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-tidb", tc.Name),
+			Namespace: tc.Namespace,
+		},
+	}
+	key, err := client.ObjectKeyFromObject(svc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.cli.Get(context.TODO(), key, svc); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
+}
+
+func (t *TidbOps) GetNodes(ns string) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	err := t.cli.List(context.TODO(), pods)
+	if err != nil {
+		return nil, err
+	}
+	// filter namespace
+	r := pods.DeepCopy()
+	r.Items = []corev1.Pod{}
+	for _, pod := range pods.Items {
+		if pod.ObjectMeta.Namespace == ns {
+			r.Items = append(r.Items, pod)
+		}
+	}
+	return r, nil
+}
+
 func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	desired := tc.DeepCopy()
 	if tc.Spec.Version == "" {
@@ -243,15 +295,6 @@ func (t *TidbOps) ApplyDiscovery(tc *v1alpha1.TidbCluster) error {
 		return err
 	}
 	return nil
-}
-
-func (t *TidbOps) GetNodes() (*corev1.PodList, error) {
-	pods := &corev1.PodList{}
-	err := t.cli.List(context.TODO(), pods)
-	if err != nil {
-		return nil, err
-	}
-	return pods, nil
 }
 
 func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {

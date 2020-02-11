@@ -130,11 +130,11 @@ func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
 				Type: "NodePort",
 				Ports: []corev1.ServicePort{
 					{
-						Name: "mysql-client",
+						Name: PortNameMySQLClient,
 						Port: 4000,
 					},
 					{
-						Name: "status",
+						Name: PortNameStatus,
 						Port: 10080,
 					},
 				},
