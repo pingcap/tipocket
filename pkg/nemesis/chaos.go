@@ -5,7 +5,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func PodTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
+func podTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -27,13 +27,13 @@ func PodTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1a
 }
 
 func PodChaos(cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
-	podchaos := PodTag(ns, name, chaos)
+	podchaos := podTag(ns, name, chaos)
 
 	return cli.ApplyPodChaos(&podchaos)
 }
 
 func CancelPodChaos(cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
-	podchaos := PodTag(ns, name, chaos)
+	podchaos := podTag(ns, name, chaos)
 
 	return cli.CancelPodChaos(&podchaos)
 }

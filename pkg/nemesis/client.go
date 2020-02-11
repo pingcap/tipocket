@@ -14,10 +14,12 @@ type Chaos struct {
 	cli client.Client
 }
 
+// Create a chaos client
 func New(cli client.Client) *Chaos {
 	return &Chaos{cli}
 }
 
+// ApplyIOChaos run an io-chaos.
 func (c *Chaos) ApplyIOChaos(ioc *v1alpha1.IoChaos) error {
 	desired := ioc.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), c.cli, ioc, func() error {
@@ -53,6 +55,7 @@ func (c *Chaos) ApplyPodChaos(pc *v1alpha1.PodChaos) error {
 	return err
 }
 
+// Delete the pod chaos using Client.
 func (c *Chaos) CancelPodChaos(pc *v1alpha1.PodChaos) error {
 	return c.cli.Delete(context.TODO(), pc)
 }
