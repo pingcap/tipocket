@@ -22,7 +22,7 @@ func TestControl(t *testing.T) {
 		RunRound:     3,
 		DB:           "noop",
 		History:      "/tmp/chaos/a.log",
-		Nodes:        []cluster.Node{{IP: "n1", Port: "4000"}, {IP: "n2", Port: "4000"}},
+		Nodes:        []cluster.Node{{IP: "n1", Port: 4000}, {IP: "n2", Port: 4000}},
 	}
 
 	defer os.Remove("/tmp/chaos/a.log")

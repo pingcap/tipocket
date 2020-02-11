@@ -32,7 +32,7 @@ type registerClient struct {
 func (c *registerClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	driver := tikv.Driver{}
-	db, err := driver.Open(fmt.Sprintf("tikv://%s:2379?disableGC=true", node))
+	db, err := driver.Open(fmt.Sprintf("tikv://%s:2379?disableGC=true", node.IP))
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (c *registerClient) SetUp(ctx context.Context, nodes []cluster.Node, node c
 		return nil
 	}
 
-	log.Printf("begin to initial register on node %s", node)
+	log.Printf("begin to initial register on node %s", node.IP)
 
 	tx, err := db.Begin()
 	if err != nil {

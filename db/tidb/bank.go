@@ -35,7 +35,7 @@ type bankClient struct {
 
 func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%s)/test", node.IP, node.Port))
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.Node, node clust
 		return nil
 	}
 
-	log.Printf("begin to create table accounts on node %s", node)
+	log.Printf("begin to create table accounts on node %+v", node)
 	sql := `create table if not exists accounts
 			(id     int not null primary key,
 			balance bigint not null)`
