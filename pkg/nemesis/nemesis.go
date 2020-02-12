@@ -15,25 +15,24 @@ import (
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
 
+type K8sNemesisClient struct {
+	cli *Chaos
+}
+
 type kill struct {
+	K8sNemesisClient
 }
 
-func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
-	c, err := createClient()
-	if err != nil {
-		return err
-	}
+func (k kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return podChaos(ctx, c, node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	return podChaos(ctx, k.cli, node.Namespace, node.Namespace,
+		node.PodName, v1alpha1.PodFailureAction)
 }
 
-func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
-	c, err := createClient()
-	if err != nil {
-		return err
-	}
+func (k kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return cancelPodChaos(ctx, c, node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	return cancelPodChaos(ctx, k.cli, node.Namespace, node.Namespace,
+		node.PodName, v1alpha1.PodFailureAction)
 }
 
 func (kill) Name() string {
@@ -45,18 +44,18 @@ type drop struct {
 }
 
 func (n drop) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
-	panic("nemesis not implemented")
-	for _, dropNode := range args {
-		if node.IP == dropNode {
-			// Don't drop itself
-			continue
-		}
-
-		if err := n.t.Drop(ctx, node.IP, dropNode); err != nil {
-			return err
-		}
-	}
-	return nil
+	panic("not implemented")
+	//for _, dropNode := range args {
+	//	if node.IP == dropNode {
+	//		// Don't drop itself
+	//		continue
+	//	}
+	//
+	//	if err := n.t.Drop(ctx, node.IP, dropNode); err != nil {
+	//		return err
+	//	}
+	//}
+	//return nil
 }
 
 func (n drop) Recover(ctx context.Context, node cluster.Node, args ...string) error {
@@ -68,7 +67,7 @@ func (drop) Name() string {
 }
 
 func init() {
-	core.RegisterNemesis(kill{})
+	core.RegisterNemesis(kill{K8sNemesisClient{mustCreateClient()}})
 	core.RegisterNemesis(drop{})
 }
 
@@ -82,4 +81,12 @@ func createClient() (*Chaos, error) {
 		return nil, err
 	}
 	return New(kubeCli), nil
+}
+
+func mustCreateClient() *Chaos {
+	cli, err := createClient()
+	if err != nil {
+		panic(err)
+	}
+	return cli
 }

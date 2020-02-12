@@ -15,7 +15,7 @@ const (
 	// PodFailure Apply pod failure.
 	PodFailure ChaosKind = "Pod-Failure"
 	// PodKill will random kill a pod.
-	PodKill    ChaosKind = "Pod-Kill"
+	PodKill ChaosKind = "Pod-Kill"
 )
 
 // Nemesis injects failure and disturbs the database.
