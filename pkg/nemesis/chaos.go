@@ -19,12 +19,10 @@ func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaos
 				// Randomly kill in namespace
 				Namespaces: []string{ns},
 			},
-			// TODO: using args to adapt this
-			Scheduler: &chaosv1alpha1.SchedulerSpec{
-				Cron: "@every 30s",
-			},
-			Action: chaos,
-			Mode:   chaosv1alpha1.OnePodMode,
+			Scheduler: nil,
+			Action:    chaos,
+			Duration:  nil,
+			Mode:      chaosv1alpha1.OnePodMode,
 		},
 	}
 }

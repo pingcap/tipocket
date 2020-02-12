@@ -320,6 +320,6 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	case <-ctx.Done():
 	}
 	if err := nemesis.Recover(ctx, node, c.cfg.ChaosNamespace, op.RecoverArgs...); err != nil {
-		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
+		log.Printf("recover nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 }

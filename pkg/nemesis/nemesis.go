@@ -44,6 +44,7 @@ type drop struct {
 }
 
 func (n drop) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
+	panic("nemesis not implemented")
 	for _, dropNode := range args {
 		if node.IP == dropNode {
 			// Don't drop itself
