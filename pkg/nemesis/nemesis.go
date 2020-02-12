@@ -2,6 +2,7 @@ package nemesis
 
 import (
 	"context"
+	"log"
 
 	"k8s.io/client-go/rest"
 
@@ -21,13 +22,13 @@ type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
-	e2elog.Logf("Creating pod-kill with node %s(ns:%s)", node.PodName, node.Namespace)
+	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
-	e2elog.Logf("Recover pod-kill with node %s(ns:%s)", node.PodName, node.Namespace)
+	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
