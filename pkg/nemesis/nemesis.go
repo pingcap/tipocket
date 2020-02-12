@@ -23,7 +23,7 @@ func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args 
 		return err
 	}
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
@@ -32,7 +32,7 @@ func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args
 		return err
 	}
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 }
 
 func (kill) Name() string {
