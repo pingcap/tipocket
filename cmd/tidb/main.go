@@ -49,6 +49,10 @@ func main() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
+	if chaosNamespace == nil || *chaosNamespace == "" {
+		chaosNamespace = namespace
+	}
+
 	cfg := control.Config{
 		DB:             "tidb",
 		RequestCount:   *requestCount,
