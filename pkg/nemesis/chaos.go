@@ -2,6 +2,7 @@ package nemesis
 
 import (
 	"context"
+	"strings"
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,7 +14,7 @@ func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaos
 
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name: strings.Join([]string{name, string(chaos)}, "-"),
 			// TODO: this might be a chaos ns, so let's take it carefully.
 			Namespace: chaosNs,
 		},
