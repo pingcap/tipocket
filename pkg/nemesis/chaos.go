@@ -13,7 +13,7 @@ func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaos
 
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: chaosNs + ":" + name,
+			Name: name,
 			// TODO: this might be a chaos ns, so let's take it carefully.
 			Namespace: chaosNs,
 		},
