@@ -9,21 +9,19 @@ import (
 
 func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
 	pods := make(map[string][]string)
-	pods[ns] = make([]string, 1)
-	pods[ns][0] = name
+	pods[ns] = []string{name}
+
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: chaosNs + ":" + name,
 			// TODO: this might be a chaos ns, so let's take it carefully.
-			Namespace: ns,
+			Namespace: chaosNs,
 		},
 		Spec: chaosv1alpha1.PodChaosSpec{
 			Selector: chaosv1alpha1.SelectorSpec{
 				Pods: pods,
 			},
-			Scheduler: nil,
 			Action:    chaos,
-			Duration:  nil,
 			Mode:      chaosv1alpha1.OnePodMode,
 		},
 	}
