@@ -7,11 +7,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func podTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
+func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
+			Name: name,
+			// TODO: this might be a chaos ns, so let's take it carefully.
+			Namespace: chaosNs,
 		},
 		Spec: chaosv1alpha1.PodChaosSpec{
 			Selector: chaosv1alpha1.SelectorSpec{
@@ -28,15 +29,13 @@ func podTag(ns string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1a
 	}
 }
 
-func PodChaos(ctx context.Context, cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
-	podchaos := podTag(ns, name, chaos)
-
+func podChaos(ctx context.Context, cli *Chaos, ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) error {
+	podchaos := podTag(ns, chaosNs, name, chaos)
 	return cli.ApplyPodChaos(ctx, &podchaos)
 }
 
-func CancelPodChaos(ctx context.Context, cli *Chaos, ns string, name string, chaos chaosv1alpha1.PodChaosAction) error {
-	podchaos := podTag(ns, name, chaos)
-
+func cancelPodChaos(ctx context.Context, cli *Chaos, ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) error {
+	podchaos := podTag(ns, chaosNs, name, chaos)
 	return cli.CancelPodChaos(ctx, &podchaos)
 }
 

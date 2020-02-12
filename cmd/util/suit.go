@@ -30,6 +30,9 @@ type Suit struct {
 
 	// cluster definition
 	Cluster interface{}
+
+	// The namespace where chaos-mesh deployed.
+	ChaosNamespace string
 }
 
 // Run runs the suit.
@@ -45,7 +48,7 @@ func (suit *Suit) Run(ctx context.Context) {
 
 		switch name {
 		case "random_kill", "all_kill", "minor_kill", "major_kill":
-			g = nemesis.NewKillGenerator(suit.Config.DB, name)
+			g = nemesis.NewKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
 			g = nemesis.NewDropGenerator(name)

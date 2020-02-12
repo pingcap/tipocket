@@ -20,13 +20,13 @@ import (
 type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
-	c := createClient(node.Namespace)
-	return PodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	c := createClient()
+	return podChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
-	c := createClient(node.Namespace)
-	return CancelPodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	c := createClient()
+	return cancelPodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Name() string {
@@ -76,8 +76,7 @@ func newClient(conf *rest.Config) *Chaos {
 	}
 }
 
-func createClient(ns string) *Chaos {
-	e2elog.Logf("Working namespace %s", ns)
+func createClient() *Chaos {
 	var err error
 	conf, err := framework.LoadConfig()
 	framework.ExpectNoError(err, "Expected to load config.")

@@ -78,7 +78,6 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
-	// c.setUpDB()
 	c.setUpClient()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
@@ -181,12 +180,14 @@ func (c *Controller) tearDownDB() {
 func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")
 	c.syncExec(func(i int) {
-		client := c.clients[i]
+		// TODO: below are only for testing in mwish's local machine, if test is over
+		// 	I'll comment all these messages.
+		//client := c.clients[i]
 		node := c.cfg.ClientNodes[i]
 		log.Printf("begin to set up db client for node %s", node)
-		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
-			log.Fatalf("set up db client for node %s failed %v", node, err)
-		}
+		//if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
+		//	log.Fatalf("set up db client for node %s failed %v", node, err)
+		//}
 	})
 }
 

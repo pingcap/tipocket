@@ -20,18 +20,19 @@ import (
 )
 
 var (
-	requestCount = flag.Int("request-count", 500, "client test request count")
-	round        = flag.Int("round", 3, "client test request count")
-	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
-	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
-	historyFile  = flag.String("history", "./history.log", "history file")
-	nemesises    = flag.String("nemesis", "", "nemesis, seperated by name, like random_kill,all_kill")
-	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
+	requestCount   = flag.Int("request-count", 500, "client test request count")
+	round          = flag.Int("round", 3, "client test request count")
+	runTime        = flag.Duration("run-time", 10*time.Minute, "client test run time")
+	clientCase     = flag.String("case", "bank", "client test case, like bank,multi_bank")
+	historyFile    = flag.String("history", "./history.log", "history file")
+	nemesises      = flag.String("nemesis", "", "nemesis, seperated by name, like random_kill,all_kill")
+	checkerNames   = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
+	pprofAddr      = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
+	namespace      = flag.String("namespace", "tidb-cluster", "test namespace")
+	chaosNamespace = flag.String("chaos-ns", "chaos-testing", "test chaos namespace")
+	hub            = flag.String("hub", "", "hub address, default to docker hub")
+	imageVersion   = flag.String("image-version", "latest", "image version")
+	storageClass   = flag.String("storage-class", "local-storage", "storage class name")
 )
 
 func initE2eContext() {
@@ -100,12 +101,13 @@ func main() {
 		log.Fatal(err)
 	}
 	suit := util.Suit{
-		Config:        &cfg,
-		Provisioner:   provisioner,
-		ClientCreator: creator,
-		Nemesises:     *nemesises,
-		VerifySuit:    verifySuit,
-		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		Config:         &cfg,
+		Provisioner:    provisioner,
+		ClientCreator:  creator,
+		Nemesises:      *nemesises,
+		VerifySuit:     verifySuit,
+		Cluster:        tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		ChaosNamespace: *chaosNamespace,
 	}
 	suit.Run(context.Background())
 }
