@@ -78,6 +78,7 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
+	c.setUpDB()
 	c.setUpClient()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
@@ -138,7 +139,7 @@ ROUND:
 	nemesisWg.Wait()
 
 	c.tearDownClient()
-	//c.tearDownDB()
+	c.tearDownDB()
 }
 
 func (c *Controller) syncExec(f func(i int)) {

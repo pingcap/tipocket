@@ -15,7 +15,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
 
-type kill struct{}
+type kill struct {
+}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
 	c, err := createClient()

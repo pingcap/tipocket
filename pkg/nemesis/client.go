@@ -14,7 +14,7 @@ type Chaos struct {
 	cli client.Client
 }
 
-// Create a chaos client
+// New will Create a chaos client.
 func New(cli client.Client) *Chaos {
 	return &Chaos{cli}
 }
@@ -34,7 +34,7 @@ func (c *Chaos) CancelIOChaos(ioc *v1alpha1.IoChaos) error {
 	return c.cli.Delete(context.TODO(), ioc)
 }
 
-//  ApplyNetChaos apply the chaos to cluster using Client.
+// ApplyNetChaos apply the chaos to cluster using Client.
 func (c *Chaos) ApplyNetChaos(nc *v1alpha1.NetworkChaos) error {
 	desired := nc.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), c.cli, nc, func() error {

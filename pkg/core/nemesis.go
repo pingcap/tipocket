@@ -8,10 +8,13 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
+// ChaosKind is Kind of applying chaos
 type ChaosKind string
 
 const (
+	// PodFailure Apply pod failure.
 	PodFailure ChaosKind = "Pod-Failure"
+	// PodKill will random kill a pod.
 	PodKill    ChaosKind = "Pod-Kill"
 )
 
