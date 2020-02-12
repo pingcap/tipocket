@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
-	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/client-go/tools/clientcmd"
 )

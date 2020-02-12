@@ -5,17 +5,17 @@ import (
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
-
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
 type killGenerator struct {
-	db   string
 	name string
 }
 
 func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	n := 1
+
+	// This part decide how many machines to apply pod-failure
 	switch g.name {
 	case "minor_kill":
 		n = len(nodes)/2 - 1
@@ -27,14 +27,14 @@ func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 		n = 1
 	}
 
-	return killNodes(g.db, nodes, n)
+	return killNodes(nodes, n)
 }
 
 func (g killGenerator) Name() string {
-	return g.name
+	return string(core.PodFailure)
 }
 
-func killNodes(db string, nodes []cluster.Node, n int) []*core.NemesisOperation {
+func killNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
@@ -42,10 +42,11 @@ func killNodes(db string, nodes []cluster.Node, n int) []*core.NemesisOperation 
 
 	for i := 0; i < n; i++ {
 		ops[indices[i]] = &core.NemesisOperation{
-			Name:        "kill",
-			InvokeArgs:  []string{db},
-			RecoverArgs: []string{db},
-			RunTime:     time.Second * time.Duration(rand.Intn(10)+1),
+			Type: core.PodFailure,
+			// Note: Maybe I should just store cluster info here.
+			InvokeArgs:  nil,
+			RecoverArgs: nil,
+			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 		}
 	}
 
@@ -54,8 +55,8 @@ func killNodes(db string, nodes []cluster.Node, n int) []*core.NemesisOperation 
 
 // NewKillGenerator creates a generator.
 // Name is random_kill, minor_kill, major_kill, and all_kill.
-func NewKillGenerator(db string, name string) core.NemesisGenerator {
-	return killGenerator{db: db, name: name}
+func NewKillGenerator(name string) core.NemesisGenerator {
+	return killGenerator{name: name}
 }
 
 type dropGenerator struct {
@@ -81,6 +82,7 @@ func (g dropGenerator) Name() string {
 	return g.name
 }
 
+// TODO: this code was still non-k8s style.
 func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
@@ -94,9 +96,9 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 
 	for i := 0; i < len(nodes); i++ {
 		ops[i] = &core.NemesisOperation{
-			Name:       "drop",
+			Type:       "drop",
 			InvokeArgs: partNodes,
-			RunTime:    time.Second * time.Duration(rand.Intn(10)+1),
+			RunTime:    time.Second * time.Duration(rand.Intn(120)+60),
 		}
 	}
 

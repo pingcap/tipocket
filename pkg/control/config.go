@@ -14,6 +14,8 @@ type Config struct {
 	Nodes []cluster.Node
 	// ClientNode are addresses of client usage.
 	ClientNodes []cluster.ClientNode
+	// Chaos NS
+	ChaosNamespace string
 
 	// RunRound controls how many round the controller runs tests.
 	RunRound int

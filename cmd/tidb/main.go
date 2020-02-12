@@ -29,6 +29,7 @@ var (
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
+	//chaosNamespace = flag.String("chaos-ns", "chaos-testing", "test chaos namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion = flag.String("image-version", "latest", "image version")
 	storageClass = flag.String("storage-class", "local-storage", "storage class name")
@@ -44,13 +45,16 @@ func initE2eContext() {
 func main() {
 	flag.Parse()
 	initE2eContext()
-
 	go func() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
+	//if chaosNamespace == nil || *chaosNamespace == "" {
+	//	chaosNamespace = namespace
+	//}
+
 	cfg := control.Config{
-		DB:           "tidb",
+		DB:           "noop",
 		RequestCount: *requestCount,
 		RunRound:     *round,
 		RunTime:      *runTime,

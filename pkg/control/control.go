@@ -78,7 +78,7 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
-	// c.setUpDB()
+	c.setUpDB()
 	c.setUpClient()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
@@ -303,17 +303,17 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 		return
 	}
 
-	nemesis := core.GetNemesis(op.Name)
+	nemesis := core.GetNemesis(string(op.Type))
 	if nemesis == nil {
-		log.Printf("nemesis %s is not registered", op.Name)
+		log.Printf("nemesis %s is not registered", op.Type)
 		return
 	}
 
 	node := c.cfg.Nodes[index]
 
-	log.Printf("run nemesis %s on %s", op.Name, node)
+	log.Printf("run nemesis %s on %s", op.Type, node)
 	if err := nemesis.Invoke(ctx, node, op.InvokeArgs...); err != nil {
-		log.Printf("run nemesis %s on %s failed: %v", op.Name, node, err)
+		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 
 	select {
@@ -321,6 +321,6 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	case <-ctx.Done():
 	}
 	if err := nemesis.Recover(ctx, node, op.RecoverArgs...); err != nil {
-		log.Printf("run nemesis %s on %s failed: %v", op.Name, node, err)
+		log.Printf("recover nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 }
