@@ -17,22 +17,22 @@ import (
 
 type kill struct{}
 
-func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
+func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
 	c, err := createClient()
 	if err != nil {
 		return err
 	}
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	return podChaos(ctx, c, node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 }
 
-func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
+func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
 	c, err := createClient()
 	if err != nil {
 		return err
 	}
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	return cancelPodChaos(ctx, c, node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 }
 
 func (kill) Name() string {
@@ -43,7 +43,7 @@ type drop struct {
 	t net.IPTables
 }
 
-func (n drop) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
+func (n drop) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
 	panic("nemesis not implemented")
 	for _, dropNode := range args {
 		if node.IP == dropNode {
@@ -58,7 +58,7 @@ func (n drop) Invoke(ctx context.Context, node cluster.Node, chaosNS string, arg
 	return nil
 }
 
-func (n drop) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
+func (n drop) Recover(ctx context.Context, node cluster.Node, args ...string) error {
 	return n.t.Heal(ctx, node.IP)
 }
 

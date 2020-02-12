@@ -21,8 +21,8 @@ func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaos
 			Selector: chaosv1alpha1.SelectorSpec{
 				Pods: pods,
 			},
-			Action:    chaos,
-			Mode:      chaosv1alpha1.OnePodMode,
+			Action: chaos,
+			Mode:   chaosv1alpha1.OnePodMode,
 		},
 	}
 }
