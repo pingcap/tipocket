@@ -15,12 +15,12 @@ import (
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
 
-type K8sNemesisClient struct {
+type k8sNemesisClient struct {
 	cli *Chaos
 }
 
 type kill struct {
-	K8sNemesisClient
+	k8sNemesisClient
 }
 
 func (k kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
@@ -67,7 +67,7 @@ func (drop) Name() string {
 }
 
 func init() {
-	core.RegisterNemesis(kill{K8sNemesisClient{mustCreateClient()}})
+	core.RegisterNemesis(kill{k8sNemesisClient{mustCreateClient()}})
 	core.RegisterNemesis(drop{})
 }
 
