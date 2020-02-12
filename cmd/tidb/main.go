@@ -50,11 +50,12 @@ func main() {
 	}()
 
 	cfg := control.Config{
-		DB:           "tidb",
-		RequestCount: *requestCount,
-		RunRound:     *round,
-		RunTime:      *runTime,
-		History:      *historyFile,
+		DB:             "tidb",
+		RequestCount:   *requestCount,
+		RunRound:       *round,
+		RunTime:        *runTime,
+		History:        *historyFile,
+		ChaosNamespace: *chaosNamespace,
 	}
 
 	var creator core.ClientCreator
@@ -101,13 +102,12 @@ func main() {
 		log.Fatal(err)
 	}
 	suit := util.Suit{
-		Config:         &cfg,
-		Provisioner:    provisioner,
-		ClientCreator:  creator,
-		Nemesises:      *nemesises,
-		VerifySuit:     verifySuit,
-		Cluster:        tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
-		ChaosNamespace: *chaosNamespace,
+		Config:        &cfg,
+		Provisioner:   provisioner,
+		ClientCreator: creator,
+		Nemesises:     *nemesises,
+		VerifySuit:    verifySuit,
+		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

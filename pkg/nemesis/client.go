@@ -29,10 +29,12 @@ func (c *Chaos) ApplyIOChaos(ioc *v1alpha1.IoChaos) error {
 	return err
 }
 
+// CancelIOChaos cancel the io chaos.
 func (c *Chaos) CancelIOChaos(ioc *v1alpha1.IoChaos) error {
 	return c.cli.Delete(context.TODO(), ioc)
 }
 
+//  ApplyNetChaos apply the chaos to cluster using Client.
 func (c *Chaos) ApplyNetChaos(nc *v1alpha1.NetworkChaos) error {
 	desired := nc.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), c.cli, nc, func() error {
@@ -42,10 +44,12 @@ func (c *Chaos) ApplyNetChaos(nc *v1alpha1.NetworkChaos) error {
 	return err
 }
 
+// CancelNetChaos apply the chaos to cluster using Client.
 func (c *Chaos) CancelNetChaos(nc *v1alpha1.NetworkChaos) error {
 	return c.cli.Delete(context.TODO(), nc)
 }
 
+// ApplyPodChaos apply the pod chaos to cluster using Client.
 func (c *Chaos) ApplyPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error {
 	desired := pc.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c.cli, pc, func() error {
@@ -55,7 +59,7 @@ func (c *Chaos) ApplyPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error 
 	return err
 }
 
-// Delete the pod chaos using Client.
+// CancelPodChaos Delete the pod chaos using Client.
 func (c *Chaos) CancelPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error {
 	return c.cli.Delete(ctx, pc)
 }

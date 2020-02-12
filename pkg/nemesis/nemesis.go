@@ -19,14 +19,14 @@ import (
 
 type kill struct{}
 
-func (kill) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
+func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
-	return podChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
-func (kill) Recover(ctx context.Context, node cluster.Node, args ...string) error {
+func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
-	return cancelPodChaos(ctx, c, node.Namespace, node.PodName, v1alpha1.PodKillAction)
+	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Name() string {
@@ -37,7 +37,7 @@ type drop struct {
 	t net.IPTables
 }
 
-func (n drop) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
+func (n drop) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	for _, dropNode := range args {
 		if node.IP == dropNode {
 			// Don't drop itself
@@ -51,7 +51,7 @@ func (n drop) Invoke(ctx context.Context, node cluster.Node, args ...string) err
 	return nil
 }
 
-func (n drop) Recover(ctx context.Context, node cluster.Node, args ...string) error {
+func (n drop) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	return n.t.Heal(ctx, node.IP)
 }
 

@@ -30,9 +30,6 @@ type Suit struct {
 
 	// cluster definition
 	Cluster interface{}
-
-	// The namespace where chaos-mesh deployed.
-	ChaosNamespace string
 }
 
 // Run runs the suit.

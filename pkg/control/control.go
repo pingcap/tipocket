@@ -313,7 +313,7 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	node := c.cfg.Nodes[index]
 
 	log.Printf("run nemesis %s on %s", op.Type, node)
-	if err := nemesis.Invoke(ctx, node, op.InvokeArgs...); err != nil {
+	if err := nemesis.Invoke(ctx, node, c.cfg.ChaosNamespace, op.InvokeArgs...); err != nil {
 		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 
@@ -321,7 +321,7 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	case <-time.After(op.RunTime):
 	case <-ctx.Done():
 	}
-	if err := nemesis.Recover(ctx, node, op.RecoverArgs...); err != nil {
+	if err := nemesis.Recover(ctx, node, c.cfg.ChaosNamespace, op.RecoverArgs...); err != nil {
 		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 }
