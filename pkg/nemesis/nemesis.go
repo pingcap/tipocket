@@ -3,17 +3,17 @@ package nemesis
 import (
 	"context"
 
-	"github.com/pingcap/chaos-mesh/api/v1alpha1"
 	"k8s.io/client-go/rest"
-
-	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
 
 	"k8s.io/kubernetes/test/e2e/framework"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/pingcap/chaos-mesh/api/v1alpha1"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
 
@@ -21,11 +21,13 @@ type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
+	e2elog.Logf("Creating pod-kill with node %s(ns:%s)", node.PodName, node.Namespace)
 	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
 	c := createClient()
+	e2elog.Logf("Recover pod-kill with node %s(ns:%s)", node.PodName, node.Namespace)
 	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 

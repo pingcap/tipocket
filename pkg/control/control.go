@@ -180,14 +180,12 @@ func (c *Controller) tearDownDB() {
 func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")
 	c.syncExec(func(i int) {
-		// TODO: below are only for testing in mwish's local machine, if test is over
-		// 	I'll comment all these messages.
-		//client := c.clients[i]
+		client := c.clients[i]
 		node := c.cfg.ClientNodes[i]
 		log.Printf("begin to set up db client for node %s", node)
-		//if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
-		//	log.Fatalf("set up db client for node %s failed %v", node, err)
-		//}
+		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
+			log.Fatalf("set up db client for node %s failed %v", node, err)
+		}
 	})
 }
 
