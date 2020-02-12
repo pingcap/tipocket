@@ -3,31 +3,34 @@ package nemesis
 import (
 	"context"
 	"log"
+	"os"
 
-	"k8s.io/client-go/rest"
-
-	"k8s.io/kubernetes/test/e2e/framework"
-	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/chaos-mesh/api/v1alpha1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/nemesis/scheme"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/pkg/util/net"
 )
 
 type kill struct{}
 
 func (kill) Invoke(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
-	c := createClient()
+	c, err := createClient()
+	if err != nil {
+		return err
+	}
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	return podChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
 
 func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args ...string) error {
-	c := createClient()
+	c, err := createClient()
+	if err != nil {
+		return err
+	}
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	return cancelPodChaos(ctx, c, chaosNS, node.Namespace, node.PodName, v1alpha1.PodKillAction)
 }
@@ -67,22 +70,14 @@ func init() {
 	core.RegisterNemesis(drop{})
 }
 
-func newClient(conf *rest.Config) *Chaos {
-	kubeCli, err := client.New(conf, client.Options{
-		Scheme: scheme.Scheme,
-	})
+func createClient() (*Chaos, error) {
+	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 	if err != nil {
-		e2elog.Failf("error creating kube-client: %v", err)
+		return nil, err
 	}
-	return &Chaos{
-		cli: kubeCli,
+	kubeCli, err := fixture.BuildGenericKubeClient(conf)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func createClient() *Chaos {
-	var err error
-	conf, err := framework.LoadConfig()
-	framework.ExpectNoError(err, "Expected to load config.")
-	c := newClient(conf)
-	return c
+	return New(kubeCli), nil
 }
