@@ -33,7 +33,7 @@ func (kill) Recover(ctx context.Context, node cluster.Node, chaosNS string, args
 }
 
 func (kill) Name() string {
-	return "kill"
+	return string(core.PodFailure)
 }
 
 type drop struct {
