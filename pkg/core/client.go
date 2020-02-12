@@ -27,6 +27,10 @@ type Client interface {
 	NextRequest() interface{}
 	// DumpState the database state(also the model's state)
 	DumpState(ctx context.Context) (interface{}, error)
+	// Start runs self scheduled cases
+	// this function will block Invoke trigger
+	// if you want to schedule cases by yourself, use this function only
+	Start(ctx context.Context) error
 }
 
 // ClientCreator creates a client.
@@ -72,4 +76,9 @@ func (noopClient) NextRequest() interface{} {
 // DumpState the database state(also the model's state)
 func (noopClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
+}
+
+// Start runs self scheduled cases
+func (noopClient) Start(ctx context.Context) error {
+	return nil
 }

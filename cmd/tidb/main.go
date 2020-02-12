@@ -74,6 +74,8 @@ func main() {
 		creator = tidb.LongForkClientCreator{}
 	//case "sequential":
 	//	creator = tidb.SequentialClientCreator{}
+	case "pocket":
+		creator = tidb.PocketClientCreator{}
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
