@@ -138,7 +138,7 @@ ROUND:
 	nemesisWg.Wait()
 
 	c.tearDownClient()
-	c.tearDownDB()
+	//c.tearDownDB()
 }
 
 func (c *Controller) syncExec(f func(i int)) {
