@@ -33,8 +33,9 @@ type bankClient struct {
 	accountNum int
 }
 
-func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
+func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
+	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
@@ -44,7 +45,7 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node
 	db.SetMaxIdleConns(1 + c.accountNum)
 
 	// Do SetUp in the first node
-	if node != nodes[0] {
+	if idx != 0 {
 		return nil
 	}
 
@@ -66,7 +67,7 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node
 	return nil
 }
 
-func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.Node, idx int) error {
 	return c.db.Close()
 }
 
@@ -101,7 +102,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *bankClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
+func (c *bankClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)

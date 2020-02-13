@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"strings"
@@ -59,10 +60,24 @@ func (suit *Suit) Run(ctx context.Context) {
 	sctx, cancel := context.WithCancel(ctx)
 
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, suit.Cluster)
+
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
 	log.Println("deploy cluster success")
+
+	if len(suit.Config.ClientNodes) == 0 {
+		log.Panic("no client nodes exist")
+	}
+	if suit.Config.ClientCount == 0 {
+		log.Panic("suit.Config.ClientCount is required")
+	}
+	// fill clientNodes
+	retClientCount := len(suit.Config.ClientNodes)
+	for len(suit.Config.ClientNodes) < suit.Config.ClientCount {
+		suit.Config.ClientNodes = append(suit.Config.ClientNodes,
+			suit.Config.ClientNodes[rand.Intn(retClientCount)])
+	}
 
 	// sleep 10s to make sure nodeport works and tidb is ready
 	time.Sleep(10 * time.Second)

@@ -20,8 +20,9 @@ import (
 )
 
 var (
+	clientCount  = flag.Int("client", 5, "client count")
 	requestCount = flag.Int("request-count", 500, "client test request count")
-	round        = flag.Int("round", 3, "client test request count")
+	round        = flag.Int("round", 3, "client test request round")
 	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
@@ -55,6 +56,7 @@ func main() {
 
 	cfg := control.Config{
 		DB:           "noop",
+		ClientCount:  *clientCount,
 		RequestCount: *requestCount,
 		RunRound:     *round,
 		RunTime:      *runTime,
