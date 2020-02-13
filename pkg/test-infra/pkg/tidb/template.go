@@ -226,13 +226,23 @@ func RenderTiKVStartScript(model *TiKVStartScriptModel) (string, error) {
 	return renderTemplateFunc(tikvStartScriptTpl, model)
 }
 
-var pumpStartScriptTpl = template.Must(template.New("tikv-start-script").Parse(``))
+var pumpConfigTpl = template.Must(template.New("pump-config-script").Parse(`detect-interval = 10
+compressor = ""
+[syncer]
+worker-count = 16
+disable-dispatch = false
+ignore-schemas = "INFORMATION_SCHEMA,PERFORMANCE_SCHEMA,mysql"
+safe-mode = false
+txn-batch = 20
+db-type = "file"
+[syncer.to]
+dir = "/data/pb"`))
 
 type PumpConfigModel struct {
 }
 
 func RenderPumpConfig(model *PumpConfigModel) (string, error) {
-	return renderTemplateFunc(pumpStartScriptTpl, model)
+	return renderTemplateFunc(pumpConfigTpl, model)
 }
 
 func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {

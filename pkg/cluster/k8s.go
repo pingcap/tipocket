@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
 
@@ -40,6 +41,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]Node, [
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
 		return k.setUpTiDBCluster(ctx, s)
+	case *binlog.ClusterRecommendation:
+		return k.setUpBinlogCluster(ctx, s)
 	default:
 		panic("unreachable")
 	}
@@ -102,6 +105,18 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.T
 		IP:        getNodeIP(k8sNodes),
 		Port:      getTiDBNodePort(svc),
 	})
+
+	return nodes, clientNodes, err
+}
+
+func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommand *binlog.ClusterRecommendation) ([]Node, []ClientNode, error) {
+	var (
+		nodes       []Node
+		clientNodes []ClientNode
+		err         error
+	)
+
+	err = k.E2eCli.Binlog.Apply(recommand)
 
 	return nodes, clientNodes, err
 }

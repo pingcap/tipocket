@@ -25,8 +25,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -73,7 +73,7 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator.PocketCreator{},
 		VerifySuit:    verifySuit,
-		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		Cluster:       binlog.RecommendedBinlogCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

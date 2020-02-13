@@ -140,9 +140,11 @@ func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	if err := t.ApplyTiKVConfigMap(tc); err != nil {
 		return err
 	}
-	klog.Info("Apply pump configmap")
-	if err := t.ApplyPumpConfigMap(tc); err != nil {
-		return err
+	if tc.Spec.Pump != nil {
+		klog.Info("Apply pump configmap")
+		if err := t.ApplyPumpConfigMap(tc); err != nil {
+			return err
+		}
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
@@ -238,6 +240,9 @@ func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
 }
 
 func (t *TidbOps) ApplyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+	if tc.Spec.Pump == nil {
+		return nil
+	}
 	configMap, err := getPumpConfigMap(tc)
 	if err != nil {
 		return err
@@ -422,7 +427,7 @@ func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: tc.Namespace,
-			Name:      fmt.Sprintf("%s-tikv", tc.Name),
+			Name:      fmt.Sprintf("%s-pump", tc.Name),
 		},
 		Data: map[string]string{
 			"pump-config": c,
@@ -445,7 +450,7 @@ func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
 					ServiceAccountName: meta.Name,
 					Containers: []corev1.Container{{
 						Name:            "discovery",
-						Image:           "pingcap/tidb-operator:v1.0.5",
+						Image:           "pingcap/tidb-operator:v1.0.6",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: []string{
 							"/usr/local/bin/tidb-discovery",

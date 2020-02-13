@@ -18,6 +18,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/br"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/chaos"
@@ -30,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// E2eCli contains clients
 type E2eCli struct {
 	Config *rest.Config
 	Cli    client.Client
@@ -38,13 +40,16 @@ type E2eCli struct {
 	CDC    *cdc.CdcOps
 	MySQL  *mysql.MySQLOps
 	TiDB   *tidb.TidbOps
+	Binlog *binlog.Ops
 }
 
+// NewE2eCli creates e2e client
 func NewE2eCli(conf *rest.Config) *E2eCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		e2elog.Failf("error creating kube-client: %v", err)
 	}
+	tidbClient := tidb.New(kubeCli)
 	return &E2eCli{
 		Config: conf,
 		Cli:    kubeCli,
@@ -52,10 +57,12 @@ func NewE2eCli(conf *rest.Config) *E2eCli {
 		BR:     br.New(kubeCli),
 		CDC:    cdc.New(kubeCli),
 		MySQL:  mysql.New(kubeCli),
-		TiDB:   tidb.New(kubeCli),
+		TiDB:   tidbClient,
+		Binlog: binlog.New(kubeCli, tidbClient),
 	}
 }
 
+// GetNodes gets physical nodes
 func (e *E2eCli) GetNodes() (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
 	err := e.Cli.List(context.TODO(), nodes)
