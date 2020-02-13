@@ -19,7 +19,7 @@ type Client interface {
 	// SetUp sets up the client.
 	SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// TearDown tears down the client.
-	TearDown(ctx context.Context, nodes []cluster.Node, idx int) error
+	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
 	Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{}
@@ -55,7 +55,7 @@ func (noopClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int
 }
 
 // TearDown tears down the client.
-func (noopClient) TearDown(ctx context.Context, nodes []cluster.Node, idx int) error {
+func (noopClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 

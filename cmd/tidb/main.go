@@ -67,8 +67,8 @@ func main() {
 	switch *clientCase {
 	case "bank":
 		creator = tidb.BankClientCreator{}
-	//case "multi_bank":
-	//	creator = tidb.MultiBankClientCreator{}
+	case "multi_bank":
+		creator = tidb.MultiBankClientCreator{}
 	case "long_fork":
 		creator = tidb.LongForkClientCreator{}
 	//case "sequential":

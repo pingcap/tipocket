@@ -46,7 +46,7 @@ func killNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 			// Note: Maybe I should just store cluster info here.
 			InvokeArgs:  nil,
 			RecoverArgs: nil,
-			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
+			RunTime:     time.Second * time.Duration(rand.Intn(120)+10),
 		}
 	}
 
@@ -98,7 +98,7 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 		ops[i] = &core.NemesisOperation{
 			Type:       "drop",
 			InvokeArgs: partNodes,
-			RunTime:    time.Second * time.Duration(rand.Intn(120)+60),
+			RunTime:    time.Second * time.Duration(rand.Intn(120)+10),
 		}
 	}
 

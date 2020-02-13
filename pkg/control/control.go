@@ -194,7 +194,7 @@ func (c *Controller) tearDownClient() {
 	c.syncExec(func(i int) {
 		client := c.clients[i]
 		log.Printf("begin to tear down db client for node %s", c.cfg.ClientNodes[i])
-		if err := client.TearDown(c.ctx, c.cfg.Nodes, i); err != nil {
+		if err := client.TearDown(c.ctx, c.cfg.ClientNodes, i); err != nil {
 			log.Printf("tear down db client for node %s failed %v", c.cfg.ClientNodes[i], err)
 		}
 	})

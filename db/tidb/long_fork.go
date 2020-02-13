@@ -106,7 +106,7 @@ func (c *longForkClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *longForkClient) TearDown(ctx context.Context, nodes []cluster.Node, idx int) error {
+func (c *longForkClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return c.db.Close()
 }
 
