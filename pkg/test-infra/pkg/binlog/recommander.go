@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-
+	"github.com/pingcap/tidb-operator/pkg/util/config"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 )
@@ -35,7 +35,6 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		upstream   = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name))
 		downstream = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name))
 	)
-
 	// upstream.TidbCluster.Spec.TiDB.BinlogEnabled = true
 	upstream.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
 		Replicas:         3,
@@ -43,6 +42,9 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
 			Image: buildImage("tidb-binlog"),
+		},
+		GenericConfig: config.GenericConfig{
+			Config: map[string]interface{}{},
 		},
 	}
 
