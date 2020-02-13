@@ -3,6 +3,7 @@ package nemesis
 import (
 	"context"
 	"fmt"
+	uuid "github.com/satori/go.uuid"
 	"log"
 	"math/rand"
 	"time"
@@ -34,6 +35,9 @@ func (g networkPartitionGenerator) Name() string {
 }
 
 func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
+	if n < 1 {
+		log.Panicf("the partition part size cannot be less than 1")
+	}
 	ops := make([]*core.NemesisOperation, len(nodes))
 
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
@@ -41,7 +45,6 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 
 	var onePartNodes []cluster.Node
 	var anotherPartNodes []cluster.Node
-
 	for i := 0; i < n; i++ {
 		onePartNodes = append(onePartNodes, nodes[indices[i]])
 	}
@@ -49,10 +52,11 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
+	name := fmt.Sprintf("%s-%s-%s", onePartNodes[0].Namespace, anotherPartNodes[0].Namespace, uuid.NewV4().String())
 	ops[0] = &core.NemesisOperation{
 		Type:        core.NetworkPartition,
-		InvokeArgs:  []interface{}{onePartNodes, anotherPartNodes},
-		RecoverArgs: []interface{}{onePartNodes, anotherPartNodes},
+		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},
+		RecoverArgs: []interface{}{name, onePartNodes, anotherPartNodes},
 		RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 	}
 
@@ -70,10 +74,10 @@ type networkPartition struct {
 }
 
 func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...interface{}) error {
-	onePart, anotherPart := extractTwoParts(args...)
+	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", onePart[0].Namespace, chaosv1alpha1.PartitionAction),
+			Name:      name,
 			Namespace: onePart[0].Namespace,
 		},
 		Spec: chaosv1alpha1.NetworkChaosSpec{
@@ -98,10 +102,10 @@ func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...in
 }
 
 func (n networkPartition) Recover(ctx context.Context, _ cluster.Node, args ...interface{}) error {
-	onePart, anotherPart := extractTwoParts(args...)
+	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", onePart[0].Namespace, chaosv1alpha1.PartitionAction),
+			Name:      name,
 			Namespace: onePart[0].Namespace,
 		},
 		Spec: chaosv1alpha1.NetworkChaosSpec{
@@ -129,12 +133,13 @@ func (n networkPartition) Name() string {
 	return string(core.NetworkPartition)
 }
 
-func extractTwoParts(args ...interface{}) ([]cluster.Node, []cluster.Node) {
+func extractArgs(args ...interface{}) (string, []cluster.Node, []cluster.Node) {
+	var name = args[0].(string)
 	var networkParts [][]cluster.Node
 	var onePart []cluster.Node
 	var anotherPart []cluster.Node
 
-	for _, arg := range args {
+	for _, arg := range args[1:] {
 		networkPart := arg.([]cluster.Node)
 		networkParts = append(networkParts, networkPart)
 	}
@@ -147,7 +152,7 @@ func extractTwoParts(args ...interface{}) ([]cluster.Node, []cluster.Node) {
 	if len(onePart) < 1 || len(anotherPart) < 1 {
 		log.Panicf("expect non-empty two parts, got %+v and %+v", onePart, anotherPart)
 	}
-	return onePart, anotherPart
+	return name, onePart, anotherPart
 }
 
 func extractPodNames(nodes []cluster.Node) []string {
