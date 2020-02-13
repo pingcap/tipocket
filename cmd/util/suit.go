@@ -9,12 +9,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/nemesis"
-
 	"github.com/pingcap/tipocket/pkg/cluster"
-
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 

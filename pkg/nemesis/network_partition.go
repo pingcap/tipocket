@@ -99,7 +99,7 @@ func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...in
 
 func (n networkPartition) Recover(ctx context.Context, _ cluster.Node, args ...interface{}) error {
 	onePart, anotherPart := extractTwoParts(args...)
-	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
+	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", onePart[0].Namespace, chaosv1alpha1.PartitionAction),
 			Namespace: onePart[0].Namespace,
