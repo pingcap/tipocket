@@ -721,6 +721,7 @@ github.com/pingcap/sysutil v0.0.0-20191216090214-5f9620d22b3b h1:EEyo/SCRswLGuSk
 github.com/pingcap/sysutil v0.0.0-20191216090214-5f9620d22b3b/go.mod h1:EB/852NMQ+aRKioCpToQ94Wl7fktV+FNnxf3CX/TTXI=
 github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82 h1:dIeHD0ZlBu2/qZxAaHDir0mptzTDBrv4b/s+aOCj04M=
 github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82/go.mod h1:Ujr3ZzM6+jf5bby6VPPvgQ5WMKMiKuxHf5zp4fFhCQI=
+github.com/pingcap/tidb-operator v1.0.6 h1:37d4+Ile8j3qe3WNEVM/uno+KN3VwioTRC4dRcTOimg=
 github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5 h1:jFs9aLLnKzZs4dy7icV+tjw7uoQFJWNEsP9Ln3K1Qu4=
 github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5/go.mod h1:pNnvAia8kIlWVXwc3dE9JwHza+XeU2MX7N0wnNt9pEU=
 github.com/pingcap/tidb-tools v3.0.6-0.20191106033616-90632dda3863+incompatible h1:H1jg0aDWz2SLRh3hNBo2HFtnuHtudIUvBumU7syRkic=

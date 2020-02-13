@@ -8,6 +8,8 @@ import (
 
 // Config is the configuration for the controller.
 type Config struct {
+	// Mode is for switch between control modes
+	Mode Mode
 	// DB is the name which we want to run.
 	DB string
 	// Nodes are addresses of nodes.
@@ -28,6 +30,29 @@ type Config struct {
 
 	// History file
 	History string
+
+	// CaseConfig can be anything, use type assertion in your case
+	CaseConfig interface{}
+}
+
+// Mode enums control modes
+type Mode int
+
+// Modes enum
+const (
+	ModeInvoker = iota
+	ModeSelfScheduled
+)
+
+func (m Mode) String() string {
+	switch m {
+	case ModeInvoker:
+		return "Invoker mode"
+	case ModeSelfScheduled:
+		return "Self scheduled mode"
+	default:
+		return "Unknown mode"
+	}
 }
 
 func (c *Config) adjust() {

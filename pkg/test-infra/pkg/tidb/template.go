@@ -226,6 +226,15 @@ func RenderTiKVStartScript(model *TiKVStartScriptModel) (string, error) {
 	return renderTemplateFunc(tikvStartScriptTpl, model)
 }
 
+var pumpStartScriptTpl = template.Must(template.New("tikv-start-script").Parse(``))
+
+type PumpConfigModel struct {
+}
+
+func RenderPumpConfig(model *PumpConfigModel) (string, error) {
+	return renderTemplateFunc(pumpStartScriptTpl, model)
+}
+
 func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
 	buff := new(bytes.Buffer)
 	err := tpl.Execute(buff, model)

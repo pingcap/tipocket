@@ -13,6 +13,71 @@
 
 package main
 
+import (
+	"context"
+	"flag"
+	"log"
+	"net/http"
+	_ "net/http/pprof"
+
+	"github.com/pingcap/tipocket/cmd/util"
+	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	"github.com/pingcap/tipocket/pkg/verify"
+)
+
+var (
+	configPath   = flag.String("config", "", "config file path")
+	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
+	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
+	hub          = flag.String("hub", "", "hub address, default to docker hub")
+	imageVersion = flag.String("image-version", "latest", "image version")
+	storageClass = flag.String("storage-class", "local-storage", "storage class name")
+)
+
+func initE2eContext() {
+	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
+	fixture.E2eContext.HubAddress = *hub
+	fixture.E2eContext.DockerRepository = "pingcap"
+	fixture.E2eContext.ImageVersion = *imageVersion
+}
+
+func main() {
+	flag.Parse()
+	initE2eContext()
+	go func() {
+		http.ListenAndServe(*pprofAddr, nil)
+	}()
+
+	cfg := control.Config{
+		Mode:       control.ModeSelfScheduled,
+		DB:         "noop",
+		CaseConfig: *configPath,
+	}
+
+	verifySuit := verify.Suit{
+		Model:   &core.NoopModel{},
+		Checker: core.NoopChecker{},
+		Parser:  nil,
+	}
+	provisioner, err := cluster.NewK8sProvisioner()
+	if err != nil {
+		log.Fatal(err)
+	}
+	suit := util.Suit{
+		Config:        &cfg,
+		Provisioner:   provisioner,
+		ClientCreator: creator.PocketCreator{},
+		VerifySuit:    verifySuit,
+		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+	}
+	suit.Run(context.Background())
+}
+
 // import (
 // 	"context"
 // 	"flag"

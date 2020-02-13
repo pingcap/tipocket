@@ -75,7 +75,7 @@ func buildImage(name string) string {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns string, name string) *TiDBClusterRecommendation {
+func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 	return &TiDBClusterRecommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{

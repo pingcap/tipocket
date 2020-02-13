@@ -80,6 +80,16 @@ func (c *Controller) Close() {
 
 // Run runs the controller.
 func (c *Controller) Run() {
+	switch c.cfg.Mode {
+	case ModeInvoker:
+		c.RunInvoker()
+	case ModeSelfScheduled:
+		c.RunSelfScheduled()
+	}
+}
+
+// RunInvoker runs the controller with invoker way
+func (c *Controller) RunInvoker() {
 	c.setUpDB()
 	c.setUpClient()
 
@@ -209,6 +219,27 @@ ENTRY:
 
 	c.tearDownClient()
 	c.tearDownDB()
+}
+
+// RunSelfScheduled runs the controller with self schedueld
+func (c *Controller) RunSelfScheduled() {
+	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
+	var nemesisWg sync.WaitGroup
+	nemesisWg.Add(1)
+	go func() {
+		defer nemesisWg.Done()
+		c.dispatchNemesis(nctx)
+	}()
+
+	ctx, _ := context.WithTimeout(c.ctx, c.cfg.RunTime)
+	// No matter how many clients are created, we only use one here
+	// the real multi clients logic should handle by case itself
+	err := c.clients[0].Start(ctx, c.cfg.CaseConfig, []string{""})
+	if err != nil {
+		log.Printf("case error %+v", err)
+	}
+
+	ncancel()
 }
 
 func (c *Controller) syncClientExec(f func(i int)) {

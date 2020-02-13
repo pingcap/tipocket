@@ -187,6 +187,10 @@ func (c *longForkClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (c *longForkClient) Start(ctx context.Context, cfg interface{}, dsns []string) error {
+	return nil
+}
+
 func makeKeysInGroup(r *rand.Rand, groupSize uint64, key uint64) []uint64 {
 	lower := key - key%groupSize
 	base := r.Perm(int(groupSize))

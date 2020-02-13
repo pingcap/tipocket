@@ -140,6 +140,10 @@ func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	if err := t.ApplyTiKVConfigMap(tc); err != nil {
 		return err
 	}
+	klog.Info("Apply pump configmap")
+	if err := t.ApplyPumpConfigMap(tc); err != nil {
+		return err
+	}
 
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
 		tc.Spec = desired.Spec
@@ -223,6 +227,18 @@ func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
 
 func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getTiKVConfigMap(tc)
+	if err != nil {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), configMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func (t *TidbOps) ApplyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+	configMap, err := getPumpConfigMap(tc)
 	if err != nil {
 		return err
 	}
@@ -394,6 +410,22 @@ func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		Data: map[string]string{
 			"startup-script": s,
 			"config-file":    ``,
+		},
+	}, nil
+}
+
+func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	c, err := RenderPumpConfig(&PumpConfigModel{})
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-tikv", tc.Name),
+		},
+		Data: map[string]string{
+			"pump-config": c,
 		},
 	}, nil
 }
