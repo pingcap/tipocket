@@ -182,10 +182,9 @@ func (c *Controller) setUpClient() {
 	log.Printf("begin to set up client")
 	c.syncExec(func(i int) {
 		client := c.clients[i]
-		node := c.cfg.ClientNodes[i]
-		log.Printf("begin to set up db client for node %s", node)
-		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, node); err != nil {
-			log.Fatalf("set up db client for node %s failed %v", node, err)
+		log.Printf("begin to set up db client for node %s", c.cfg.ClientNodes[i])
+		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, i); err != nil {
+			log.Fatalf("set up db client for node %s failed %v", c.cfg.ClientNodes[i], err)
 		}
 	})
 }
@@ -194,10 +193,9 @@ func (c *Controller) tearDownClient() {
 	log.Printf("begin to tear down client")
 	c.syncExec(func(i int) {
 		client := c.clients[i]
-		node := c.cfg.Nodes[i]
-		log.Printf("begin to tear down db client for node %s", node)
-		if err := client.TearDown(c.ctx, c.cfg.Nodes, node); err != nil {
-			log.Printf("tear down db client for node %s failed %v", node, err)
+		log.Printf("begin to tear down db client for node %s", c.cfg.ClientNodes[i])
+		if err := client.TearDown(c.ctx, c.cfg.ClientNodes, i); err != nil {
+			log.Printf("tear down db client for node %s failed %v", c.cfg.ClientNodes[i], err)
 		}
 	})
 }
@@ -226,7 +224,7 @@ func (c *Controller) onClientLoop(
 	recorder *history.Recorder,
 ) {
 	client := c.clients[i]
-	node := c.cfg.Nodes[i]
+	node := c.cfg.ClientNodes[i]
 
 	log.Printf("begin to run command on node %s", node)
 
@@ -320,7 +318,7 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 	case <-time.After(op.RunTime):
 	case <-ctx.Done():
 	}
-	if err := nemesis.Recover(ctx, node, op.RecoverArgs...); err != nil {
+	if err := nemesis.Recover(context.TODO(), node, op.RecoverArgs...); err != nil {
 		log.Printf("recover nemesis %s on %s failed: %v", op.Type, node, err)
 	}
 }

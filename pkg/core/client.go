@@ -17,12 +17,12 @@ type UnknownResponse interface {
 // You should define your own client for your database.
 type Client interface {
 	// SetUp sets up the client.
-	SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error
+	SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// TearDown tears down the client.
-	TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
+	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
-	Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{}
+	Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{}
 	// NextRequest generates a request for latter Invoke.
 	NextRequest() interface{}
 	// DumpState the database state(also the model's state)
@@ -50,17 +50,17 @@ type noopClient struct {
 }
 
 // SetUp sets up the client.
-func (noopClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
+func (noopClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // TearDown tears down the client.
-func (noopClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (noopClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke invokes a request to the database.
-func (noopClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
+func (noopClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
 	return nil
 }
 

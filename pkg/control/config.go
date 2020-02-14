@@ -14,6 +14,8 @@ type Config struct {
 	Nodes []cluster.Node
 	// ClientNode are addresses of client usage.
 	ClientNodes []cluster.ClientNode
+	// ClientCount controls the count of clients
+	ClientCount int
 	// Chaos NS
 	ChaosNamespace string
 
