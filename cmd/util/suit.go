@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
-
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/nemesis"
@@ -48,7 +47,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			g = nemesis.NewKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
-			g = nemesis.NewDropGenerator(name)
+		case "partition_one":
+			g = nemesis.NewNetworkPartitionGenerator(name)
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}

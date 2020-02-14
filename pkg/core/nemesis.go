@@ -16,6 +16,8 @@ const (
 	PodFailure ChaosKind = "Pod-Failure"
 	// PodKill will random kill a pod.
 	PodKill ChaosKind = "Pod-Kill"
+	// NetworkPartition parts network between nodes
+	NetworkPartition ChaosKind = "Network-Partition"
 )
 
 // Nemesis injects failure and disturbs the database.
@@ -26,9 +28,9 @@ type Nemesis interface {
 	// TearDown(ctx context.Context, node string) error
 
 	// Invoke executes the nemesis
-	Invoke(ctx context.Context, node cluster.Node, args ...string) error
+	Invoke(ctx context.Context, node cluster.Node, args ...interface{}) error
 	// Recover recovers the nemesis
-	Recover(ctx context.Context, node cluster.Node, args ...string) error
+	Recover(ctx context.Context, node cluster.Node, args ...interface{}) error
 	// Name returns the unique name for the nemesis
 	Name() string
 }
@@ -48,12 +50,12 @@ type NoopNemesis struct {
 // }
 
 // Invoke executes the nemesis
-func (NoopNemesis) Invoke(ctx context.Context, node cluster.Node, args ...string) error {
+func (NoopNemesis) Invoke(ctx context.Context, node cluster.Node, args ...interface{}) error {
 	return nil
 }
 
 // Recover recovers the nemesis
-func (NoopNemesis) Recover(ctx context.Context, node cluster.Node, args ...string) error {
+func (NoopNemesis) Recover(ctx context.Context, node cluster.Node, args ...interface{}) error {
 	return nil
 }
 
@@ -85,9 +87,9 @@ type NemesisOperation struct {
 	// Nemesis name
 	Type ChaosKind
 	// Nemesis invoke args
-	InvokeArgs []string
+	InvokeArgs []interface{}
 	// Nemesis recover args
-	RecoverArgs []string
+	RecoverArgs []interface{}
 	// Nemesis execute time
 	RunTime time.Duration
 }
