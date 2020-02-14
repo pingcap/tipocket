@@ -26,7 +26,7 @@ var (
 	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
-	nemesises    = flag.String("nemesis", "", "nemesis, seperated by name, like random_kill,all_kill")
+	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
