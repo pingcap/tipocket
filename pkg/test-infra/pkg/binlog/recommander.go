@@ -37,9 +37,9 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 	)
 	// upstream.TidbCluster.Spec.TiDB.BinlogEnabled = true
 	upstream.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
-		Replicas:         3,
-		Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
-		StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
+		Replicas:             3,
+		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
+		StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
 			Image: buildImage("tidb-binlog"),
 		},

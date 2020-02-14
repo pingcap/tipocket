@@ -18,8 +18,6 @@ import (
 	"fmt"
 
 	"github.com/pingcap/errors"
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/util"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 
@@ -47,7 +45,7 @@ type MySQLSpec struct {
 	Name      string
 	Namespace string
 	Version   string
-	Resource  v1alpha1.Resources
+	Resource  corev1.ResourceRequirements
 	Storage   fixture.StorageType
 }
 
@@ -103,13 +101,13 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 		version = fixture.E2eContext.MySQLVersion
 	}
 	var q resource.Quantity
-	var err error
+	// var err error
 	if spec.Resource.Requests != nil {
-		size := spec.Resource.Requests.Storage
-		q, err = resource.ParseQuantity(size)
-		if err != nil {
-			return nil, fmt.Errorf("cant' get storage size for mysql: %v", err)
-		}
+		// size := spec.Resource.Requests[fixture.Storage]
+		// q, err = resource.ParseQuantity(size)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("cant' get storage size for mysql: %v", err)
+		// }
 	}
 	return &MySQL{
 		Sts: &appsv1.StatefulSet{
@@ -142,7 +140,7 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 							Name:            "mysql",
 							Image:           fmt.Sprintf("mysql:%s", version),
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Resources:       util.ResourceRequirement(spec.Resource),
+							// ResourceRequirements: spec.Resource,
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      spec.Name,
 								MountPath: "/var/lib/mysql",

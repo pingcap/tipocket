@@ -19,17 +19,17 @@ func (PocketCreator) Create(node cluster.ClientNode) core.Client {
 }
 
 // SetUp sets up the client.
-func (PocketClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, node cluster.ClientNode) error {
+func (PocketClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // TearDown tears down the client.
-func (PocketClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke invokes a request to the database.
-func (PocketClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
+func (PocketClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
 	return nil
 }
 

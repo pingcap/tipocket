@@ -36,11 +36,9 @@ func (t *TiDBClusterRecommendation) Make() *v1alpha1.TidbCluster {
 func (t *TiDBClusterRecommendation) EnablePump(replicas int32) *TiDBClusterRecommendation {
 	if t.TidbCluster.Spec.Pump == nil {
 		t.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
-			Replicas: replicas,
-			ComponentSpec: v1alpha1.ComponentSpec{
-				BaseImage: "pingcap/tidb-binlog",
-			},
-			Resources: fixture.Medium,
+			Replicas:             replicas,
+			BaseImage:            "pingcap/tidb-binlog",
+			ResourceRequirements: fixture.Medium,
 		}
 	}
 	return t
@@ -76,6 +74,8 @@ func buildImage(name string) string {
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
+	enablePVReclaim, exposeStatus := true, true
+
 	return &TiDBClusterRecommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -89,34 +89,29 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 			Spec: v1alpha1.TidbClusterSpec{
 				Version:         fixture.E2eContext.TiDBVersion,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
-				EnablePVReclaim: true,
+				EnablePVReclaim: &enablePVReclaim,
 				PD: v1alpha1.PDSpec{
-					Replicas:         3,
-					Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
-					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
-					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd"),
-					},
+					Replicas:  3,
+					BaseImage: buildImage("pd"),
+					// Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
+					StorageClassName: &fixture.E2eContext.LocalVolumeStorageClass,
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:         3,
-					Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
-					StorageClassName: fixture.E2eContext.LocalVolumeStorageClass,
-					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv"),
-					},
+					Replicas:  3,
+					BaseImage: buildImage("tikv"),
+					// Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
+					StorageClassName: &fixture.E2eContext.LocalVolumeStorageClass,
 				},
 				TiDB: v1alpha1.TiDBSpec{
 					Replicas:  2,
-					Resources: fixture.Medium,
+					BaseImage: buildImage("tidb"),
+					// Resources: fixture.Medium,
+					ResourceRequirements: corev1.ResourceRequirements{},
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
 						},
-						ExposeStatus: true,
-					},
-					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb"),
+						ExposeStatus: &exposeStatus,
 					},
 				},
 			},
