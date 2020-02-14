@@ -3,12 +3,12 @@ package nemesis
 import (
 	"context"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
 	"log"
 	"math/rand"
 	"time"
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	uuid "github.com/satori/go.uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
