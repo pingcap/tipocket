@@ -15,31 +15,17 @@ import (
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
-// killGenerator generate code about PodFailure chaos.
+// podKillGenerator generate code about PodKill chaos.
 type podKillGenerator struct {
 	name string
 }
 
 func (g podKillGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
-	n := 1
-
-	// This part decide how many machines to apply pod-failure
-	switch g.name {
-	case "minor_kill":
-		n = len(nodes)/2 - 1
-	case "major_kill":
-		n = len(nodes)/2 + 1
-	case "all_kill":
-		n = len(nodes)
-	default:
-		n = 1
-	}
-
-	panic("not implemented")
+	return podKillNodes(nodes, len(nodes))
 }
 
 func (g podKillGenerator) Name() string {
-	return string(core.PodFailure)
+	return string(core.PodKill)
 }
 
 func podKillNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
@@ -51,7 +37,7 @@ func podKillNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	freq, _ := time.ParseDuration("30s")
 	for i := 0; i < n; i++ {
 		ops[indices[i]] = &core.NemesisOperation{
-			Type:        core.PodFailure,
+			Type:        core.PodKill,
 			InvokeArgs:  []interface{}{nodes[i], freq},
 			RecoverArgs: []interface{}{nodes[i]},
 			// Note: Runtime means delay here.
@@ -102,6 +88,7 @@ func extractPodKillArgs(args ...interface{}) (node cluster.Node, freq time.Time)
 	if freq, ok = args[1].(time.Time); !ok {
 		panic("`extractPodKillArgs` received an typed error argument")
 	}
+	return
 }
 
 func podKillTag(freq time.Time, ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
