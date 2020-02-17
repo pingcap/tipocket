@@ -18,15 +18,17 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 )
 
 type TiDBClusterRecommendation struct {
 	*v1alpha1.TidbCluster
 	*corev1.Service
+	NS   string
+	Name string
 }
 
 func (t *TiDBClusterRecommendation) Make() *v1alpha1.TidbCluster {
@@ -91,27 +93,35 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				PD: v1alpha1.PDSpec{
-					Replicas:  3,
-					BaseImage: buildImage("pd"),
-					// Resources:        fixture.WithStorage(fixture.Small, "10Gi"),
-					StorageClassName: &fixture.E2eContext.LocalVolumeStorageClass,
+					Replicas:             3,
+					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
+					StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
+					ComponentSpec: v1alpha1.ComponentSpec{
+						Version: &fixture.E2eContext.ImageVersion,
+						Image:   buildImage("pd"),
+					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:  3,
-					BaseImage: buildImage("tikv"),
-					// Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
-					StorageClassName: &fixture.E2eContext.LocalVolumeStorageClass,
+					Replicas:             3,
+					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
+					StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
+					ComponentSpec: v1alpha1.ComponentSpec{
+						Version: &fixture.E2eContext.ImageVersion,
+						Image:   buildImage("tikv"),
+					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
-					Replicas:  2,
-					BaseImage: buildImage("tidb"),
-					// Resources: fixture.Medium,
-					ResourceRequirements: corev1.ResourceRequirements{},
+					Replicas:             2,
+					ResourceRequirements: fixture.Medium,
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
 						},
 						ExposeStatus: &exposeStatus,
+					},
+					ComponentSpec: v1alpha1.ComponentSpec{
+						Version: &fixture.E2eContext.ImageVersion,
+						Image:   buildImage("tidb"),
 					},
 				},
 			},

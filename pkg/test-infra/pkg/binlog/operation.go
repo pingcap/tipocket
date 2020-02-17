@@ -14,9 +14,13 @@
 package binlog
 
 import (
+	"context"
 	"time"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -31,30 +35,65 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 	return &Ops{cli, tidbClient}
 }
 
+// Apply binlog cluster
+func (t *Ops) Apply(tc *ClusterRecommendation) error {
+	if err := t.ApplyTiDBCluster(tc.Upstream); err != nil {
+		return err
+	}
+
+	if err := t.ApplyDrainer(tc.Drainer); err != nil {
+		return err
+	}
+
+	if err := t.ApplyTiDBCluster(tc.Downstream); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Delete binlog cluster
 func (t *Ops) Delete(tc *ClusterRecommendation) error {
 	return nil
 }
 
-// Apply binlog cluster
-func (t *Ops) Apply(tc *ClusterRecommendation) error {
-	if err := t.tidbClient.ApplyTiDBCluster(tc.Upstream.TidbCluster); err != nil {
+// ApplyTiDBCluster applies a cluster
+func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation) error {
+	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster); err != nil {
 		return err
 	}
-	if err := t.tidbClient.WaitTiDBClusterReady(tc.Upstream.TidbCluster, 10*time.Minute); err != nil {
+	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, 10*time.Minute); err != nil {
 		return err
 	}
-	if err := t.tidbClient.ApplyTiDBService(tc.Upstream.Service); err != nil {
+	if err := t.tidbClient.ApplyTiDBService(tc.Service); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ApplyDrainer applies drainer
+func (t *Ops) ApplyDrainer(drainer *Drainer) error {
+	// apply configmap
+	if err := t.ApplyObject(drainer.ConfigMap); err != nil {
+		return err
+	}
+	// apply service
+	if err := t.ApplyObject(drainer.Service); err != nil {
 		return err
 	}
 
-	if err := t.tidbClient.ApplyTiDBCluster(tc.Downstream.TidbCluster); err != nil {
+	time.Sleep(10 * time.Second)
+
+	// apply statefulset
+	if err := t.ApplyObject(drainer.StatefulSet); err != nil {
 		return err
 	}
-	if err := t.tidbClient.WaitTiDBClusterReady(tc.Downstream.TidbCluster, 10*time.Minute); err != nil {
-		return err
-	}
-	if err := t.tidbClient.ApplyTiDBService(tc.Downstream.Service); err != nil {
+	return nil
+}
+
+// ApplyObject applies object
+func (t *Ops) ApplyObject(object runtime.Object) error {
+	err := t.cli.Create(context.TODO(), object)
+	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
