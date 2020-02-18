@@ -57,6 +57,97 @@ func (l loss) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkCha
 
 type delay struct{}
 
+func (d delay) netemType() chaosv1alpha1.NetworkChaosAction {
+	return chaosv1alpha1.DelayAction
+}
+
+func (d delay) template(ns string, pods []string, podMode chaosv1alpha1.PodMode, args ...string) chaosv1alpha1.NetworkChaosSpec {
+	if len(args) != 3 {
+		panic("args number error")
+	}
+	return chaosv1alpha1.NetworkChaosSpec{
+		Action: chaosv1alpha1.DelayAction,
+		Selector: chaosv1alpha1.SelectorSpec{
+			Namespaces: []string{ns},
+			Pods:       map[string][]string{ns: pods},
+		},
+		// default mode
+		Mode: podMode,
+		// default Latency
+		Delay: &chaosv1alpha1.DelaySpec{
+			Latency:     args[0],
+			Correlation: args[1],
+			Jitter:      args[2],
+		},
+	}
+}
+
+func (d delay) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
+	return d.template(ns, pods, "90ms", "25", "90ms")
+}
+
+type duplicate struct {
+}
+
+func (d duplicate) netemType() chaosv1alpha1.NetworkChaosAction {
+	return chaosv1alpha1.DuplicateAction
+}
+
+func (d duplicate) template(ns string, pods []string, podMode chaosv1alpha1.PodMode, args ...string) chaosv1alpha1.NetworkChaosSpec {
+	if len(args) != 2 {
+		panic("args number error")
+	}
+	return chaosv1alpha1.NetworkChaosSpec{
+		Action: chaosv1alpha1.DuplicateAction,
+		Selector: chaosv1alpha1.SelectorSpec{
+			Namespaces: []string{ns},
+			Pods:       map[string][]string{ns: pods},
+		},
+		// default mode
+		Mode: podMode,
+		// default Latency
+		Duplicate: &chaosv1alpha1.DuplicateSpec{
+			Duplicate:   args[0],
+			Correlation: args[1],
+		},
+	}
+}
+
+func (d duplicate) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
+	return d.template(ns, pods, "40", "25")
+}
+
+type corrupt struct {
+}
+
+func (c corrupt) netemType() chaosv1alpha1.NetworkChaosAction {
+	return chaosv1alpha1.CorruptAction
+}
+
+func (c corrupt) template(ns string, pods []string, podMode chaosv1alpha1.PodMode, args ...string) chaosv1alpha1.NetworkChaosSpec {
+	if len(args) != 2 {
+		panic("args number error")
+	}
+	return chaosv1alpha1.NetworkChaosSpec{
+		Action: chaosv1alpha1.DuplicateAction,
+		Selector: chaosv1alpha1.SelectorSpec{
+			Namespaces: []string{ns},
+			Pods:       map[string][]string{ns: pods},
+		},
+		// default mode
+		Mode: podMode,
+		// default Latency
+		Corrupt: &chaosv1alpha1.CorruptSpec{
+			Corrupt:     args[0],
+			Correlation: args[1],
+		},
+	}
+}
+
+func (c corrupt) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
+	return c.template(ns, pods, "40", "25")
+}
+
 type netemChaos interface {
 	netemType() chaosv1alpha1.NetworkChaosAction
 	template(ns string, pods []string, podMode chaosv1alpha1.PodMode, args ...string) chaosv1alpha1.NetworkChaosSpec
@@ -68,11 +159,11 @@ func selectNetem(name string) netemChaos {
 	case "loss":
 		return loss{}
 	case "delay":
-		panic("impl me")
+		return delay{}
 	case "duplicate":
-		panic("impl me")
+		return duplicate{}
 	case "corrupt":
-		panic("impl me")
+		return corrupt{}
 	default:
 		panic("selectNetem received an unexists tag")
 	}
