@@ -166,7 +166,7 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 	defer cancel()
 
 	for _, client := range c.clients {
-		for _, node := range c.cfg.ClientNodes {
+		for _, node := range c.cfg.Nodes {
 			log.Printf("begin to dump on node %s", node)
 			sum, err := client.DumpState(ctx)
 			if err == nil {
