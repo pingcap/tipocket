@@ -23,7 +23,7 @@ type Suit struct {
 	// Provisioner deploy the SUT cluster
 	cluster.Provisioner
 	core.ClientCreator
-	// nemesis, seperated by comma.
+	// nemesis, separated by comma.
 	Nemesises string
 
 	VerifySuit verify.Suit
@@ -50,6 +50,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			log.Fatal("Unimplemented")
 		case "partition_one":
 			g = nemesis.NewNetworkPartitionGenerator(name)
+		case "loss", "delay", "duplicate", "corrupt":
+			g = nemesis.NewNetemChaos(name)
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}
