@@ -187,7 +187,7 @@ func (c *longForkClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (c *longForkClient) Start(ctx context.Context, cfg interface{}, dsns []string) error {
+func (c *longForkClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
 	return nil
 }
 

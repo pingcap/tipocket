@@ -234,7 +234,7 @@ func (c *Controller) RunSelfScheduled() {
 	ctx, _ := context.WithTimeout(c.ctx, c.cfg.RunTime)
 	// No matter how many clients are created, we only use one here
 	// the real multi clients logic should handle by case itself
-	err := c.clients[0].Start(ctx, c.cfg.CaseConfig, []string{""})
+	err := c.clients[0].Start(ctx, c.cfg.CaseConfig, c.cfg.ClientNodes)
 	if err != nil {
 		log.Printf("case error %+v", err)
 	}

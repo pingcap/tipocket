@@ -176,7 +176,7 @@ func (c *multiBankClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, dsns []string) error {
+func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
 	return nil
 }
 

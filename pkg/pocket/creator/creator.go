@@ -2,9 +2,13 @@ package creator
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/pingcap/errors"
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
+	pocketCore "github.com/pingcap/tipocket/pkg/pocket/core"
 )
 
 // PocketCreator create pocket instances
@@ -44,7 +48,24 @@ func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (PocketClient) Start(ctx context.Context, cfg interface{}, dsns []string) error {
-	// upstream, downstream := dsns[0], dsns[1]
-	return nil
+func (PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNodes []clusterTypes.ClientNode) error {
+	var (
+		upstream, downstream = makeDSN(clientNodes[0].String()), makeDSN(clientNodes[1].String())
+		cfgPath              = caseConfig.(string)
+	)
+
+	cfg := config.Init()
+
+	if err := cfg.Load(cfgPath); err != nil {
+		return errors.Trace(err)
+	}
+
+	cfg.Mode = "binlog"
+	cfg.DSN1, cfg.DSN2 = upstream, downstream
+
+	return pocketCore.New(cfg).Start(ctx)
+}
+
+func makeDSN(address string) string {
+	return fmt.Sprintf("root:@tcp(%s)/pocket", address)
 }

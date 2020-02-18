@@ -30,7 +30,7 @@ type Client interface {
 	// Start runs self scheduled cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only
-	Start(ctx context.Context, cfg interface{}, dsns []string) error
+	Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error
 }
 
 // ClientCreator creates a client.
@@ -79,6 +79,6 @@ func (noopClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (noopClient) Start(ctx context.Context, cfg interface{}, dsns []string) error {
+func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
 	return nil
 }

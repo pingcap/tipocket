@@ -16,7 +16,6 @@ package binlog
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/pingcap/errors"
@@ -138,8 +137,6 @@ func (t *Ops) GetNodes(tc *ClusterRecommendation) ([]clusterTypes.Node, error) {
 	if err != nil {
 		return nodes, err
 	}
-
-	log.Println(append(append(upstreamNodes, downstreamNodes...), drainerNode))
 
 	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
 }
