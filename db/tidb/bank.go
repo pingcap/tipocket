@@ -328,9 +328,9 @@ func (p bankParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p bankParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := bankResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
+	//if r.Unknown {
+	//	return nil, err
+	//}
 	return r, err
 }
 

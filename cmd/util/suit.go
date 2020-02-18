@@ -25,7 +25,8 @@ type Suit struct {
 	core.ClientCreator
 	// nemesis, seperated by comma.
 	Nemesises string
-
+	// perform service quality checking
+	WithProf   bool
 	VerifySuit verify.Suit
 
 	// cluster definition
@@ -99,5 +100,9 @@ func (suit *Suit) Run(ctx context.Context) {
 		cancel()
 	}()
 
-	c.Run()
+	if suit.WithProf {
+		c.RunWithServiceQualityProf()
+	} else {
+		c.Run()
+	}
 }
