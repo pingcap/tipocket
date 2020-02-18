@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 
 	"github.com/anishathalye/porcupine"
 
@@ -33,7 +33,7 @@ type bankClient struct {
 	accountNum int
 }
 
-func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *bankClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -109,7 +109,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *bankClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
+func (c *bankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -212,7 +212,7 @@ type BankClientCreator struct {
 }
 
 // Create creates a client.
-func (BankClientCreator) Create(node cluster.ClientNode) core.Client {
+func (BankClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return &bankClient{
 		accountNum: accountNum,
 		r:          rand.New(rand.NewSource(time.Now().UnixNano())),

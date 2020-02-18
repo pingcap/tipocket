@@ -11,7 +11,7 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/check/porcupine"
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
@@ -109,7 +109,7 @@ func main() {
 		Checker: checker,
 		Parser:  parser,
 	}
-	provisioner, err := cluster.NewK8sProvisioner()
+	provisioner, err := clusterTypes.NewK8sProvisioner()
 	if err != nil {
 		log.Fatal(err)
 	}

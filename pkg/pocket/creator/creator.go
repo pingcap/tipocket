@@ -3,7 +3,7 @@ package creator
 import (
 	"context"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -14,22 +14,22 @@ type PocketCreator struct{}
 type PocketClient struct{}
 
 // Create client
-func (PocketCreator) Create(node cluster.ClientNode) core.Client {
+func (PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return PocketClient{}
 }
 
 // SetUp sets up the client.
-func (PocketClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (PocketClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 
 // TearDown tears down the client.
-func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (PocketClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke invokes a request to the database.
-func (PocketClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
+func (PocketClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	return nil
 }
 

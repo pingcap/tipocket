@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 
 	"github.com/pingcap/tipocket/pkg/util"
 	"github.com/pingcap/tipocket/pkg/util/ssh"
@@ -41,13 +41,13 @@ var (
 // Note: Cluster does not implement `core.DB` interface.
 type Cluster struct {
 	once           sync.Once
-	nodes          []cluster.Node
+	nodes          []clusterTypes.Node
 	installBlocker util.BlockRunner
 	IncludeTidb    bool
 }
 
 // SetUp initializes the database.
-func (cluster *Cluster) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (cluster *Cluster) SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
 	// Try kill all old servers
 	if cluster.IncludeTidb {
 		ssh.Exec(ctx, node.IP, "killall", "-9", "tidb-server")
@@ -123,12 +123,12 @@ func (cluster *Cluster) SetUp(ctx context.Context, nodes []cluster.Node, node cl
 }
 
 // TearDown tears down the database.
-func (cluster *Cluster) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (cluster *Cluster) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
 	return cluster.Kill(ctx, node)
 }
 
 // Start starts the database
-func (cluster *Cluster) Start(ctx context.Context, node cluster.Node) error {
+func (cluster *Cluster) Start(ctx context.Context, node clusterTypes.Node) error {
 	return cluster.start(ctx, node.IP, false)
 }
 
@@ -247,7 +247,7 @@ WAIT:
 }
 
 // Stop stops the database
-func (cluster *Cluster) Stop(ctx context.Context, node cluster.Node) error {
+func (cluster *Cluster) Stop(ctx context.Context, node clusterTypes.Node) error {
 	if cluster.IncludeTidb {
 		if err := util.StopDaemon(ctx, node.IP, tidbBinary, path.Join(deployDir, "tidb.pid")); err != nil {
 			return err
@@ -262,7 +262,7 @@ func (cluster *Cluster) Stop(ctx context.Context, node cluster.Node) error {
 }
 
 // Kill kills the database
-func (cluster *Cluster) Kill(ctx context.Context, node cluster.Node) error {
+func (cluster *Cluster) Kill(ctx context.Context, node clusterTypes.Node) error {
 	if cluster.IncludeTidb {
 		if err := util.KillDaemon(ctx, node, tidbBinary, path.Join(deployDir, "tidb.pid")); err != nil {
 			return err
@@ -277,7 +277,7 @@ func (cluster *Cluster) Kill(ctx context.Context, node cluster.Node) error {
 }
 
 // IsRunning checks whether the database is running or not
-func (cluster *Cluster) IsRunning(ctx context.Context, node cluster.Node) bool {
+func (cluster *Cluster) IsRunning(ctx context.Context, node clusterTypes.Node) bool {
 	if cluster.IncludeTidb {
 		return util.IsDaemonRunning(ctx, node.IP, tidbBinary, path.Join(deployDir, "tidb.pid"))
 	}

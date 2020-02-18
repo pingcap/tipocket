@@ -79,6 +79,8 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 	enablePVReclaim, exposeStatus := true, true
 
 	return &TiDBClusterRecommendation{
+		NS:   ns,
+		Name: name,
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,

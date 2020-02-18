@@ -10,7 +10,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -19,11 +19,16 @@ type killGenerator struct {
 	name string
 }
 
+<<<<<<< HEAD
 // Generate generates container-kill actions, to simulate the case that node can't be recovered quickly after being killed
 func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	var n int
 	var duration = time.Second * time.Duration(rand.Intn(120)+60)
 	var component *cluster.Component
+=======
+func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+	n := 1
+>>>>>>> seperate cluster types into individual pkg
 
 	// This part decide how many machines to apply pod-failure
 	switch g.name {
@@ -65,7 +70,7 @@ func (g killGenerator) Name() string {
 	return g.name
 }
 
-func killNodes(nodes []cluster.Node, n int, component *cluster.Component, duration time.Duration) []*core.NemesisOperation {
+func killNodes(nodes []clusterTypes.Node, n int, component *cluster.Component, duration time.Duration) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	if component != nil {
 		nodes = filterComponent(nodes, *component)
@@ -137,13 +142,13 @@ type kill struct {
 	k8sNemesisClient
 }
 
-func (k kill) Invoke(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
+func (k kill) Invoke(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
 	log.Printf("Creating pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k kill) Recover(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
+func (k kill) Recover(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
 	log.Printf("Recover pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)

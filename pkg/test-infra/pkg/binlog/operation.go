@@ -15,11 +15,16 @@ package binlog
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/pingcap/errors"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -41,11 +46,11 @@ func (t *Ops) Apply(tc *ClusterRecommendation) error {
 		return err
 	}
 
-	if err := t.ApplyDrainer(tc.Drainer); err != nil {
+	if err := t.ApplyTiDBCluster(tc.Downstream); err != nil {
 		return err
 	}
 
-	if err := t.ApplyTiDBCluster(tc.Downstream); err != nil {
+	if err := t.ApplyDrainer(tc.Drainer); err != nil {
 		return err
 	}
 	return nil
@@ -81,7 +86,7 @@ func (t *Ops) ApplyDrainer(drainer *Drainer) error {
 		return err
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// apply statefulset
 	if err := t.ApplyObject(drainer.StatefulSet); err != nil {
@@ -97,4 +102,63 @@ func (t *Ops) ApplyObject(object runtime.Object) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Ops) GetDrainerNode(d *Drainer) (clusterTypes.Node, error) {
+	pod := &corev1.Pod{}
+	err := t.cli.Get(context.Background(), client.ObjectKey{
+		Namespace: d.StatefulSet.ObjectMeta.Namespace,
+		Name:      fmt.Sprintf("%s-0", d.StatefulSet.ObjectMeta.Name),
+	}, pod)
+
+	if err != nil {
+		return clusterTypes.Node{}, err
+	}
+
+	return clusterTypes.Node{
+		Namespace: pod.ObjectMeta.Namespace,
+		PodName:   pod.ObjectMeta.Name,
+		IP:        pod.Status.PodIP,
+		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+	}, nil
+}
+
+func (t *Ops) GetNodes(tc *ClusterRecommendation) ([]clusterTypes.Node, error) {
+	var nodes []clusterTypes.Node
+
+	upstreamNodes, err := t.tidbClient.GetNodes(tc.Upstream)
+	if err != nil {
+		return nodes, err
+	}
+	downstreamNodes, err := t.tidbClient.GetNodes(tc.Downstream)
+	if err != nil {
+		return nodes, err
+	}
+	drainerNode, err := t.GetDrainerNode(tc.Drainer)
+	if err != nil {
+		return nodes, err
+	}
+
+	log.Println(append(append(upstreamNodes, downstreamNodes...), drainerNode))
+
+	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
+}
+
+func (t *Ops) GetClientNodes(tc *ClusterRecommendation) ([]clusterTypes.ClientNode, error) {
+	var clientNodes []clusterTypes.ClientNode
+	upstreamClientNodes, err := t.tidbClient.GetClientNodes(tc.Upstream)
+	if err != nil {
+		return clientNodes, err
+	}
+	downstreamClientNodes, err := t.tidbClient.GetClientNodes(tc.Downstream)
+	if err != nil {
+		return clientNodes, err
+	}
+	clientNodes = append(upstreamClientNodes, downstreamClientNodes...)
+
+	if len(clientNodes) != 2 {
+		return clientNodes, errors.New("clientNodes count not 2")
+	}
+
+	return clientNodes, nil
 }

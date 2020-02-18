@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
 // ChaosKind is Kind of applying chaos
@@ -32,9 +32,9 @@ type Nemesis interface {
 	// TearDown(ctx context.Context, node string) error
 
 	// Invoke executes the nemesis
-	Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error
+	Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error
 	// Recover recovers the nemesis
-	Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error
+	Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error
 	// Name returns the unique name for the nemesis
 	Name() string
 }
@@ -54,12 +54,12 @@ type NoopNemesis struct {
 // }
 
 // Invoke executes the nemesis
-func (NoopNemesis) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (NoopNemesis) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	return nil
 }
 
 // Recover recovers the nemesis
-func (NoopNemesis) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (NoopNemesis) Recover(ctx context.Context, node clusterTypes.Node, args ...interface{}) error {
 	return nil
 }
 
@@ -106,7 +106,7 @@ type NemesisGeneratorRecord struct {
 type NemesisGenerator interface {
 	// Generate generates the nemesis operation for all nodes.
 	// Every node will be assigned a nemesis operation.
-	Generate(nodes []cluster.Node) []*NemesisOperation
+	Generate(nodes []clusterTypes.Node) []*NemesisOperation
 	Name() string
 }
 
@@ -120,7 +120,7 @@ func (NoopNemesisGenerator) Name() string {
 }
 
 //Generate generates the nemesis operation for the nodes.
-func (NoopNemesisGenerator) Generate(nodes []cluster.Node) []*NemesisOperation {
+func (NoopNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperation {
 	ops := make([]*NemesisOperation, len(nodes))
 	for i := 0; i < len(ops); i++ {
 		ops[i] = &NemesisOperation{

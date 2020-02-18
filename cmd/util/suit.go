@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/nemesis"
@@ -21,7 +21,7 @@ import (
 type Suit struct {
 	*control.Config
 	// Provisioner deploy the SUT cluster
-	cluster.Provisioner
+	clusterTypes.Provisioner
 	core.ClientCreator
 	// nemesis, separated by comma.
 	Nemesises string

@@ -102,7 +102,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 							Port: 8249,
 						},
 					},
-					ClusterIP: "None",
+					ClusterIP: "",
 					Selector: map[string]string{
 						"app.kubernetes.io/name":      "tidb-cluster",
 						"app.kubernetes.io/component": "drainer",
