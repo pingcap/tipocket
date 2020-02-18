@@ -79,11 +79,12 @@ func extractKillArgs(args ...interface{}) cluster.Node {
 	if len(args) != 1 {
 		panic("`extractKillArgs` received too much args")
 	}
-	if node, ok := args[0].(cluster.Node); ok {
-		return node
-	} else {
+	var node cluster.Node
+	var ok bool
+	if node, ok = args[0].(cluster.Node); !ok {
 		panic("`extractKillArgs` received an typed error argument")
 	}
+	return node
 }
 
 func (k kill) Invoke(ctx context.Context, _ cluster.Node, args ...interface{}) error {
