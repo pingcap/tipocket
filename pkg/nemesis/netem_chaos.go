@@ -1,16 +1,15 @@
 package nemesis
 
 import (
-	//"context"
-	//"log"
-	//"math/rand"
-	//"strings"
-	//"time"
-	//
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	"context"
+	"fmt"
+	"log"
 	"math/rand"
 	"time"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -74,18 +73,20 @@ func selectNetem(name string) netemChaos {
 		panic("impl me")
 	case "corrupt":
 		panic("impl me")
+	default:
+		panic("selectNetem received an unexists tag")
 	}
 }
 
+// Generate will randomly generate a chaos without selecting nodes.
 func (g netemChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
-	n := 1
-	netem := selectNetem(g.name)
+	nChaos := selectNetem(g.name)
 	ops := make([]*core.NemesisOperation, 1)
 
 	ops[0] = &core.NemesisOperation{
 		Type:        core.NetworkPartition,
-		InvokeArgs:  []interface{}{netem},
-		RecoverArgs: []interface{}{netem},
+		InvokeArgs:  []interface{}{nChaos},
+		RecoverArgs: []interface{}{nChaos},
 		RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 	}
 
@@ -99,6 +100,36 @@ func (g netemChaosGenerator) Name() string {
 type netem struct {
 	k8sNemesisClient
 	chaos netemChaos
+}
+
+func (n netem) extractChaos(node cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
+	log.Printf("%v was called", fnName)
+	if len(args) != 1 {
+		panic("netem.Invoke argument numbers of args is wrong")
+	}
+	var nChaos netemChaos
+	var ok bool
+	if nChaos, ok = args[0].(netemChaos); !ok {
+		panic("netem.Invoke get wrong type")
+	}
+	networkChaosSpec := nChaos.defaultTemplate(node.Namespace, []string{node.PodName})
+	return chaosv1alpha1.NetworkChaos{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s-%s", string(nChaos.netemType()), node.Namespace, node.PodName),
+			Namespace: node.Namespace,
+		},
+		Spec: networkChaosSpec,
+	}
+}
+
+func (n netem) Invoke(ctx context.Context, node cluster.Node, args ...interface{}) error {
+	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
+	return n.cli.ApplyNetChaos(&chaosSpec)
+}
+
+func (n netem) Recover(ctx context.Context, node cluster.Node, args ...interface{}) error {
+	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
+	return n.cli.CancelNetChaos(&chaosSpec)
 }
 
 func (n netem) Name() string {
