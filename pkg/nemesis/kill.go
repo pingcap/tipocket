@@ -10,6 +10,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
@@ -19,16 +20,11 @@ type killGenerator struct {
 	name string
 }
 
-<<<<<<< HEAD
 // Generate generates container-kill actions, to simulate the case that node can't be recovered quickly after being killed
-func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
+func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
 	var n int
 	var duration = time.Second * time.Duration(rand.Intn(120)+60)
-	var component *cluster.Component
-=======
-func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
-	n := 1
->>>>>>> seperate cluster types into individual pkg
+	var component *clusterTypes.Component
 
 	// This part decide how many machines to apply pod-failure
 	switch g.name {

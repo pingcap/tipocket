@@ -34,6 +34,7 @@ var (
 	configPath    = flag.String("config", "", "config file path")
 	pprofAddr     = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace     = flag.String("namespace", "tidb-cluster", "test namespace")
+	nemesises     = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	hub           = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion  = flag.String("image-version", "latest", "image version")
 	binlogVersion = flag.String("binlog-version", "", `overwrite "-image-version" flag for drainer`)
@@ -74,6 +75,7 @@ func main() {
 		Config:        &cfg,
 		Provisioner:   provisioner,
 		ClientCreator: creator.PocketCreator{},
+		Nemesises:     *nemesises,
 		VerifySuit:    verifySuit,
 		Cluster:       binlog.RecommendedBinlogCluster(*namespace, *namespace),
 	}

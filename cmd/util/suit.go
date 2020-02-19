@@ -102,7 +102,13 @@ func (suit *Suit) Run(ctx context.Context) {
 	)
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs,
+		os.Kill,
+		os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 
 	go func() {
 		<-sigs
