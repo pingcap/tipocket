@@ -68,6 +68,13 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx 
 }
 
 func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	if idx != 0 {
+		return nil
+	}
+	sql := `drop table if exists accounts`
+	if _, err := c.db.Exec(sql); err != nil {
+		return err
+	}
 	return c.db.Close()
 }
 

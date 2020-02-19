@@ -155,7 +155,7 @@ ENTRY:
 			log.Printf("round %d start ...", round)
 
 			ctx, cancel := context.WithTimeout(c.ctx, c.cfg.RunTime)
-			historyFile := fmt.Sprintf("%s.%d", c.cfg.History, round)
+			historyFile := fmt.Sprintf("%s.%s.%d", c.cfg.History, g.Name(), round)
 			recorder, err := history.NewRecorder(historyFile)
 			if err != nil {
 				log.Fatalf("prepare history failed %v", err)
