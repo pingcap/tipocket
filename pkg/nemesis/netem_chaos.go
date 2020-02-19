@@ -172,14 +172,17 @@ func selectNetem(name string) netemChaos {
 // Generate will randomly generate a chaos without selecting nodes.
 func (g netemChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	nChaos := selectNetem(g.name)
-	ops := make([]*core.NemesisOperation, 1)
+	ops := make([]*core.NemesisOperation, len(nodes))
 
-	ops[0] = &core.NemesisOperation{
-		Type:        core.NetworkPartition,
-		InvokeArgs:  []interface{}{nChaos},
-		RecoverArgs: []interface{}{nChaos},
-		RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
+	for _, node := range nodes {
+		ops = append(ops, &core.NemesisOperation{
+			Type:        core.NetworkPartition,
+			InvokeArgs:  []interface{}{node, nChaos},
+			RecoverArgs: []interface{}{node, nChaos},
+			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
+		})
 	}
+
 
 	return ops
 }
@@ -193,14 +196,18 @@ type netem struct {
 	chaos netemChaos
 }
 
-func (n netem) extractChaos(node cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
+func (n netem) extractChaos(_ cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
 	log.Printf("%v was called", fnName)
-	if len(args) != 1 {
+	if len(args) != 2 {
 		panic("netem.Invoke argument numbers of args is wrong")
 	}
 	var nChaos netemChaos
+	var node cluster.Node
 	var ok bool
-	if nChaos, ok = args[0].(netemChaos); !ok {
+	if node, ok = args[0].(cluster.Node); !ok {
+		panic("netem.Invoke get wrong type")
+	}
+	if nChaos, ok = args[1].(netemChaos); !ok {
 		panic("netem.Invoke get wrong type")
 	}
 	networkChaosSpec := nChaos.defaultTemplate(node.Namespace, []string{node.PodName})
