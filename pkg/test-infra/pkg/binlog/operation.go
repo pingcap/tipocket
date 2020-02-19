@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/pingcap/errors"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"

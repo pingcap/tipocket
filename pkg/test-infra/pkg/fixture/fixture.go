@@ -36,6 +36,7 @@ type E2eFixture struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
+	BinlogVersion            string
 	TimeLimit                time.Duration
 	Nemesis                  string
 	Workload                 string

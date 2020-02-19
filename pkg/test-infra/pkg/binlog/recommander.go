@@ -19,6 +19,7 @@ import (
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/util/config"
+
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 
@@ -69,7 +70,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 		StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: buildImage("tidb-binlog"),
+			Image: buildBinlogImage("tidb-binlog"),
 		},
 		GenericConfig: config.GenericConfig{
 			Config: map[string]interface{}{},
@@ -141,7 +142,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 							Containers: []corev1.Container{
 								{
 									Name:            "drainer",
-									Image:           buildImage("tidb-binlog"),
+									Image:           buildBinlogImage("tidb-binlog"),
 									ImagePullPolicy: "IfNotPresent",
 									Command: []string{
 										"/bin/sh",
@@ -205,15 +206,23 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 	}
 }
 
-func buildImage(name string) string {
-	var b strings.Builder
+func buildBinlogImage(name string) string {
+	var (
+		b       strings.Builder
+		version = fixture.E2eContext.ImageVersion
+	)
+
+	if fixture.E2eContext.BinlogVersion != "" {
+		version = fixture.E2eContext.BinlogVersion
+	}
 	if fixture.E2eContext.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.E2eContext.HubAddress)
 	}
+
 	b.WriteString(fixture.E2eContext.DockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(fixture.E2eContext.ImageVersion)
+	b.WriteString(version)
 	return b.String()
 }
