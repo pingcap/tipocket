@@ -391,7 +391,7 @@ func (c *Controller) dispatchNemesisWithRecord(ctx context.Context, g core.Nemes
 	ops := g.Generate(c.cfg.Nodes)
 
 	wg.Add(n)
-	err := recorder.RecordInvokeNemesis(g.Name())
+	err := recorder.RecordInvokeNemesis(core.NemesisGeneratorRecord{Name: g.Name(), Ops: ops})
 	if err != nil {
 		log.Printf("record invoking nemesis %s failed: %v", g.Name(), err)
 	}

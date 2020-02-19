@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -11,7 +12,8 @@ import (
 )
 
 type rtoMetrics struct {
-	key string
+	nemesis *core.NemesisGeneratorRecord
+
 	p80 time.Duration
 	p90 time.Duration
 	p99 time.Duration
@@ -52,7 +54,7 @@ func (f *countWindow) count(duration time.Duration) (*time.Time, int, error) {
 
 // Check checks the bank history.
 func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
-	var key string
+	var nemesisRecord core.NemesisGeneratorRecord
 	var duration = time.Minute
 	var failCount float64
 	var failCountPerMinuteBeforeInject float64
@@ -75,7 +77,7 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 			}
 		} else if op.Action == core.InvokeNemesis {
 			injectionTime = op.Time
-			key = op.Data.(string)
+			nemesisRecord = op.Data.(core.NemesisGeneratorRecord)
 			break
 		} else if op.Action == core.RecoverNemesis {
 			//recoveryTime = op.Time
@@ -88,47 +90,47 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 		log.Panic("expect more events after recovery from nemesis")
 	}
 
+	metrics := rtoMetrics{nemesis: &nemesisRecord}
 	window := convertToFailSeries(ops[idx:])
+	if window != nil {
+		for true {
+			startTime, failCount, err := window.count(duration)
+			dur := startTime.Sub(injectionTime)
+			if err != nil {
+				if p80 == nil {
+					p80 = &dur
+				}
+				if p90 == nil {
+					p90 = &dur
+				}
+				if p99 == nil {
+					p99 = &dur
+				}
+				break
+			}
+			failCountPerMinute := float64(failCount) / duration.Minutes()
 
-	for true {
-		startTime, failCount, err := window.count(duration)
-		dur := startTime.Sub(injectionTime)
-		if err != nil {
-			if p80 == nil {
+			if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && p80 == nil {
 				p80 = &dur
 			}
-			if p90 == nil {
+			if 0.9*failCountPerMinute <= failCountPerMinuteBeforeInject && p90 == nil {
 				p90 = &dur
 			}
-			if p99 == nil {
+			if 0.99*failCountPerMinute <= failCountPerMinuteBeforeInject && p99 == nil {
 				p99 = &dur
+				break
 			}
-			break
 		}
-		failCountPerMinute := float64(failCount) / duration.Minutes()
-
-		if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && p80 == nil {
-			p80 = &dur
+		if p80 != nil {
+			metrics.p80 = *p80
 		}
-		if 0.9*failCountPerMinute <= failCountPerMinuteBeforeInject && p90 == nil {
-			p90 = &dur
+		if p90 != nil {
+			metrics.p90 = *p90
 		}
-		if 0.99*failCountPerMinute <= failCountPerMinuteBeforeInject && p99 == nil {
-			p99 = &dur
-			break
+		if p99 != nil {
+			metrics.p99 = *p99
 		}
 	}
-	metrics := rtoMetrics{key: key}
-	if p80 != nil {
-		metrics.p80 = *p80
-	}
-	if p90 != nil {
-		metrics.p90 = *p90
-	}
-	if p99 != nil {
-		metrics.p99 = *p99
-	}
-
 	if err := c.record(&metrics); err != nil {
 		return false, err
 	}
@@ -142,7 +144,13 @@ func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
 		return err
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("key:%s,p80:%.2f,p90:%.2f,p99:%.2f\n", rto.key, rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds())); err != nil {
+
+	data, err := json.Marshal(rto.nemesis)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(fmt.Sprintf("nemesis:%s,p80:%.2f,p90:%.2f,p99:%.2f,detail:%s\n",
+		rto.nemesis.Name, rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds(), string(data))); err != nil {
 		return err
 	}
 	return nil
@@ -164,6 +172,11 @@ func convertToFailSeries(ops []core.Operation) *countWindow {
 			}
 		}
 	}
+
+	if len(series) == 0 {
+		return nil
+	}
+
 	return &countWindow{
 		series: series,
 		pos:    0,

@@ -64,8 +64,8 @@ func (r *Recorder) RecordResponse(proc int64, op interface{}) error {
 }
 
 // RecordInvokeNemesis records nemesis invocation events on history file
-func (r *Recorder) RecordInvokeNemesis(op string) error {
-	return r.record(-1, core.InvokeNemesis, op)
+func (r *Recorder) RecordInvokeNemesis(nemesisRecord core.NemesisGeneratorRecord) error {
+	return r.record(-1, core.InvokeNemesis, nemesisRecord)
 }
 
 // RecordRecoverNemesis records nemesis recovery events on history file
@@ -154,12 +154,18 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 			}
 			// A dumped state is not an operation.
 			continue
-		} else if record.Action == core.InvokeNemesis || record.Action == core.ReturnOperation {
-			var name string
-			if err := json.Unmarshal(record.Data, &name); err != nil {
+		} else if record.Action == core.InvokeNemesis {
+			var nemesis core.NemesisGeneratorRecord
+			if err := json.Unmarshal(record.Data, &nemesis); err != nil {
 				return nil, nil, err
 			}
-			data = name
+			data = nemesis
+		} else if record.Action == core.RecoverNemesis {
+			var nemesis string
+			if err := json.Unmarshal(record.Data, &nemesis); err != nil {
+				return nil, nil, err
+			}
+			data = nemesis
 		}
 
 		op := core.Operation{
