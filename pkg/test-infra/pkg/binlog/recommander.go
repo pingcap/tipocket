@@ -61,6 +61,10 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		configmapMountMode int32 = 420
 	)
 
+	if fixture.E2eContext.BinlogConfig.EnableRelayLog {
+		drainerConfigModel.RelayPath = "/data/relay"
+	}
+
 	drainerConfigmap, _ := RenderDrainerConfig(&drainerConfigModel)
 	drainerCommand, _ := RenderDrainerCommand(&drainerCommandModel)
 
@@ -212,8 +216,8 @@ func buildBinlogImage(name string) string {
 		version = fixture.E2eContext.ImageVersion
 	)
 
-	if fixture.E2eContext.BinlogVersion != "" {
-		version = fixture.E2eContext.BinlogVersion
+	if fixture.E2eContext.BinlogConfig.BinlogVersion != "" {
+		version = fixture.E2eContext.BinlogConfig.BinlogVersion
 	}
 	if fixture.E2eContext.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.E2eContext.HubAddress)

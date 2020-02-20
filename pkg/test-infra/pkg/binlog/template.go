@@ -80,7 +80,7 @@ ignore-schemas = "INFORMATION_SCHEMA,PERFORMANCE_SCHEMA,mysql,test"
 [syncer.relay]
 # directory of relay logs. Empty string indicates disabling relay log.
 # relay log works only if the downstream is TiDB/MySQL.
-log-dir = "/data/relay"
+log-dir = "{{.RelayPath}}"
 # max file size of each relay log
 # max-file-size = 10485760
 
@@ -110,6 +110,7 @@ port = 4000
 type DrainerConfigModel struct {
 	PDAddress    string
 	DownStreamDB string
+	RelayPath    string
 }
 
 func RenderDrainerConfig(model *DrainerConfigModel) (string, error) {

@@ -28,6 +28,7 @@ import (
 type StorageType string
 
 type E2eFixture struct {
+	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	RemoteVolumeStorageClass string
 	TiDBVersion              string
@@ -36,7 +37,6 @@ type E2eFixture struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
-	BinlogVersion            string
 	TimeLimit                time.Duration
 	Nemesis                  string
 	Workload                 string
