@@ -362,7 +362,6 @@ func (c *Controller) dispatchNemesis(ctx context.Context) {
 
 	log.Printf("begin to run nemesis")
 	var wg sync.WaitGroup
-	n := len(c.cfg.Nodes)
 LOOP:
 	for {
 		for _, g := range c.nemesisGenerators {
@@ -375,9 +374,9 @@ LOOP:
 			log.Printf("begin to run %s nemesis generator", g.Name())
 			ops := g.Generate(c.cfg.Nodes)
 
-			wg.Add(n)
-			for i := 0; i < n; i++ {
-				go c.onNemesisLoop(ctx, i, ops[i], &wg)
+			wg.Add(len(ops))
+			for i := 0; i < len(ops); i++ {
+				go c.onNemesisLoop(ctx, ops[i], &wg)
 			}
 			wg.Wait()
 		}
@@ -387,25 +386,23 @@ LOOP:
 
 func (c *Controller) dispatchNemesisWithRecord(ctx context.Context, g core.NemesisGenerator, recorder *history.Recorder) {
 	var wg sync.WaitGroup
-	n := len(c.cfg.Nodes)
 	ops := g.Generate(c.cfg.Nodes)
 
-	wg.Add(n)
+	wg.Add(len(ops))
 	err := recorder.RecordInvokeNemesis(core.NemesisGeneratorRecord{Name: g.Name(), Ops: ops})
 	if err != nil {
 		log.Printf("record invoking nemesis %s failed: %v", g.Name(), err)
 	}
-	for i := 0; i < n; i++ {
-		go c.onNemesisLoop(ctx, i, ops[i], &wg)
+	for i := 0; i < len(ops); i++ {
+		go c.onNemesisLoop(ctx, ops[i], &wg)
 	}
 	wg.Wait()
-
 	if err := recorder.RecordRecoverNemesis(g.Name()); err != nil {
 		log.Printf("record recovering nemesis %s failed: %v", g.Name(), err)
 	}
 }
 
-func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.NemesisOperation, wg *sync.WaitGroup) {
+func (c *Controller) onNemesisLoop(ctx context.Context, op *core.NemesisOperation, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	if op == nil {
@@ -418,18 +415,15 @@ func (c *Controller) onNemesisLoop(ctx context.Context, index int, op *core.Neme
 		return
 	}
 
-	node := c.cfg.Nodes[index]
-
-	log.Printf("run nemesis %s on %s", op.Type, node)
-	if err := nemesis.Invoke(ctx, node, op.InvokeArgs...); err != nil {
-		log.Printf("run nemesis %s on %s failed: %v", op.Type, node, err)
+	if err := nemesis.Invoke(ctx, op.Node, op.InvokeArgs...); err != nil {
+		log.Printf("run nemesis %s failed: %v", op.Type, err)
 	}
 
 	select {
 	case <-time.After(op.RunTime):
 	case <-ctx.Done():
 	}
-	if err := nemesis.Recover(context.TODO(), node, op.RecoverArgs...); err != nil {
-		log.Printf("recover nemesis %s on %s failed: %v", op.Type, node, err)
+	if err := nemesis.Recover(context.TODO(), op.Node, op.RecoverArgs...); err != nil {
+		log.Printf("recover nemesis %s failed: %v", op.Type, err)
 	}
 }

@@ -45,7 +45,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		}
 
 		switch name {
-		case "random_kill", "all_kill", "minor_kill", "major_kill":
+		case "random_kill", "all_kill", "minor_kill", "major_kill", "kill_tikv_1node_5min":
 			g = nemesis.NewKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
@@ -65,8 +65,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
-	log.Println("deploy cluster success")
-
+	log.Printf("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Panic("no client nodes exist")
 	}

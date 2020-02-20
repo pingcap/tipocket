@@ -50,30 +50,29 @@ func (k *K8sProvisioner) TearDown() error {
 	return nil
 }
 
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.TiDBClusterRecommendation) ([]Node, []ClientNode, error) {
+func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.TiDBClusterRecommendation) ([]Node, []ClientNode, error) {
 	var (
 		nodes       []Node
 		clientNodes []ClientNode
 		err         error
 	)
-
-	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
+	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
 	// TODO: use ctx for wait end
-	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommand.TidbCluster, 10*time.Minute)
+	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, 10*time.Minute)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.E2eCli.TiDB.ApplyTiDBService(recommand.Service)
+	err = k.E2eCli.TiDB.ApplyTiDBService(recommend.Service)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	pods, err := k.E2eCli.TiDB.GetNodes(recommand.TidbCluster.ObjectMeta.Namespace)
+	pods, err := k.E2eCli.TiDB.GetNodes(recommend.TidbCluster.ObjectMeta.Namespace)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
@@ -84,12 +83,13 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.T
 		return nodes, clientNodes, err
 	}
 
-	svc, err := k.E2eCli.TiDB.GetTiDBServiceByMeta(&recommand.Service.ObjectMeta)
+	svc, err := k.E2eCli.TiDB.GetTiDBServiceByMeta(&recommend.Service.ObjectMeta)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 	clientNodes = append(clientNodes, ClientNode{
 		Namespace: svc.ObjectMeta.Namespace,
+		Component: TiDB,
 		IP:        getNodeIP(k8sNodes),
 		Port:      getTiDBNodePort(svc),
 	})
@@ -103,8 +103,24 @@ func parseNodeFromPodList(pods *corev1.PodList) []Node {
 		if strings.Contains(pod.ObjectMeta.Name, "discovery") {
 			continue
 		}
+		var component Component
+		cmp, ok := pod.Labels["app.kubernetes.io/component"]
+		if !ok {
+			component = Unknown
+		}
+		switch cmp {
+		case string(TiDB):
+			component = TiDB
+		case string(TiKV):
+			component = TiKV
+		case string(PD):
+			component = PD
+		default:
+			component = Unknown
+		}
 		nodes = append(nodes, Node{
 			Namespace: pod.ObjectMeta.Namespace,
+			Component: component,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
 			Port:      findPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),

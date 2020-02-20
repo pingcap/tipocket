@@ -21,7 +21,9 @@ type killGenerator struct {
 }
 
 func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
-	n := 1
+	var n = 1
+	var duration = time.Second * time.Duration(rand.Intn(120)+60)
+	var component *cluster.Component
 
 	// This part decide how many machines to apply pod-failure
 	switch g.name {
@@ -31,34 +33,54 @@ func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 		n = len(nodes)/2 + 1
 	case "all_kill":
 		n = len(nodes)
+	case "kill_tikv_1node_5min":
+		n = 1
+		duration = time.Minute * time.Duration(5)
+		cmp := cluster.TiKV
+		component = &cmp
 	default:
 		n = 1
 	}
-
-	return killNodes(nodes, n)
+	return killNodes(nodes, n, component, duration)
 }
 
 func (g killGenerator) Name() string {
 	return g.name
 }
 
-func killNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
-	ops := make([]*core.NemesisOperation, len(nodes))
-
+func killNodes(nodes []cluster.Node, n int, component *cluster.Component, duration time.Duration) []*core.NemesisOperation {
+	var ops []*core.NemesisOperation
+	if component != nil {
+		nodes = filterComponent(nodes, *component)
+	}
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
-
+	if n > len(indices) {
+		n = len(indices)
+	}
 	for i := 0; i < n; i++ {
-		ops[indices[i]] = &core.NemesisOperation{
-			Type: core.PodFailure,
-			// Note: Maybe I should just store cluster info here.
+		ops = append(ops, &core.NemesisOperation{
+			Type:        core.PodFailure,
+			Node:        &nodes[indices[i]],
 			InvokeArgs:  nil,
 			RecoverArgs: nil,
-			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
-		}
+			RunTime:     duration,
+		})
 	}
 
 	return ops
+}
+
+func filterComponent(nodes []cluster.Node, component cluster.Component) []cluster.Node {
+	var componentNodes []cluster.Node
+
+	for _, node := range nodes {
+		if node.Component == component {
+			componentNodes = append(componentNodes, node)
+		}
+	}
+
+	return componentNodes
 }
 
 // NewKillGenerator creates a generator.
@@ -67,17 +89,18 @@ func NewKillGenerator(name string) core.NemesisGenerator {
 	return killGenerator{name: name}
 }
 
+// kill implements Nemesis
 type kill struct {
 	k8sNemesisClient
 }
 
-func (k kill) Invoke(ctx context.Context, node cluster.Node, args ...interface{}) error {
+func (k kill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k kill) Recover(ctx context.Context, node cluster.Node, args ...interface{}) error {
+func (k kill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
 	return k.cli.CancelPodChaos(ctx, &podChaos)

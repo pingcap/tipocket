@@ -69,11 +69,12 @@ func NewNetworkPartitionGenerator(name string) core.NemesisGenerator {
 	return networkPartitionGenerator{name: name}
 }
 
+// networkPartition implements Nemesis
 type networkPartition struct {
 	k8sNemesisClient
 }
 
-func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...interface{}) error {
+func (n networkPartition) Invoke(ctx context.Context, _ *cluster.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
@@ -101,7 +102,7 @@ func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...in
 	})
 }
 
-func (n networkPartition) Recover(ctx context.Context, _ cluster.Node, args ...interface{}) error {
+func (n networkPartition) Recover(ctx context.Context, _ *cluster.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{

@@ -5,24 +5,31 @@ import (
 	"fmt"
 )
 
+// Component is the identifier of Cluster
+type Component string
+
+const (
+	TiDB    Component = "tidb"
+	TiKV    Component = "tikv"
+	PD      Component = "pd"
+	Unknown Component = "unknown"
+)
+
 // Node is the cluster endpoint in K8s, it's maybe podIP:port or CLUSTER-IP:port
 type Node struct {
-	// Cluster k8s' namespace
-	Namespace string
-	// Pod's name
-	PodName string
-
-	IP   string
-	Port int32
+	Namespace string    // Cluster k8s' namespace
+	Component Component // Node component type
+	PodName   string    // Pod's name
+	IP        string
+	Port      int32
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
 type ClientNode struct {
-	// Cluster k8s' namespace
-	Namespace string
-
-	IP   string
-	Port int32
+	Namespace string // Cluster k8s' namespace
+	Component Component
+	IP        string
+	Port      int32
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
