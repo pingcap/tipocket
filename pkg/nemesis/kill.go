@@ -42,6 +42,18 @@ func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 		duration = time.Minute * time.Duration(5)
 		cmp := cluster.TiKV
 		component = &cmp
+	case "kill_pd_leader_5min":
+		n = 1
+		duration = time.Minute * time.Duration(5)
+		cmp := cluster.PD
+		component = &cmp
+		nodes = findPDMember(nodes, true)
+	case "kill_pd_non_leader_5min":
+		n = 1
+		duration = time.Minute * time.Duration(5)
+		cmp := cluster.PD
+		component = &cmp
+		nodes = findPDMember(nodes, false)
 	default:
 		n = 1
 	}
@@ -85,6 +97,35 @@ func filterComponent(nodes []cluster.Node, component cluster.Component) []cluste
 	}
 
 	return componentNodes
+}
+
+func findPDMember(nodes []cluster.Node, ifLeader bool) []cluster.Node {
+	var (
+		leader string
+		err    error
+		result []cluster.Node
+	)
+	for _, node := range nodes {
+		if node.Component == cluster.PD {
+			if leader == "" && node.Client != nil {
+				leader, _, err = node.PDMember()
+				if err != nil {
+					log.Fatalf("find pd members occured an error: %+v", err)
+				}
+			}
+			//if !ifLeader || node.PodName == leader {
+			//	result = append(result, node)
+			//}
+			if ifLeader && node.PodName == leader {
+				return []cluster.Node{node}
+			}
+			if !ifLeader && node.PodName != leader {
+				result = append(result, node)
+			}
+		}
+	}
+
+	return result
 }
 
 // NewKillGenerator creates a generator.

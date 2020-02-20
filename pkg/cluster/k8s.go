@@ -78,6 +78,15 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.T
 	}
 	nodes = parseNodeFromPodList(pods)
 
+	// attach the client to every nodes
+	for idx := range nodes {
+		nodes[idx].Client = &Client{
+			Namespace: nodes[idx].Namespace,
+			PDMemberFunc: func(ns string) (string, []string, error) {
+				return k.TiDB.GetPDMember(ns, ns)
+			},
+		}
+	}
 	k8sNodes, err := k.E2eCli.GetNodes()
 	if err != nil {
 		return nodes, clientNodes, err

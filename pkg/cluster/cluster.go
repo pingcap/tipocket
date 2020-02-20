@@ -19,6 +19,16 @@ const (
 	Unknown Component = "unknown"
 )
 
+// Client provides useful methods about cluster
+type Client struct {
+	Namespace    string
+	PDMemberFunc func(ns string) (string, []string, error)
+}
+
+func (c *Client) PDMember() (string, []string, error) {
+	return c.PDMemberFunc(c.Namespace)
+}
+
 // Node is the cluster endpoint in K8s, it's maybe podIP:port or CLUSTER-IP:port
 type Node struct {
 	Namespace string    // Cluster k8s' namespace
@@ -26,6 +36,7 @@ type Node struct {
 	PodName   string    // Pod's name
 	IP        string
 	Port      int32
+	*Client   `json:"-"`
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
