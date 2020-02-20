@@ -152,7 +152,7 @@ func (c *Controller) RunWithServiceQualityProf() {
 ENTRY:
 	for _, g := range c.nemesisGenerators {
 		for round := 1; round <= c.cfg.RunRound; round++ {
-			log.Printf("round %d start ...", round)
+			log.Printf("%s round %d start ...", g.Name(), round)
 
 			ctx, cancel := context.WithTimeout(c.ctx, c.cfg.RunTime)
 			historyFile := fmt.Sprintf("%s.%s.%d", c.cfg.History, g.Name(), round)
@@ -188,13 +188,13 @@ ENTRY:
 			}()
 
 			clientWg.Wait()
-			log.Println("client requests done")
+			log.Printf("%s round %d client requests done", g.Name(), round)
 			cancel()
 			nemesisWg.Wait()
-			log.Println("nemesis done")
+			log.Printf("%s round %d nemesis done", g.Name(), round)
 			recorder.Close()
 
-			log.Println("begin to verify history file")
+			log.Printf("%s round %d begin to verify history file", g.Name(), round)
 			c.suit.Verify(historyFile)
 			select {
 			case <-c.ctx.Done():
@@ -203,7 +203,7 @@ ENTRY:
 			default:
 			}
 
-			log.Printf("round %d finish", round)
+			log.Printf("%s round %d finish", g.Name(), round)
 		}
 	}
 

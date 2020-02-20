@@ -27,19 +27,18 @@ func (g networkPartitionGenerator) Generate(nodes []cluster.Node) []*core.Nemesi
 	default:
 		n = 1
 	}
-	return partitionNodes(nodes, n)
+	return partitionNodes(nodes, n, time.Second*time.Duration(rand.Intn(120)+60))
 }
 
 func (g networkPartitionGenerator) Name() string {
 	return g.name
 }
 
-func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
+func partitionNodes(nodes []cluster.Node, n int, duration time.Duration) []*core.NemesisOperation {
 	if n < 1 {
 		log.Panicf("the partition part size cannot be less than 1")
 	}
-	ops := make([]*core.NemesisOperation, len(nodes))
-
+	var ops []*core.NemesisOperation
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
 
@@ -52,13 +51,13 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
-	name := fmt.Sprintf("%s-%s-%s", onePartNodes[0].Namespace, anotherPartNodes[0].Namespace, uuid.NewV4().String())
-	ops[0] = &core.NemesisOperation{
+	name := fmt.Sprintf("%s-%s", onePartNodes[0].Namespace, uuid.NewV4().String())
+	ops = append(ops, &core.NemesisOperation{
 		Type:        core.NetworkPartition,
 		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},
 		RecoverArgs: []interface{}{name, onePartNodes, anotherPartNodes},
-		RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
-	}
+		RunTime:     duration,
+	})
 
 	return ops
 }
@@ -74,6 +73,27 @@ type networkPartition struct {
 	k8sNemesisClient
 }
 
+func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cluster.Node) chaosv1alpha1.NetworkChaosSpec {
+	return chaosv1alpha1.NetworkChaosSpec{
+		Action: chaosv1alpha1.PartitionAction,
+		Mode:   chaosv1alpha1.AllPodMode,
+		Selector: chaosv1alpha1.SelectorSpec{
+			Pods: map[string][]string{
+				partOneNs: extractPodNames(partOne),
+			},
+		},
+		Direction: chaosv1alpha1.Both,
+		Target: chaosv1alpha1.PartitionTarget{
+			TargetSelector: chaosv1alpha1.SelectorSpec{
+				Pods: map[string][]string{
+					partTwoNS: extractPodNames(partTwo),
+				},
+			},
+			TargetMode: chaosv1alpha1.AllPodMode,
+		},
+	}
+}
+
 func (n networkPartition) Invoke(ctx context.Context, _ *cluster.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
@@ -81,24 +101,8 @@ func (n networkPartition) Invoke(ctx context.Context, _ *cluster.Node, args ...i
 			Name:      name,
 			Namespace: onePart[0].Namespace,
 		},
-		Spec: chaosv1alpha1.NetworkChaosSpec{
-			Action: chaosv1alpha1.PartitionAction,
-			Mode:   chaosv1alpha1.AllPodMode,
-			Selector: chaosv1alpha1.SelectorSpec{
-				Pods: map[string][]string{
-					onePart[0].Namespace: extractPodNames(onePart),
-				},
-			},
-			Direction: chaosv1alpha1.Both,
-			Target: chaosv1alpha1.PartitionTarget{
-				TargetSelector: chaosv1alpha1.SelectorSpec{
-					Pods: map[string][]string{
-						anotherPart[0].Namespace: extractPodNames(anotherPart),
-					},
-				},
-				TargetMode: chaosv1alpha1.AllPodMode,
-			},
-		},
+		Spec: networkChaosSpecTemplate(onePart[0].Namespace,
+			anotherPart[0].Namespace, onePart, anotherPart),
 	})
 }
 
@@ -109,24 +113,8 @@ func (n networkPartition) Recover(ctx context.Context, _ *cluster.Node, args ...
 			Name:      name,
 			Namespace: onePart[0].Namespace,
 		},
-		Spec: chaosv1alpha1.NetworkChaosSpec{
-			Action: chaosv1alpha1.PartitionAction,
-			Mode:   chaosv1alpha1.AllPodMode,
-			Selector: chaosv1alpha1.SelectorSpec{
-				Pods: map[string][]string{
-					onePart[0].Namespace: extractPodNames(onePart),
-				},
-			},
-			Direction: chaosv1alpha1.Both,
-			Target: chaosv1alpha1.PartitionTarget{
-				TargetSelector: chaosv1alpha1.SelectorSpec{
-					Pods: map[string][]string{
-						anotherPart[0].Namespace: extractPodNames(anotherPart),
-					},
-				},
-				TargetMode: chaosv1alpha1.AllPodMode,
-			},
-		},
+		Spec: networkChaosSpecTemplate(onePart[0].Namespace,
+			anotherPart[0].Namespace, onePart, anotherPart),
 	})
 }
 

@@ -7,15 +7,14 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pingcap/chaos-mesh/api/v1alpha1"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
+// killGenerator generate code about PodFailure chaos.
 type killGenerator struct {
 	name string
 }
@@ -95,14 +94,14 @@ type kill struct {
 }
 
 func (k kill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
-	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	log.Printf("Creating pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, chaosv1alpha1.PodFailureAction)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
 func (k kill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
-	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, v1alpha1.PodFailureAction)
+	log.Printf("Recover pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, chaosv1alpha1.PodFailureAction)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
 }
 
@@ -116,8 +115,7 @@ func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaos
 
 	return chaosv1alpha1.PodChaos{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: strings.Join([]string{name, string(chaos)}, "-"),
-			// TODO: this might be a chaos ns, so let's take it carefully.
+			Name:      strings.Join([]string{name, string(chaos)}, "-"),
 			Namespace: chaosNs,
 		},
 		Spec: chaosv1alpha1.PodChaosSpec{

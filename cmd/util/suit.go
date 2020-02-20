@@ -51,6 +51,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			log.Fatal("Unimplemented")
 		case "partition_one":
 			g = nemesis.NewNetworkPartitionGenerator(name)
+		case "pod_kill":
+			g = nemesis.NewPodKillGenerator(name)
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}
