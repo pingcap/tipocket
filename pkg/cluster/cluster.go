@@ -9,9 +9,13 @@ import (
 type Component string
 
 const (
-	TiDB    Component = "tidb"
-	TiKV    Component = "tikv"
-	PD      Component = "pd"
+	// TiDB component identifier
+	TiDB Component = "tidb"
+	// TiKV component identifier
+	TiKV Component = "tikv"
+	// PD component identifier
+	PD Component = "pd"
+	// Unknown component identifier
 	Unknown Component = "unknown"
 )
 
