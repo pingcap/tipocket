@@ -45,7 +45,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		}
 
 		switch name {
-		case "random_kill", "all_kill", "minor_kill", "major_kill", "kill_tikv_1node_5min":
+		case "random_kill", "all_kill", "minor_kill", "major_kill", "kill_tikv_1node_5min", "kill_tikv_2node_5min":
 			g = nemesis.NewKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
@@ -53,6 +53,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			g = nemesis.NewNetworkPartitionGenerator(name)
 		case "pod_kill":
 			g = nemesis.NewPodKillGenerator(name)
+		case "noop":
+			g = core.NoopNemesisGenerator{}
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}

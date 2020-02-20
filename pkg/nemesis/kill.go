@@ -37,6 +37,11 @@ func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 		duration = time.Minute * time.Duration(5)
 		cmp := cluster.TiKV
 		component = &cmp
+	case "kill_tikv_2node_5min":
+		n = 2
+		duration = time.Minute * time.Duration(5)
+		cmp := cluster.TiKV
+		component = &cmp
 	default:
 		n = 1
 	}

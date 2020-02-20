@@ -12,11 +12,11 @@ import (
 )
 
 type rtoMetrics struct {
-	nemesis *core.NemesisGeneratorRecord
-
-	p80 time.Duration
-	p90 time.Duration
-	p99 time.Duration
+	nemesis          *core.NemesisGeneratorRecord
+	p80              time.Duration
+	p90              time.Duration
+	p99              time.Duration
+	totalMeasureTime time.Duration
 }
 
 type bankServiceQualityChecker struct {
@@ -92,8 +92,10 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 		log.Panic("expect more events after recovery from nemesis")
 	}
 
+	var window *countWindow
 	metrics := rtoMetrics{nemesis: &nemesisRecord}
-	window := convertToFailSeries(ops[idx:])
+
+	window, metrics.totalMeasureTime = convertToFailSeries(ops[idx:])
 	if window != nil {
 		for true {
 			startTime, failCount, err := window.count(duration)
@@ -151,15 +153,17 @@ func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
 	if err != nil {
 		return err
 	}
-	if _, err := f.WriteString(fmt.Sprintf("nemesis:%s,p80:%.2f,p90:%.2f,p99:%.2f,detail:%s\n",
-		rto.nemesis.Name, rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds(), string(data))); err != nil {
+	if _, err := f.WriteString(fmt.Sprintf("workload:bank,nemesis:%s,measure_time:%.2f,fail_p80:%.2f,fail_p90:%.2f,fail_p99:%.2f,detail:%s\n",
+		rto.nemesis.Name, rto.totalMeasureTime.Seconds(), rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds(), string(data))); err != nil {
 		return err
 	}
 	return nil
 }
 
-func convertToFailSeries(ops []core.Operation) *countWindow {
+func convertToFailSeries(ops []core.Operation) (*countWindow, time.Duration) {
 	var series []time.Time
+	var startTime time.Time
+	var endTime time.Time
 	for idx := range ops {
 		op := ops[idx]
 		if op.Action == core.ReturnOperation {
@@ -172,17 +176,26 @@ func convertToFailSeries(ops []core.Operation) *countWindow {
 					series = append(series, op.Time)
 				}
 			}
+			if startTime.IsZero() {
+				startTime = op.Time
+			}
+			if endTime.IsZero() {
+				endTime = op.Time
+			}
+			if op.Time.After(endTime) {
+				endTime = op.Time
+			}
 		}
 	}
 
 	if len(series) == 0 {
-		return nil
+		return nil, endTime.Sub(startTime)
 	}
 
 	return &countWindow{
 		series: series,
 		pos:    0,
-	}
+	}, endTime.Sub(startTime)
 }
 
 // Name returns the name of the verifier.
