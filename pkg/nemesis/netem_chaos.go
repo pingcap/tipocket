@@ -176,13 +176,12 @@ func (g netemChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOpera
 
 	for _, node := range nodes {
 		ops = append(ops, &core.NemesisOperation{
-			Type:        core.NetworkPartition,
+			Type:        core.NetemChaos,
 			InvokeArgs:  []interface{}{node, nChaos},
 			RecoverArgs: []interface{}{node, nChaos},
 			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 		})
 	}
-
 
 	return ops
 }

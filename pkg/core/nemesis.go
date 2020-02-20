@@ -16,8 +16,10 @@ const (
 	PodFailure ChaosKind = "Pod-Failure"
 	// PodKill will random kill a pod.
 	PodKill ChaosKind = "Pod-Kill"
-	// NetworkPartition parts network between nodes
+	// NetworkPartition parts network between nodes.
 	NetworkPartition ChaosKind = "Network-Partition"
+	// NetemChaos add corrupt or other chaos.
+	NetemChaos ChaosKind = "Netem-Chaos"
 )
 
 // Nemesis injects failure and disturbs the database.
