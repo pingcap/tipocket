@@ -19,6 +19,7 @@ type netemChaosGenerator struct {
 	name string
 }
 
+// NewNetemChaos create a netem chaos.
 func NewNetemChaos(name string) core.NemesisGenerator {
 	return netemChaosGenerator{name: name}
 }
@@ -129,7 +130,7 @@ func (c corrupt) template(ns string, pods []string, podMode chaosv1alpha1.PodMod
 		panic("args number error")
 	}
 	return chaosv1alpha1.NetworkChaosSpec{
-		Action: chaosv1alpha1.DuplicateAction,
+		Action: chaosv1alpha1.CorruptAction,
 		Selector: chaosv1alpha1.SelectorSpec{
 			Namespaces: []string{ns},
 			Pods:       map[string][]string{ns: pods},
