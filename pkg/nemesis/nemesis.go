@@ -19,6 +19,7 @@ func init() {
 	core.RegisterNemesis(kill{client})
 	core.RegisterNemesis(podKill{client})
 	core.RegisterNemesis(networkPartition{client})
+	core.RegisterNemesis(netem{client})
 }
 
 func createClient() (*Chaos, error) {

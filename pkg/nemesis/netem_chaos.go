@@ -178,8 +178,9 @@ func (g netemChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOpera
 	for _, node := range nodes {
 		ops = append(ops, &core.NemesisOperation{
 			Type:        core.NetemChaos,
-			InvokeArgs:  []interface{}{node, nChaos},
-			RecoverArgs: []interface{}{node, nChaos},
+			Node:        &node,
+			InvokeArgs:  []interface{}{nChaos},
+			RecoverArgs: []interface{}{nChaos},
 			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 		})
 	}
@@ -193,21 +194,17 @@ func (g netemChaosGenerator) Name() string {
 
 type netem struct {
 	k8sNemesisClient
-	chaos netemChaos
 }
 
-func (n netem) extractChaos(_ cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
+func (n netem) extractChaos(node *cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
 	log.Printf("%v was called", fnName)
-	if len(args) != 2 {
+	if len(args) != 1 {
 		panic("netem.Invoke argument numbers of args is wrong")
 	}
 	var nChaos netemChaos
-	var node cluster.Node
 	var ok bool
-	if node, ok = args[0].(cluster.Node); !ok {
-		panic("netem.Invoke get wrong type")
-	}
-	if nChaos, ok = args[1].(netemChaos); !ok {
+
+	if nChaos, ok = args[0].(netemChaos); !ok {
 		panic("netem.Invoke get wrong type")
 	}
 	networkChaosSpec := nChaos.defaultTemplate(node.Namespace, []string{node.PodName})
@@ -220,16 +217,16 @@ func (n netem) extractChaos(_ cluster.Node, fnName string, args ...interface{}) 
 	}
 }
 
-func (n netem) Invoke(ctx context.Context, node cluster.Node, args ...interface{}) error {
+func (n netem) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
 	return n.cli.ApplyNetChaos(&chaosSpec)
 }
 
-func (n netem) Recover(ctx context.Context, node cluster.Node, args ...interface{}) error {
+func (n netem) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
 	return n.cli.CancelNetChaos(&chaosSpec)
 }
 
 func (n netem) Name() string {
-	return string(n.chaos.netemType())
+	return string(core.NetemChaos)
 }
