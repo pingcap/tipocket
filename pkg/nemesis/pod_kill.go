@@ -60,7 +60,7 @@ type podKill struct {
 }
 
 func (k podKill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
-	freq := extractPodKillArgs(args)
+	freq := extractPodKillArgs(args...)
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := podKillTag(freq, node.Namespace, node.Namespace,
 		node.PodName)
