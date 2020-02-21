@@ -52,6 +52,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			g = nemesis.NewNetworkPartitionGenerator(name)
 		case "loss", "delay", "duplicate", "corrupt":
 			g = nemesis.NewNetemChaos(name)
+		case "pod_kill":
+			g = nemesis.NewPodKillGenerator(name)
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}
