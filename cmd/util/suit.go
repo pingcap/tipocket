@@ -25,7 +25,8 @@ type Suit struct {
 	core.ClientCreator
 	// nemesis, separated by comma.
 	Nemesises string
-
+	// perform service quality checking
+	WithProf   bool
 	VerifySuit verify.Suit
 
 	// cluster definition
@@ -44,7 +45,9 @@ func (suit *Suit) Run(ctx context.Context) {
 		}
 
 		switch name {
-		case "random_kill", "all_kill", "minor_kill", "major_kill":
+		case "random_kill", "all_kill", "minor_kill", "major_kill",
+			"kill_tikv_1node_5min", "kill_tikv_2node_5min",
+			"kill_pd_leader_5min", "kill_pd_nonleader_5min":
 			g = nemesis.NewKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
@@ -54,6 +57,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			g = nemesis.NewNetemChaos(name)
 		case "pod_kill":
 			g = nemesis.NewPodKillGenerator(name)
+		case "noop":
+			g = core.NoopNemesisGenerator{}
 		default:
 			log.Fatalf("invalid nemesis generator %s", name)
 		}
@@ -68,8 +73,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
-	log.Println("deploy cluster success")
-
+	log.Printf("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Panic("no client nodes exist")
 	}
@@ -103,5 +107,9 @@ func (suit *Suit) Run(ctx context.Context) {
 		cancel()
 	}()
 
-	c.Run()
+	if suit.WithProf {
+		c.RunWithServiceQualityProf()
+	} else {
+		c.Run()
+	}
 }

@@ -17,6 +17,7 @@ type k8sNemesisClient struct {
 func init() {
 	client := k8sNemesisClient{mustCreateClient()}
 	core.RegisterNemesis(kill{client})
+	core.RegisterNemesis(podKill{client})
 	core.RegisterNemesis(networkPartition{client})
 }
 

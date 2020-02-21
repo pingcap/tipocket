@@ -1,5 +1,7 @@
 package core
 
+import "time"
+
 // Model specifies the behavior of a data object.
 type Model interface {
 	// Prepare the initial state of the data object.
@@ -26,6 +28,8 @@ type Model interface {
 const (
 	InvokeOperation = "call"
 	ReturnOperation = "return"
+	InvokeNemesis   = "inject"
+	RecoverNemesis  = "recover"
 )
 
 // Operation of a data object.
@@ -33,6 +37,7 @@ type Operation struct {
 	Action string      `json:"action"`
 	Proc   int64       `json:"proc"`
 	Data   interface{} `json:"data"`
+	Time   time.Time   `json:"time"`
 }
 
 // NoopModel is noop model.

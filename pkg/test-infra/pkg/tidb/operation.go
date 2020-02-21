@@ -28,6 +28,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
@@ -295,6 +297,36 @@ func (t *TidbOps) ApplyDiscovery(tc *v1alpha1.TidbCluster) error {
 		return err
 	}
 	return nil
+}
+
+func (t *TidbOps) GetPDMember(namespace, name string) (string, []string, error) {
+	var local v1alpha1.TidbCluster
+	var members []string
+	err := wait.PollImmediate(5*time.Second, time.Minute*time.Duration(5), func() (bool, error) {
+		key := types.NamespacedName{
+			Namespace: namespace,
+			Name:      name,
+		}
+		err := t.cli.Get(context.TODO(), key, &local)
+		if err != nil && errors.IsNotFound(err) {
+			return false, err
+		}
+		if err != nil {
+			klog.Warningf("error getting tidbcluster: %v", err)
+			return false, nil
+		}
+		if local.Status.PD.StatefulSet == nil {
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	for _, member := range local.Status.PD.Members {
+		members = append(members, member.Name)
+	}
+	return local.Status.PD.Leader.Name, members, nil
 }
 
 func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {

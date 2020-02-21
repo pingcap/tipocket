@@ -52,7 +52,7 @@ func ConvertOperationsToEvents(ops []core.Operation) ([]porcupine.Event, error) 
 			events = append(events, event)
 			procID[op.Proc] = id
 			id++
-		} else {
+		} else if op.Action == core.ReturnOperation {
 			if op.Data == nil {
 				continue
 			}

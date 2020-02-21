@@ -95,80 +95,80 @@ func TestCompleteOperation(t *testing.T) {
 		// A complete history of operations.
 		{
 			ops: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 10}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.ReturnOperation, 2, NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 10}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Value: 15}},
 			},
 			compOps: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 10}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.ReturnOperation, 2, NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 10}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Value: 15}},
 			},
 		},
 		// A complete but repeated proc operations.
 		{
 			ops: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 10}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.ReturnOperation, 2, NoopResponse{Value: 15}},
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 10}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 15}},
 			},
 			compOps: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 10}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.ReturnOperation, 2, NoopResponse{Value: 15}},
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 10}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Value: 15}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Value: 15}},
 			},
 		},
 
 		// Pending requests.
 		{
 			ops: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, nil},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: nil},
 			},
 			compOps: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Unknown: true}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Unknown: true}},
 			},
 		},
 
 		// Missing a response
 		{
 			ops: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
 			},
 			compOps: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.ReturnOperation, 1, NoopResponse{Unknown: true}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Unknown: true}},
 			},
 		},
 
 		// A complex out of order history.
 		{
 			ops: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.InvokeOperation, 3, NoopRequest{Op: 0}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.ReturnOperation, 2, nil},
-				{core.InvokeOperation, 4, NoopRequest{Op: 1, Value: 16}},
-				{core.ReturnOperation, 3, nil},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.InvokeOperation, Proc: 3, Data: NoopRequest{Op: 0}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.ReturnOperation, Proc: 2, Data: nil},
+				{Action: core.InvokeOperation, Proc: 4, Data: NoopRequest{Op: 1, Value: 16}},
+				{Action: core.ReturnOperation, Proc: 3, Data: nil},
 			},
 			compOps: []core.Operation{
-				{core.InvokeOperation, 1, NoopRequest{Op: 0}},
-				{core.InvokeOperation, 3, NoopRequest{Op: 0}},
-				{core.InvokeOperation, 2, NoopRequest{Op: 1, Value: 15}},
-				{core.InvokeOperation, 4, NoopRequest{Op: 1, Value: 16}},
-				{core.ReturnOperation, 1, NoopResponse{Unknown: true}},
-				{core.ReturnOperation, 2, NoopResponse{Unknown: true}},
-				{core.ReturnOperation, 3, NoopResponse{Unknown: true}},
-				{core.ReturnOperation, 4, NoopResponse{Unknown: true}},
+				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
+				{Action: core.InvokeOperation, Proc: 3, Data: NoopRequest{Op: 0}},
+				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
+				{Action: core.InvokeOperation, Proc: 4, Data: NoopRequest{Op: 1, Value: 16}},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Unknown: true}},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Unknown: true}},
+				{Action: core.ReturnOperation, Proc: 3, Data: NoopResponse{Unknown: true}},
+				{Action: core.ReturnOperation, Proc: 4, Data: NoopResponse{Unknown: true}},
 			},
 		},
 	}
