@@ -38,8 +38,9 @@ func podKillNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 	for i := 0; i < n; i++ {
 		ops[indices[i]] = &core.NemesisOperation{
 			Type:        core.PodKill,
-			InvokeArgs:  []interface{}{nodes[i], freq},
-			RecoverArgs: []interface{}{nodes[i]},
+			Node:        &nodes[i],
+			InvokeArgs:  []interface{}{freq},
+			RecoverArgs: []interface{}{freq},
 			// Note: Runtime means delay here.
 			RunTime: time.Second * time.Duration(rand.Intn(120)+60),
 		}
@@ -53,22 +54,23 @@ func NewPodKillGenerator(name string) core.NemesisGenerator {
 	return podKillGenerator{name: name}
 }
 
+// podKill implements Nemesis
 type podKill struct {
 	k8sNemesisClient
 }
 
-func (k podKill) Invoke(ctx context.Context, _ cluster.Node, args ...interface{}) error {
-	node, freq := extractPodKillArgs(args)
+func (k podKill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+	freq := extractPodKillArgs(args...)
 	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	podChaos := podKillTag(freq, node.Namespace, node.Namespace,
-		node.PodName, chaosv1alpha1.PodKillAction)
+		node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k podKill) Recover(ctx context.Context, _ cluster.Node, args ...interface{}) error {
-	node := extractKillArgs(args)
+func (k podKill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+	freq := extractPodKillArgs(args...)
 	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, chaosv1alpha1.PodKillAction)
+	podChaos := podKillTag(freq, node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
 }
 
@@ -76,22 +78,19 @@ func (podKill) Name() string {
 	return string(core.PodKill)
 }
 
-func extractPodKillArgs(args ...interface{}) (node cluster.Node, freq time.Time) {
-	if args == nil || len(args) != 2 {
-		panic("`extractPodKill` args is nil or not equal than two")
+func extractPodKillArgs(args ...interface{}) (freq time.Time) {
+	if args == nil || len(args) != 1 {
+		panic("`extractPodKill` args is nil or not equal than one")
 	}
-	// validate arg1
 	var ok bool
-	if node, ok = args[0].(cluster.Node); !ok {
-		panic("`extractPodKillArgs` received an typed error argument")
-	}
-	if freq, ok = args[1].(time.Time); !ok {
+	if freq, ok = args[0].(time.Time); !ok {
 		panic("`extractPodKillArgs` received an typed error argument")
 	}
 	return
 }
 
-func podKillTag(freq time.Time, ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
+func podKillTag(freq time.Time, ns string, chaosNs string, name string) chaosv1alpha1.PodChaos {
+	chaos := chaosv1alpha1.PodKillAction
 	pods := make(map[string][]string)
 	pods[ns] = []string{name}
 	return chaosv1alpha1.PodChaos{

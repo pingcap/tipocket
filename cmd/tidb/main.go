@@ -21,11 +21,12 @@ import (
 
 var (
 	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", 500, "client test request count")
+	requestCount = flag.Int("request-count", 1000, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
 	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
+	profFile     = flag.String("prof", "./prof.log", "service quality prof file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
@@ -79,10 +80,14 @@ func main() {
 
 	parser := tidb.BankParser()
 	model := tidb.BankModel()
+	withProf := false
 	var checker core.Checker
 	switch *checkerNames {
 	case "porcupine":
 		checker = porcupine.Checker{}
+	case "service_quality":
+		checker = tidb.BankServiceQualityChecker(*profFile)
+		withProf = true
 	case "tidb_bank_tso":
 		checker = tidb.BankTsoChecker()
 	case "long_fork_checker":
@@ -111,6 +116,7 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator,
 		Nemesises:     *nemesises,
+		WithProf:      withProf,
 		VerifySuit:    verifySuit,
 		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
