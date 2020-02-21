@@ -26,20 +26,24 @@ type bankServiceQualityChecker struct {
 type countWindow struct {
 	series []time.Time
 	pos    int
+	start  bool
 }
 
-func (f *countWindow) count(duration time.Duration) (*time.Time, int, error) {
-	if f.pos >= len(f.series) {
-		return &f.series[len(f.series)-1], 0, fmt.Errorf("window has ended")
+// Next move to next pos
+func (f *countWindow) Next() bool {
+	if !f.start {
+		f.start = true
+		return f.pos < len(f.series)
 	}
+	f.pos++
+	return f.pos < len(f.series)
+}
 
+// Count counts failure number in continuous minutes from f.pos
+func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
 	var count = 0
 	var pos = f.pos
 	var startTime = f.series[pos]
-
-	defer func() {
-		f.pos++
-	}()
 
 	for pos < len(f.series) {
 		t := f.series[pos]
@@ -49,7 +53,7 @@ func (f *countWindow) count(duration time.Duration) (*time.Time, int, error) {
 		count++
 		pos++
 	}
-	return &startTime, count, nil
+	return &startTime, count
 }
 
 // Check checks the bank history and measure failure requests count before and after nemesis was injected.
@@ -60,13 +64,9 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 	var duration = time.Minute
 	var failCount float64
 	var failCountPerMinuteBeforeInject float64
-
 	var injectionTime time.Time
 	//var recoveryTime time.Time
-
-	var p80 *time.Duration
-	var p90 *time.Duration
-	var p99 *time.Duration
+	metrics := rtoMetrics{nemesis: &nemesisRecord}
 
 	startTime := ops[0].Time
 	idx := 0
@@ -92,47 +92,29 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 		log.Panic("expect more events after recovery from nemesis")
 	}
 
-	var window *countWindow
-	metrics := rtoMetrics{nemesis: &nemesisRecord}
+	var window countWindow
 
 	window, metrics.totalMeasureTime = convertToFailSeries(ops[idx:])
-	if window != nil {
-		for true {
-			startTime, failCount, err := window.count(duration)
-			dur := startTime.Sub(injectionTime)
-			if err != nil {
-				if p80 == nil {
-					p80 = &dur
-				}
-				if p90 == nil {
-					p90 = &dur
-				}
-				if p99 == nil {
-					p99 = &dur
-				}
-				break
-			}
-			failCountPerMinute := float64(failCount) / duration.Minutes()
+	if len(window.series) == 0 {
+		metrics.p80, metrics.p90, metrics.p99 = time.Duration(0), time.Duration(0), time.Duration(0)
+	} else {
+		lastFailureDuration := window.series[len(window.series)-1].Sub(injectionTime)
+		metrics.p80, metrics.p90, metrics.p99 = lastFailureDuration, lastFailureDuration, lastFailureDuration
+	}
+	for window.Next() {
+		startTime, failCount := window.Count(duration)
+		dur := startTime.Sub(injectionTime)
+		failCountPerMinute := float64(failCount) / duration.Minutes()
 
-			if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && p80 == nil {
-				p80 = &dur
-			}
-			if 0.9*failCountPerMinute <= failCountPerMinuteBeforeInject && p90 == nil {
-				p90 = &dur
-			}
-			if 0.99*failCountPerMinute <= failCountPerMinuteBeforeInject && p99 == nil {
-				p99 = &dur
-				break
-			}
+		if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p80 {
+			metrics.p80 = dur
 		}
-		if p80 != nil {
-			metrics.p80 = *p80
+		if 0.9*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p90 {
+			metrics.p90 = dur
 		}
-		if p90 != nil {
-			metrics.p90 = *p90
-		}
-		if p99 != nil {
-			metrics.p99 = *p99
+		if 0.99*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p99 {
+			metrics.p99 = dur
+			break
 		}
 	}
 	if err := c.record(&metrics); err != nil {
@@ -160,7 +142,7 @@ func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
 	return nil
 }
 
-func convertToFailSeries(ops []core.Operation) (*countWindow, time.Duration) {
+func convertToFailSeries(ops []core.Operation) (countWindow, time.Duration) {
 	var series []time.Time
 	var startTime time.Time
 	var endTime time.Time
@@ -179,22 +161,13 @@ func convertToFailSeries(ops []core.Operation) (*countWindow, time.Duration) {
 			if startTime.IsZero() {
 				startTime = op.Time
 			}
-			if endTime.IsZero() {
-				endTime = op.Time
-			}
 			if op.Time.After(endTime) {
 				endTime = op.Time
 			}
 		}
 	}
-
-	if len(series) == 0 {
-		return nil, endTime.Sub(startTime)
-	}
-
-	return &countWindow{
+	return countWindow{
 		series: series,
-		pos:    0,
 	}, endTime.Sub(startTime)
 }
 
