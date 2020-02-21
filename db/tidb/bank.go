@@ -68,6 +68,13 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx 
 }
 
 func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	if idx != 0 {
+		return nil
+	}
+	sql := `drop table if exists accounts`
+	if _, err := c.db.Exec(sql); err != nil {
+		return err
+	}
 	return c.db.Close()
 }
 
@@ -328,9 +335,9 @@ func (p bankParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p bankParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := bankResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
+	//if r.Unknown {
+	//	return nil, err
+	//}
 	return r, err
 }
 

@@ -55,12 +55,12 @@ func (noop) Name() string {
 
 func TestPorcupineChecker(t *testing.T) {
 	ops := []core.Operation{
-		{core.InvokeOperation, 1, noopRequest{Op: 0}},
-		{core.ReturnOperation, 1, noopResponse{Value: 10}},
-		{core.InvokeOperation, 2, noopRequest{Op: 1, Value: 15}},
-		{core.ReturnOperation, 2, noopResponse{Unknown: true}},
-		{core.InvokeOperation, 3, noopRequest{Op: 0}},
-		{core.ReturnOperation, 3, noopResponse{Value: 15}},
+		{Action: core.InvokeOperation, Proc: 1, Data: noopRequest{Op: 0}},
+		{Action: core.ReturnOperation, Proc: 1, Data: noopResponse{Value: 10}},
+		{Action: core.InvokeOperation, Proc: 2, Data: noopRequest{Op: 1, Value: 15}},
+		{Action: core.ReturnOperation, Proc: 2, Data: noopResponse{Unknown: true}},
+		{Action: core.InvokeOperation, Proc: 3, Data: noopRequest{Op: 0}},
+		{Action: core.ReturnOperation, Proc: 3, Data: noopResponse{Value: 15}},
 	}
 
 	var checker Checker
