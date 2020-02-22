@@ -49,6 +49,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			"kill_tikv_1node_5min", "kill_tikv_2node_5min",
 			"kill_pd_leader_5min", "kill_pd_nonleader_5min":
 			g = nemesis.NewKillGenerator(name)
+		case "short_kill_tikv_1node", "short_kill_pd_leader":
+			g = nemesis.NewContainerKillGenerator(name)
 		case "random_drop", "all_drop", "minor_drop", "major_drop":
 			log.Fatal("Unimplemented")
 		case "partition_one":

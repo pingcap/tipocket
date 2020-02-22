@@ -14,13 +14,14 @@ import (
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
-// killGenerator generate code about PodFailure chaos.
+// killGenerator generate PodFailure chaos.
 type killGenerator struct {
 	name string
 }
 
+// Generate generates container-kill actions, to simulate the case that node can't be recovered quickly after being killed
 func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
-	var n = 1
+	var n int
 	var duration = time.Second * time.Duration(rand.Intn(120)+60)
 	var component *cluster.Component
 
@@ -113,9 +114,6 @@ func findPDMember(nodes []cluster.Node, ifLeader bool) []cluster.Node {
 					log.Fatalf("find pd members occured an error: %+v", err)
 				}
 			}
-			//if !ifLeader || node.PodName == leader {
-			//	result = append(result, node)
-			//}
 			if ifLeader && node.PodName == leader {
 				return []cluster.Node{node}
 			}
@@ -139,15 +137,15 @@ type kill struct {
 	k8sNemesisClient
 }
 
-func (k kill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (k kill) Invoke(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
 	log.Printf("Creating pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, chaosv1alpha1.PodFailureAction)
+	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k kill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (k kill) Recover(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
 	log.Printf("Recover pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
-	podChaos := podTag(node.Namespace, node.Namespace, node.PodName, chaosv1alpha1.PodFailureAction)
+	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
 }
 
@@ -155,7 +153,8 @@ func (kill) Name() string {
 	return string(core.PodFailure)
 }
 
-func podTag(ns string, chaosNs string, name string, chaos chaosv1alpha1.PodChaosAction) chaosv1alpha1.PodChaos {
+func buildPodFailureChaos(ns string, chaosNs string, name string) chaosv1alpha1.PodChaos {
+	var chaos = chaosv1alpha1.PodFailureAction
 	pods := make(map[string][]string)
 	pods[ns] = []string{name}
 
