@@ -12,7 +12,7 @@ require (
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.7.1
 	github.com/pingcap/advanced-statefulset v0.2.4
-	github.com/pingcap/chaos-mesh v0.0.0-20200207073207-757280b5c05c
+	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
@@ -23,6 +23,8 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.5.0 // indirect
+	golang.org/x/sys v0.0.0-20200120151820-655fe14d7479 // indirect
+	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0

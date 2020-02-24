@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/core"
@@ -41,9 +42,11 @@ func (f *countWindow) Next() bool {
 
 // Count counts failure number in continuous minutes from f.pos
 func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
-	var count = 0
-	var pos = f.pos
-	var startTime = f.series[pos]
+	var (
+		count     = 0
+		pos       = f.pos
+		startTime = f.series[pos]
+	)
 
 	for pos < len(f.series) {
 		t := f.series[pos]
@@ -60,41 +63,17 @@ func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
 // When the avg failure count of one continuous minute is below 0.8 * the failure count before nemesis, we say the the system
 // recover to p80 line from that time point. And p90 or p99 are similar.
 func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
-	var nemesisRecord core.NemesisGeneratorRecord
-	var duration = time.Minute
-	var failCount float64
-	var failCountPerMinuteBeforeInject float64
-	var injectionTime time.Time
-	//var recoveryTime time.Time
+	var (
+		nemesisRecord                  core.NemesisGeneratorRecord
+		failCountPerMinuteBeforeInject float64
+		injectionTime                  time.Time
+		window                         countWindow
+		duration                       = time.Minute
+	)
+
 	metrics := rtoMetrics{nemesis: &nemesisRecord}
+	metrics.nemesis, failCountPerMinuteBeforeInject, injectionTime, window, metrics.totalMeasureTime = convertToFailSeries(ops)
 
-	startTime := ops[0].Time
-	idx := 0
-	for idx < len(ops) {
-		op := ops[idx]
-		if op.Action == core.ReturnOperation {
-			response := op.Data.(bankResponse)
-			if response.Unknown {
-				failCount++
-			}
-		} else if op.Action == core.InvokeNemesis {
-			injectionTime = op.Time
-			nemesisRecord = op.Data.(core.NemesisGeneratorRecord)
-			break
-		} else if op.Action == core.RecoverNemesis {
-			//recoveryTime = op.Time
-			//break
-		}
-		idx++
-	}
-	failCountPerMinuteBeforeInject = failCount / injectionTime.Sub(startTime).Minutes()
-	if idx == len(ops) {
-		log.Panic("expect more events after recovery from nemesis")
-	}
-
-	var window countWindow
-
-	window, metrics.totalMeasureTime = convertToFailSeries(ops[idx:])
 	if len(window.series) == 0 {
 		metrics.p80, metrics.p90, metrics.p99 = time.Duration(0), time.Duration(0), time.Duration(0)
 	} else {
@@ -142,33 +121,56 @@ func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
 	return nil
 }
 
-func convertToFailSeries(ops []core.Operation) (countWindow, time.Duration) {
-	var series []time.Time
-	var startTime time.Time
-	var endTime time.Time
+func convertToFailSeries(ops []core.Operation) (nemesisRecord *core.NemesisGeneratorRecord,
+	baselineFailCount float64,
+	injectionTime time.Time,
+	window countWindow,
+	measureDuration time.Duration) {
+
+	var (
+		series    []time.Time
+		startTime time.Time
+		endTime   time.Time
+		opMap     = make(map[int64]*core.Operation)
+	)
+
 	for idx := range ops {
 		op := ops[idx]
-		if op.Action == core.ReturnOperation {
-			response, ok := op.Data.(bankResponse)
-			if !ok {
-				continue
-			}
+		if op.Action == core.InvokeOperation {
+			opMap[op.Proc] = &op
+		} else if op.Action == core.ReturnOperation {
+			response := op.Data.(bankResponse)
 			if response.Unknown {
-				if !op.Time.IsZero() {
-					series = append(series, op.Time)
+				invokeOps := opMap[op.Proc]
+				if injectionTime.IsZero() {
+					log.Fatalf("illegal ops, the invokeOperation item must before any unknown return ops")
 				}
+				if invokeOps.Time.Before(injectionTime) {
+					baselineFailCount++
+				} else {
+					series = append(series, invokeOps.Time)
+				}
+			} else {
+				delete(opMap, op.Proc)
 			}
-			if startTime.IsZero() {
-				startTime = op.Time
-			}
-			if op.Time.After(endTime) {
-				endTime = op.Time
-			}
+		} else if op.Action == core.InvokeNemesis {
+			injectionTime = op.Time
+			record := op.Data.(core.NemesisGeneratorRecord)
+			nemesisRecord = &record
+		}
+		if startTime.IsZero() {
+			startTime = op.Time
+		}
+		if op.Time.After(endTime) {
+			endTime = op.Time
 		}
 	}
-	return countWindow{
-		series: series,
-	}, endTime.Sub(startTime)
+
+	sort.Sort(timeSeries(series))
+	window = countWindow{series: series}
+	measureDuration = endTime.Sub(startTime)
+
+	return
 }
 
 // Name returns the name of the verifier.
@@ -179,4 +181,18 @@ func (bankServiceQualityChecker) Name() string {
 // BankServiceQualityChecker checks the bank history and analyze service quality
 func BankServiceQualityChecker(path string) core.Checker {
 	return bankServiceQualityChecker{profFile: path}
+}
+
+type timeSeries []time.Time
+
+func (t timeSeries) Len() int {
+	return len(t)
+}
+
+func (t timeSeries) Less(i, j int) bool {
+	return t[i].Before(t[j])
+}
+
+func (t timeSeries) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }

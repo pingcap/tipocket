@@ -23,7 +23,7 @@ var (
 	clientCount  = flag.Int("client", 5, "client count")
 	requestCount = flag.Int("request-count", 1000, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
-	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
+	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
 	profFile     = flag.String("prof", "./prof.log", "service quality prof file")
