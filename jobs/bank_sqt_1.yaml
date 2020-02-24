@@ -1,34 +1,37 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: batch/v1beta1
+kind: CronJob
 metadata:
   name: bank-sqt-1
   namespace: tipocket-job
 spec:
-  template:
+  schedule: "0 */4 * * *"
+  jobTemplate:
     spec:
-      containers:
-      - name: tipocket
-        image: pingcap/tipocket:latest
-        command:
-          - bin/chaos-tidb
-          - -case=bank
-          - -namespace=tipocket-sqt-test
-          - -image-version=v3.0.9
-          - -client=5
-          - -hub=hub.pingcap.net
-          - -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min
-          - -checker=service_quality
-          - -round=20
-          - -request-count=20000
-        env:
-        - name: KUBECONFIG
-          value: "/etc/config/kube_config"
-        volumeMounts:
-        - name: kube-config
-          mountPath: /etc/config
-      volumes:
-      - name: kube-config
-        configMap:
-          name: kube-config
-      restartPolicy: Never
-  backoffLimit: 0
+      template:
+        spec:
+          containers:
+          - name: tipocket
+            image: pingcap/tipocket:latest
+            command:
+              - bin/chaos-tidb
+              - -case=bank
+              - -namespace=tipocket-sqt-test
+              - -image-version=v3.0.9
+              - -client=5
+              - -hub=hub.pingcap.net
+              - -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min
+              - -checker=service_quality
+              - -round=20
+              - -request-count=20000
+            env:
+            - name: KUBECONFIG
+              value: "/etc/config/kube_config"
+            volumeMounts:
+            - name: kube-config
+              mountPath: /etc/config
+          volumes:
+          - name: kube-config
+            configMap:
+              name: kube-config
+          restartPolicy: Never
+      backoffLimit: 0
