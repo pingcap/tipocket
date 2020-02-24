@@ -18,6 +18,7 @@ func init() {
 	client := k8sNemesisClient{mustCreateClient()}
 	core.RegisterNemesis(kill{client})
 	core.RegisterNemesis(podKill{client})
+	core.RegisterNemesis(containerKill{client})
 	core.RegisterNemesis(networkPartition{client})
 	core.RegisterNemesis(netem{client})
 	core.RegisterNemesis(Scheduler{})

@@ -93,7 +93,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 
 	rows, err := txn.QueryContext(ctx, "select balance from accounts")
 	if err != nil {
-		return bankResponse{Unknown: true}
+		return bankResponse{Unknown: true, Error: err.Error()}
 	}
 	defer rows.Close()
 
@@ -101,7 +101,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	for rows.Next() {
 		var v int64
 		if err = rows.Scan(&v); err != nil {
-			return bankResponse{Unknown: true}
+			return bankResponse{Unknown: true, Error: err.Error()}
 		}
 		balances = append(balances, v)
 	}
@@ -153,7 +153,7 @@ func (c *bankClient) Invoke(ctx context.Context, node cluster.ClientNode, r inte
 	}
 
 	if err = txn.Commit(); err != nil {
-		return bankResponse{Unknown: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance}
+		return bankResponse{Unknown: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance, Error: err.Error()}
 	}
 
 	return bankResponse{Ok: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance}
@@ -231,12 +231,14 @@ type bankResponse struct {
 	Balances []int64
 	// transfer ok or not
 	Ok bool
-	// FromBalance is the previous from balance before transafer
+	// FromBalance is the previous from balance before transfer
 	FromBalance int64
-	// ToBalance is the previous to balance before transafer
+	// ToBalance is the previous to balance before transfer
 	ToBalance int64
 	// read/transfer unknown
 	Unknown bool
+	// record the error if Unknown
+	Error string `json:",omitempty"`
 }
 
 var _ core.UnknownResponse = (*bankResponse)(nil)
@@ -335,9 +337,9 @@ func (p bankParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p bankParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := bankResponse{}
 	err := json.Unmarshal(data, &r)
-	//if r.Unknown {
-	//	return nil, err
-	//}
+	if r.Unknown {
+		return nil, err
+	}
 	return r, err
 }
 
