@@ -1,6 +1,6 @@
 FROM golang:alpine3.10 AS build_base
 
-RUN apk add --no-cache gcc make bash git
+RUN apk add --no-cache gcc make bash git curl
 
 ENV GO111MODULE=on
 RUN mkdir /src
