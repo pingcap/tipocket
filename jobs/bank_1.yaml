@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: bank-1
-  namespace: tipocket
+  namespace: tipocket-job
 spec:
   template:
     spec:
@@ -12,7 +12,7 @@ spec:
         command:
           - bin/chaos-tidb
           - -case=bank
-          - -namespace=tipocket
+          - -namespace=tipocket-test
           - -image-version=v3.0.9
           - -client=5
           - -hub=hub.pingcap.net
@@ -30,4 +30,4 @@ spec:
         configMap:
           name: kube-config
       restartPolicy: Never
-  backoffLimit: 1
+  backoffLimit: 0
