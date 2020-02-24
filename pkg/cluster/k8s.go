@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
 
@@ -130,9 +131,11 @@ func parseNodeFromPodList(pods *corev1.PodList) []Node {
 		nodes = append(nodes, Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			Component: component,
-			PodName:   pod.ObjectMeta.Name,
-			IP:        pod.Status.PodIP,
-			Port:      findPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+			// TODO use better way to retrieve version?
+			Version: fixture.E2eContext.ImageVersion,
+			PodName: pod.ObjectMeta.Name,
+			IP:      pod.Status.PodIP,
+			Port:    findPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
 		})
 	}
 	return nodes
