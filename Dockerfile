@@ -10,8 +10,15 @@ COPY go.sum .
 
 RUN go mod download
 
-FROM build_base AS binary_builder
+COPY . .
 
-COPY . /src
-WORKDIR /src
 RUN make build
+
+FROM alpine:3.8
+
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash curl
+
+COPY --from=0 /src/bin/* /bin/
+
+EXPOSE 8080
