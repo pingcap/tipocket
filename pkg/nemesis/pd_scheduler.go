@@ -41,7 +41,7 @@ func (s *schedulerGenerator) installPDCtl(version string) {
 	defer cancel()
 
 	log.Printf("installing pd-ctl version %s", version)
-	cmdStr := "curl http://download.pingcap.org/tidb-" + version + "-linux-amd64.tar.gz | curl http://download.pingcap.org/tidb-v3.0.10-linux-amd64.tar.gz --output - | tar xz --strip-components=1"
+	cmdStr := "curl http://download.pingcap.org/tidb-" + version + "-linux-amd64.tar.gz | tar xz --strip-components=2 -C /bin"
 	if err := exec.CommandContext(ctx, "sh", "-c", cmdStr).Run(); err != nil {
 		log.Fatalf("installing pd-ctl error: %+v", cmdStr)
 	}
@@ -70,10 +70,12 @@ func (s Scheduler) Invoke(ctx context.Context, node *cluster.Node, args ...inter
 	defer cancel()
 
 	schedulerName := extractSchedulerArgs(args...)
-	cmdStr := fmt.Sprintf("bin/pd-ctl -u http://%s:%d scheduler add %s", node.IP, node.Port, schedulerName)
-	if err := exec.CommandContext(ctx, "sh", "-c", cmdStr).Run(); err != nil {
+	cmdStr := fmt.Sprintf("pd-ctl -u http://%s:%d scheduler add %s", node.IP, node.Port, schedulerName)
+	out, err := exec.CommandContext(ctx, "sh", "-c", cmdStr).CombinedOutput()
+	if err != nil {
 		log.Fatalf("pd scheduling error: %+v", err)
 	}
+	log.Printf("%s result: %s", cmdStr, string(out))
 	return nil
 }
 
@@ -82,10 +84,12 @@ func (s Scheduler) Recover(ctx context.Context, node *cluster.Node, args ...inte
 	defer cancel()
 
 	schedulerName := extractSchedulerArgs(args...)
-	cmdStr := fmt.Sprintf("bin/pd-ctl -u http://%s:%d scheduler remove %s", node.IP, node.Port, schedulerName)
-	if err := exec.CommandContext(ctx, "sh", "-c", cmdStr).Run(); err != nil {
+	cmdStr := fmt.Sprintf("pd-ctl -u http://%s:%d scheduler remove %s", node.IP, node.Port, schedulerName)
+	out, err := exec.CommandContext(ctx, "sh", "-c", cmdStr).CombinedOutput()
+	if err != nil {
 		log.Fatalf("pd scheduling error: %+v", err)
 	}
+	log.Printf("%s result: %s", cmdStr, string(out))
 	return nil
 }
 
