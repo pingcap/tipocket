@@ -25,7 +25,7 @@ func (g podKillGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperatio
 }
 
 func (g podKillGenerator) Name() string {
-	return string(core.PodKill)
+	return g.name
 }
 
 func podKillNodes(nodes []cluster.Node, n int, freq time.Duration) []*core.NemesisOperation {

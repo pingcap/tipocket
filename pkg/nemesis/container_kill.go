@@ -38,7 +38,7 @@ func (g containerKillGenerator) Generate(nodes []cluster.Node) []*core.NemesisOp
 }
 
 func (g containerKillGenerator) Name() string {
-	return string(core.ContainerKill)
+	return g.name
 }
 
 func containerKillNodes(nodes []cluster.Node, n int, component *cluster.Component, freq time.Duration) []*core.NemesisOperation {
