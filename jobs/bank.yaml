@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bank-1
+  namespace: tipocket
+spec:
+  template:
+    spec:
+      containers:
+      - name: tipocket
+        image: pingcap/tipocket:latest
+        command:
+          - bin/chaos-tidb
+          - -case=bank
+          - -namespace=tipocket
+          - -image-version=v3.0.9
+          - -client=5
+          - -hub=hub.pingcap.net
+          - -nemesis=random_kill
+          - -round=3
+          - -request-count=10000
+        env:
+        - name: KUBECONFIG
+          value: "/etc/config/kube_config"
+        volumeMounts:
+        - name: kube-config
+          mountPath: /etc/config
+      volumes:
+      - name: kube-config
+        configMap:
+          name: kube-config
+      restartPolicy: Never
+  backoffLimit: 1
