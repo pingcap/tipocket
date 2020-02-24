@@ -23,7 +23,7 @@ type Suit struct {
 	// Provisioner deploy the SUT cluster
 	cluster.Provisioner
 	core.ClientCreator
-	// nemesis, seperated by comma.
+	// nemesis, separated by comma.
 	Nemesises string
 	// perform service quality checking
 	WithProf   bool
@@ -55,6 +55,8 @@ func (suit *Suit) Run(ctx context.Context) {
 			log.Fatal("Unimplemented")
 		case "partition_one":
 			g = nemesis.NewNetworkPartitionGenerator(name)
+		case "loss", "delay", "duplicate", "corrupt":
+			g = nemesis.NewNetemChaos(name)
 		case "pod_kill":
 			g = nemesis.NewPodKillGenerator(name)
 		case "noop":

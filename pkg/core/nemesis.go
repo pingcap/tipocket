@@ -12,10 +12,16 @@ import (
 type ChaosKind string
 
 const (
-	PodFailure       ChaosKind = "Pod-Failure"       // PodFailure Apply pod failure.
-	PodKill          ChaosKind = "Pod-Kill"          // PodKill will random kill a pod, this will make the Node be illegal
-	ContainerKill    ChaosKind = "Container-Kill"    // ContainerKill will random kill the specified container of pod, but retain the pod
-	NetworkPartition ChaosKind = "Network-Partition" // NetworkPartition parts network between nodes
+	// PodFailure Apply pod failure
+	PodFailure ChaosKind = "Pod-Failure"
+	// PodKill will random kill a pod, this will make the Node be illegal
+	PodKill ChaosKind = "Pod-Kill"
+	// ContainerKill will random kill the specified container of pod, but retain the pod
+	ContainerKill ChaosKind = "Container-Kill"
+	// NetworkPartition parts network between nodes
+	NetworkPartition ChaosKind = "Network-Partition"
+	// NetemChaos add corrupt or other chaos.
+	NetemChaos ChaosKind = "Netem-Chaos"
 )
 
 // Nemesis injects failure and disturbs the database.
