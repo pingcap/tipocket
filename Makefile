@@ -15,12 +15,15 @@ default: build
 
 all: build
 
-build: fmt chaos verifier
+build: fmt chaos tpcc verifier
 
 chaos: tidb
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
+
+tpcc:
+	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
 
 rawkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-rawkv cmd/rawkv/main.go

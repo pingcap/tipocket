@@ -18,16 +18,13 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"time"
-
 	_ "net/http/pprof"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
-	"github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
-	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -38,14 +35,10 @@ var (
 	requestCount = flag.Int("request-count", 1000, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
-	profFile     = flag.String("prof", "./prof.log", "service quality prof file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	//chaosNamespace = flag.String("chaos-ns", "chaos-testing", "test chaos namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion = flag.String("image-version", "latest", "image version")
 	storageClass = flag.String("storage-class", "local-storage", "storage class name")
@@ -65,10 +58,6 @@ func main() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
-	//if chaosNamespace == nil || *chaosNamespace == "" {
-	//	chaosNamespace = namespace
-	//}
-
 	cfg := control.Config{
 		DB:           "noop",
 		ClientCount:  *clientCount,
@@ -78,51 +67,12 @@ func main() {
 		History:      *historyFile,
 	}
 
-	var (
-		creator core.ClientCreator
-		parser  = tidb.BankParser()
-		model   = tidb.BankModel()
-		checker core.Checker
-	)
-
-	switch *clientCase {
-	case "bank":
-		creator = tidb.BankClientCreator{}
-	case "multi_bank":
-		creator = tidb.MultiBankClientCreator{}
-	case "long_fork":
-		creator = tidb.LongForkClientCreator{}
-	//case "sequential":
-	//	creator = tidb.SequentialClientCreator{}
-	default:
-		log.Fatalf("invalid client test case %s", *clientCase)
-	}
-
-	withProf := false
-	switch *checkerNames {
-	case "porcupine":
-		checker = porcupine.Checker{}
-	case "service_quality":
-		checker = tidb.BankServiceQualityChecker(*profFile)
-		withProf = true
-	case "tidb_bank_tso":
-		checker = tidb.BankTsoChecker()
-	case "long_fork_checker":
-		checker = tidb.LongForkChecker()
-		parser = tidb.LongForkParser()
-		model = nil
-	//case "sequential_checker":
-	//	checker = tidb.NewSequentialChecker()
-	//	parser = tidb.NewSequentialParser()
-	//	model = nil
-	default:
-		log.Fatalf("invalid checker %s", *checkerNames)
-	}
-
+	clientCreator := &tidb.TPCCClientCreator{}
+	creator := clientCreator
 	verifySuit := verify.Suit{
-		Model:   model,
-		Checker: checker,
-		Parser:  parser,
+		Model:   nil,
+		Checker: &tidb.TPCCChecker{CreatorRef: clientCreator},
+		Parser:  tidb.TPCCParser(),
 	}
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
@@ -133,7 +83,7 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator,
 		Nemesises:     *nemesises,
-		WithProf:      withProf,
+		WithProf:      true,
 		VerifySuit:    verifySuit,
 		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
