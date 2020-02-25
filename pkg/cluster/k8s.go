@@ -46,8 +46,13 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]Node, [
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown() error {
-	return nil
+func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+	switch s := spec.(type) {
+	case *tidb.TiDBClusterRecommendation:
+		return k.E2eCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
+	default:
+		panic("unreachable")
+	}
 }
 
 func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.TiDBClusterRecommendation) ([]Node, []ClientNode, error) {

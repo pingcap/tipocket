@@ -64,7 +64,13 @@ func main() {
 		History:      *historyFile,
 	}
 
-	var creator core.ClientCreator
+	var (
+		creator core.ClientCreator
+		parser  = tidb.BankParser()
+		model   = tidb.BankModel()
+		checker core.Checker
+	)
+
 	switch *clientCase {
 	case "bank":
 		creator = tidb.BankClientCreator{}
@@ -74,14 +80,18 @@ func main() {
 		creator = tidb.LongForkClientCreator{}
 	//case "sequential":
 	//	creator = tidb.SequentialClientCreator{}
+	case "tpcc":
+		clientCreator := &tidb.TPCCClientCreator{}
+
+		creator = clientCreator
+		parser = tidb.TPCCParser()
+		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
+		model = nil
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
 
-	parser := tidb.BankParser()
-	model := tidb.BankModel()
 	withProf := false
-	var checker core.Checker
 	switch *checkerNames {
 	case "porcupine":
 		checker = porcupine.Checker{}
@@ -98,6 +108,8 @@ func main() {
 	//	checker = tidb.NewSequentialChecker()
 	//	parser = tidb.NewSequentialParser()
 	//	model = nil
+	case "tpcc":
+		withProf = true
 	default:
 		log.Fatalf("invalid checker %s", *checkerNames)
 	}
