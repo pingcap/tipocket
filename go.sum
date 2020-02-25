@@ -724,6 +724,7 @@ github.com/pingcap/advanced-statefulset v0.2.4 h1:0PRkKLEiwlWgdFWNtbBOa+Dio7MZLq
 github.com/pingcap/advanced-statefulset v0.2.4/go.mod h1:rg2p1v6AGsKhvEZi6Sm0YNYJCmdXdZZhQ6Sviei7Ivs=
 github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072 h1:ij8D6TlY8HW3IXI3nKf8jm9Qr79aFyAkvVRD7+juyZQ=
 github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072/go.mod h1:5czSbq/ALyo5figLxcgAsG/a8S1UZWtNIynIVWbQutk=
+github.com/pingcap/chaos-mesh v0.0.0-20200225032232-fe22eaef3538 h1:YalYSCn/idUEDPvAbMbWEc7SgENlZUwCvOZYBJ+H4rw=
 github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8/go.mod h1:B1+S9LNcuMyLH/4HMTViQOJevkGiik3wW2AN9zb2fNQ=
 github.com/pingcap/check v0.0.0-20191107115940-caf2b9e6ccf4/go.mod h1:PYMCGwN0JHjoqGr3HrZoD+b8Tgx8bKnArhSq8YVzUMc=
 github.com/pingcap/check v0.0.0-20191216031241-8a5a85928f12 h1:rfD9v3+ppLPzoQBgZev0qYCpegrwyFx/BUpkApEiKdY=

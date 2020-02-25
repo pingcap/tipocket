@@ -15,7 +15,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier
+build: fmt chaos verifier pocket
 
 chaos: tidb
 

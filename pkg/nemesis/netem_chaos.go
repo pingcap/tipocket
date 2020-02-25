@@ -84,7 +84,7 @@ func (d delay) template(ns string, pods []string, podMode chaosv1alpha1.PodMode,
 }
 
 func (d delay) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
-	return d.template(ns, pods, "90ms", "25", "90ms")
+	return d.template(ns, pods, chaosv1alpha1.OnePodMode, "90ms", "25", "90ms")
 }
 
 type duplicate struct {
@@ -115,7 +115,7 @@ func (d duplicate) template(ns string, pods []string, podMode chaosv1alpha1.PodM
 }
 
 func (d duplicate) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
-	return d.template(ns, pods, "40", "25")
+	return d.template(ns, pods, chaosv1alpha1.OnePodMode, "40", "25")
 }
 
 type corrupt struct {
@@ -146,7 +146,7 @@ func (c corrupt) template(ns string, pods []string, podMode chaosv1alpha1.PodMod
 }
 
 func (c corrupt) defaultTemplate(ns string, pods []string) chaosv1alpha1.NetworkChaosSpec {
-	return c.template(ns, pods, "40", "25")
+	return c.template(ns, pods, chaosv1alpha1.OnePodMode, "40", "25")
 }
 
 type netemChaos interface {
