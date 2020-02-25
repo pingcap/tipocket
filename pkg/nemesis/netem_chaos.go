@@ -11,7 +11,7 @@ import (
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -171,7 +171,7 @@ func selectNetem(name string) netemChaos {
 }
 
 // Generate will randomly generate a chaos without selecting nodes.
-func (g netemChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
+func (g netemChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
 	nChaos := selectNetem(g.name)
 	ops := make([]*core.NemesisOperation, len(nodes))
 
@@ -196,7 +196,7 @@ type netem struct {
 	k8sNemesisClient
 }
 
-func (n netem) extractChaos(node *cluster.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
+func (n netem) extractChaos(node *clusterTypes.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
 	log.Printf("%v was called", fnName)
 	if len(args) != 1 {
 		panic("netem.Invoke argument numbers of args is wrong")
@@ -217,12 +217,12 @@ func (n netem) extractChaos(node *cluster.Node, fnName string, args ...interface
 	}
 }
 
-func (n netem) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (n netem) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
 	return n.cli.ApplyNetChaos(&chaosSpec)
 }
 
-func (n netem) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (n netem) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
 	return n.cli.CancelNetChaos(&chaosSpec)
 }

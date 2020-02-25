@@ -116,9 +116,5 @@ func (suit *Suit) Run(ctx context.Context) {
 		cancel()
 	}()
 
-	if suit.WithProf {
-		c.RunWithServiceQualityProf()
-	} else {
-		c.Run()
-	}
+	c.Run()
 }

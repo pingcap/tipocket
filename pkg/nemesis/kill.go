@@ -10,7 +10,6 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
@@ -37,23 +36,23 @@ func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperat
 	case "kill_tikv_1node_5min":
 		n = 1
 		duration = time.Minute * time.Duration(5)
-		cmp := cluster.TiKV
+		cmp := clusterTypes.TiKV
 		component = &cmp
 	case "kill_tikv_2node_5min":
 		n = 2
 		duration = time.Minute * time.Duration(5)
-		cmp := cluster.TiKV
+		cmp := clusterTypes.TiKV
 		component = &cmp
 	case "kill_pd_leader_5min":
 		n = 1
 		duration = time.Minute * time.Duration(5)
-		cmp := cluster.PD
+		cmp := clusterTypes.PD
 		component = &cmp
 		nodes = findPDMember(nodes, true)
 	case "kill_pd_non_leader_5min":
 		n = 1
 		duration = time.Minute * time.Duration(5)
-		cmp := cluster.PD
+		cmp := clusterTypes.PD
 		component = &cmp
 		nodes = findPDMember(nodes, false)
 	default:
@@ -66,7 +65,7 @@ func (g killGenerator) Name() string {
 	return g.name
 }
 
-func killNodes(nodes []clusterTypes.Node, n int, component *cluster.Component, duration time.Duration) []*core.NemesisOperation {
+func killNodes(nodes []clusterTypes.Node, n int, component *clusterTypes.Component, duration time.Duration) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	if component != nil {
 		nodes = filterComponent(nodes, *component)
@@ -89,8 +88,8 @@ func killNodes(nodes []clusterTypes.Node, n int, component *cluster.Component, d
 	return ops
 }
 
-func filterComponent(nodes []cluster.Node, component cluster.Component) []cluster.Node {
-	var componentNodes []cluster.Node
+func filterComponent(nodes []clusterTypes.Node, component clusterTypes.Component) []clusterTypes.Node {
+	var componentNodes []clusterTypes.Node
 
 	for _, node := range nodes {
 		if node.Component == component {
@@ -101,14 +100,14 @@ func filterComponent(nodes []cluster.Node, component cluster.Component) []cluste
 	return componentNodes
 }
 
-func findPDMember(nodes []cluster.Node, ifLeader bool) []cluster.Node {
+func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node {
 	var (
 		leader string
 		err    error
-		result []cluster.Node
+		result []clusterTypes.Node
 	)
 	for _, node := range nodes {
-		if node.Component == cluster.PD {
+		if node.Component == clusterTypes.PD {
 			if leader == "" && node.Client != nil {
 				leader, _, err = node.PDMember()
 				if err != nil {
@@ -116,7 +115,7 @@ func findPDMember(nodes []cluster.Node, ifLeader bool) []cluster.Node {
 				}
 			}
 			if ifLeader && node.PodName == leader {
-				return []cluster.Node{node}
+				return []clusterTypes.Node{node}
 			}
 			if !ifLeader && node.PodName != leader {
 				result = append(result, node)

@@ -85,6 +85,10 @@ func (c *Controller) Run() {
 		c.RunInvoker()
 	case ModeSelfScheduled:
 		c.RunSelfScheduled()
+	case ModeWithPerf:
+		c.RunWithServiceQualityProf()
+	default:
+		log.Fatalf("unhandled mode %s", c.cfg.Mode)
 	}
 }
 

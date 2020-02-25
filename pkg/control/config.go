@@ -42,6 +42,7 @@ type Mode int
 const (
 	ModeInvoker = iota
 	ModeSelfScheduled
+	ModeWithPerf
 )
 
 func (m Mode) String() string {
@@ -50,6 +51,8 @@ func (m Mode) String() string {
 		return "Invoker mode"
 	case ModeSelfScheduled:
 		return "Self scheduled mode"
+	case ModeWithPerf:
+		return "Run with perf"
 	default:
 		return "Unknown mode"
 	}

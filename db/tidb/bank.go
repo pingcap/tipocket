@@ -67,7 +67,7 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode,
 	return nil
 }
 
-func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *bankClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}

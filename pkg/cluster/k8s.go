@@ -60,28 +60,23 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.T
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
-	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
+	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
 	// TODO: use ctx for wait end
-	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, 10*time.Minute)
+	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommand.TidbCluster, 10*time.Minute)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.E2eCli.TiDB.ApplyTiDBService(recommend.Service)
+	err = k.E2eCli.TiDB.ApplyTiDBService(recommand.Service)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
 	nodes, err = k.E2eCli.TiDB.GetNodes(recommand)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
-
-	k8sNodes, err := k.E2eCli.GetNodes()
 	if err != nil {
 		return nodes, clientNodes, err
 	}
