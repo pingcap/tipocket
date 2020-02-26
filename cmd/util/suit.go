@@ -79,7 +79,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Panic("no client nodes exist")
 	}
-	suit.Config.ClientCount = len(suit.Config.ClientNodes)
+
 	if suit.Config.ClientCount == 0 {
 		log.Panic("suit.Config.ClientCount is required")
 	}
