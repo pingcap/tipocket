@@ -533,6 +533,7 @@ func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node
 			Namespace: pod.ObjectMeta.Namespace,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
+			Component: clusterTypes.Component(pod.Spec.Containers[0].Name),
 			Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
 			Client: &clusterTypes.Client{
 				Namespace: pod.ObjectMeta.Namespace,

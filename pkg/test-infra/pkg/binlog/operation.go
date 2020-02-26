@@ -118,6 +118,7 @@ func (t *Ops) GetDrainerNode(d *Drainer) (clusterTypes.Node, error) {
 	return clusterTypes.Node{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
+		Component: clusterTypes.Drainer,
 		IP:        pod.Status.PodIP,
 		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
 	}, nil
