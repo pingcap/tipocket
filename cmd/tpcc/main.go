@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/pingcap/tipocket/pkg/core"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -36,7 +37,9 @@ var (
 	round        = flag.Int("round", 3, "client test request round")
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
+	qosFile      = flag.String("qosFile", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	checkerName  = flag.String("checker", "consistency", "consistency or qos")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
@@ -67,12 +70,18 @@ func main() {
 		RunTime:      *runTime,
 		History:      *historyFile,
 	}
-
 	clientCreator := &tidb.TPCCClientCreator{}
 	creator := clientCreator
+	var checker core.Checker
+	switch *checkerName {
+	case "consistency":
+		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
+	case "qos":
+		checker = tidb.TPCCQosChecker(*qosFile)
+	}
 	verifySuit := verify.Suit{
 		Model:   nil,
-		Checker: &tidb.TPCCChecker{CreatorRef: clientCreator},
+		Checker: checker,
 		Parser:  tidb.TPCCParser(),
 	}
 	provisioner, err := cluster.NewK8sProvisioner()

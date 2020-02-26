@@ -97,9 +97,15 @@ func (T *TPCCClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 
 type tpccRequest struct{}
 
+// tpccResponse implements core.UnknownResponse
 type tpccResponse struct {
 	time.Duration
 	Error string `json:",omitempty"`
+}
+
+func (t tpccResponse) IsUnknown() bool {
+	// we don't care isUnknown here
+	return false
 }
 
 // tpccParser implements history.RecordParser

@@ -20,10 +20,6 @@ type rtoMetrics struct {
 	totalMeasureTime time.Duration
 }
 
-type bankServiceQualityChecker struct {
-	profFile string
-}
-
 type countWindow struct {
 	series []time.Time
 	pos    int
@@ -59,10 +55,14 @@ func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
 	return &startTime, count
 }
 
-// Check checks the bank history and measure failure requests count before and after nemesis was injected.
+type bankQoSChecker struct {
+	summaryFile string
+}
+
+// bankQoSChecker checks the bank history and measure failure requests count before and after nemesis was injected.
 // When the avg failure count of one continuous minute is below 0.8 * the failure count before nemesis, we say the the system
 // recover to p80 line from that time point. And p90 or p99 are similar.
-func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
+func (c bankQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	var (
 		nemesisRecord                  core.NemesisGeneratorRecord
 		failCountPerMinuteBeforeInject float64
@@ -77,12 +77,12 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 	if len(window.series) == 0 {
 		metrics.p80, metrics.p90, metrics.p99 = time.Duration(0), time.Duration(0), time.Duration(0)
 	} else {
-		lastFailureDuration := window.series[len(window.series)-1].Sub(injectionTime)
-		metrics.p80, metrics.p90, metrics.p99 = lastFailureDuration, lastFailureDuration, lastFailureDuration
+		windowDuration := window.series[len(window.series)-1].Sub(injectionTime)
+		metrics.p80, metrics.p90, metrics.p99 = windowDuration, windowDuration, windowDuration
 	}
 	for window.Next() {
-		startTime, failCount := window.Count(duration)
-		dur := startTime.Sub(injectionTime)
+		leftBound, failCount := window.Count(duration)
+		dur := leftBound.Sub(injectionTime)
 		failCountPerMinute := float64(failCount) / duration.Minutes()
 
 		if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p80 {
@@ -102,9 +102,9 @@ func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bo
 	return true, nil
 }
 
-func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
+func (c bankQoSChecker) record(rto *rtoMetrics) error {
 	os.MkdirAll(path.Dir(""), 0755)
-	f, err := os.OpenFile(c.profFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(c.summaryFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -174,13 +174,13 @@ func convertToFailSeries(ops []core.Operation) (nemesisRecord *core.NemesisGener
 }
 
 // Name returns the name of the verifier.
-func (bankServiceQualityChecker) Name() string {
-	return "tidb_bank_service_quality_checker"
+func (bankQoSChecker) Name() string {
+	return "tidb_bank_QoS_checker"
 }
 
-// BankServiceQualityChecker checks the bank history and analyze service quality
-func BankServiceQualityChecker(path string) core.Checker {
-	return bankServiceQualityChecker{profFile: path}
+// BankQoSChecker checks the bank history and analyze QoS
+func BankQoSChecker(path string) core.Checker {
+	return bankQoSChecker{summaryFile: path}
 }
 
 type timeSeries []time.Time

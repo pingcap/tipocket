@@ -40,12 +40,12 @@ var (
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
+	qosFile      = flag.String("qosFile", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	//chaosNamespace = flag.String("chaos-ns", "chaos-testing", "test chaos namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion = flag.String("image-version", "latest", "image version")
 	storageClass = flag.String("storage-class", "local-storage", "storage class name")
@@ -95,8 +95,8 @@ func main() {
 	switch *checkerNames {
 	case "porcupine":
 		checker = porcupine.Checker{}
-	case "service_quality":
-		checker = tidb.BankServiceQualityChecker("./profile.log")
+	case "bankQoS":
+		checker = tidb.BankQoSChecker(*qosFile)
 	case "tidb_bank_tso":
 		checker = tidb.BankTsoChecker()
 	case "long_fork_checker":
