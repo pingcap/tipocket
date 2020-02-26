@@ -9,8 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
-
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/util/ssh"
 )
 
@@ -191,7 +190,7 @@ func StopDaemon(ctx context.Context, node string, cmd string, pidFile string) er
 }
 
 // KillDaemon runs on node and kills the daemon process.
-func KillDaemon(ctx context.Context, node cluster.Node, cmd string, pidFile string) error {
+func KillDaemon(ctx context.Context, node clusterTypes.Node, cmd string, pidFile string) error {
 	return stopDaemon(ctx, node.IP, cmd, pidFile, "KILL")
 }
 

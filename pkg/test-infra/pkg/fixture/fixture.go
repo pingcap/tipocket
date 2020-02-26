@@ -16,7 +16,8 @@ package fixture
 import (
 	"time"
 
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/scheme"
 
@@ -27,6 +28,7 @@ import (
 type StorageType string
 
 type E2eFixture struct {
+	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	RemoteVolumeStorageClass string
 	TiDBVersion              string
@@ -48,48 +50,52 @@ var E2eContext E2eFixture
 const (
 	StorageTypeLocal  StorageType = "local"
 	StorageTypeRemote StorageType = "remote"
+	CPU                           = corev1.ResourceCPU
+	Memory                        = corev1.ResourceMemory
+	Storage                       = corev1.ResourceStorage
+	EphemeralStorage              = corev1.ResourceEphemeralStorage
 )
 
 var (
-	BestEffort = v1alpha1.Resources{}
-	Small      = v1alpha1.Resources{
-		Requests: &v1alpha1.ResourceRequirement{
-			CPU:    "1000m",
-			Memory: "1Gi",
+	BestEffort = corev1.ResourceRequirements{}
+	Small      = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			CPU:    resource.MustParse("1000m"),
+			Memory: resource.MustParse("1Gi"),
 		},
-		Limits: &v1alpha1.ResourceRequirement{
-			CPU:    "1000m",
-			Memory: "1Gi",
-		},
-	}
-	Medium = v1alpha1.Resources{
-		Requests: &v1alpha1.ResourceRequirement{
-			CPU:    "2000m",
-			Memory: "4Gi",
-		},
-		Limits: &v1alpha1.ResourceRequirement{
-			CPU:    "2000m",
-			Memory: "4Gi",
+		Requests: corev1.ResourceList{
+			CPU:    resource.MustParse("1000m"),
+			Memory: resource.MustParse("1Gi"),
 		},
 	}
-	Large = v1alpha1.Resources{
-		Requests: &v1alpha1.ResourceRequirement{
-			CPU:    "4000m",
-			Memory: "8Gi",
+	Medium = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			CPU:    resource.MustParse("2000m"),
+			Memory: resource.MustParse("4Gi"),
 		},
-		Limits: &v1alpha1.ResourceRequirement{
-			CPU:    "4000m",
-			Memory: "8Gi",
+		Limits: corev1.ResourceList{
+			CPU:    resource.MustParse("2000m"),
+			Memory: resource.MustParse("4Gi"),
 		},
 	}
-	XLarge = v1alpha1.Resources{
-		Requests: &v1alpha1.ResourceRequirement{
-			CPU:    "8000m",
-			Memory: "16Gi",
+	Large = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			CPU:    resource.MustParse("4000m"),
+			Memory: resource.MustParse("8Gi"),
 		},
-		Limits: &v1alpha1.ResourceRequirement{
-			CPU:    "8000m",
-			Memory: "16Gi",
+		Limits: corev1.ResourceList{
+			CPU:    resource.MustParse("4000m"),
+			Memory: resource.MustParse("8Gi"),
+		},
+	}
+	XLarge = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			CPU:    resource.MustParse("8000m"),
+			Memory: resource.MustParse("16Gi"),
+		},
+		Limits: corev1.ResourceList{
+			CPU:    resource.MustParse("8000m"),
+			Memory: resource.MustParse("16Gi"),
 		},
 	}
 )
@@ -111,11 +117,12 @@ func StorageClass(t StorageType) string {
 	}
 }
 
-func WithStorage(r v1alpha1.Resources, size string) v1alpha1.Resources {
+func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequirements {
 	if r.Requests == nil {
-		r.Requests = &v1alpha1.ResourceRequirement{}
+		r.Requests = corev1.ResourceList{}
 	}
-	r.Requests.Storage = size
+
+	r.Requests[Storage] = resource.MustParse(size)
 
 	return r
 }

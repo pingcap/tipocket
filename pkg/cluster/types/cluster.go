@@ -1,4 +1,4 @@
-package cluster
+package types
 
 import (
 	"context"
@@ -15,6 +15,10 @@ const (
 	TiKV Component = "tikv"
 	// PD component identifier
 	PD Component = "pd"
+	// Pump Component identifier
+	Pump Component = "pump"
+	// Drainer Component identifier
+	Drainer Component = "drainer"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )

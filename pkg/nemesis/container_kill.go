@@ -10,7 +10,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -19,19 +19,19 @@ type containerKillGenerator struct {
 }
 
 // Generate generates container-kill actions, to simulate the case that node can be recovered quickly after being killed
-func (g containerKillGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
+func (g containerKillGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
 	var n int
-	var component *cluster.Component
+	var component *clusterTypes.Component
 	var freq = time.Second * time.Duration(rand.Intn(120)+60)
 	switch g.name {
 	case "short_kill_tikv_1node":
 		n = 1
-		cmp := cluster.TiKV
+		cmp := clusterTypes.TiKV
 		component = &cmp
 	case "short_kill_pd_leader":
 		n = 1
 		nodes = findPDMember(nodes, true)
-		cmp := cluster.PD
+		cmp := clusterTypes.PD
 		component = &cmp
 	}
 	return containerKillNodes(nodes, n, component, freq)
@@ -41,7 +41,7 @@ func (g containerKillGenerator) Name() string {
 	return g.name
 }
 
-func containerKillNodes(nodes []cluster.Node, n int, component *cluster.Component, freq time.Duration) []*core.NemesisOperation {
+func containerKillNodes(nodes []clusterTypes.Node, n int, component *clusterTypes.Component, freq time.Duration) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	if component != nil {
 		nodes = filterComponent(nodes, *component)
@@ -74,14 +74,14 @@ type containerKill struct {
 	k8sNemesisClient
 }
 
-func (k containerKill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (k containerKill) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	log.Printf("Creating container-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	containerChaos := buildContainerKillChaos(node.Namespace, node.Namespace,
 		node.PodName, string(node.Component))
 	return k.cli.ApplyPodChaos(ctx, &containerChaos)
 }
 
-func (k containerKill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (k containerKill) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	log.Printf("Recover container-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	containerChaos := buildContainerKillChaos(node.Namespace, node.Namespace, node.PodName, string(node.Component))
 	return k.cli.CancelPodChaos(ctx, &containerChaos)

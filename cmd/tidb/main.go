@@ -14,6 +14,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	pocketCreator "github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -74,6 +75,8 @@ func main() {
 		creator = tidb.LongForkClientCreator{}
 	//case "sequential":
 	//	creator = tidb.SequentialClientCreator{}
+	case "pocket":
+		creator = pocketCreator.PocketCreator{}
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
@@ -102,6 +105,10 @@ func main() {
 		log.Fatalf("invalid checker %s", *checkerNames)
 	}
 
+	if withProf {
+		cfg.Mode = control.ModeWithPerf
+	}
+
 	verifySuit := verify.Suit{
 		Model:   model,
 		Checker: checker,
@@ -116,7 +123,6 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator,
 		Nemesises:     *nemesises,
-		WithProf:      withProf,
 		VerifySuit:    verifySuit,
 		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
