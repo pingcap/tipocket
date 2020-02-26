@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"os"
 	"regexp"
 	"time"
@@ -54,7 +55,7 @@ func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 	case *tidb.TiDBClusterRecommendation:
 		return k.E2eCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
 	default:
-		panic("unreachable")
+		return errors.New("unreachable")
 	}
 }
 

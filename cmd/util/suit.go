@@ -116,6 +116,8 @@ func (suit *Suit) Run(ctx context.Context) {
 	}()
 
 	c.Run()
+
+	log.Printf("tear down cluster...")
 	if err := suit.Provisioner.TearDown(context.TODO(), suit.Cluster); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
 	}
