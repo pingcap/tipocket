@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+
 	"github.com/pingcap/go-tpc/pkg/workload"
 	"github.com/pingcap/go-tpc/tpcc"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 )
@@ -31,7 +32,7 @@ type tpccClient struct {
 	workloadCtx context.Context
 }
 
-func (t *tpccClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (t *tpccClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
@@ -50,7 +51,7 @@ func (t *tpccClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx 
 	return nil
 }
 
-func (t *tpccClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (t *tpccClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	defer t.CleanupThread(t.workloadCtx, 0)
 	if idx == 0 {
 		return t.Workloader.Cleanup(t.workloadCtx, 0)
@@ -58,7 +59,7 @@ func (t *tpccClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 	return nil
 }
 
-func (t *tpccClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
+func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	s := time.Now()
 	err := t.Workloader.Run(t.workloadCtx, 0)
 	if err != nil {
@@ -79,12 +80,16 @@ func (t tpccClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
+func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+	return nil
+}
+
 // TPCCClientCreator creates tpccClient
 type TPCCClientCreator struct {
 	tpccClient []*tpccClient
 }
 
-func (T *TPCCClientCreator) Create(node cluster.ClientNode) core.Client {
+func (T *TPCCClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	client := &tpccClient{}
 	T.tpccClient = append(T.tpccClient, client)
 	return client

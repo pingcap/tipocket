@@ -12,7 +12,7 @@ import (
 	"github.com/pingcap/tidb/config"
 	"github.com/pingcap/tidb/store/tikv"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/model"
 )
@@ -26,7 +26,7 @@ type registerClient struct {
 	r  *rand.Rand
 }
 
-func (c *registerClient) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (c *registerClient) SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	db, err := tikv.NewRawKVClient([]string{fmt.Sprintf("%s:2379", node.IP)}, config.Security{})
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *registerClient) SetUp(ctx context.Context, nodes []cluster.Node, node c
 	return nil
 }
 
-func (c *registerClient) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+func (c *registerClient) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
 	return c.db.Close()
 }
 
@@ -63,7 +63,7 @@ func (c *registerClient) invokeRead(ctx context.Context, r model.RegisterRequest
 	return model.RegisterResponse{Value: int(v)}
 }
 
-func (c *registerClient) Invoke(ctx context.Context, node cluster.Node, r interface{}) interface{} {
+func (c *registerClient) Invoke(ctx context.Context, node clusterTypes.Node, r interface{}) interface{} {
 	arg := r.(model.RegisterRequest)
 	if arg.Op == model.RegisterRead {
 		return c.invokeRead(ctx, arg)

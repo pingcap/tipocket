@@ -40,8 +40,8 @@ var (
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
-	profFile     = flag.String("prof", "./prof.log", "service quality prof file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
@@ -65,26 +65,21 @@ func main() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
-	//if chaosNamespace == nil || *chaosNamespace == "" {
-	//	chaosNamespace = namespace
-	//}
-
-	cfg := control.Config{
-		DB:           "noop",
-		ClientCount:  *clientCount,
-		RequestCount: *requestCount,
-		RunRound:     *round,
-		RunTime:      *runTime,
-		History:      *historyFile,
-	}
-
 	var (
 		creator core.ClientCreator
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
 		checker core.Checker
+		cfg     = control.Config{
+			DB:           "noop",
+			Mode:         control.Mode(*mode),
+			ClientCount:  *clientCount,
+			RequestCount: *requestCount,
+			RunRound:     *round,
+			RunTime:      *runTime,
+			History:      *historyFile,
+		}
 	)
-
 	switch *clientCase {
 	case "bank":
 		creator = tidb.BankClientCreator{}
@@ -97,14 +92,11 @@ func main() {
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
-
-	withProf := false
 	switch *checkerNames {
 	case "porcupine":
 		checker = porcupine.Checker{}
 	case "service_quality":
-		checker = tidb.BankServiceQualityChecker(*profFile)
-		withProf = true
+		checker = tidb.BankServiceQualityChecker("./profile.log")
 	case "tidb_bank_tso":
 		checker = tidb.BankTsoChecker()
 	case "long_fork_checker":
@@ -133,7 +125,6 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator,
 		Nemesises:     *nemesises,
-		WithProf:      withProf,
 		VerifySuit:    verifySuit,
 		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}

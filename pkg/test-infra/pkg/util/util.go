@@ -15,6 +15,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/controller"
@@ -33,4 +34,28 @@ func GenTiDBServiceAddress(svc *corev1.Service) string {
 
 func GenMysqlServiceAddress(svc *corev1.Service) string {
 	return fmt.Sprintf("%s:3306", svc.Spec.ClusterIP)
+}
+
+// FindPort get possible correct port when there are multiple ports
+func FindPort(podName string, ports []corev1.ContainerPort) int32 {
+	if len(ports) == 0 {
+		return 0
+	}
+
+	var priorityPort int32 = 0
+	if strings.Contains(podName, "pd") {
+		priorityPort = 2379
+	} else if strings.Contains(podName, "tikv") {
+		priorityPort = 20160
+	} else if strings.Contains(podName, "tidb") {
+		priorityPort = 4000
+	}
+
+	for _, port := range ports {
+		if port.ContainerPort == priorityPort {
+			return priorityPort
+		}
+	}
+
+	return ports[0].ContainerPort
 }

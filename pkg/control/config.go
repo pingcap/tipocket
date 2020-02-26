@@ -3,17 +3,19 @@ package control
 import (
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
 // Config is the configuration for the controller.
 type Config struct {
+	// Mode is for switch between control modes
+	Mode Mode
 	// DB is the name which we want to run.
 	DB string
 	// Nodes are addresses of nodes.
-	Nodes []cluster.Node
+	Nodes []clusterTypes.Node
 	// ClientNode are addresses of client usage.
-	ClientNodes []cluster.ClientNode
+	ClientNodes []clusterTypes.ClientNode
 	// ClientCount controls the count of clients
 	ClientCount int
 	// Chaos NS
@@ -28,6 +30,32 @@ type Config struct {
 
 	// History file
 	History string
+
+	// CaseConfig can be anything, use type assertion in your case
+	CaseConfig interface{}
+}
+
+// Mode enums control modes
+type Mode int
+
+// Modes enum
+const (
+	ModeMixed = iota
+	ModeSequential
+	ModeSelfScheduled
+)
+
+func (m Mode) String() string {
+	switch m {
+	case ModeMixed:
+		return "Mixed mode"
+	case ModeSelfScheduled:
+		return "Self scheduled mode"
+	case ModeSequential:
+		return "Nemesis one by one mode"
+	default:
+		return "Unknown mode"
+	}
 }
 
 func (c *Config) adjust() {

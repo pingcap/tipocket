@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/nemesis"
@@ -21,12 +21,11 @@ import (
 type Suit struct {
 	*control.Config
 	// Provisioner deploy the SUT cluster
-	cluster.Provisioner
+	clusterTypes.Provisioner
 	core.ClientCreator
 	// nemesis, separated by comma.
 	Nemesises string
 	// perform service quality checking
-	WithProf   bool
 	VerifySuit verify.Suit
 
 	// cluster definition
@@ -79,6 +78,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Panic("no client nodes exist")
 	}
+
 	if suit.Config.ClientCount == 0 {
 		log.Panic("suit.Config.ClientCount is required")
 	}
@@ -101,7 +101,13 @@ func (suit *Suit) Run(ctx context.Context) {
 	)
 
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigs,
+		os.Kill,
+		os.Interrupt,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
 
 	go func() {
 		<-sigs
@@ -109,12 +115,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		cancel()
 	}()
 
-	if suit.WithProf {
-		c.RunWithServiceQualityProf()
-	} else {
-		c.Run()
-	}
-
+	c.Run()
 	if err := suit.Provisioner.TearDown(context.TODO(), suit.Cluster); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
 	}

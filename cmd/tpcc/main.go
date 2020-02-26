@@ -60,6 +60,7 @@ func main() {
 
 	cfg := control.Config{
 		DB:           "noop",
+		Mode:         control.ModeSequential,
 		ClientCount:  *clientCount,
 		RequestCount: *requestCount,
 		RunRound:     *round,
@@ -83,7 +84,6 @@ func main() {
 		Provisioner:   provisioner,
 		ClientCreator: creator,
 		Nemesises:     *nemesises,
-		WithProf:      true,
 		VerifySuit:    verifySuit,
 		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}

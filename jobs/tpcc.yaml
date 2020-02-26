@@ -2,7 +2,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: bank-sqt-1
+  name: tpcc
   namespace: tipocket-job
 spec:
   schedule: "0 */4 * * *"
@@ -18,17 +18,14 @@ spec:
               - "sh"
               - "-c"
               - |
-                /bin/chaos-tidb \
-                -case=bank \
-                -mode=1 \
-                -namespace=tipocket-sqt-test \
+                /bin/tpcc \
+                -namespace=tipocket-tpcc-test \
                 -image-version=v3.0.9 \
-                -client=5 \
+                -client=100 \
                 -hub=hub.pingcap.net \
-                -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min \
-                -checker=service_quality \
-                -round=20 \
-                -request-count=20000 \
+                -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
+                -round=10 \
+                -request-count=100000
 
                 if [ $? != "0" ]; then
                   echo "ERROR OCCURED, PTAL..."
