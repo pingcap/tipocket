@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"errors"
 	"os"
 	"regexp"
 	"time"
@@ -49,8 +50,13 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown() error {
-	return nil
+func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+	switch s := spec.(type) {
+	case *tidb.TiDBClusterRecommendation:
+		return k.E2eCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
+	default:
+		return errors.New("unreachable")
+	}
 }
 
 // TODO: move the set up process into tidb package and make it a interface

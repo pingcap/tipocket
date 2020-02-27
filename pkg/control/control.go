@@ -81,19 +81,20 @@ func (c *Controller) Close() {
 // Run runs the controller.
 func (c *Controller) Run() {
 	switch c.cfg.Mode {
-	case ModeInvoker:
-		c.RunInvoker()
+	case ModeMixed:
+		c.RunMixed()
+	case ModeSequential:
+		c.RunWithNemesisSequential()
 	case ModeSelfScheduled:
 		c.RunSelfScheduled()
-	case ModeWithPerf:
-		c.RunWithServiceQualityProf()
 	default:
 		log.Fatalf("unhandled mode %s", c.cfg.Mode)
 	}
 }
 
-// RunInvoker runs the controller with invoker way
-func (c *Controller) RunInvoker() {
+// RunMixed runs workload round by round, with nemesis injected seamlessly
+// Nemesis and workload are running concurrently, nemesis won't pause when one round of workload is finished
+func (c *Controller) RunMixed() {
 	c.setUpDB()
 	c.setUpClient()
 
@@ -158,15 +159,17 @@ ROUND:
 	c.tearDownDB()
 }
 
-// RunWithServiceQualityProf runs the controller with profiling service quality
-func (c *Controller) RunWithServiceQualityProf() {
+// RunWithNemesisSequential runs nemesis sequential, with n round of workload running with each kind of nemesis.
+// eg. nemesis1, round 1, round 2, ... round n ->
+//		nemesis2, round 1, round 2, ... round n ->
+//		... nemesis n, round 1, round 2, ... round n
+func (c *Controller) RunWithNemesisSequential() {
 	c.setUpDB()
 	c.setUpClient()
-
 ENTRY:
 	for _, g := range c.nemesisGenerators {
 		for round := 1; round <= c.cfg.RunRound; round++ {
-			log.Printf("%s round %d start ...", g.Name(), round)
+			log.Printf("nemesis[%s] round %d start...", g.Name(), round)
 
 			ctx, cancel := context.WithTimeout(c.ctx, c.cfg.RunTime)
 			historyFile := fmt.Sprintf("%s.%s.%d", c.cfg.History, g.Name(), round)
@@ -202,13 +205,13 @@ ENTRY:
 			}()
 
 			clientWg.Wait()
-			log.Printf("%s round %d client requests done", g.Name(), round)
+			log.Printf("nemesis[%s] round %d client requests done", g.Name(), round)
 			cancel()
 			nemesisWg.Wait()
-			log.Printf("%s round %d nemesis done", g.Name(), round)
+			log.Printf("nemesis[%s] round %d nemesis done", g.Name(), round)
 			recorder.Close()
 
-			log.Printf("%s round %d begin to verify history file", g.Name(), round)
+			log.Printf("nemesis[%s] round %d begin to verify history file", g.Name(), round)
 			c.suit.Verify(historyFile)
 			select {
 			case <-c.ctx.Done():
@@ -217,7 +220,7 @@ ENTRY:
 			default:
 			}
 
-			log.Printf("%s round %d finish", g.Name(), round)
+			log.Printf("nemesis[%s] round %d finish", g.Name(), round)
 		}
 	}
 
@@ -225,7 +228,7 @@ ENTRY:
 	c.tearDownDB()
 }
 
-// RunSelfScheduled runs the controller with self schedueld
+// RunSelfScheduled runs the controller with self scheduled
 func (c *Controller) RunSelfScheduled() {
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	var nemesisWg sync.WaitGroup

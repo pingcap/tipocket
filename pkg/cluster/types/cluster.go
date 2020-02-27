@@ -56,7 +56,7 @@ type Provisioner interface {
 	// SetUp sets up cluster, returns err or all nodes info
 	SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
-	TearDown() error
+	TearDown(ctx context.Context, spec interface{}) error
 }
 
 func (node Node) String() string {

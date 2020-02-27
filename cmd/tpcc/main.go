@@ -19,27 +19,29 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
+	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
-	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
 var (
-	configPath      = flag.String("config", "", "config file path")
-	pprofAddr       = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace       = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises       = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub             = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion    = flag.String("image-version", "latest", "image version")
-	binlogVersion   = flag.String("binlog-version", "", `overwrite "-image-version" flag for drainer`)
-	storageClass    = flag.String("storage-class", "local-storage", "storage class name")
-	drainerRelayLog = flag.Bool("relay-log", false, "if enable relay log")
+	clientCount  = flag.Int("client", 5, "client count")
+	requestCount = flag.Int("request-count", 1000, "client test request count")
+	round        = flag.Int("round", 3, "client test request round")
+	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
+	historyFile  = flag.String("history", "./history.log", "history file")
+	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
+	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
+	hub          = flag.String("hub", "", "hub address, default to docker hub")
+	imageVersion = flag.String("image-version", "latest", "image version")
+	storageClass = flag.String("storage-class", "local-storage", "storage class name")
 )
 
 func initE2eContext() {
@@ -47,8 +49,6 @@ func initE2eContext() {
 	fixture.E2eContext.HubAddress = *hub
 	fixture.E2eContext.DockerRepository = "pingcap"
 	fixture.E2eContext.ImageVersion = *imageVersion
-	fixture.E2eContext.BinlogConfig.BinlogVersion = *binlogVersion
-	fixture.E2eContext.BinlogConfig.EnableRelayLog = *drainerRelayLog
 }
 
 func main() {
@@ -59,16 +59,21 @@ func main() {
 	}()
 
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
-		ClientCount: 1,
-		DB:          "noop",
-		CaseConfig:  *configPath,
+		DB:           "noop",
+		Mode:         control.ModeSequential,
+		ClientCount:  *clientCount,
+		RequestCount: *requestCount,
+		RunRound:     *round,
+		RunTime:      *runTime,
+		History:      *historyFile,
 	}
 
+	clientCreator := &tidb.TPCCClientCreator{}
+	creator := clientCreator
 	verifySuit := verify.Suit{
-		Model:   &core.NoopModel{},
-		Checker: core.NoopChecker{},
-		Parser:  nil,
+		Model:   nil,
+		Checker: &tidb.TPCCChecker{CreatorRef: clientCreator},
+		Parser:  tidb.TPCCParser(),
 	}
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
@@ -77,10 +82,10 @@ func main() {
 	suit := util.Suit{
 		Config:        &cfg,
 		Provisioner:   provisioner,
-		ClientCreator: creator.PocketCreator{},
+		ClientCreator: creator,
 		Nemesises:     *nemesises,
 		VerifySuit:    verifySuit,
-		Cluster:       binlog.RecommendedBinlogCluster(*namespace, *namespace),
+		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

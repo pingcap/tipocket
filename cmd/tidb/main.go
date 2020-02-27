@@ -1,3 +1,16 @@
+// Copyright 2020 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -5,8 +18,9 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	_ "net/http/pprof"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
@@ -14,7 +28,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
-	pocketCreator "github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -27,8 +40,8 @@ var (
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
 	historyFile  = flag.String("history", "./history.log", "history file")
-	profFile     = flag.String("prof", "./prof.log", "service quality prof file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
@@ -52,20 +65,21 @@ func main() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
-	//if chaosNamespace == nil || *chaosNamespace == "" {
-	//	chaosNamespace = namespace
-	//}
-
-	cfg := control.Config{
-		DB:           "noop",
-		ClientCount:  *clientCount,
-		RequestCount: *requestCount,
-		RunRound:     *round,
-		RunTime:      *runTime,
-		History:      *historyFile,
-	}
-
-	var creator core.ClientCreator
+	var (
+		creator core.ClientCreator
+		parser  = tidb.BankParser()
+		model   = tidb.BankModel()
+		checker core.Checker
+		cfg     = control.Config{
+			DB:           "noop",
+			Mode:         control.Mode(*mode),
+			ClientCount:  *clientCount,
+			RequestCount: *requestCount,
+			RunRound:     *round,
+			RunTime:      *runTime,
+			History:      *historyFile,
+		}
+	)
 	switch *clientCase {
 	case "bank":
 		creator = tidb.BankClientCreator{}
@@ -75,22 +89,14 @@ func main() {
 		creator = tidb.LongForkClientCreator{}
 	//case "sequential":
 	//	creator = tidb.SequentialClientCreator{}
-	case "pocket":
-		creator = pocketCreator.PocketCreator{}
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
-
-	parser := tidb.BankParser()
-	model := tidb.BankModel()
-	withProf := false
-	var checker core.Checker
 	switch *checkerNames {
 	case "porcupine":
 		checker = porcupine.Checker{}
 	case "service_quality":
-		checker = tidb.BankServiceQualityChecker(*profFile)
-		withProf = true
+		checker = tidb.BankServiceQualityChecker("./profile.log")
 	case "tidb_bank_tso":
 		checker = tidb.BankTsoChecker()
 	case "long_fork_checker":
@@ -103,10 +109,6 @@ func main() {
 	//	model = nil
 	default:
 		log.Fatalf("invalid checker %s", *checkerNames)
-	}
-
-	if withProf {
-		cfg.Mode = control.ModeWithPerf
 	}
 
 	verifySuit := verify.Suit{
