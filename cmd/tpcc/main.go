@@ -57,6 +57,7 @@ func initE2eContext() {
 }
 
 func main() {
+	util.PrintInfo()
 	flag.Parse()
 	initE2eContext()
 	go func() {

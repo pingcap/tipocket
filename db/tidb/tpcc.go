@@ -77,8 +77,11 @@ func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r
 		if strings.Contains(err.Error(), "connection is already closed") {
 			// reconnect
 			log.Printf("connecting...")
-			t.Workloader = tpcc.NewWorkloader(t.db, &tpccConfig)
-			t.workloadCtx = t.Workloader.InitThread(context.TODO(), 0)
+			worker := tpcc.NewWorkloader(t.db, &tpccConfig)
+			nCtx := t.Workloader.InitThread(context.TODO(), 0)
+			log.Printf("reconnected")
+			t.Workloader = worker
+			t.workloadCtx = nCtx
 		}
 		return tpccResponse{Duration: time.Now().Sub(s), Error: err.Error()}
 	}

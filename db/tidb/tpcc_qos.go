@@ -36,7 +36,6 @@ func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error)
 	for window.Next() {
 		leftBound, tpm := window.Count(time.Minute)
 		dur := leftBound.Sub(injectionTime)
-
 		if float64(tpm) >= metrics.baseline*0.8 && dur < metrics.p80 {
 			metrics.p80 = dur
 		}
@@ -94,7 +93,7 @@ func convertToTPMSeries(ops []core.Operation) (nemesisRecord *core.NemesisGenera
 		op := ops[idx]
 		if op.Action == core.ReturnOperation {
 			response := op.Data.(tpccResponse)
-			if response.Error == "" {
+			if response.Error != "" {
 				// skip Error response
 				continue
 			}
