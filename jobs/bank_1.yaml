@@ -13,6 +13,7 @@ spec:
         spec:
           containers:
           - name: tipocket
+            imagePullPolicy: Always
             image: pingcap/tipocket:latest
             command:
               - "sh"

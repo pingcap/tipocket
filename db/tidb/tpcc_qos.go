@@ -1,11 +1,7 @@
 package tidb
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
-	"os"
-	"path"
 	"sort"
 	"time"
 
@@ -24,13 +20,12 @@ func TPCCQosChecker(warmUpDuration time.Duration, path string) core.Checker {
 func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	var (
 		nemesisRecord core.NemesisGeneratorRecord
-		baselineTPM   float64
 		injectionTime time.Time
 		window        countWindow
 	)
 	ops = dropWarmUpOps(ops, t.warmUpDuration)
-	metrics := rtoMetrics{nemesis: &nemesisRecord}
-	metrics.nemesis, baselineTPM, injectionTime, window, metrics.totalMeasureTime = convertToTPMSeries(ops)
+	metrics := rtoMetrics{name: "tpcc", nemesis: &nemesisRecord}
+	metrics.nemesis, metrics.baseline, injectionTime, window, metrics.totalMeasureTime = convertToTPMSeries(ops)
 
 	if len(window.series) == 0 {
 		metrics.p80, metrics.p90, metrics.p99 = time.Duration(0), time.Duration(0), time.Duration(0)
@@ -42,40 +37,21 @@ func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error)
 		leftBound, tpm := window.Count(time.Minute)
 		dur := leftBound.Sub(injectionTime)
 
-		if float64(tpm) >= baselineTPM*0.8 && dur < metrics.p80 {
+		if float64(tpm) >= metrics.baseline*0.8 && dur < metrics.p80 {
 			metrics.p80 = dur
 		}
-		if float64(tpm) >= baselineTPM*0.9 && dur < metrics.p80 {
+		if float64(tpm) >= metrics.baseline*0.9 && dur < metrics.p80 {
 			metrics.p90 = dur
 		}
-		if float64(tpm) >= baselineTPM*0.99 && dur < metrics.p80 {
+		if float64(tpm) >= metrics.baseline*0.99 && dur < metrics.p80 {
 			metrics.p99 = dur
 			break
 		}
 	}
-	if err := t.record(&metrics); err != nil {
+	if err := metrics.Record(t.summaryFile); err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-func (t *tpccQoSChecker) record(rto *rtoMetrics) error {
-	os.MkdirAll(path.Dir(""), 0755)
-	f, err := os.OpenFile(t.summaryFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	data, err := json.Marshal(rto.nemesis)
-	if err != nil {
-		return err
-	}
-	if _, err := f.WriteString(fmt.Sprintf("workload:tpcc,nemesis:%s,measure_time:%.2f,tpm_p80:%.2f,tpm_p90:%.2f,tpm_p99:%.2f,detail:%s\n",
-		rto.nemesis.Name, rto.totalMeasureTime.Seconds(), rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds(), string(data))); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (t *tpccQoSChecker) Name() string {
@@ -117,7 +93,11 @@ func convertToTPMSeries(ops []core.Operation) (nemesisRecord *core.NemesisGenera
 	for idx := range ops {
 		op := ops[idx]
 		if op.Action == core.ReturnOperation {
-			// TODO: check Error of response?
+			response := op.Data.(tpccResponse)
+			if response.Error == "" {
+				// skip Error response
+				continue
+			}
 			if injectionTime.IsZero() {
 				baselineTransaction++
 			} else {

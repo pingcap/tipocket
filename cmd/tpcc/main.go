@@ -17,6 +17,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
@@ -34,9 +35,9 @@ import (
 
 var (
 	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", 1000, "client test request count")
+	requestCount = flag.Int("request-count", math.MaxInt64, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
+	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
 	qosFile      = flag.String("qosFile", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")

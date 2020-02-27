@@ -28,17 +28,21 @@ var tpccConfig = tpcc.Config{
 }
 
 type tpccClient struct {
+	db *sql.DB
 	workload.Workloader
 	workloadCtx context.Context
 }
 
 func (t *tpccClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
-	node := nodes[idx]
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	var (
+		err  error
+		node = nodes[idx]
+	)
+	t.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
-	t.Workloader = tpcc.NewWorkloader(db, &tpccConfig)
+	t.Workloader = tpcc.NewWorkloader(t.db, &tpccConfig)
 	t.workloadCtx = t.Workloader.InitThread(ctx, 0)
 	if idx == 0 {
 		if err := t.Workloader.Prepare(t.workloadCtx, 0); err != nil {
@@ -59,10 +63,23 @@ func (t *tpccClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNo
 	return nil
 }
 
-func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) (response interface{}) {
 	s := time.Now()
 	err := t.Workloader.Run(t.workloadCtx, 0)
+	// TPCC.InitThread will panic when establish connection failed
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("recovered from ", r)
+			response = tpccResponse{Duration: time.Now().Sub(s), Error: err.Error()}
+		}
+	}()
 	if err != nil {
+		if strings.Contains(err.Error(), "connection is already closed") {
+			// reconnect
+			log.Printf("connecting...")
+			t.Workloader = tpcc.NewWorkloader(t.db, &tpccConfig)
+			t.workloadCtx = t.Workloader.InitThread(context.TODO(), 0)
+		}
 		return tpccResponse{Duration: time.Now().Sub(s), Error: err.Error()}
 	}
 	return tpccResponse{Duration: time.Now().Sub(s)}
