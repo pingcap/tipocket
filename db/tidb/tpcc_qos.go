@@ -3,6 +3,7 @@ package tidb
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"sort"
@@ -12,11 +13,12 @@ import (
 )
 
 type tpccQoSChecker struct {
-	summaryFile string
+	warmUpDuration time.Duration
+	summaryFile    string
 }
 
-func TPCCQosChecker(path string) core.Checker {
-	return &tpccQoSChecker{summaryFile: path}
+func TPCCQosChecker(warmUpDuration time.Duration, path string) core.Checker {
+	return &tpccQoSChecker{warmUpDuration: warmUpDuration, summaryFile: path}
 }
 
 func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
@@ -26,7 +28,7 @@ func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error)
 		injectionTime time.Time
 		window        countWindow
 	)
-
+	ops = dropWarmUpOps(ops, t.warmUpDuration)
 	metrics := rtoMetrics{nemesis: &nemesisRecord}
 	metrics.nemesis, baselineTPM, injectionTime, window, metrics.totalMeasureTime = convertToTPMSeries(ops)
 
@@ -76,6 +78,29 @@ func (t *tpccQoSChecker) record(rto *rtoMetrics) error {
 	return nil
 }
 
+func (t *tpccQoSChecker) Name() string {
+	return "tpcc_QoS_checker"
+}
+
+func dropWarmUpOps(ops []core.Operation, warmUpDuration time.Duration) []core.Operation {
+	var filterOps []core.Operation
+	if len(ops) < 2 {
+		return ops
+	}
+	warmUpEnd := ops[0].Time.Add(warmUpDuration)
+	for _, op := range ops {
+		switch op.Action {
+		case core.ReturnOperation:
+			if op.Time.After(warmUpEnd) {
+				filterOps = append(filterOps, op)
+			}
+		case core.InvokeNemesis, core.RecoverNemesis:
+			filterOps = append(filterOps, op)
+		}
+	}
+	return filterOps
+}
+
 func convertToTPMSeries(ops []core.Operation) (nemesisRecord *core.NemesisGeneratorRecord,
 	baselineTPM float64,
 	injectionTime time.Time,
@@ -111,14 +136,14 @@ func convertToTPMSeries(ops []core.Operation) (nemesisRecord *core.NemesisGenera
 		}
 	}
 
+	if injectionTime.IsZero() {
+		log.Fatalf("illegal ops to measure QoS, lacking the InvokeNemesis record")
+	}
+
 	sort.Sort(timeSeries(series))
 	window = countWindow{series: series}
 	measureDuration = endTime.Sub(startTime)
 	baselineTPM = float64(baselineTransaction) / injectionTime.Sub(startTime).Minutes()
 
 	return
-}
-
-func (t *tpccQoSChecker) Name() string {
-	return "tpcc_QoS_checker"
 }

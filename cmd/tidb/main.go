@@ -124,9 +124,9 @@ func main() {
 		Config:        &cfg,
 		Provisioner:   provisioner,
 		ClientCreator: creator,
-		Nemesises:     *nemesises,
+		NemesisGens:   util.ParseNemesisGenerators(*nemesises),
 		VerifySuit:    verifySuit,
-		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs:   tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

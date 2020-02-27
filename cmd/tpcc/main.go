@@ -16,11 +16,12 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/pingcap/tipocket/pkg/core"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/core"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
@@ -77,7 +78,7 @@ func main() {
 	case "consistency":
 		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
 	case "qos":
-		checker = tidb.TPCCQosChecker(*qosFile)
+		checker = tidb.TPCCQosChecker(time.Minute, *qosFile)
 	}
 	verifySuit := verify.Suit{
 		Model:   nil,
@@ -88,13 +89,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var waitWarmUpNemesisGens []core.NemesisGenerator
+	for _, gen := range util.ParseNemesisGenerators(*nemesises) {
+		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
+			Gen:   gen,
+			Delay: time.Minute * time.Duration(2),
+		})
+	}
 	suit := util.Suit{
 		Config:        &cfg,
 		Provisioner:   provisioner,
 		ClientCreator: creator,
-		Nemesises:     *nemesises,
+		NemesisGens:   waitWarmUpNemesisGens,
 		VerifySuit:    verifySuit,
-		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs:   tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

@@ -200,7 +200,6 @@ ENTRY:
 			nemesisWg.Add(1)
 			go func() {
 				defer nemesisWg.Done()
-				time.Sleep(time.Second * 10)
 				c.dispatchNemesisWithRecord(ctx, g, recorder)
 			}()
 

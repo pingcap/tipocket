@@ -78,9 +78,9 @@ func main() {
 		Config:        &cfg,
 		Provisioner:   provisioner,
 		ClientCreator: creator.PocketCreator{},
-		Nemesises:     *nemesises,
+		NemesisGens:   util.ParseNemesisGenerators(*nemesises),
 		VerifySuit:    verifySuit,
-		Cluster:       binlog.RecommendedBinlogCluster(*namespace, *namespace),
+		ClusterDefs:   binlog.RecommendedBinlogCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

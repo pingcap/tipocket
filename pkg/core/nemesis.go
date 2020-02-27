@@ -135,6 +135,20 @@ func (NoopNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperat
 	return ops
 }
 
+type DelayNemesisGenerator struct {
+	Gen   NemesisGenerator
+	Delay time.Duration
+}
+
+func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperation {
+	time.Sleep(d.Delay)
+	return d.Gen.Generate(nodes)
+}
+
+func (d DelayNemesisGenerator) Name() string {
+	return d.Gen.Name()
+}
+
 func init() {
 	RegisterNemesis(NoopNemesis{})
 }
