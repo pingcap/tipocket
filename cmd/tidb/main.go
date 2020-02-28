@@ -121,12 +121,13 @@ func main() {
 		log.Fatal(err)
 	}
 	suit := util.Suit{
-		Config:        &cfg,
-		Provisioner:   provisioner,
-		ClientCreator: creator,
-		NemesisGens:   util.ParseNemesisGenerators(*nemesises),
-		VerifySuit:    verifySuit,
-		ClusterDefs:   tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		Config:           &cfg,
+		Provisioner:      provisioner,
+		ClientCreator:    creator,
+		NemesisGens:      util.ParseNemesisGenerators(*nemesises),
+		ClientRequestGen: util.BuildClientLoopThrottle(5 * time.Second),
+		VerifySuit:       verifySuit,
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

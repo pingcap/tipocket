@@ -8,11 +8,14 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
+	"time"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
@@ -38,6 +41,8 @@ type Suit struct {
 	core.ClientCreator
 	// NemesisGens saves NemesisGenerator
 	NemesisGens []core.NemesisGenerator
+	// ClientRequestGen
+	ClientRequestGen ClientLoopFunc
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
@@ -70,6 +75,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.Config,
 		suit.ClientCreator,
 		suit.NemesisGens,
+		suit.ClientRequestGen,
 		suit.VerifySuit,
 	)
 
@@ -93,6 +99,124 @@ func (suit *Suit) Run(ctx context.Context) {
 	log.Printf("tear down cluster...")
 	if err := suit.Provisioner.TearDown(context.TODO(), suit.ClusterDefs); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
+	}
+}
+
+func OnClientLoop(
+	ctx context.Context,
+	client core.Client,
+	node clusterTypes.ClientNode,
+	proc *int64,
+	requestCount *int64,
+	recorder *history.Recorder,
+) {
+	log.Printf("begin to run command on node %s", node)
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	procID := atomic.AddInt64(proc, 1)
+	for atomic.AddInt64(requestCount, -1) >= 0 {
+		request := client.NextRequest()
+
+		if err := recorder.RecordRequest(procID, request); err != nil {
+			log.Fatalf("record request %v failed %v", request, err)
+		}
+
+		log.Printf("%s: call %+v", node, request)
+		response := client.Invoke(ctx, node, request)
+		log.Printf("%s: return %+v", node, response)
+		isUnknown := true
+		if v, ok := response.(core.UnknownResponse); ok {
+			isUnknown = v.IsUnknown()
+		}
+
+		if err := recorder.RecordResponse(procID, response); err != nil {
+			log.Fatalf("record response %v failed %v", response, err)
+		}
+
+		// If Unknown, we need to use another process ID.
+		if isUnknown {
+			procID = atomic.AddInt64(proc, 1)
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+	}
+}
+
+type ClientLoopFunc func(ctx context.Context,
+	client core.Client,
+	node clusterTypes.ClientNode,
+	proc *int64,
+	requestCount *int64,
+	recorder *history.Recorder)
+
+func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
+	return func(ctx context.Context,
+		client core.Client,
+		node clusterTypes.ClientNode,
+		proc *int64,
+		requestCount *int64,
+		recorder *history.Recorder) {
+		log.Printf("begin to run command on node %s", node)
+
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		token := make(chan interface{}, 1)
+		go func() {
+			time.Sleep(time.Duration(rand.Int63n(int64(duration))))
+			ticker := time.NewTicker(duration)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ctx.Done():
+					close(token)
+					return
+				case _ = <-ticker.C:
+					token <- nil
+				}
+			}
+		}()
+
+		procID := atomic.AddInt64(proc, 1)
+		for atomic.AddInt64(requestCount, -1) >= 0 {
+			if _, ok := <-token; !ok {
+				return
+			}
+			request := client.NextRequest()
+			if err := recorder.RecordRequest(procID, request); err != nil {
+				log.Fatalf("record request %v failed %v", request, err)
+			}
+
+			log.Printf("[%d] %s: call %+v", procID, node.String(), request)
+			response := client.Invoke(ctx, node, request)
+			log.Printf("[%d] %s: return %+v", procID, node.String(), response)
+			isUnknown := true
+			if v, ok := response.(core.UnknownResponse); ok {
+				isUnknown = v.IsUnknown()
+			}
+
+			if err := recorder.RecordResponse(procID, response); err != nil {
+				log.Fatalf("record response %v failed %v", response, err)
+			}
+
+			// If Unknown, we need to use another process ID.
+			if isUnknown {
+				procID = atomic.AddInt64(proc, 1)
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+		}
 	}
 }
 

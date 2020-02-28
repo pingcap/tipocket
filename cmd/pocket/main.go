@@ -75,12 +75,13 @@ func main() {
 		log.Fatal(err)
 	}
 	suit := util.Suit{
-		Config:        &cfg,
-		Provisioner:   provisioner,
-		ClientCreator: creator.PocketCreator{},
-		NemesisGens:   util.ParseNemesisGenerators(*nemesises),
-		VerifySuit:    verifySuit,
-		ClusterDefs:   binlog.RecommendedBinlogCluster(*namespace, *namespace),
+		Config:           &cfg,
+		Provisioner:      provisioner,
+		ClientCreator:    creator.PocketCreator{},
+		NemesisGens:      util.ParseNemesisGenerators(*nemesises),
+		ClientRequestGen: util.OnClientLoop,
+		VerifySuit:       verifySuit,
+		ClusterDefs:      binlog.RecommendedBinlogCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }

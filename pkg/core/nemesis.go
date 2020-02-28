@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -55,6 +56,7 @@ type NoopNemesis struct {
 
 // Invoke executes the nemesis
 func (NoopNemesis) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+	time.Sleep(time.Second * time.Duration(rand.Intn(10)+1))
 	return nil
 }
 

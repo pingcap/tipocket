@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -29,7 +29,13 @@ type Controller struct {
 
 	clients []core.Client
 
-	nemesisGenerators []core.NemesisGenerator
+	nemesisGenerators      []core.NemesisGenerator
+	clientRequestGenerator func(ctx context.Context,
+		client core.Client,
+		node clusterTypes.ClientNode,
+		proc *int64,
+		requestCount *int64,
+		recorder *history.Recorder)
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -46,6 +52,7 @@ func NewController(
 	cfg *Config,
 	clientCreator core.ClientCreator,
 	nemesisGenerators []core.NemesisGenerator,
+	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 ) *Controller {
 	cfg.adjust()
@@ -62,6 +69,7 @@ func NewController(
 	c.cfg = cfg
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	c.nemesisGenerators = nemesisGenerators
+	c.clientRequestGenerator = clientRequestGenerator
 	c.suit = verifySuit
 
 	for _, node := range c.cfg.ClientNodes {
@@ -124,6 +132,7 @@ ROUND:
 
 		// requestCount for the round, shared by all clients.
 		requestCount := int64(c.cfg.RequestCount)
+		proc := c.proc
 		log.Printf("total request count %d", requestCount)
 
 		n := len(c.cfg.ClientNodes)
@@ -132,7 +141,7 @@ ROUND:
 		for i := 0; i < n; i++ {
 			go func(i int) {
 				defer clientWg.Done()
-				c.onClientLoop(ctx, i, &requestCount, recorder)
+				c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 			}(i)
 		}
 
@@ -184,6 +193,7 @@ ENTRY:
 
 			// requestCount for the round, shared by all clients.
 			requestCount := int64(c.cfg.RequestCount)
+			proc := c.proc
 			log.Printf("total request count %d", requestCount)
 
 			n := len(c.cfg.ClientNodes)
@@ -192,7 +202,7 @@ ENTRY:
 			for i := 0; i < n; i++ {
 				go func(i int) {
 					defer clientWg.Done()
-					c.onClientLoop(ctx, i, &requestCount, recorder)
+					c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 				}(i)
 			}
 
@@ -343,53 +353,6 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 		return fmt.Errorf("fail to dump: %v", err)
 	}
 	return nil
-}
-
-func (c *Controller) onClientLoop(
-	ctx context.Context,
-	i int,
-	requestCount *int64,
-	recorder *history.Recorder,
-) {
-	client := c.clients[i]
-	node := c.cfg.ClientNodes[i]
-
-	log.Printf("begin to run command on node %s", node)
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	procID := atomic.AddInt64(&c.proc, 1)
-	for atomic.AddInt64(requestCount, -1) >= 0 {
-		request := client.NextRequest()
-
-		if err := recorder.RecordRequest(procID, request); err != nil {
-			log.Fatalf("record request %v failed %v", request, err)
-		}
-
-		log.Printf("%s: call %+v", node, request)
-		response := client.Invoke(ctx, node, request)
-		log.Printf("%s: return %+v", node, response)
-		isUnknown := true
-		if v, ok := response.(core.UnknownResponse); ok {
-			isUnknown = v.IsUnknown()
-		}
-
-		if err := recorder.RecordResponse(procID, response); err != nil {
-			log.Fatalf("record response %v failed %v", response, err)
-		}
-
-		// If Unknown, we need to use another process ID.
-		if isUnknown {
-			procID = atomic.AddInt64(&c.proc, 1)
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-	}
 }
 
 func (c *Controller) dispatchNemesis(ctx context.Context) {

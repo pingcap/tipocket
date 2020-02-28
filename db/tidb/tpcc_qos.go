@@ -39,10 +39,10 @@ func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error)
 		if float64(tpm) >= metrics.baseline*0.8 && dur < metrics.p80 {
 			metrics.p80 = dur
 		}
-		if float64(tpm) >= metrics.baseline*0.9 && dur < metrics.p80 {
+		if float64(tpm) >= metrics.baseline*0.9 && dur < metrics.p90 {
 			metrics.p90 = dur
 		}
-		if float64(tpm) >= metrics.baseline*0.99 && dur < metrics.p80 {
+		if float64(tpm) >= metrics.baseline*0.99 && dur < metrics.p99 {
 			metrics.p99 = dur
 			break
 		}

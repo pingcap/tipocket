@@ -37,6 +37,7 @@ var (
 	clientCount  = flag.Int("client", 5, "client count")
 	requestCount = flag.Int("request-count", math.MaxInt64, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
+	ticker       = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
 	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
 	qosFile      = flag.String("qosFile", "./qos.log", "qos file")
@@ -100,12 +101,13 @@ func main() {
 		})
 	}
 	suit := util.Suit{
-		Config:        &cfg,
-		Provisioner:   provisioner,
-		ClientCreator: creator,
-		NemesisGens:   waitWarmUpNemesisGens,
-		VerifySuit:    verifySuit,
-		ClusterDefs:   tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		Config:           &cfg,
+		Provisioner:      provisioner,
+		ClientCreator:    creator,
+		NemesisGens:      waitWarmUpNemesisGens,
+		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
+		VerifySuit:       verifySuit,
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }
