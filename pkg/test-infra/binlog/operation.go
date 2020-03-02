@@ -21,8 +21,8 @@ import (
 	"github.com/pingcap/errors"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"

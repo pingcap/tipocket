@@ -24,8 +24,8 @@ import (
 	"github.com/pingcap/tidb-operator/pkg/label"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

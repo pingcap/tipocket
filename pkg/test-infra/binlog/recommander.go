@@ -20,8 +20,8 @@ import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/util/config"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
