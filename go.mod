@@ -5,12 +5,10 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
-	github.com/coreos/etcd v3.3.17+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.7.1
+	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/pingcap/advanced-statefulset v0.2.4
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
@@ -29,7 +27,6 @@ require (
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
-	k8s.io/component-base v0.0.0
 	k8s.io/klog v1.0.0
 	k8s.io/kubernetes v1.16.0
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
