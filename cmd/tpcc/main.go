@@ -22,12 +22,11 @@ import (
 	_ "net/http/pprof"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/core"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -40,7 +39,7 @@ var (
 	ticker       = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
 	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
-	qosFile      = flag.String("qosFile", "./qos.log", "qos file")
+	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	checkerName  = flag.String("checker", "consistency", "consistency or qos")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
@@ -81,7 +80,7 @@ func main() {
 	case "consistency":
 		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
 	case "qos":
-		checker = core.MultiChecker("TPCC&Qos", tidb.TPCCQosChecker(time.Minute, *qosFile), &tidb.TPCCChecker{CreatorRef: clientCreator})
+		checker = core.MultiChecker("tpcc qos", tidb.TPCCQosChecker(time.Minute, *qosFile), &tidb.TPCCChecker{CreatorRef: clientCreator})
 	}
 	verifySuit := verify.Suit{
 		Model:   nil,

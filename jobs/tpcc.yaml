@@ -29,7 +29,7 @@ spec:
                 -checker=qos \
                 -run-time=10m \
                 -request-count=1073741824 \
-                -qosFile=/qos.log
+                -qos-file=/qos.log
 
                 if [ $? != "0" ]; then
                   echo "ERROR OCCURED, PTAL..."

@@ -167,7 +167,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		token := make(chan interface{}, 1)
+		token := make(chan struct{})
 		go func() {
 			time.Sleep(time.Duration(rand.Int63n(int64(duration))))
 			ticker := time.NewTicker(duration)
@@ -179,7 +179,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 					close(token)
 					return
 				case _ = <-ticker.C:
-					token <- nil
+					token <- struct{}{}
 				}
 			}
 		}()
