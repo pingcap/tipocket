@@ -13,10 +13,12 @@ type tpccQoSChecker struct {
 	summaryFile    string
 }
 
+// TPCCQosChecker creates a tpccQoSChecker instance
 func TPCCQosChecker(warmUpDuration time.Duration, path string) core.Checker {
 	return &tpccQoSChecker{warmUpDuration: warmUpDuration, summaryFile: path}
 }
 
+// Check checks QoS of tpcc workload
 func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	var (
 		nemesisRecord core.NemesisGeneratorRecord
@@ -53,6 +55,7 @@ func (t *tpccQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error)
 	return true, nil
 }
 
+// Name returns the checker's name
 func (t *tpccQoSChecker) Name() string {
 	return "tpcc_QoS_checker"
 }
