@@ -13,6 +13,7 @@ spec:
         spec:
           containers:
           - name: tipocket
+            imagePullPolicy: Always
             image: pingcap/tipocket:latest
             command:
               - "sh"
@@ -26,7 +27,7 @@ spec:
                 -client=5 \
                 -hub=hub.pingcap.net \
                 -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min \
-                -checker=service_quality \
+                -checker=bankQoS \
                 -round=20 \
                 -request-count=20000 \
 

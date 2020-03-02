@@ -17,6 +17,7 @@ import (
 	"context"
 	"flag"
 	"log"
+	"math"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -32,11 +34,14 @@ import (
 
 var (
 	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", 1000, "client test request count")
+	requestCount = flag.Int("request-count", math.MaxInt64, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
+	ticker       = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
+	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
+	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	checkerName  = flag.String("checker", "consistency", "consistency or qos")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
@@ -52,6 +57,7 @@ func initE2eContext() {
 }
 
 func main() {
+	util.PrintInfo()
 	flag.Parse()
 	initE2eContext()
 	go func() {
@@ -67,25 +73,40 @@ func main() {
 		RunTime:      *runTime,
 		History:      *historyFile,
 	}
-
 	clientCreator := &tidb.TPCCClientCreator{}
 	creator := clientCreator
+	var checker core.Checker
+	switch *checkerName {
+	case "consistency":
+		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
+	case "qos":
+		checker = core.MultiChecker("tpcc qos", tidb.TPCCQosChecker(time.Minute, *qosFile), &tidb.TPCCChecker{CreatorRef: clientCreator})
+	}
 	verifySuit := verify.Suit{
 		Model:   nil,
-		Checker: &tidb.TPCCChecker{CreatorRef: clientCreator},
+		Checker: checker,
 		Parser:  tidb.TPCCParser(),
 	}
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var waitWarmUpNemesisGens []core.NemesisGenerator
+	for _, gen := range util.ParseNemesisGenerators(*nemesises) {
+		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
+			Gen:   gen,
+			Delay: time.Minute * time.Duration(2),
+		})
+	}
 	suit := util.Suit{
-		Config:        &cfg,
-		Provisioner:   provisioner,
-		ClientCreator: creator,
-		Nemesises:     *nemesises,
-		VerifySuit:    verifySuit,
-		Cluster:       tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		Config:           &cfg,
+		Provisioner:      provisioner,
+		ClientCreator:    creator,
+		NemesisGens:      waitWarmUpNemesisGens,
+		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
+		VerifySuit:       verifySuit,
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
 }
