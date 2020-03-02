@@ -102,6 +102,10 @@ func (suit *Suit) Run(ctx context.Context) {
 	}
 }
 
+// OnClientLoop sends client requests in a loop,
+// client applies a proc id as it's identifier and if the response is some kinds of `Unknown` type,
+// it will change a proc id on the next loop.
+// Each request costs a requestCount, and loop finishes after requestCount is used up or the `ctx` has been done.
 func OnClientLoop(
 	ctx context.Context,
 	client core.Client,
@@ -148,6 +152,7 @@ func OnClientLoop(
 	}
 }
 
+// ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
 	client core.Client,
 	node clusterTypes.ClientNode,
@@ -155,6 +160,7 @@ type ClientLoopFunc func(ctx context.Context,
 	requestCount *int64,
 	recorder *history.Recorder)
 
+// BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
 		client core.Client,
@@ -245,7 +251,7 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	return
 }
 
-// ParseNemesisGenerators, names are separated by ","
+// ParseNemesisGenerators parses nemesis generator names separated by ","
 func ParseNemesisGenerators(names string) (nemesisGens []core.NemesisGenerator) {
 	for _, name := range strings.Split(names, ",") {
 		name := strings.TrimSpace(name)
