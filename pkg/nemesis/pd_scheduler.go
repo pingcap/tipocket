@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -23,7 +23,7 @@ func NewSchedulerGenerator(name string) *schedulerGenerator {
 	}
 }
 
-func (s *schedulerGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
+func (s *schedulerGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
 	duration := time.Duration(5) * time.Minute
 	return s.schedule(nodes, duration)
 }
@@ -48,8 +48,8 @@ func (s *schedulerGenerator) installPDCtl(version string) {
 	s.installed = true
 }
 
-func (s *schedulerGenerator) schedule(nodes []cluster.Node, duration time.Duration) []*core.NemesisOperation {
-	nodes = filterComponent(nodes, cluster.PD)
+func (s *schedulerGenerator) schedule(nodes []clusterTypes.Node, duration time.Duration) []*core.NemesisOperation {
+	nodes = filterComponent(nodes, clusterTypes.PD)
 	s.installPDCtl(nodes[0].Version)
 	var ops []*core.NemesisOperation
 	ops = append(ops, &core.NemesisOperation{
@@ -65,7 +65,7 @@ func (s *schedulerGenerator) schedule(nodes []cluster.Node, duration time.Durati
 type Scheduler struct {
 }
 
-func (s Scheduler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (s Scheduler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
 
@@ -79,7 +79,7 @@ func (s Scheduler) Invoke(ctx context.Context, node *cluster.Node, args ...inter
 	return nil
 }
 
-func (s Scheduler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (s Scheduler) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
 

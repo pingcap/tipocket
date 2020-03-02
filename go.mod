@@ -14,10 +14,11 @@ require (
 	github.com/pingcap/advanced-statefulset v0.2.4
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
+	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
+	github.com/pingcap/tidb-operator v1.1.0-beta.1
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect

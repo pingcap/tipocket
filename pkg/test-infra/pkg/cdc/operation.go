@@ -20,7 +20,6 @@ import (
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	operatorutil "github.com/pingcap/tidb-operator/pkg/util"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
@@ -49,7 +48,7 @@ type CDCSpec struct {
 	Source    *v1alpha1.TidbCluster
 	Replicas  int32
 	Image     string
-	Resources v1alpha1.Resources
+	Resources corev1.ResourceRequirements
 }
 
 type CDC struct {
@@ -198,7 +197,7 @@ func (c *CdcOps) renderCdc(spec *CDCSpec) (*CDC, error) {
 							Command:         cmds,
 							Image:           spec.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Resources:       operatorutil.ResourceRequirement(spec.Resources),
+							// Resources:       operatorutil.ResourceRequirement(spec.Resources),
 						}},
 					},
 				},

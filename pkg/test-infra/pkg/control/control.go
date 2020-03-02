@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"sync/atomic"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/history"
@@ -176,51 +175,4 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 		}
 	}
 	return fmt.Errorf("fail to dump")
-}
-
-func (c *Controller) onClientLoop(
-	ctx context.Context,
-	i int,
-	requestCount *int64,
-	recorder *history.Recorder,
-) {
-	client := c.clients[i]
-	node := c.cfg.Nodes[i]
-
-	log.Printf("begin to run command on node %s", node)
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	procID := atomic.AddInt64(&c.proc, 1)
-	for atomic.AddInt64(requestCount, -1) >= 0 {
-		request := client.NextRequest()
-
-		if err := recorder.RecordRequest(procID, request); err != nil {
-			log.Fatalf("record request %v failed %v", request, err)
-		}
-
-		log.Printf("%s: call %+v", node, request)
-		response := client.Invoke(ctx, node, request)
-		log.Printf("%s: return %+v", node, response)
-		isUnknown := true
-		if v, ok := response.(core.UnknownResponse); ok {
-			isUnknown = v.IsUnknown()
-		}
-
-		if err := recorder.RecordResponse(procID, response); err != nil {
-			log.Fatalf("record response %v failed %v", response, err)
-		}
-
-		// If Unknown, we need to use another process ID.
-		if isUnknown {
-			procID = atomic.AddInt64(&c.proc, 1)
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-	}
 }

@@ -13,15 +13,36 @@ import (
 )
 
 type rtoMetrics struct {
+	name             string
 	nemesis          *core.NemesisGeneratorRecord
+	totalMeasureTime time.Duration
+	baseline         float64
 	p80              time.Duration
 	p90              time.Duration
 	p99              time.Duration
-	totalMeasureTime time.Duration
 }
 
-type bankServiceQualityChecker struct {
-	profFile string
+func (m *rtoMetrics) Record(filePath string) error {
+	os.MkdirAll(path.Dir(""), 0755)
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	data, err := json.Marshal(m.nemesis)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(fmt.Sprintf("workload:%s,nemesis:%s,measure_time:%.2f,baseline:%.2f,tpm_p80:%.2f,tpm_p90:%.2f,tpm_p99:%.2f,detail:%s\n",
+		m.name,
+		m.nemesis.Name,
+		m.totalMeasureTime.Seconds(),
+		m.baseline,
+		m.p80.Seconds(), m.p90.Seconds(), m.p99.Seconds(), string(data))); err != nil {
+		return err
+	}
+	return nil
 }
 
 type countWindow struct {
@@ -59,66 +80,50 @@ func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
 	return &startTime, count
 }
 
-// Check checks the bank history and measure failure requests count before and after nemesis was injected.
+type bankQoSChecker struct {
+	summaryFile string
+}
+
+// bankQoSChecker checks the bank history and measure failure requests count before and after nemesis was injected.
 // When the avg failure count of one continuous minute is below 0.8 * the failure count before nemesis, we say the the system
 // recover to p80 line from that time point. And p90 or p99 are similar.
-func (c bankServiceQualityChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
+func (c bankQoSChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	var (
-		nemesisRecord                  core.NemesisGeneratorRecord
-		failCountPerMinuteBeforeInject float64
-		injectionTime                  time.Time
-		window                         countWindow
-		duration                       = time.Minute
+		nemesisRecord core.NemesisGeneratorRecord
+		injectionTime time.Time
+		window        countWindow
+		duration      = time.Minute
 	)
 
-	metrics := rtoMetrics{nemesis: &nemesisRecord}
-	metrics.nemesis, failCountPerMinuteBeforeInject, injectionTime, window, metrics.totalMeasureTime = convertToFailSeries(ops)
+	metrics := rtoMetrics{name: "bank", nemesis: &nemesisRecord}
+	metrics.nemesis, metrics.baseline, injectionTime, window, metrics.totalMeasureTime = convertToFailSeries(ops)
 
 	if len(window.series) == 0 {
 		metrics.p80, metrics.p90, metrics.p99 = time.Duration(0), time.Duration(0), time.Duration(0)
 	} else {
-		lastFailureDuration := window.series[len(window.series)-1].Sub(injectionTime)
-		metrics.p80, metrics.p90, metrics.p99 = lastFailureDuration, lastFailureDuration, lastFailureDuration
+		windowDuration := window.series[len(window.series)-1].Sub(injectionTime)
+		metrics.p80, metrics.p90, metrics.p99 = windowDuration, windowDuration, windowDuration
 	}
 	for window.Next() {
-		startTime, failCount := window.Count(duration)
-		dur := startTime.Sub(injectionTime)
+		leftBound, failCount := window.Count(duration)
+		dur := leftBound.Sub(injectionTime)
 		failCountPerMinute := float64(failCount) / duration.Minutes()
 
-		if 0.8*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p80 {
+		if 0.8*failCountPerMinute <= metrics.baseline && dur < metrics.p80 {
 			metrics.p80 = dur
 		}
-		if 0.9*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p90 {
+		if 0.9*failCountPerMinute <= metrics.baseline && dur < metrics.p90 {
 			metrics.p90 = dur
 		}
-		if 0.99*failCountPerMinute <= failCountPerMinuteBeforeInject && dur < metrics.p99 {
+		if 0.99*failCountPerMinute <= metrics.baseline && dur < metrics.p99 {
 			metrics.p99 = dur
 			break
 		}
 	}
-	if err := c.record(&metrics); err != nil {
+	if err := metrics.Record(c.summaryFile); err != nil {
 		return false, err
 	}
 	return true, nil
-}
-
-func (c bankServiceQualityChecker) record(rto *rtoMetrics) error {
-	os.MkdirAll(path.Dir(""), 0755)
-	f, err := os.OpenFile(c.profFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	data, err := json.Marshal(rto.nemesis)
-	if err != nil {
-		return err
-	}
-	if _, err := f.WriteString(fmt.Sprintf("workload:bank,nemesis:%s,measure_time:%.2f,fail_p80:%.2f,fail_p90:%.2f,fail_p99:%.2f,detail:%s\n",
-		rto.nemesis.Name, rto.totalMeasureTime.Seconds(), rto.p80.Seconds(), rto.p90.Seconds(), rto.p99.Seconds(), string(data))); err != nil {
-		return err
-	}
-	return nil
 }
 
 func convertToFailSeries(ops []core.Operation) (nemesisRecord *core.NemesisGeneratorRecord,
@@ -174,13 +179,13 @@ func convertToFailSeries(ops []core.Operation) (nemesisRecord *core.NemesisGener
 }
 
 // Name returns the name of the verifier.
-func (bankServiceQualityChecker) Name() string {
-	return "tidb_bank_service_quality_checker"
+func (bankQoSChecker) Name() string {
+	return "tidb_bank_QoS_checker"
 }
 
-// BankServiceQualityChecker checks the bank history and analyze service quality
-func BankServiceQualityChecker(path string) core.Checker {
-	return bankServiceQualityChecker{profFile: path}
+// BankQoSChecker checks the bank history and analyze QoS
+func BankQoSChecker(path string) core.Checker {
+	return bankQoSChecker{summaryFile: path}
 }
 
 type timeSeries []time.Time

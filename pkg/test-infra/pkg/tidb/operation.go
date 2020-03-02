@@ -16,13 +16,16 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/label"
 
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/pkg/util"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -101,21 +104,56 @@ func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, er
 	return svc, nil
 }
 
-func (t *TidbOps) GetNodes(ns string) (*corev1.PodList, error) {
+func (t *TidbOps) GetNodes(tc *TiDBClusterRecommendation) ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
 	err := t.cli.List(context.TODO(), pods)
 	if err != nil {
-		return nil, err
+		return []clusterTypes.Node{}, err
 	}
 	// filter namespace
 	r := pods.DeepCopy()
 	r.Items = []corev1.Pod{}
 	for _, pod := range pods.Items {
-		if pod.ObjectMeta.Namespace == ns {
+		if pod.ObjectMeta.Namespace == tc.NS &&
+			pod.ObjectMeta.Labels["app.kubernetes.io/instance"] == tc.Name {
 			r.Items = append(r.Items, pod)
 		}
 	}
-	return r, nil
+	return t.parseNodeFromPodList(r), nil
+}
+
+func (t *TidbOps) GetClientNodes(tc *TiDBClusterRecommendation) ([]clusterTypes.ClientNode, error) {
+	var clientNodes []clusterTypes.ClientNode
+
+	k8sNodes, err := t.GetK8sNodes()
+	if err != nil {
+		return clientNodes, err
+	}
+	ip := getNodeIP(k8sNodes)
+	if ip == "" {
+		return clientNodes, errors.New("k8s node not found")
+	}
+
+	svc, err := t.GetTiDBServiceByMeta(&tc.Service.ObjectMeta)
+	if err != nil {
+		return clientNodes, err
+	}
+	clientNodes = append(clientNodes, clusterTypes.ClientNode{
+		Namespace: svc.ObjectMeta.Namespace,
+		IP:        ip,
+		Port:      getTiDBNodePort(svc),
+	})
+	return clientNodes, nil
+}
+
+// GetK8sNodes gets physical nodes
+func (t *TidbOps) GetK8sNodes() (*corev1.NodeList, error) {
+	nodes := &corev1.NodeList{}
+	err := t.cli.List(context.TODO(), nodes)
+	if err != nil {
+		return nil, err
+	}
+	return nodes, nil
 }
 
 func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
@@ -139,6 +177,12 @@ func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	klog.Info("Apply tikv configmap")
 	if err := t.ApplyTiKVConfigMap(tc); err != nil {
 		return err
+	}
+	if tc.Spec.Pump != nil {
+		klog.Info("Apply pump configmap")
+		if err := t.ApplyPumpConfigMap(tc); err != nil {
+			return err
+		}
 	}
 
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
@@ -223,6 +267,21 @@ func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
 
 func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getTiKVConfigMap(tc)
+	if err != nil {
+		return err
+	}
+	err = t.cli.Create(context.TODO(), configMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func (t *TidbOps) ApplyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+	if tc.Spec.Pump == nil {
+		return nil
+	}
+	configMap, err := getPumpConfigMap(tc)
 	if err != nil {
 		return err
 	}
@@ -398,6 +457,22 @@ func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
+func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	c, err := RenderPumpConfig(&PumpConfigModel{})
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-pump", tc.Name),
+		},
+		Data: map[string]string{
+			"pump-config": c,
+		},
+	}, nil
+}
+
 func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
 	meta, l := getDiscoveryMeta(tc)
 	return &appsv1.Deployment{
@@ -413,7 +488,7 @@ func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
 					ServiceAccountName: meta.Name,
 					Containers: []corev1.Container{{
 						Name:            "discovery",
-						Image:           "pingcap/tidb-operator:v1.0.5",
+						Image:           "pingcap/tidb-operator:v1.0.6",
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Command: []string{
 							"/usr/local/bin/tidb-discovery",
@@ -446,4 +521,51 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 		Labels:    discoveryLabel,
 	}
 	return objMeta, discoveryLabel
+}
+
+func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
+	var nodes []clusterTypes.Node
+	for _, pod := range pods.Items {
+		if strings.Contains(pod.ObjectMeta.Name, "discovery") {
+			continue
+		}
+
+		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
+		if !ok {
+			component = ""
+		}
+
+		nodes = append(nodes, clusterTypes.Node{
+			Namespace: pod.ObjectMeta.Namespace,
+			// TODO use better way to retrieve version?
+			Version:   fixture.E2eContext.ImageVersion,
+			PodName:   pod.ObjectMeta.Name,
+			IP:        pod.Status.PodIP,
+			Component: clusterTypes.Component(component),
+			Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+			Client: &clusterTypes.Client{
+				Namespace: pod.ObjectMeta.Namespace,
+				PDMemberFunc: func(ns string) (string, []string, error) {
+					return t.GetPDMember(ns, ns)
+				},
+			},
+		})
+	}
+	return nodes
+}
+
+func getNodeIP(nodeList *corev1.NodeList) string {
+	if len(nodeList.Items) == 0 {
+		return ""
+	}
+	return nodeList.Items[0].Status.Addresses[0].Address
+}
+
+func getTiDBNodePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 4000 {
+			return port.NodePort
+		}
+	}
+	return 0
 }

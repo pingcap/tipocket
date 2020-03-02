@@ -1,3 +1,4 @@
+---
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
@@ -5,24 +6,35 @@ metadata:
   namespace: tipocket-job
 spec:
   schedule: "0 */4 * * *"
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
         spec:
           containers:
           - name: tipocket
+            imagePullPolicy: Always
             image: pingcap/tipocket:latest
             command:
-              - /bin/chaos-tidb
-              - -case=bank
-              - -namespace=tipocket-sqt-test
-              - -image-version=v3.0.9
-              - -client=5
-              - -hub=hub.pingcap.net
-              - -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min
-              - -checker=service_quality
-              - -round=20
-              - -request-count=20000
+              - "sh"
+              - "-c"
+              - |
+                /bin/chaos-tidb \
+                -case=bank \
+                -mode=1 \
+                -namespace=tipocket-sqt-test \
+                -image-version=v3.0.9 \
+                -client=5 \
+                -hub=hub.pingcap.net \
+                -nemesis=kill_pd_leader_5min,partition_one,kill_tikv_1node_5min \
+                -checker=bankQoS \
+                -round=20 \
+                -request-count=20000 \
+
+                if [ $? != "0" ]; then
+                  echo "ERROR OCCURED, PTAL..."
+                  while true; do sleep 60; done
+                fi
             env:
             - name: KUBECONFIG
               value: "/etc/config/kube_config"

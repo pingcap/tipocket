@@ -1,4 +1,4 @@
-package cluster
+package types
 
 import (
 	"context"
@@ -15,6 +15,10 @@ const (
 	TiKV Component = "tikv"
 	// PD component identifier
 	PD Component = "pd"
+	// Pump Component identifier
+	Pump Component = "pump"
+	// Drainer Component identifier
+	Drainer Component = "drainer"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )
@@ -53,7 +57,7 @@ type Provisioner interface {
 	// SetUp sets up cluster, returns err or all nodes info
 	SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
-	TearDown() error
+	TearDown(ctx context.Context, spec interface{}) error
 }
 
 func (node Node) String() string {

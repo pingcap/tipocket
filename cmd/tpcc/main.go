@@ -17,14 +17,13 @@ import (
 	"context"
 	"flag"
 	"log"
+	"math"
 	"net/http"
-	"time"
-
 	_ "net/http/pprof"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
-	"github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -35,15 +34,14 @@ import (
 
 var (
 	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", 1000, "client test request count")
+	requestCount = flag.Int("request-count", math.MaxInt64, "client test request count")
 	round        = flag.Int("round", 3, "client test request round")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
+	ticker       = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
+	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
 	historyFile  = flag.String("history", "./history.log", "history file")
 	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
-	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
+	checkerName  = flag.String("checker", "consistency", "consistency or qos")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
@@ -59,73 +57,54 @@ func initE2eContext() {
 }
 
 func main() {
+	util.PrintInfo()
 	flag.Parse()
 	initE2eContext()
 	go func() {
 		http.ListenAndServe(*pprofAddr, nil)
 	}()
 
-	var (
-		creator core.ClientCreator
-		parser  = tidb.BankParser()
-		model   = tidb.BankModel()
-		checker core.Checker
-		cfg     = control.Config{
-			DB:           "noop",
-			Mode:         control.Mode(*mode),
-			ClientCount:  *clientCount,
-			RequestCount: *requestCount,
-			RunRound:     *round,
-			RunTime:      *runTime,
-			History:      *historyFile,
-		}
-	)
-	switch *clientCase {
-	case "bank":
-		creator = tidb.BankClientCreator{}
-	case "multi_bank":
-		creator = tidb.MultiBankClientCreator{}
-	case "long_fork":
-		creator = tidb.LongForkClientCreator{}
-	//case "sequential":
-	//	creator = tidb.SequentialClientCreator{}
-	default:
-		log.Fatalf("invalid client test case %s", *clientCase)
+	cfg := control.Config{
+		DB:           "noop",
+		Mode:         control.ModeSequential,
+		ClientCount:  *clientCount,
+		RequestCount: *requestCount,
+		RunRound:     *round,
+		RunTime:      *runTime,
+		History:      *historyFile,
 	}
-	switch *checkerNames {
-	case "porcupine":
-		checker = porcupine.Checker{}
-	case "bankQoS":
-		checker = tidb.BankQoSChecker(*qosFile)
-	case "tidb_bank_tso":
-		checker = tidb.BankTsoChecker()
-	case "long_fork_checker":
-		checker = tidb.LongForkChecker()
-		parser = tidb.LongForkParser()
-		model = nil
-	//case "sequential_checker":
-	//	checker = tidb.NewSequentialChecker()
-	//	parser = tidb.NewSequentialParser()
-	//	model = nil
-	default:
-		log.Fatalf("invalid checker %s", *checkerNames)
+	clientCreator := &tidb.TPCCClientCreator{}
+	creator := clientCreator
+	var checker core.Checker
+	switch *checkerName {
+	case "consistency":
+		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
+	case "qos":
+		checker = core.MultiChecker("tpcc qos", tidb.TPCCQosChecker(time.Minute, *qosFile), &tidb.TPCCChecker{CreatorRef: clientCreator})
 	}
-
 	verifySuit := verify.Suit{
-		Model:   model,
+		Model:   nil,
 		Checker: checker,
-		Parser:  parser,
+		Parser:  tidb.TPCCParser(),
 	}
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var waitWarmUpNemesisGens []core.NemesisGenerator
+	for _, gen := range util.ParseNemesisGenerators(*nemesises) {
+		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
+			Gen:   gen,
+			Delay: time.Minute * time.Duration(2),
+		})
+	}
 	suit := util.Suit{
 		Config:           &cfg,
 		Provisioner:      provisioner,
 		ClientCreator:    creator,
-		NemesisGens:      util.ParseNemesisGenerators(*nemesises),
-		ClientRequestGen: util.BuildClientLoopThrottle(5 * time.Second),
+		NemesisGens:      waitWarmUpNemesisGens,
+		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
 		VerifySuit:       verifySuit,
 		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
 	}
