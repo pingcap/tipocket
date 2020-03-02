@@ -22,3 +22,30 @@ func (NoopChecker) Check(m Model, ops []Operation) (bool, error) {
 func (NoopChecker) Name() string {
 	return "NoopChecker"
 }
+
+type multiChecker struct {
+	checkers []Checker
+	name     string
+}
+
+func (c multiChecker) Check(m Model, ops []Operation) (valid bool, err error) {
+	for _, checker := range c.checkers {
+		valid, err = checker.Check(m, ops)
+		if !valid || err != nil {
+			return valid, err
+		}
+	}
+	return true, nil
+}
+
+func (c multiChecker) Name() string {
+	return c.name
+}
+
+// MultiChecker assembles multiple checkers
+func MultiChecker(name string, checkers ...Checker) Checker {
+	return multiChecker{
+		checkers: checkers,
+		name:     name,
+	}
+}

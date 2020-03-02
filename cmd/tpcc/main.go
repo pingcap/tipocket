@@ -81,7 +81,7 @@ func main() {
 	case "consistency":
 		checker = &tidb.TPCCChecker{CreatorRef: clientCreator}
 	case "qos":
-		checker = tidb.TPCCQosChecker(time.Minute, *qosFile)
+		checker = core.MultiChecker("TPCC&Qos", tidb.TPCCQosChecker(time.Minute, *qosFile), &tidb.TPCCChecker{CreatorRef: clientCreator})
 	}
 	verifySuit := verify.Suit{
 		Model:   nil,
