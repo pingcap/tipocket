@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
 TRUNCATE TABLE ledger_accounts;
 `
 
-// Config is for ledger test case.
+// Config is for ledgerClient
 type Config struct {
 	NumAccounts int           `toml:"num_accounts"`
 	Interval    time.Duration `toml:"interval"`
@@ -52,27 +52,27 @@ type Config struct {
 	TxnMode     string        `toml:"txn_mode"`
 }
 
-// ledger simulates a complete record of financial transactions over the
+// ledgerClient simulates a complete record of financial transactions over the
 // life of a bank (or other company).
-type ledge struct {
+type ledgerClient struct {
 	*Config
 	wg   sync.WaitGroup
 	stop int32
 	db   *sql.DB
 }
 
-//CaseCreator creates LedgeCase
+// CaseCreator creates ledgerClient
 type CaseCreator struct {
 	Cfg *Config
 }
 
 func (l CaseCreator) Create(node types.ClientNode) core.Client {
-	return &ledge{
+	return &ledgerClient{
 		Config: l.Cfg,
 	}
 }
 
-func (c *ledge) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *ledgerClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -84,11 +84,11 @@ func (c *ledge) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) er
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
 	if err != nil {
-		log.Fatalf("[ledger] create db client error %v", err)
+		log.Fatalf("[ledgerClient] create db client error %v", err)
 	}
 	_, err = db.Exec(fmt.Sprintf("set @@global.tidb_txn_mode = '%s';", c.TxnMode))
 	if err != nil {
-		log.Fatalf("[ledger] set txn_mode failed: %v", err)
+		log.Fatalf("[ledgerClient] set txn_mode failed: %v", err)
 	}
 	time.Sleep(5 * time.Second)
 	c.db, err = util.OpenDB(dsn, c.Concurrency)
@@ -156,7 +156,7 @@ func (c *ledge) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) er
 
 	select {
 	case <-ctx.Done():
-		log.Warnf("ledger initialize is cancel")
+		log.Warnf("ledgerClient initialize is cancel")
 		return nil
 	default:
 	}
@@ -165,23 +165,23 @@ func (c *ledge) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) er
 	return nil
 }
 
-func (c *ledge) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *ledgerClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *ledge) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *ledgerClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
 	panic("implement me")
 }
 
-func (c *ledge) NextRequest() interface{} {
+func (c *ledgerClient) NextRequest() interface{} {
 	panic("implement me")
 }
 
-func (c *ledge) DumpState(ctx context.Context) (interface{}, error) {
+func (c *ledgerClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *ledge) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *ledgerClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
 	log.Infof("start to test...")
 	defer func() {
 		log.Infof("test end...")
@@ -216,9 +216,9 @@ type postingRequest struct {
 }
 
 // ExecuteLedger is run case
-func (c *ledge) ExecuteLedger(db *sql.DB) error {
+func (c *ledgerClient) ExecuteLedger(db *sql.DB) error {
 	if atomic.LoadInt32(&c.stop) != 0 {
-		return errors.New("ledger stopped")
+		return errors.New("ledgerClient stopped")
 	}
 
 	c.wg.Add(1)
@@ -259,7 +259,7 @@ func getLast(tx *sql.Tx, accountID string) (lastCID int64, lastBalance int64, er
 	return
 }
 
-func (c *ledge) doPosting(tx *sql.Tx, req postingRequest) error {
+func (c *ledgerClient) doPosting(tx *sql.Tx, req postingRequest) error {
 	//start := time.Now()
 	var cidA, balA, cidB, balB int64
 	var err error
@@ -305,7 +305,7 @@ VALUES (
 	return nil
 }
 
-func (c *ledge) startVerify(ctx context.Context, db *sql.DB) {
+func (c *ledgerClient) startVerify(ctx context.Context, db *sql.DB) {
 	c.verify(db)
 
 	go func() {
@@ -320,7 +320,7 @@ func (c *ledge) startVerify(ctx context.Context, db *sql.DB) {
 	}()
 }
 
-func (c *ledge) verify(db *sql.DB) error {
+func (c *ledgerClient) verify(db *sql.DB) error {
 	start := time.Now()
 	tx, err := db.Begin()
 	if err != nil {

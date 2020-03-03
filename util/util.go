@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/juju/errors"
 )
 

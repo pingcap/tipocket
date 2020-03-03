@@ -21,6 +21,9 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/ledger"
@@ -42,6 +45,7 @@ var (
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
+	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
 )
 
 func initE2eContext() {
@@ -75,13 +79,10 @@ func main() {
 			NumAccounts: *accounts,
 			Concurrency: *concurrency,
 			Interval:    *interval,
+			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(*nemesises),
-		VerifySuit: verify.Suit{
-			Checker: nil,
-			Model:   nil,
-			Parser:  nil,
-		},
+		VerifySuit:  verify.Suit{},
 		ClusterDefs: tidb.RecommendedTiDBCluster(*namespace, *namespace),
 	}
 	suit.Run(context.Background())
