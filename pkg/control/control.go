@@ -239,6 +239,8 @@ ENTRY:
 
 // RunSelfScheduled runs the controller with self scheduled
 func (c *Controller) RunSelfScheduled() {
+	c.setUpDB()
+	c.setUpClient()
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	var nemesisWg sync.WaitGroup
 	nemesisWg.Add(1)
@@ -256,6 +258,9 @@ func (c *Controller) RunSelfScheduled() {
 	}
 
 	ncancel()
+
+	c.tearDownClient()
+	c.tearDownDB()
 }
 
 func (c *Controller) syncClientExec(f func(i int)) {
