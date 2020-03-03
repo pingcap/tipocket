@@ -7,7 +7,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 type k8sNemesisClient struct {
@@ -21,6 +21,7 @@ func init() {
 	core.RegisterNemesis(containerKill{client})
 	core.RegisterNemesis(networkPartition{client})
 	core.RegisterNemesis(netem{client})
+	core.RegisterNemesis(Scheduler{})
 }
 
 func createClient() (*Chaos, error) {

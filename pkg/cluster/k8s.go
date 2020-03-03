@@ -10,9 +10,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
+	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -23,7 +23,7 @@ var (
 
 // K8sProvisioner implement Provisioner in k8s
 type K8sProvisioner struct {
-	*util.E2eCli
+	*tests.E2eCli
 }
 
 // NewK8sProvisioner create k8s provisioner
@@ -33,7 +33,7 @@ func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
 		return nil, err
 	}
 	return &K8sProvisioner{
-		E2eCli: util.NewE2eCli(conf),
+		E2eCli: tests.NewE2eCli(conf),
 	}, nil
 }
 

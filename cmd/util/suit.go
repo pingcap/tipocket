@@ -243,6 +243,8 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewNetemChaos(name)
 	case "pod_kill":
 		g = nemesis.NewPodKillGenerator(name)
+	case "shuffle-leader-scheduler", "shuffle-region-scheduler", "random-merge-scheduler":
+		g = nemesis.NewSchedulerGenerator(name)
 	case "noop":
 		g = core.NoopNemesisGenerator{}
 	default:

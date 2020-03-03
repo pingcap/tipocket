@@ -23,6 +23,8 @@ const (
 	NetworkPartition ChaosKind = "Network-Partition"
 	// NetemChaos add corrupt or other chaos.
 	NetemChaos ChaosKind = "Netem-Chaos"
+	// PDScheduler add scheduler
+	PDScheduler ChaosKind = "PD-Scheduler"
 )
 
 // Nemesis injects failure and disturbs the database.

@@ -19,7 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/scheme"
+	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
 
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"

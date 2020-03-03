@@ -27,8 +27,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 

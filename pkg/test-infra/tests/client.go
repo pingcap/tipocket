@@ -11,20 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package util
+package tests
 
 import (
 	"context"
 
 	"k8s.io/client-go/rest"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/binlog"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/br"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/cdc"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/chaos"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/mysql"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/br"
+	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
+	"github.com/pingcap/tipocket/pkg/test-infra/chaos"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	corev1 "k8s.io/api/core/v1"
 	e2elog "k8s.io/kubernetes/test/e2e/framework/log"

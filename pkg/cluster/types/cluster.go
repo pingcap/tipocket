@@ -37,6 +37,7 @@ func (c *Client) PDMember() (string, []string, error) {
 type Node struct {
 	Namespace string    // Cluster k8s' namespace
 	Component Component // Node component type
+	Version   string    // component version
 	PodName   string    // Pod's name
 	IP        string
 	Port      int32
