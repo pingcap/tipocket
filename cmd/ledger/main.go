@@ -16,13 +16,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/ledger"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"time"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/verify"
+	"github.com/pingcap/tipocket/tests/ledger"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"

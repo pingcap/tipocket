@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledge
+build: fmt chaos verifier pocket tpcc ledger
 
 chaos: tidb
 
