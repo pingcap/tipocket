@@ -60,34 +60,37 @@ func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 }
 
 // TODO: move the set up process into tidb package and make it a interface
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
-	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
+	if err := k.E2eCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
 	// TODO: use ctx for wait end
-	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommand.TidbCluster, 10*time.Minute)
+	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, 10*time.Minute)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.E2eCli.TiDB.ApplyTiDBService(recommand.Service)
+	err = k.E2eCli.TiDB.ApplyTiDBService(recommend.Service)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	nodes, err = k.E2eCli.TiDB.GetNodes(recommand)
+	nodes, err = k.E2eCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	clientNodes, err = k.E2eCli.TiDB.GetClientNodes(recommand)
+	clientNodes, err = k.E2eCli.TiDB.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
@@ -95,24 +98,27 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.T
 	return nodes, clientNodes, err
 }
 
-func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommand *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
 
-	err = k.E2eCli.Binlog.Apply(recommand)
+	if err := k.E2eCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+	err = k.E2eCli.Binlog.Apply(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	nodes, err = k.E2eCli.Binlog.GetNodes(recommand)
+	nodes, err = k.E2eCli.Binlog.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	clientNodes, err = k.E2eCli.Binlog.GetClientNodes(recommand)
+	clientNodes, err = k.E2eCli.Binlog.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
