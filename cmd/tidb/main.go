@@ -103,6 +103,8 @@ func main() {
 		checker = tidb.LongForkChecker()
 		parser = tidb.LongForkParser()
 		model = nil
+	case "admin_check":
+		checker = tidb.AdminChecker(&cfg)
 	//case "sequential_checker":
 	//	checker = tidb.NewSequentialChecker()
 	//	parser = tidb.NewSequentialParser()
