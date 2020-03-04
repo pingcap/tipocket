@@ -1,4 +1,4 @@
-package tidb
+package admin_check
 
 import (
 	"database/sql"
@@ -11,6 +11,7 @@ import (
 	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/util"
 
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -20,9 +21,9 @@ func AdminChecker(cfg *control.Config) core.Checker {
 	return adminChecker{cfg: cfg}
 }
 
-const (
-	tiDBGCTime = 720 * time.Hour
-)
+const tiDBGCTime = 720 * time.Hour
+
+var ignoreDatabases = []string{"INFORMATION_SCHEMA", "PERFORMANCE_SCHEMA", "mysql"}
 
 type adminChecker struct {
 	cfg *control.Config
@@ -35,6 +36,7 @@ func (ac adminChecker) Check(_ core.Model, _ []core.Operation) (bool, error) {
 
 	index := rand.Intn(len(ac.cfg.ClientNodes))
 	node := ac.cfg.ClientNodes[index]
+	log.Info(fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return false, nil
@@ -81,9 +83,13 @@ func checkAction(db *sql.DB) error {
 	}
 
 	for _, dbName := range databases {
+		if util.MatchInArray(ignoreDatabases, dbName) {
+			continue
+		}
+
 		if err = checkDatabase(db, dbName); err != nil {
 			log.Errorf("check database %s failed: %v", dbName, err)
-			continue
+			return errors.Trace(err)
 		}
 	}
 
@@ -113,7 +119,7 @@ func checkDatabase(db *sql.DB, dbName string) error {
 		log.Infof("start to check %s.%s", dbName, table)
 		if err = checkTable(db, dbName, table); err != nil {
 			log.Errorf(" check %s.%s failed: %v", dbName, table, err)
-			continue
+			return errors.Trace(err)
 		}
 	}
 

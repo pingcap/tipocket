@@ -209,3 +209,14 @@ func IsDaemonRunning(ctx context.Context, node string, cmd string, pidFile strin
 
 	return err == nil
 }
+
+// MatchInArray returns true if the given string value is in the array.
+func MatchInArray(arr []string, value string) bool {
+	for _, v := range arr {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
