@@ -3,11 +3,14 @@ package cluster
 import (
 	"context"
 	"errors"
+	"log"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -53,10 +56,27 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
+		defer k.deleteNs(context.TODO(), s.NS)
 		return k.E2eCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
 	default:
 		return errors.New("unreachable")
 	}
+}
+
+func (k *K8sProvisioner) createNs(ctx context.Context, namespace string) error {
+	return k.E2eCli.Cli.Create(ctx, &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: namespace,
+		},
+	})
+}
+
+func (k *K8sProvisioner) deleteNs(ctx context.Context, namespace string) error {
+	return k.E2eCli.Cli.Delete(ctx, &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: namespace,
+		},
+	})
 }
 
 // TODO: move the set up process into tidb package and make it a interface
@@ -66,6 +86,11 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.T
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
+
+	if err := k.createNs(ctx, recommand.NS); err != nil && !strings.Contains(err.Error(), "already exists") {
+		log.Fatalf("creating ns %s failed: %+v", recommand.NS, err)
+	}
+
 	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err

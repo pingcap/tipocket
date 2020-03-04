@@ -4,6 +4,7 @@ import (
 	"time"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/core"
 )
 
 // Config is the configuration for the controller.
@@ -11,7 +12,7 @@ type Config struct {
 	// Mode is for switch between control modes
 	Mode Mode
 	// DB is the name which we want to run.
-	DB string
+	DB core.DB
 	// Nodes are addresses of nodes.
 	Nodes []clusterTypes.Node
 	// ClientNode are addresses of client usage.
@@ -59,6 +60,9 @@ func (m Mode) String() string {
 }
 
 func (c *Config) adjust() {
+	if c.DB == nil {
+		c.DB = core.NoopDB{}
+	}
 	if c.RequestCount == 0 {
 		c.RequestCount = 10000
 	}

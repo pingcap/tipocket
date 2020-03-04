@@ -65,7 +65,6 @@ func main() {
 	}()
 
 	cfg := control.Config{
-		DB:           "noop",
 		Mode:         control.ModeSequential,
 		ClientCount:  *clientCount,
 		RequestCount: *requestCount,

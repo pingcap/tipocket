@@ -71,7 +71,6 @@ func main() {
 		model   = tidb.BankModel()
 		checker core.Checker
 		cfg     = control.Config{
-			DB:           "noop",
 			Mode:         control.Mode(*mode),
 			ClientCount:  *clientCount,
 			RequestCount: *requestCount,

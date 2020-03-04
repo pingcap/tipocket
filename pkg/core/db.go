@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
@@ -64,24 +63,24 @@ func (NoopDB) Name() string {
 	return "noop"
 }
 
-var dbs = map[string]DB{}
+//var dbs = map[string]DB{}
 
 // RegisterDB registers db. Not thread-safe
-func RegisterDB(db DB) {
-	name := db.Name()
-	_, ok := dbs[name]
-	if ok {
-		panic(fmt.Sprintf("db %s is already registered", name))
-	}
-
-	dbs[name] = db
-}
+//func RegisterDB(db DB) {
+//	name := db.Name()
+//	_, ok := dbs[name]
+//	if ok {
+//		panic(fmt.Sprintf("db %s is already registered", name))
+//	}
+//
+//	dbs[name] = db
+//}
 
 // GetDB gets the registered db.
-func GetDB(name string) DB {
-	return dbs[name]
-}
-
-func init() {
-	RegisterDB(NoopDB{})
-}
+//func GetDB(name string) DB {
+//	return dbs[name]
+//}
+//
+//func init() {
+//	RegisterDB(NoopDB{})
+//}

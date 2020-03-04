@@ -100,6 +100,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	if err := suit.Provisioner.TearDown(context.TODO(), suit.ClusterDefs); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
 	}
+	log.Println("pass")
 }
 
 // OnClientLoop sends client requests in a loop,
