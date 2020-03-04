@@ -65,7 +65,6 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 	}
 
 	provisioner, err := cluster.NewK8sProvisioner()
