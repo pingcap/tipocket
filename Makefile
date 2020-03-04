@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc
+build: fmt chaos verifier pocket tpcc ledger
 
 chaos: tidb
 
@@ -41,6 +41,9 @@ pocket:
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
+
+ledger:
+	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
 
 fmt: groupimports
 	go fmt ./...
