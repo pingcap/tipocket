@@ -40,6 +40,8 @@ type ClusterRecommendation struct {
 	*Drainer
 	Upstream   *tidb.TiDBClusterRecommendation
 	Downstream *tidb.TiDBClusterRecommendation
+	NS         string
+	Name       string
 }
 
 // RecommendedBinlogCluster create cluster with binlog
@@ -82,6 +84,8 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 	}
 
 	return &ClusterRecommendation{
+		NS:         ns,
+		Name:       name,
 		Upstream:   upstream,
 		Downstream: downstream,
 		Drainer: &Drainer{

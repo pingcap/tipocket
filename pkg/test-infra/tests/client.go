@@ -15,7 +15,11 @@ package tests
 
 import (
 	"context"
+	"log"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -70,4 +74,23 @@ func (e *E2eCli) GetNodes() (*corev1.NodeList, error) {
 		return nil, err
 	}
 	return nodes, nil
+}
+
+// CreateNamespace creates the specified namespace if not exist.
+func (e *E2eCli) CreateNamespace(name string) error {
+	ns := &corev1.Namespace{}
+	if err := e.Cli.Get(context.TODO(), types.NamespacedName{Name: name}, ns); err != nil {
+		if errors.IsNotFound(err) {
+			log.Printf("Namespace %s doesn't exist. Creating...", name)
+			if err = e.Cli.Create(context.TODO(), &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: name,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+		return err
+	}
+	return nil
 }
