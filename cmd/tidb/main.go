@@ -18,12 +18,14 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	_ "net/http/pprof"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
+	adminChecker "github.com/pingcap/tipocket/pkg/check/admin-check"
 	"github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -43,7 +45,7 @@ var (
 	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
 	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
-	checkerNames = flag.String("checker", "porcupine", "checker name, eg, porcupine, tidb_bank_tso")
+	checkerNames = flag.String("checkers", "porcupine", "checker names, separate by comma. eg, porcupine,admin_check")
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
@@ -67,9 +69,9 @@ func main() {
 
 	var (
 		creator core.ClientCreator
+		checker core.Checker
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
-		checker core.Checker
 		cfg     = control.Config{
 			DB:           "noop",
 			Mode:         control.Mode(*mode),
@@ -92,24 +94,33 @@ func main() {
 	default:
 		log.Fatalf("invalid client test case %s", *clientCase)
 	}
-	switch *checkerNames {
-	case "porcupine":
-		checker = porcupine.Checker{}
-	case "bankQoS":
-		checker = tidb.BankQoSChecker(*qosFile)
-	case "tidb_bank_tso":
-		checker = tidb.BankTsoChecker()
-	case "long_fork_checker":
-		checker = tidb.LongForkChecker()
-		parser = tidb.LongForkParser()
-		model = nil
-	//case "sequential_checker":
-	//	checker = tidb.NewSequentialChecker()
-	//	parser = tidb.NewSequentialParser()
-	//	model = nil
-	default:
-		log.Fatalf("invalid checker %s", *checkerNames)
+
+	names := strings.Split(*checkerNames, ",")
+	var checkers []core.Checker
+	for _, name := range names {
+		switch name {
+		case "porcupine":
+			checkers = append(checkers, porcupine.Checker{})
+		case "bankQoS":
+			checkers = append(checkers, tidb.BankQoSChecker(*qosFile))
+		case "tidb_bank_tso":
+			checkers = append(checkers, tidb.BankTsoChecker())
+		case "long_fork_checker":
+			checkers = append(checkers, tidb.LongForkChecker())
+			parser = tidb.LongForkParser()
+			model = nil
+		case "admin_check":
+			checkers = append(checkers, adminChecker.AdminChecker(&cfg))
+		//case "sequential_checker":
+		//	checker = tidb.NewSequentialChecker()
+		//	parser = tidb.NewSequentialParser()
+		//	model = nil
+		default:
+			log.Fatalf("invalid checker %s", *checkerNames)
+		}
 	}
+
+	checker = core.MultiChecker("tidb checkers", checkers...)
 
 	verifySuit := verify.Suit{
 		Model:   model,
