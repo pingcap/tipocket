@@ -26,7 +26,7 @@ var (
 	hub          = flag.String("hub", "", "hub address, default to docker hub")
 	imageVersion = flag.String("image-version", "latest", "image version")
 	storageClass = flag.String("storage-class", "local-storage", "storage class name")
-	runTime      = flag.Duration("run-time", 2*time.Minute, "client test run time")
+	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	round        = flag.Int("round", 1, "client test request round")
 
 	// case config
