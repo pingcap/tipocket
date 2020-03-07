@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
+	"github.com/ngaut/log"
 )
 
 func OpenDB(dsn string, maxIdleConns int) (*sql.DB, error) {
@@ -36,4 +37,14 @@ func RunWithRetry(ctx context.Context, retryCnt int, interval time.Duration, f f
 		}
 	}
 	return errors.Trace(err)
+}
+
+// MustExec must execute sql or fatal.
+// It's
+func MustExec(db *sql.DB, query string, args ...interface{}) sql.Result {
+	r, err := db.Exec(query, args...)
+	if err != nil {
+		log.Fatalf("exec %s err %v", query, err)
+	}
+	return r
 }

@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger
+build: fmt chaos verifier pocket tpcc ledger bank
 
 chaos: tidb
 
@@ -45,6 +45,9 @@ compare:
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
 
+bank:
+	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
+
 fmt: groupimports
 	go fmt ./...
 
@@ -69,4 +72,4 @@ image:
 docker-push:
 	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
 
-.PHONY: all clean pocket compare test fmt
+.PHONY: all clean pocket compare test fmt bank
