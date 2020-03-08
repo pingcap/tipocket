@@ -12,6 +12,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
@@ -154,7 +155,7 @@ func (c *bankCase) tryDrop(db *sql.DB, index int) bool {
 		table string
 	)
 	//if table is not exist ,return true directly
-	query := fmt.Sprintf("show tables like 'accounts%s'", index)
+	query := fmt.Sprintf("show tables like 'accounts%d'", index)
 	err := db.QueryRow(query).Scan(&table)
 	switch {
 	case err == sql.ErrNoRows:
@@ -163,7 +164,7 @@ func (c *bankCase) tryDrop(db *sql.DB, index int) bool {
 		log.Fatalf("[%s] execute query %s error %v", c, query, err)
 	}
 
-	query = fmt.Sprintf("select count(*) as count from accounts%s", index)
+	query = fmt.Sprintf("select count(*) as count from accounts%d", index)
 	err = db.QueryRow(query).Scan(&count)
 	if err != nil {
 		log.Fatalf("[%s] execute query %s error %v", c, query, err)
@@ -172,7 +173,7 @@ func (c *bankCase) tryDrop(db *sql.DB, index int) bool {
 		return false
 	}
 
-	log.Infof("[%s] we need %d accounts%s but got %d, re-initialize the data again", c, c.cfg.Accounts, index, count)
+	log.Infof("[%s] we need %d accounts%d but got %d, re-initialize the data again", c, c.cfg.Accounts, index, count)
 
 	util.MustExec(db, fmt.Sprintf("drop table if exists accounts%d", index))
 	util.MustExec(db, "DROP TABLE IF EXISTS record")

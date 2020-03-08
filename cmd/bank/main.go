@@ -22,16 +22,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
-
-	"github.com/pingcap/tipocket/tests/bank"
-
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/verify"
+	"github.com/pingcap/tipocket/tests/bank"
 )
 
 var defaultPushMetricsInterval = 15 * time.Second
