@@ -47,6 +47,8 @@ ledger:
 
 txn-rand-pessimistic:
 	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/txn-rand-pessimistic/*.go
+on-dup:
+	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
 
 fmt: groupimports
 	go fmt ./...
