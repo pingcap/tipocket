@@ -48,6 +48,9 @@ ledger:
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
 
+on-dup:
+	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+
 fmt: groupimports
 	go fmt ./...
 
