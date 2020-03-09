@@ -219,4 +219,3 @@ func MatchInArray(arr []string, value string) bool {
 	}
 	return false
 }
-
