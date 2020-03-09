@@ -45,6 +45,9 @@ compare:
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
 
+on-dup:
+	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+
 fmt: groupimports
 	go fmt ./...
 
