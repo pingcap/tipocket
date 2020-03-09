@@ -42,7 +42,6 @@ var (
 	imageVersion = flag.String("image-version", "latest", "image version")
 	storageClass = flag.String("storage-class", "local-storage", "storage class name")
 	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-	round        = flag.Int("round", 1, "client test request round")
 	// case config
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
@@ -69,7 +68,7 @@ func main() {
 		ClientCount: 1,
 		DB:          "noop",
 		RunTime:     *runTime,
-		RunRound:    *round,
+		RunRound:    1,
 	}
 
 	provisioner, err := cluster.NewK8sProvisioner()
