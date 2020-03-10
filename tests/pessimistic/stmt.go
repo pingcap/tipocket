@@ -7,7 +7,7 @@ import (
 
 	"github.com/cznic/mathutil"
 	_ "github.com/go-sql-driver/mysql"
-	"golang.org/x/net/context"
+	"context"
 )
 
 func (se *Session) plainSelect(ctx context.Context) error {
