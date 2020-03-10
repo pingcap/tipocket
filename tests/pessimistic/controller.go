@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
@@ -82,17 +83,33 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	if c.randTxnDB, err = util.OpenDB(randTxnDBDSN, randTxnConcurrency); err != nil {
 		return errors.Errorf("[%s] create db client error %v", caseName, err)
 	}
-	c.PessimisticCase = NewPessimisticCase(c.cfg.PessimisticCaseConfig)
-	if err := c.PessimisticCase.Initialize(ctx, c.randTxnDB); err != nil {
-		return errors.Errorf("[%s] initial failed %v", caseName, err)
-	}
-
 	if c.hongbaoDB, err = util.OpenDB(hongbaoDBDSN, hongbaoConcurrency); err != nil {
 		return errors.Errorf("[%s] create db client error %v", hongbao.CaseName, err)
 	}
-	c.HongbaoCase = hongbao.NewHongbaoCase(&c.cfg.HongbaoCaseConfig)
-	if err := c.HongbaoCase.Initialize(ctx, c.hongbaoDB); err != nil {
-		return errors.Errorf("[%s] initial failed %v", hongbao.CaseName, err)
+
+	var (
+		wg       sync.WaitGroup
+		initErrs []error
+	)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		c.PessimisticCase = NewPessimisticCase(c.cfg.PessimisticCaseConfig)
+		initErrs = append(initErrs, c.PessimisticCase.Initialize(ctx, c.randTxnDB))
+	}()
+	go func() {
+		defer wg.Done()
+		c.HongbaoCase = hongbao.NewHongbaoCase(&c.cfg.HongbaoCaseConfig)
+		initErrs = append(initErrs, c.HongbaoCase.Initialize(ctx, c.hongbaoDB))
+	}()
+
+	wg.Wait()
+
+	for _, err := range initErrs {
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	return nil
