@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available
+build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available deadlock-detector
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -57,6 +57,9 @@ sqllogic:
 
 region-available:
 	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
+
+deadlock-detector:
+	$(GOBUILD) $(GOMOD) -o bin/deadlock-detector cmd/deadlock-detector/*.go
 
 fmt: groupimports
 	go fmt ./...
