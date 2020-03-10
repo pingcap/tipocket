@@ -42,12 +42,14 @@ type CaseCreator struct {
 	*Config
 }
 
+// Create creates sqllogicClient
 func (l *CaseCreator) Create(node types.ClientNode) core.Client {
 	return &sqllogicClient{
 		Config: l.Config,
 	}
 }
 
+// SetUp set up sqllogicClient
 func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
@@ -58,22 +60,27 @@ func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, id
 	return nil
 }
 
+// TearDown does nothing
 func (c *sqllogicClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	return nil
 }
 
+// Invoke does nothing
 func (c *sqllogicClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
 	panic("implement me")
 }
 
+// NextRequest does nothing
 func (c *sqllogicClient) NextRequest() interface{} {
 	panic("implement me")
 }
 
+// DumpState does nothing
 func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
+// Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []types.ClientNode) error {
 	dbAddr := fmt.Sprintf("%s:%d", c.ip, c.port)
 	dbDSN := fmt.Sprintf("root:@tcp(%s)/test", dbAddr)
@@ -81,7 +88,7 @@ func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes [
 	if err != nil {
 		log.Fatalf("[sqllogic] initialize error %v", err)
 	}
-	cfg := &SqllogicTestCaseConfig{
+	cfg := &CaseConfig{
 		TestPath:  "./sqllogictest",
 		SkipError: c.SkipError,
 		Parallel:  c.TaskCount,
@@ -90,7 +97,7 @@ func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes [
 		User:      "root",
 		caseURL:   c.CaseURL,
 	}
-	sqllogic := NewSqllogictest(cfg)
+	sqllogic := NewCase(cfg)
 	if err := sqllogic.Initialize(ctx, db); err != nil {
 		log.Fatalf("[sqllogic] initialize %s error %v", sqllogic, err)
 	}
