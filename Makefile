@@ -46,7 +46,7 @@ ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
 
 txn-rand-pessimistic:
-	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/txn-rand-pessimistic/*.go
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 fmt: groupimports
 	go fmt ./...

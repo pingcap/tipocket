@@ -15,7 +15,6 @@ import (
 
 // Config is for pessimisticClient
 type Config struct {
-	TxnMode string `toml:"txn_mode"`
 	PessimisticCaseConfig
 	hongbao.HongbaoCaseConfig
 }
@@ -28,8 +27,7 @@ type CaseCreator struct {
 // Create creates case client
 func (l CaseCreator) Create(node types.ClientNode) core.Client {
 	return &pessimisticClient{
-		TxnMode: l.Cfg.TxnMode,
-		cfg:     l.Cfg,
+		cfg: l.Cfg,
 	}
 }
 
@@ -48,7 +46,7 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	var (
 		err           error
 		node          = nodes[idx]
-		dsn           = fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+		dsn           = fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
 		randTxnDBName = c.cfg.PessimisticCaseConfig.DBName
 		hongbaoDBName = c.cfg.HongbaoCaseConfig.DBName
 	)
@@ -76,9 +74,9 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	db.Close()
 
 	var (
-		randTxnDBDSN       = fmt.Sprintf("root@tcp(%s)/%s", node.IP, randTxnDBName)
+		randTxnDBDSN       = fmt.Sprintf("%s%s", dsn, randTxnDBName)
 		randTxnConcurrency = c.cfg.PessimisticCaseConfig.Concurrency
-		hongbaoDBDSN       = fmt.Sprintf("root@tcp(%s)/%s", node.IP, hongbaoDBName)
+		hongbaoDBDSN       = fmt.Sprintf("%s%s", dsn, hongbaoDBName)
 		hongbaoConcurrency = c.cfg.HongbaoCaseConfig.Concurrency
 	)
 	if c.randTxnDB, err = util.OpenDB(randTxnDBDSN, randTxnConcurrency); err != nil {

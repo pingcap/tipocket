@@ -106,7 +106,6 @@ func main() {
 		Config:      &cfg,
 		Provisioner: provisioner,
 		ClientCreator: pessimistic.CaseCreator{Cfg: &pessimistic.Config{
-			TxnMode: *txnMode,
 			PessimisticCaseConfig: pessimistic.PessimisticCaseConfig{
 				DBName:         *randTxnDBName,
 				Concurrency:    *randTxnConcurrency,
