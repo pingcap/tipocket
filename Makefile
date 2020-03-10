@@ -17,9 +17,9 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger
+build: fmt case
 
-chaos: tidb
+case: tidb verifier pocket tpcc ledger on-dup sqllogic
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -47,6 +47,9 @@ ledger:
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+
+sqllogic:
+	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
 
 fmt: groupimports
 	go fmt ./...

@@ -22,6 +22,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.5.0 // indirect
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/sys v0.0.0-20200120151820-655fe14d7479 // indirect
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
