@@ -33,8 +33,6 @@ import (
 	"github.com/pingcap/tipocket/tests/bank"
 )
 
-var defaultPushMetricsInterval = 15 * time.Second
-
 var (
 	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
 	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
@@ -53,8 +51,6 @@ var (
 	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
 	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
 	tables      = flag.Int("tables", 1, "the number of the tables")
-	// TODO: I'm not clear that this field is.
-	mode = flag.String("mode", "online", "case mode, support values: online / dev, default value: online")
 )
 
 func initE2eContext() {
