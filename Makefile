@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger
+build: fmt chaos verifier pocket tpcc ledger txn-rand-pessimistic on-dup
 
 chaos: tidb
 
@@ -44,6 +44,9 @@ compare:
 
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
+
+txn-rand-pessimistic:
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
