@@ -19,14 +19,14 @@ import (
 	"time"
 
 	"github.com/pingcap/errors"
-
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/util"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate TiDB with binlog on k8s
@@ -66,7 +66,7 @@ func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation) error {
 	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster); err != nil {
 		return err
 	}
-	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, 10*time.Minute); err != nil {
+	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
 	if err := t.tidbClient.ApplyTiDBService(tc.Service); err != nil {

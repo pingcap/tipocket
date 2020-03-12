@@ -17,7 +17,7 @@ RUN make build
 FROM alpine:3.8
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache bash curl
+    apk add --no-cache bash curl wget
 
 COPY --from=0 /src/bin/* /bin/
 
