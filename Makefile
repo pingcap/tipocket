@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger txn-rand-pessimistic on-dup
+build: fmt chaos verifier pocket tpcc ledger txn-rand-pessimistic on-dup block-writer
 
 chaos: tidb
 
@@ -50,6 +50,11 @@ txn-rand-pessimistic:
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+
+block-writer:
+	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
+
+
 
 fmt: groupimports
 	go fmt ./...
