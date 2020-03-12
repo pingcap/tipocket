@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger bank
+build: fmt chaos verifier pocket tpcc ledger txn-rand-pessimistic on-dup bank
 
 chaos: tidb
 
@@ -48,11 +48,18 @@ ledger:
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
 
+txn-rand-pessimistic:
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
+
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
 
 fmt: groupimports
 	go fmt ./...
+
+mod:
+	GO111MODULE=on go mod tidy
+	@git diff --exit-code -- go.sum go.mod
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))

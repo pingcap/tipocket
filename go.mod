@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
@@ -22,6 +23,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.5.0 // indirect
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	golang.org/x/sys v0.0.0-20200120151820-655fe14d7479 // indirect
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
@@ -35,15 +37,13 @@ require (
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
-replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
 replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
 
 replace github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 
-replace github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
+replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 
