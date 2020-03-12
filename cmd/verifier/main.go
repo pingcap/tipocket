@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	names = flag.String("names", "", "model names, seperate by comma")
+	names = flag.String("names", "", "model names, separated by comma")
 )
 
 func main() {
