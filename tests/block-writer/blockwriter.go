@@ -105,7 +105,7 @@ func (c *WriterClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-// Starts starts test
+// Start starts test
 func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {
