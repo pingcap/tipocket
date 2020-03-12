@@ -17,9 +17,7 @@ default: build
 
 all: build
 
-build: fmt case
-
-case: tidb verifier pocket tpcc ledger on-dup sqllogic
+build: fmt verifier pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -43,7 +41,10 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 ledger:
-	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
+	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
+
+txn-rand-pessimistic:
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
@@ -53,6 +54,11 @@ sqllogic:
 
 fmt: groupimports
 	go fmt ./...
+
+tidy:
+	@echo "go mod tidy"
+	GO111MODULE=on go mod tidy
+	@git diff --exit-code -- go.mod
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))

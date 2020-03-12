@@ -65,7 +65,7 @@ type CDCJob struct {
 
 func (c *CdcOps) ApplyCDC(spec *CDCSpec) (*CDC, error) {
 	if spec.Image == "" {
-		spec.Image = fixture.E2eContext.CDCImage
+		spec.Image = fixture.Context.CDCImage
 	}
 	cc, err := c.renderCdc(spec)
 	if err != nil {
@@ -103,15 +103,15 @@ func (c *CdcOps) StartJob(job *CDCJob, spec *CDCSpec) error {
 }
 
 func (c CdcOps) renderSyncJob(job *CDCJob, spec *CDCSpec) (*batchv1.Job, error) {
-	name := fmt.Sprintf("e2e-cdc-%s", spec.Name)
+	name := fmt.Sprintf("tipocket-cdc-%s", spec.Name)
 	l := map[string]string{
-		"app":      "e2e-cdc",
+		"app":      "tipocket-cdc",
 		"instance": name,
 		"source":   spec.Source.Name,
 	}
 	image := spec.Image
 	if image == "" {
-		image = fixture.E2eContext.CDCImage
+		image = fixture.Context.CDCImage
 	}
 	pdAddr := util.PDAddress(job.CDC.Source)
 
@@ -158,19 +158,19 @@ const (
 )
 
 func (c *CdcOps) StopJob(job *CDCJob) error {
-	return fmt.Errorf("Not implemented")
+	return fmt.Errorf("not implemented")
 }
 
 func (c *CdcOps) renderCdc(spec *CDCSpec) (*CDC, error) {
-	name := fmt.Sprintf("e2e-cdc-%s", spec.Name)
+	name := fmt.Sprintf("tipocket-cdc-%s", spec.Name)
 	l := map[string]string{
-		"app":      "e2e-cdc",
+		"app":      "tipocket-cdc",
 		"instance": name,
 		"source":   spec.Source.Name,
 	}
 	image := spec.Image
 	if image == "" {
-		image = fixture.E2eContext.CDCImage
+		image = fixture.Context.CDCImage
 	}
 	pdAddr := util.PDAddress(spec.Source)
 	cmds := []string{

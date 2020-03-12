@@ -17,11 +17,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
-	"time"
-
-	"github.com/pingcap/tipocket/tests/sqllogictest"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -32,42 +27,22 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
+	"github.com/pingcap/tipocket/tests/sqllogictest"
 )
 
 var (
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-
-	// case config
 	sqllogicCaseURL = flag.String("p", "", "case url")
 	taskCount       = flag.Int("t", 2, "concurrency")
 	skipError       = flag.Bool("skip-error", false, "skip error for query test")
 )
 
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
-
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		RunTime:     *runTime,
+		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
 
@@ -85,9 +60,9 @@ func main() {
 				CaseURL:   *sqllogicCaseURL,
 			},
 		},
-		NemesisGens: util.ParseNemesisGenerators(*nemesises),
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: tidb.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

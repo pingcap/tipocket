@@ -64,14 +64,14 @@ func (t *TiDBClusterRecommendation) TiDBReplicas(replicas int32) *TiDBClusterRec
 
 func buildImage(name string) string {
 	var b strings.Builder
-	if fixture.E2eContext.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.E2eContext.HubAddress)
+	if fixture.Context.HubAddress != "" {
+		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
 	}
-	b.WriteString(fixture.E2eContext.DockerRepository)
+	b.WriteString(fixture.Context.DockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(fixture.E2eContext.ImageVersion)
+	b.WriteString(fixture.Context.ImageVersion)
 	return b.String()
 }
 
@@ -87,29 +87,29 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 				Name:      name,
 				Namespace: ns,
 				Labels: map[string]string{
-					"app":      "e2e-tidbcluster",
+					"app":      "tipocket-tidbcluster",
 					"instance": "name",
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Version:         fixture.E2eContext.TiDBVersion,
+				Version:         fixture.Context.TiDBVersion,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				PD: v1alpha1.PDSpec{
 					Replicas:             3,
 					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
-					StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
+					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.E2eContext.ImageVersion,
+						Version: &fixture.Context.ImageVersion,
 						Image:   buildImage("pd"),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
 					Replicas:             3,
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
-					StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
+					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.E2eContext.ImageVersion,
+						Version: &fixture.Context.ImageVersion,
 						Image:   buildImage("tikv"),
 					},
 				},
@@ -123,7 +123,7 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 						ExposeStatus: &exposeStatus,
 					},
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.E2eContext.ImageVersion,
+						Version: &fixture.Context.ImageVersion,
 						Image:   buildImage("tidb"),
 					},
 				},

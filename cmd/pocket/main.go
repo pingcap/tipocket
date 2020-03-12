@@ -17,8 +17,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -31,33 +29,11 @@ import (
 )
 
 var (
-	configPath      = flag.String("config", "", "config file path")
-	pprofAddr       = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace       = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises       = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub             = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion    = flag.String("image-version", "latest", "image version")
-	binlogVersion   = flag.String("binlog-version", "", `overwrite "-image-version" flag for drainer`)
-	storageClass    = flag.String("storage-class", "local-storage", "storage class name")
-	drainerRelayLog = flag.Bool("relay-log", false, "if enable relay log")
+	configPath = flag.String("config", "", "config file path")
 )
-
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-	fixture.E2eContext.BinlogConfig.BinlogVersion = *binlogVersion
-	fixture.E2eContext.BinlogConfig.EnableRelayLog = *drainerRelayLog
-}
 
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
@@ -78,10 +54,10 @@ func main() {
 		Config:           &cfg,
 		Provisioner:      provisioner,
 		ClientCreator:    creator.PocketCreator{},
-		NemesisGens:      util.ParseNemesisGenerators(*nemesises),
+		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      binlog.RecommendedBinlogCluster(*namespace, *namespace),
+		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }
