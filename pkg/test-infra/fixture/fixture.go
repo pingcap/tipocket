@@ -14,20 +14,33 @@
 package fixture
 
 import (
+	"flag"
+	"net/http"
 	"time"
+
+	_ "net/http/pprof" // pprof
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
-
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
 )
 
 type StorageType string
 
-type E2eFixture struct {
+type fixtureContext struct {
+	// Control config
+	Mode         int
+	ClientCount  int
+	Nemesis      string
+	RunRound     int
+	RunTime      time.Duration
+	RequestCount int
+	HistoryFile  string
+	// Test-infra
+	Namespace                string
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	RemoteVolumeStorageClass string
@@ -37,15 +50,11 @@ type E2eFixture struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
-	TimeLimit                time.Duration
-	Nemesis                  string
-	Workload                 string
-	Round                    int
-	RequestCount             int
-	HistoryFile              string
+	// Other
+	pprofAddr string
 }
 
-var E2eContext E2eFixture
+var Context fixtureContext
 
 const (
 	StorageTypeLocal  StorageType = "local"
@@ -109,9 +118,9 @@ func BuildGenericKubeClient(conf *rest.Config) (client.Client, error) {
 func StorageClass(t StorageType) string {
 	switch t {
 	case StorageTypeLocal:
-		return E2eContext.LocalVolumeStorageClass
+		return Context.LocalVolumeStorageClass
 	case StorageTypeRemote:
-		return E2eContext.RemoteVolumeStorageClass
+		return Context.RemoteVolumeStorageClass
 	default:
 		return ""
 	}
@@ -125,4 +134,24 @@ func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequ
 	r.Requests[Storage] = resource.MustParse(size)
 
 	return r
+}
+
+func init() {
+	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
+	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
+	flag.StringVar(&Context.Nemesis, "nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
+	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
+	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
+	flag.DurationVar(&Context.RunTime, "run-time", 100*time.Minute, "client test run time")
+	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
+	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
+	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
+	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
+	Context.DockerRepository = "pingcap"
+
+	go func() {
+		http.ListenAndServe(Context.pprofAddr, nil)
+	}()
+
 }

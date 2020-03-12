@@ -1,11 +1,22 @@
+// Copyright 2020 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
@@ -14,13 +25,12 @@ import (
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/model"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
 var (
-	historyFile = flag.String("history", "./history.log", "history file")
-	names       = flag.String("names", "", "model names, seperate by comma")
-	pprofAddr   = flag.String("pprof", "0.0.0.0:6060", "Pprof address")
+	names = flag.String("names", "", "model names, separated by comma")
 )
 
 func main() {
@@ -29,10 +39,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
 
 	go func() {
 		<-sigs
@@ -60,7 +66,7 @@ func main() {
 				log.Printf("%s is not supported", name)
 				continue
 			}
-			s.Verify(*historyFile)
+			s.Verify(fixture.Context.HistoryFile)
 		}
 
 		cancel()

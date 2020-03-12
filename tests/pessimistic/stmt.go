@@ -1,13 +1,13 @@
 package pessimistic
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
 
 	"github.com/cznic/mathutil"
 	_ "github.com/go-sql-driver/mysql"
-	"context"
 )
 
 func (se *Session) plainSelect(ctx context.Context) error {
