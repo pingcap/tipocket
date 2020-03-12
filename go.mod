@@ -36,15 +36,13 @@ require (
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
-replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
 replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
 
 replace github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 
-replace github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
+replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 

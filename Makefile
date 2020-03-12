@@ -43,7 +43,7 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 ledger:
-	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
+	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 txn-rand-pessimistic:
 	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
@@ -53,6 +53,10 @@ on-dup:
 
 fmt: groupimports
 	go fmt ./...
+
+mod:
+	GO111MODULE=on go mod tidy
+	@git diff --exit-code -- go.sum go.mod
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
