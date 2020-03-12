@@ -54,8 +54,7 @@ var (
 	hongbaoConcurrency = flag.Int("hongbao-concurrency", 32, "concurrency for hongbao case")
 	hongbaoNum         = flag.Int("hongbao-num", 5, "number of hongbao for each concurrency")
 
-	txnMode  = flag.String("txn-mode", "mix", "transaction mode, mix|pessimistic|optimistic")
-	caseMode = flag.String("case-mode", "online", "case mode, support values: online / dev, default value: online")
+	txnMode = flag.String("txn-mode", "mix", "transaction mode, mix|pessimistic|optimistic")
 )
 
 func main() {
@@ -65,6 +64,8 @@ func main() {
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
 
 	ignoreCodesO, err := splitToSlice(*ignoreO)

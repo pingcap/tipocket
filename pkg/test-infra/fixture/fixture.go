@@ -41,6 +41,8 @@ type fixtureContext struct {
 	HistoryFile  string
 	// Test-infra
 	Namespace                string
+	WaitClusterReadyDuration time.Duration
+	PurgeNsOnSuccess         bool
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	RemoteVolumeStorageClass string
@@ -140,14 +142,20 @@ func init() {
 	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
 	flag.StringVar(&Context.Nemesis, "nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
+	flag.IntVar(&Context.RunRound, "round", 1, "run round of client test")
+	flag.DurationVar(&Context.RunTime, "run-time", 100*time.Minute, "run time of client")
+	flag.IntVar(&Context.RequestCount, "request-count", 10000, "requests a client sends to the db")
+	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
+
+	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
-	flag.DurationVar(&Context.RunTime, "run-time", 100*time.Minute, "client test run time")
-	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
+	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
+	flag.BoolVar(&Context.PurgeNsOnSuccess, "purge", false, "purge the specified namespace on success")
 	Context.DockerRepository = "pingcap"
 
 	go func() {

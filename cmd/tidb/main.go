@@ -18,7 +18,6 @@ import (
 	"flag"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
@@ -34,7 +33,6 @@ import (
 
 var (
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
-	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
 	checkerNames = flag.String("checkers", "porcupine", "checker names, separate by comma. eg, porcupine,admin_check")
 )
 
@@ -75,8 +73,6 @@ func main() {
 		switch name {
 		case "porcupine":
 			checkers = append(checkers, porcupine.Checker{})
-		case "bankQoS":
-			checkers = append(checkers, tidb.BankQoSChecker(*qosFile))
 		case "tidb_bank_tso":
 			checkers = append(checkers, tidb.BankTsoChecker())
 		case "long_fork_checker":
@@ -95,7 +91,6 @@ func main() {
 	}
 
 	checker = core.MultiChecker("tidb checkers", checkers...)
-
 	verifySuit := verify.Suit{
 		Model:   model,
 		Checker: checker,
@@ -110,7 +105,7 @@ func main() {
 		Provisioner:      provisioner,
 		ClientCreator:    creator,
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClientRequestGen: util.BuildClientLoopThrottle(5 * time.Second),
+		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
 		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}

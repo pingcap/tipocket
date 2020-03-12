@@ -55,8 +55,6 @@ func NewController(
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 ) *Controller {
-	cfg.adjust()
-
 	if len(cfg.DB) == 0 {
 		log.Fatalf("empty database")
 	}
