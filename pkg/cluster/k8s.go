@@ -5,16 +5,14 @@ import (
 	"errors"
 	"os"
 	"regexp"
-	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -41,9 +39,9 @@ func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
 func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
-		return k.setUpTiDBCluster(ctx, s)
+		return k.setUpTiDBCluster(s)
 	case *binlog.ClusterRecommendation:
-		return k.setUpBinlogCluster(ctx, s)
+		return k.setUpBinlogCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -53,14 +51,14 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
-		return k.TestCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
+		return k.tearDownTiDBCluster(s)
 	default:
 		return errors.New("unreachable")
 	}
 }
 
 // TODO: move the set up process into tidb package and make it a interface
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
@@ -74,8 +72,7 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.T
 		return nodes, clientNodes, err
 	}
 
-	// TODO: use ctx for wait end
-	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, 10*time.Minute)
+	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
@@ -98,7 +95,7 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.T
 	return nodes, clientNodes, err
 }
 
-func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
@@ -126,18 +123,12 @@ func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommend *binl
 	return nodes, clientNodes, err
 }
 
-func getTiDBNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 4000 {
-			return port.NodePort
-		}
+func (k *K8sProvisioner) tearDownTiDBCluster(recommend *tidb.TiDBClusterRecommendation) error {
+	if err := k.TestCli.TiDB.DeleteTiDBCluster(recommend.TidbCluster); err != nil {
+		return err
 	}
-	return 0
-}
-
-func getNodeIP(nodeList *corev1.NodeList) string {
-	if len(nodeList.Items) == 0 {
-		return ""
+	if fixture.Context.PurgeNsOnSuccess {
+		return k.TestCli.DeleteNamespace(recommend.Name)
 	}
-	return nodeList.Items[0].Status.Addresses[0].Address
+	return nil
 }
