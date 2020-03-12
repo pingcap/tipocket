@@ -54,7 +54,8 @@ on-dup:
 fmt: groupimports
 	go fmt ./...
 
-mod:
+tidy:
+	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.sum go.mod
 
