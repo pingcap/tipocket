@@ -1,4 +1,4 @@
-package block_writer
+package blockwriter
 
 import (
 	"context"
@@ -28,23 +28,25 @@ type CaseCreator struct {
 	Concurrency int
 }
 
+// Create creates WriterClient
 func (c CaseCreator) Create(node types.ClientNode) core.Client {
-	client := &BlockWriterClient{
+	client := &WriterClient{
 		tableNum:    c.TableNum,
 		concurrency: c.Concurrency,
 	}
 	return client
 }
 
-// BlockWriterClient is for concurrent writing blocks.
-type BlockWriterClient struct {
+// WriterClient is for concurrent writing blocks.
+type WriterClient struct {
 	tableNum    int
 	concurrency int
 	bws         []*blockWriter
 	db          *sql.DB
 }
 
-func (c *BlockWriterClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+// SetUp sets up client
+func (c *WriterClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	var err error
 	log.Infof("[%s] start to set up...", c)
 	node := nodes[idx]
@@ -83,23 +85,28 @@ func (c *BlockWriterClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	return errors.Trace(c.truncate(ctx, c.db))
 }
 
-func (c *BlockWriterClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+// TearDown tears down client
+func (c *WriterClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *BlockWriterClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+// Invoke does nothing
+func (c *WriterClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
 	panic("implement me")
 }
 
-func (c *BlockWriterClient) NextRequest() interface{} {
+// NextRequest does nothing
+func (c *WriterClient) NextRequest() interface{} {
 	panic("implement me")
 }
 
-func (c *BlockWriterClient) DumpState(ctx context.Context) (interface{}, error) {
+// DumpState does nothing
+func (c *WriterClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *BlockWriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+// Starts starts test
+func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {
 		log.Infof("[%s] test end...", c)
@@ -152,7 +159,7 @@ type blockWriter struct {
 	index           int
 }
 
-func (c *BlockWriterClient) newBlockWriter() *blockWriter {
+func (c *WriterClient) newBlockWriter() *blockWriter {
 	source := rand.NewSource(time.Now().UnixNano())
 	return &blockWriter{
 		id:              uuid.New().String(),
@@ -204,7 +211,7 @@ func (bw *blockWriter) randomBlock() []byte {
 	return bw.blockDataBuffer[:blockSize]
 }
 
-func (c *BlockWriterClient) truncate(ctx context.Context, db *sql.DB) error {
+func (c *WriterClient) truncate(ctx context.Context, db *sql.DB) error {
 	for i := 0; i < c.tableNum; i++ {
 		select {
 		case <-ctx.Done():
@@ -229,6 +236,6 @@ func (c *BlockWriterClient) truncate(ctx context.Context, db *sql.DB) error {
 }
 
 // String implements fmt.Stringer interface.
-func (c *BlockWriterClient) String() string {
+func (c *WriterClient) String() string {
 	return "block-writer"
 }
