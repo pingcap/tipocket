@@ -54,6 +54,10 @@ on-dup:
 fmt: groupimports
 	go fmt ./...
 
+mod:
+	GO111MODULE=on go mod tidy
+	@git diff --exit-code -- go.sum go.mod
+
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
 
