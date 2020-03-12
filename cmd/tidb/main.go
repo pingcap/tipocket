@@ -17,11 +17,8 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
 	"strings"
 	"time"
-
-	_ "net/http/pprof"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
@@ -36,36 +33,13 @@ import (
 )
 
 var (
-	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", 1000, "client test request count")
-	round        = flag.Int("round", 3, "client test request round")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
 	clientCase   = flag.String("case", "bank", "client test case, like bank,multi_bank")
-	historyFile  = flag.String("history", "./history.log", "history file")
 	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	mode         = flag.Int("mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	checkerNames = flag.String("checkers", "porcupine", "checker names, separate by comma. eg, porcupine,admin_check")
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
 )
-
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
 
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
 
 	var (
 		creator core.ClientCreator
@@ -74,12 +48,12 @@ func main() {
 		model   = tidb.BankModel()
 		cfg     = control.Config{
 			DB:           "noop",
-			Mode:         control.Mode(*mode),
-			ClientCount:  *clientCount,
-			RequestCount: *requestCount,
-			RunRound:     *round,
-			RunTime:      *runTime,
-			History:      *historyFile,
+			Mode:         control.Mode(fixture.Context.Mode),
+			ClientCount:  fixture.Context.ClientCount,
+			RequestCount: fixture.Context.RequestCount,
+			RunRound:     fixture.Context.RunRound,
+			RunTime:      fixture.Context.RunTime,
+			History:      fixture.Context.HistoryFile,
 		}
 	)
 	switch *clientCase {
@@ -135,10 +109,10 @@ func main() {
 		Config:           &cfg,
 		Provisioner:      provisioner,
 		ClientCreator:    creator,
-		NemesisGens:      util.ParseNemesisGenerators(*nemesises),
+		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.BuildClientLoopThrottle(5 * time.Second),
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

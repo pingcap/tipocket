@@ -1,11 +1,22 @@
+// Copyright 2020 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	"time"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -20,39 +31,18 @@ import (
 )
 
 var (
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-
-	// case config
 	dbName     = flag.String("db", "test", "database name")
 	numRows    = flag.Int("num-rows", 10000, "number of rows")
 	retryLimit = flag.Int("retry-limit", 2, "retry count")
 )
 
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
-
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		RunTime:     *runTime,
+		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
 
@@ -69,9 +59,9 @@ func main() {
 			NumRows:    *numRows,
 			RetryLimit: *retryLimit,
 		}},
-		NemesisGens: util.ParseNemesisGenerators(*nemesises),
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: tidb.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

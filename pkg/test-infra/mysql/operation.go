@@ -91,14 +91,14 @@ func (m *MySQLOps) DeleteMySQL(ms *MySQL) error {
 }
 
 func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
-	name := fmt.Sprintf("e2e-mysql-%s", spec.Name)
+	name := fmt.Sprintf("tipocket-mysql-%s", spec.Name)
 	l := map[string]string{
-		"app":      "e2e-mysql",
+		"app":      "tipocket-mysql",
 		"instance": name,
 	}
 	version := spec.Version
 	if version == "" {
-		version = fixture.E2eContext.MySQLVersion
+		version = fixture.Context.MySQLVersion
 	}
 	var q resource.Quantity
 	// var err error
