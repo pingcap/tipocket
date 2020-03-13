@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
 	"runtime/debug"
 	"sort"
@@ -32,7 +31,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 
-	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
 	tmysql "github.com/pingcap/parser/mysql"
@@ -63,8 +61,7 @@ type result struct {
 
 type tester struct {
 	labelHashes map[string]string
-	mdb         *sql.DB
-	ctx         context.Context
+	db          *sql.DB
 }
 
 type lineScanner struct {
@@ -99,126 +96,6 @@ var (
 	resultHashRE = regexp.MustCompile(`^(\d+)\s+values?\s+hashing\s+to\s+([0-9A-Fa-f]+)$`)
 )
 
-// CaseConfig is for sqllogic_test test case
-type CaseConfig struct {
-	TestPath  string `toml:"test_path"`
-	SkipError bool   `toml:"skipError"`
-	Parallel  int    `toml:"parallel"`
-	DBName    string `toml:"database"`
-	Host      string `toml:"host"`
-	User      string `toml:"user"`
-	Password  string `toml:"password"`
-	caseURL   string `toml:"caseURL"`
-}
-
-// Case is configuration for sqllogic.
-type Case struct {
-	*CaseConfig
-}
-
-// NewCase return the Case.
-func NewCase(cfg *CaseConfig) *Case {
-	c := &Case{
-		CaseConfig: cfg,
-	}
-	return c
-}
-
-// Initialize implements Case Initialize interface.
-func (s *Case) Initialize(ctx context.Context, db *sql.DB) error {
-	log.Infof("[sqllogic] start to init %s...", s.String())
-	defer func() {
-		log.Infof("[sqllogic] init %s end...", s.String())
-	}()
-	for index := 0; index < s.Parallel; index++ {
-		dropsql := fmt.Sprintf("drop database if exists sqllogic_test_%d;", index)
-		err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-			_, err := db.Exec(dropsql)
-			return err
-		})
-		if err != nil {
-			return errors.Errorf("executing %s err %v", dropsql, err)
-		}
-
-		createsql := fmt.Sprintf("create database if not exists sqllogic_test_%d;", index)
-		err = util.RunWithRetry(ctx, dbTryNumber, 3*time.Second, func() error {
-			_, err := db.Exec(createsql)
-			return err
-		})
-		if err != nil {
-			return errors.Errorf("executing %s err %v", createsql, err)
-		}
-	}
-	return nil
-}
-
-// String implements fmt.Stringer interface.
-func (s *Case) String() string {
-	return "sqllogic_test"
-}
-
-// Execute implements Case Execute interface.
-func (s *Case) Execute(ctx context.Context, db *sql.DB) error {
-	log.Infof("[sqllogic] start to download %s ...", s.caseURL)
-	err := util.InstallArchive(ctx, s.caseURL, "./")
-	if err != nil {
-		log.Fatalf("[sqllogic] installArchive error %v", err)
-		return err
-	}
-	log.Infof("[sqllogic] start to test %s ...", s)
-	defer func() {
-		log.Infof("[sqllogic] test %s end...", s)
-	}()
-
-	if err := s.ExecuteSqllogic(ctx, db); err != nil {
-		log.Errorf("[sqllogic] execute %s failed %v", s.String(), err)
-	}
-	return nil
-}
-
-// ExecuteSqllogic run case
-func (s *Case) ExecuteSqllogic(ctx context.Context, db *sql.DB) error {
-	startTime := time.Now()
-	var fileNames []string
-	filepath.Walk(s.TestPath, func(testPath string, info os.FileInfo, err error) error {
-		if info == nil || info.IsDir() {
-			return nil
-		}
-
-		if !strings.HasSuffix(testPath, ".test") {
-			return nil
-		}
-
-		fileNames = append(fileNames, testPath)
-		return nil
-	})
-
-	taskCount := s.Parallel
-	if taskCount > len(fileNames) {
-		taskCount = len(fileNames)
-	}
-	if taskCount <= 0 {
-		return nil
-	}
-	taskChan := make(chan string, taskCount)
-	doneChan := make(chan struct{}, taskCount)
-	resultChan := make(chan *result, taskCount)
-	mdbs := createDatabases(taskCount, s.Host, s.User, s.Password)
-	defer closeDatabases(mdbs)
-
-	go addTasks(ctx, fileNames, taskChan)
-
-	for i := 0; i < taskCount; i++ {
-		go doProcess(ctx, doneChan, taskChan, resultChan, mdbs[i], i, s.SkipError)
-	}
-
-	go doWait(ctx, doneChan, resultChan, taskCount)
-	if errCnt, errMsg := doResult(ctx, resultChan, startTime); errCnt > 0 {
-		log.Fatalf("[sqllogic] Test failed, error count:%d, error message%s", errCnt, errMsg)
-	}
-	return nil
-}
-
 func createDatabases(num int, host string, user string, password string) []*sql.DB {
 	mdbs := make([]*sql.DB, 0, num)
 	for i := 0; i < num; i++ {
@@ -240,11 +117,10 @@ func createDatabases(num int, host string, user string, password string) []*sql.
 	return mdbs
 }
 
-func closeDatabases(mdbs []*sql.DB) {
-	for _, mdb := range mdbs {
-		mdb.Close()
+func closeDatabases(dbs []*sql.DB) {
+	for _, db := range dbs {
+		db.Close()
 	}
-	os.RemoveAll("var")
 }
 
 func addTasks(ctx context.Context, tasks []string, taskChan chan string) {
@@ -256,12 +132,11 @@ func addTasks(ctx context.Context, tasks []string, taskChan chan string) {
 }
 
 func doProcess(ctx context.Context, doneChan chan struct{}, taskChan chan string, resultChan chan *result,
-	mdb *sql.DB, runid int, skipError bool) {
+	db *sql.DB, runid int, skipError bool) {
 	for task := range taskChan {
 		t := &tester{
 			labelHashes: make(map[string]string),
-			mdb:         mdb,
-			ctx:         ctx,
+			db:          db,
 		}
 
 		log.Infof("[sqllogic] run %s", task)
@@ -277,10 +152,9 @@ func doProcess(ctx context.Context, doneChan chan struct{}, taskChan chan string
 }
 
 func (t *tester) prepare(ctx context.Context, runid int, task string) {
-
 	dropsql := fmt.Sprintf("drop database if exists sqllogic_test_%d;", runid)
 	err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-		_, err := t.mdb.Exec(dropsql)
+		_, err := t.db.ExecContext(ctx, dropsql)
 		return err
 	})
 	if err != nil {
@@ -290,7 +164,7 @@ func (t *tester) prepare(ctx context.Context, runid int, task string) {
 
 	createsql := fmt.Sprintf("create database sqllogic_test_%d;", runid)
 	err = util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-		_, err := t.mdb.Exec(createsql)
+		_, err := t.db.ExecContext(ctx, createsql)
 		return err
 	})
 	if err != nil {
@@ -301,7 +175,7 @@ func (t *tester) prepare(ctx context.Context, runid int, task string) {
 
 	usesql := fmt.Sprintf("USE sqllogic_test_%d;", runid)
 	err = util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-		_, err := t.mdb.Exec(usesql)
+		_, err := t.db.ExecContext(ctx, usesql)
 		return err
 	})
 	if err != nil {
@@ -435,7 +309,7 @@ LOOP:
 				}
 			}
 
-			if err := t.execQuery(q); err != nil {
+			if err := t.execQuery(ctx, q); err != nil {
 				if skipError {
 					sendErrorResult(resultChan, err.Error())
 				} else {
@@ -530,7 +404,7 @@ func (t *tester) execStatement(ctx context.Context, stmt statement) error {
 	}()
 
 	err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-		_, err := t.mdb.Exec(stmt.sql)
+		_, err := t.db.ExecContext(ctx, stmt.sql)
 		return err
 	})
 	if stmt.expectErr {
@@ -553,7 +427,7 @@ func (t *tester) execStatement(ctx context.Context, stmt statement) error {
 	return nil
 }
 
-func (t *tester) execQuery(q query) error {
+func (t *tester) execQuery(ctx context.Context, q query) error {
 	defer func() {
 		var err error
 		if e := recover(); e != nil {
@@ -572,7 +446,7 @@ func (t *tester) execQuery(q query) error {
 	var rows *sql.Rows
 	var err error
 	for i := 0; i < dbTryNumber; i++ {
-		rows, err = t.mdb.Query(q.sql)
+		rows, err = t.db.QueryContext(ctx, q.sql)
 		if err == nil {
 			break
 		}

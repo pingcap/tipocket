@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"os"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/tipocket/pkg/core"

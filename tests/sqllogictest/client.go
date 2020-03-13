@@ -16,7 +16,12 @@ package sqllogictest
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
@@ -32,9 +37,9 @@ type Config struct {
 }
 
 type sqllogicClient struct {
+	*Config
 	ip   string
 	port int32
-	*Config
 }
 
 // CaseCreator creates sqllogicClient
@@ -55,8 +60,37 @@ func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, id
 		return nil
 	}
 	node := nodes[idx]
-	c.ip = node.IP
-	c.port = node.Port
+	c.ip, c.port = node.IP, node.Port
+	dbDSN := fmt.Sprintf("root:@tcp(%s:%d)/test", node.IP, node.Port)
+	db, err := util.OpenDB(dbDSN, 1)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	for index := 0; index < c.TaskCount; index++ {
+		dropSql := fmt.Sprintf("drop database if exists sqllogic_test_%d;", index)
+		err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
+			_, err := db.Exec(dropSql)
+			return err
+		})
+		if err != nil {
+			return errors.Errorf("executing %s err %v", dropSql, err)
+		}
+
+		createSql := fmt.Sprintf("create database if not exists sqllogic_test_%d;", index)
+		err = util.RunWithRetry(ctx, dbTryNumber, 3*time.Second, func() error {
+			_, err := db.Exec(createSql)
+			return err
+		})
+		if err != nil {
+			return errors.Errorf("executing %s err %v", createSql, err)
+		}
+	}
+
+	if err := util.InstallArchive(ctx, c.CaseURL, "./"); err != nil {
+		return errors.Trace(err)
+	}
 	return nil
 }
 
@@ -82,27 +116,44 @@ func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
 
 // Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []types.ClientNode) error {
-	dbAddr := fmt.Sprintf("%s:%d", c.ip, c.port)
-	dbDSN := fmt.Sprintf("root:@tcp(%s)/test", dbAddr)
-	db, err := util.OpenDB(dbDSN, len(clientNodes)+1)
-	if err != nil {
-		log.Fatalf("[sqllogic] initialize error %v", err)
+
+	startTime := time.Now()
+	var fileNames []string
+	filepath.Walk("./sqllogictest", func(testPath string, info os.FileInfo, err error) error {
+		if info == nil || info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(testPath, ".test") {
+			return nil
+		}
+
+		fileNames = append(fileNames, testPath)
+		return nil
+	})
+
+	if c.TaskCount > len(fileNames) {
+		c.TaskCount = len(fileNames)
 	}
-	cfg := &CaseConfig{
-		TestPath:  "./sqllogictest",
-		SkipError: c.SkipError,
-		Parallel:  c.TaskCount,
-		DBName:    "test",
-		Host:      dbAddr,
-		User:      "root",
-		caseURL:   c.CaseURL,
+	if c.TaskCount <= 0 {
+		return nil
 	}
-	sqllogic := NewCase(cfg)
-	if err := sqllogic.Initialize(ctx, db); err != nil {
-		log.Fatalf("[sqllogic] initialize %s error %v", sqllogic, err)
+	taskChan := make(chan string, c.TaskCount)
+	doneChan := make(chan struct{}, c.TaskCount)
+	resultChan := make(chan *result, c.TaskCount)
+	dbs := createDatabases(c.TaskCount, fmt.Sprintf("%s:%d", c.ip, c.port), "root", "")
+	defer closeDatabases(dbs)
+
+	go addTasks(ctx, fileNames, taskChan)
+
+	for i := 0; i < c.TaskCount; i++ {
+		go doProcess(ctx, doneChan, taskChan, resultChan, dbs[i], i, c.SkipError)
 	}
-	if err := sqllogic.Execute(ctx, db); err != nil {
-		fmt.Errorf("[sqllogic] execution error %v", err)
+
+	go doWait(ctx, doneChan, resultChan, c.TaskCount)
+
+	if errCnt, errMsg := doResult(ctx, resultChan, startTime); errCnt > 0 {
+		log.Fatalf("test failed, error count:%d, error message%s", errCnt, errMsg)
 	}
 	return nil
 }
