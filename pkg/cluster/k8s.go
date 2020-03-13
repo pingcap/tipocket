@@ -6,7 +6,7 @@ import (
 	"os"
 	"regexp"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // gke
 	"k8s.io/client-go/tools/clientcmd"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
