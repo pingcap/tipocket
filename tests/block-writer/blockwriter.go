@@ -173,7 +173,6 @@ func (c *WriterClient) newBlockWriter() *blockWriter {
 }
 
 // Insert blockWriterBatchSize values in one SQL.
-// TODO: configure it from outside.
 func (bw *blockWriter) batchExecute(db *sql.DB, tableNum int) error {
 	log.Infof("[%s] table %d batch execution", "block_writer", tableNum)
 	// buffer values
