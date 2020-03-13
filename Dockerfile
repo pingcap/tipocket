@@ -14,10 +14,11 @@ COPY . .
 
 RUN make build
 
-FROM alpine:3.8
+FROM gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
 
 RUN apk update && apk upgrade && \
     apk add --no-cache bash curl wget
+RUN gcloud components install kubectl
 
 COPY --from=0 /src/bin/* /bin/
 
