@@ -55,6 +55,9 @@ block-writer:
 sqllogic:
 	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
 
+region-available:
+	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
+
 fmt: groupimports
 	go fmt ./...
 
