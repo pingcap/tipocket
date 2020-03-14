@@ -1,0 +1,35 @@
+metadata:
+  name: tipocket-tpcc
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - >
+            /bin/tpcc \
+
+            -namespace=tipocket-tpcc-test \
+
+            -storage-class=pd-ssd \
+
+            -purge=true \
+
+            -image-version=v3.0.9 \
+
+            -client=100 \
+
+            -hub=docker.io \
+
+            -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
+
+            -round=5 \
+
+            -request-count=100000
+      retryStrategy:
+        limit: 1
+        retryPolicy: Always
