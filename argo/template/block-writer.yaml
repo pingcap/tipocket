@@ -1,0 +1,26 @@
+metadata:
+  name: tipocket-block-writer
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-block-writer
+      inputs:
+        parameters:
+          - name: image_version
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/block-writer \
+            -namespace=tipocket-block-writer \
+            -hub=docker.io \
+            -storage-class=local-scsi \
+            -purge=true \
+            -image-version={{inputs.parameters.image_version}} \
+            -run-time=60m
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always

@@ -1,0 +1,28 @@
+metadata:
+  name: tipocket-sqllogic
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-sqllogic
+      inputs:
+        parameters:
+          - name: image_version
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/sqllogic \
+            -namespace=tipocket-sqllogic-test \
+            -hub=docker.io \
+            -storage-class=local-scsi \
+            -purge=true \
+            -image-version={{inputs.parameters.image_version}} \
+            -run-time=8h \
+            -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket
+            -d=sqllogictest-tipocket
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always

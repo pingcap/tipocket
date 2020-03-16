@@ -1,0 +1,26 @@
+metadata:
+  name: tipocket-region-available
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-region-available
+      inputs:
+        parameters:
+          - name: image_version
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/region-available \
+            -namespace=tipocket-region-available-test \
+            -hub=docker.io \
+            -storage-class=local-scsi \
+            -purge=true \
+            -image-version={{inputs.parameters.image_version}} \
+            -run-time=8h \
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always

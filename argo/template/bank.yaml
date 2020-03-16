@@ -1,0 +1,30 @@
+metadata:
+  name: tipocket-bank
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-bank
+      inputs:
+        parameters:
+          - name: image_version
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/chaos-tidb \
+            -namespace=tipocket-bank \
+            -hub=docker.io \
+            -storage-class=local-scsi \
+            -purge=true \
+            -image-version={{inputs.parameters.image_version}} \
+            -case=bank \
+            -client=5 \
+            -nemesis=random_kill,partition_one,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
+            -round=3 \
+            -request-count=10000 \
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always

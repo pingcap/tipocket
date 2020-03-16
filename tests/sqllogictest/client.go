@@ -34,6 +34,7 @@ type Config struct {
 	SkipError bool
 	TaskCount int
 	CaseURL   string
+	TestDir   string
 }
 
 type sqllogicClient struct {
@@ -116,10 +117,9 @@ func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
 
 // Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []types.ClientNode) error {
-
 	startTime := time.Now()
 	var fileNames []string
-	filepath.Walk("./sqllogictest", func(testPath string, info os.FileInfo, err error) error {
+	filepath.Walk(c.TestDir, func(testPath string, info os.FileInfo, err error) error {
 		if info == nil || info.IsDir() {
 			return nil
 		}
