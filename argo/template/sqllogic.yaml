@@ -7,6 +7,7 @@ spec:
       inputs:
         parameters:
           - name: image_version
+          - name: storage_class
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -18,8 +19,9 @@ spec:
             -namespace=tipocket-sqllogic-test \
             -hub=docker.io \
             -storage-class=local-scsi \
-            -purge=true \
+            -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -purge=true \
             -run-time=8h \
             -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket
             -d=sqllogictest-tipocket

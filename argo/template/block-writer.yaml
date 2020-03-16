@@ -17,9 +17,9 @@ spec:
             /bin/block-writer \
             -namespace=tipocket-block-writer \
             -hub=docker.io \
-            -storage-class=local-scsi \
-            -purge=true \
+            -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -purge=true \
             -run-time=60m
       retryStrategy:
         limit: 0

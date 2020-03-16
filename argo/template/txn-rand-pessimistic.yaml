@@ -7,6 +7,7 @@ spec:
       inputs:
         parameters:
           - name: image_version
+          - name: storage_class
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -15,12 +16,11 @@ spec:
           - '-c'
           - |
             /bin/txn-rand-pessimistic \
-            -namespace=tipocket-txn-rand-test-1
             -namespace=tipocket-txn-rand-pessimistic-test \
             -hub=docker.io \
-            -storage-class=local-scsi \
-            -purge=true \
+            -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -purge=true \
             -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
             -run-time=8h
       retryStrategy:

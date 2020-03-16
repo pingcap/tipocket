@@ -7,6 +7,7 @@ spec:
       inputs:
         parameters:
           - name: image_version
+          - name: storage_class
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -17,9 +18,9 @@ spec:
             /bin/region-available \
             -namespace=tipocket-region-available-test \
             -hub=docker.io \
-            -storage-class=local-scsi \
-            -purge=true \
+            -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -purge=true \
             -run-time=8h \
       retryStrategy:
         limit: 0
