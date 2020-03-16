@@ -17,7 +17,7 @@ default: build
 
 all: build
 
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer
+build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
