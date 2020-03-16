@@ -32,7 +32,8 @@ import (
 
 var (
 	sqllogicCaseURL = flag.String("p", "", "case url")
-	taskCount       = flag.Int("t", 2, "concurrency")
+	testDir         = flag.String("d", "sqllogictest", "test case dir")
+	taskCount       = flag.Int("t", 10, "concurrency")
 	skipError       = flag.Bool("skip-error", false, "skip error for query test")
 )
 
@@ -58,6 +59,7 @@ func main() {
 				SkipError: *skipError,
 				TaskCount: 10,
 				CaseURL:   *sqllogicCaseURL,
+				TestDir:   *testDir,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),

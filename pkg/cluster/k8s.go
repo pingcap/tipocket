@@ -3,11 +3,7 @@ package cluster
 import (
 	"context"
 	"errors"
-	"os"
 	"regexp"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth" // gke
-	"k8s.io/client-go/tools/clientcmd"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -27,12 +23,8 @@ type K8sProvisioner struct {
 
 // NewK8sProvisioner create k8s provisioner
 func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
-	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, err
-	}
 	return &K8sProvisioner{
-		TestCli: tests.NewTestCli(conf),
+		TestCli: tests.TestClient,
 	}, nil
 }
 

@@ -17,11 +17,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // auth in cluster
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -33,6 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// TestClient encapsulates many kinds of clients
+var TestClient *TestCli
+
 // TestCli contains clients
 type TestCli struct {
 	Config *rest.Config
@@ -43,8 +49,7 @@ type TestCli struct {
 	Binlog *binlog.Ops
 }
 
-// NewTestCli creates test client
-func NewTestCli(conf *rest.Config) *TestCli {
+func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		log.Fatalf("error creating kube-client: %v", err)
@@ -106,4 +111,12 @@ func (e *TestCli) DeleteNamespace(name string) error {
 		return fmt.Errorf("delete namespace %s failed: %+v", name, err)
 	}
 	return nil
+}
+
+func init() {
+	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		log.Fatalf("build config failed: %+v", err)
+	}
+	TestClient = newTestCli(conf)
 }

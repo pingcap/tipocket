@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
