@@ -5,9 +5,10 @@ import (
 	"math/rand"
 	"strings"
 
+	"context"
+
 	"github.com/cznic/mathutil"
 	_ "github.com/go-sql-driver/mysql"
-	"context"
 )
 
 func (se *Session) plainSelect(ctx context.Context) error {
