@@ -10,6 +10,7 @@ import (
 
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
+
 	"github.com/pingcap/tipocket/util"
 )
 
@@ -44,7 +45,7 @@ func (d *deadlockCase) initialize(ctx context.Context) error {
 
 	// Initialize DB
 	util.MustExec(d.db, "DROP TABLE IF EXISTS deadlock")
-	util.MustExec(d.db,"CREATE TABLE deadlock (v int)")
+	util.MustExec(d.db, "CREATE TABLE deadlock (v int)")
 	util.MustExec(d.db, "INSERT INTO deadlock VALUES (0), (1)")
 	return nil
 }

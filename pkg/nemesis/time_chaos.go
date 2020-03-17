@@ -1,10 +1,22 @@
 package nemesis
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"math/rand"
+	"strings"
+	"time"
+
+	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/core"
 )
 
+// Note: TimeChaosLevels means the level of defined time chaos like jepsen.
+// 	It's an integer start from 0.
 type TimeChaosLevels = int
 
 const (
@@ -36,21 +48,22 @@ var skewTimeMap []uint
 var skewTimeStrMap map[string]TimeChaosLevels
 
 func init() {
-	skewTimeMap = make([]uint, 0)
-	skewTimeMap = append(skewTimeMap, 0)
-	skewTimeMap = append(skewTimeMap, 100)
-	skewTimeMap = append(skewTimeMap, 200)
-	skewTimeMap = append(skewTimeMap, 250)
-	skewTimeMap = append(skewTimeMap, 500)
-	skewTimeMap = append(skewTimeMap, 5000)
+	skewTimeMap = []uint{
+		0,
+		100,
+		200,
+		250,
+		500,
+		5000,
+	}
 
 	skewTimeStrMap = map[string]TimeChaosLevels{
-		"small-skews": SmallSkews,
+		"small-skews":       SmallSkews,
 		"subcritical-skews": SubCriticalSkews,
-		"critical-skews": CriticalSkews,
-		"big-skews": BigSkews,
-		"huge-skews": HugeSkews,
-		"strobe-skews": StrobeSkews,
+		"critical-skews":    CriticalSkews,
+		"big-skews":         BigSkews,
+		"huge-skews":        HugeSkews,
+		"strobe-skews":      StrobeSkews,
 	}
 }
 
@@ -93,4 +106,84 @@ func selectDefaultChaosDuration(levels TimeChaosLevels) (int, int) {
 }
 
 type timeChaosGenerator struct {
+	name string
+}
+
+func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperation {
+	ops := make([]*core.NemesisOperation, len(nodes))
+
+	for _, node := range nodes {
+		secs, nanoSecs := selectChaosDuration(timeChaosLevel(t.name), FromLast)
+		ops = append(ops, &core.NemesisOperation{
+			Type:        core.TimeChaos,
+			Node:        &node,
+			InvokeArgs:  []interface{}{secs, nanoSecs},
+			RecoverArgs: []interface{}{secs, nanoSecs},
+			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
+		})
+	}
+
+	return ops
+}
+
+func (t timeChaosGenerator) Name() string {
+	return t.name
+}
+
+// NewTimeChaos generate a time chaos.
+func NewTimeChaos(name string) core.NemesisGenerator {
+	return timeChaosGenerator{name: name}
+}
+
+type timeChaos struct {
+	k8sNemesisClient
+}
+
+func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interface{}) error {
+	if len(args) != 2 {
+		panic("args number error")
+	}
+	secs := args[0].(int)
+	nanoSecs := args[1].(int)
+	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
+	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
+}
+
+func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interface{}) error {
+	if len(args) != 2 {
+		panic("args number error")
+	}
+	secs := args[0].(int)
+	nanoSecs := args[1].(int)
+	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
+	return t.cli.CancelTimeChaos(ctx, &timeChaos)
+}
+
+func (t timeChaos) Name() string {
+	return string(core.TimeChaos)
+}
+
+func buildTimeChaos(ns string, chaosNs string, podName string, secs, nanoSecs int64) chaosv1alpha1.TimeChaos {
+	pods := make(map[string][]string)
+	pods[ns] = []string{podName}
+	return chaosv1alpha1.TimeChaos{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      strings.Join([]string{ns, podName, "time-chaos"}, "-"),
+			Namespace: chaosNs,
+		},
+		// Note: currently only one mode support,
+		//  but we can add another modes in the future.
+		Spec: chaosv1alpha1.TimeChaosSpec{
+			Mode: chaosv1alpha1.OnePodMode,
+			Selector: chaosv1alpha1.SelectorSpec{
+				Pods: pods,
+			},
+			TimeOffset: chaosv1alpha1.TimeOffset{
+				Sec:  secs,
+				NSec: nanoSecs,
+			},
+		},
+	}
 }

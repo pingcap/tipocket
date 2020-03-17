@@ -14,7 +14,7 @@ import (
 
 // schedulerGenerator generates shuffle-leader-scheduler,shuffle-region-scheduler
 type schedulerGenerator struct {
-	name      string
+	name string
 }
 
 func NewSchedulerGenerator(name string) *schedulerGenerator {

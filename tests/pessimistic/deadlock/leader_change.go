@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
@@ -23,7 +24,7 @@ type detectorClient struct {
 	*Config
 	*singleStatementRollbackCase
 	*deadlockCase
-	db   *sql.DB
+	db *sql.DB
 }
 
 // CaseCreator creates detectorClient
