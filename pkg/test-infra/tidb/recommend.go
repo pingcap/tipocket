@@ -175,7 +175,7 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 						Version:   "v1.0.1",
 					},
 				},
-				ImagePullPolicy: corev1.PullAlways,
+				ImagePullPolicy: corev1.PullIfNotPresent,
 			},
 		},
 		Service: &corev1.Service{
