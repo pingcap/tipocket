@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	verbose = flag.Bool("ssh-verbose", false, "show the verbose of SSH command")
+	verbose bool
 )
 
 // Exec executes the cmd on the remote node.
@@ -28,13 +28,13 @@ func CombinedOutput(ctx context.Context, node string, cmd string, args ...string
 		cmd,
 	}
 	v = append(v, args...)
-	if *verbose {
+	if verbose {
 		log.Printf("run %s %v on node %s", cmd, args, node)
 	}
 	data, err := exec.CommandContext(ctx, "ssh", v...).CombinedOutput()
 	if err != nil {
 		// For debug
-		if *verbose {
+		if verbose {
 			log.Printf("fail to run %v %q %v", v, data, err)
 		}
 	}
@@ -49,4 +49,8 @@ func Upload(ctx context.Context, localPath string, node string, remotePath strin
 // Download downloads files from remote node path to local path.
 func Download(ctx context.Context, localPath string, node string, remotePath string) error {
 	return exec.CommandContext(ctx, "scp", "-r", fmt.Sprintf("%s:%s", node, remotePath), localPath).Run()
+}
+
+func init() {
+	flag.BoolVar(&verbose, "ssh-verbose", false, "show the verbose of SSH command")
 }

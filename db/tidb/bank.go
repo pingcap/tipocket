@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 
 	"github.com/anishathalye/porcupine"
 
@@ -33,7 +33,7 @@ type bankClient struct {
 	accountNum int
 }
 
-func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *bankClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -67,7 +67,14 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx 
 	return nil
 }
 
-func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *bankClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+	if idx != 0 {
+		return nil
+	}
+	sql := `drop table if exists accounts`
+	if _, err := c.db.Exec(sql); err != nil {
+		return err
+	}
 	return c.db.Close()
 }
 
@@ -86,7 +93,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 
 	rows, err := txn.QueryContext(ctx, "select balance from accounts")
 	if err != nil {
-		return bankResponse{Unknown: true}
+		return bankResponse{Unknown: true, Error: err.Error()}
 	}
 	defer rows.Close()
 
@@ -94,7 +101,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	for rows.Next() {
 		var v int64
 		if err = rows.Scan(&v); err != nil {
-			return bankResponse{Unknown: true}
+			return bankResponse{Unknown: true, Error: err.Error()}
 		}
 		balances = append(balances, v)
 	}
@@ -102,7 +109,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *bankClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
+func (c *bankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -146,7 +153,7 @@ func (c *bankClient) Invoke(ctx context.Context, node cluster.ClientNode, r inte
 	}
 
 	if err = txn.Commit(); err != nil {
-		return bankResponse{Unknown: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance}
+		return bankResponse{Unknown: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance, Error: err.Error()}
 	}
 
 	return bankResponse{Ok: true, Tso: tso, FromBalance: fromBalance, ToBalance: toBalance}
@@ -196,12 +203,16 @@ func (c *bankClient) DumpState(ctx context.Context) (interface{}, error) {
 	return balances, nil
 }
 
+func (c *bankClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+	return nil
+}
+
 // BankClientCreator creates a bank test client for tidb.
 type BankClientCreator struct {
 }
 
 // Create creates a client.
-func (BankClientCreator) Create(node cluster.ClientNode) core.Client {
+func (BankClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return &bankClient{
 		accountNum: accountNum,
 		r:          rand.New(rand.NewSource(time.Now().UnixNano())),
@@ -224,12 +235,14 @@ type bankResponse struct {
 	Balances []int64
 	// transfer ok or not
 	Ok bool
-	// FromBalance is the previous from balance before transafer
+	// FromBalance is the previous from balance before transfer
 	FromBalance int64
-	// ToBalance is the previous to balance before transafer
+	// ToBalance is the previous to balance before transfer
 	ToBalance int64
 	// read/transfer unknown
 	Unknown bool
+	// record the error if Unknown
+	Error string `json:",omitempty"`
 }
 
 var _ core.UnknownResponse = (*bankResponse)(nil)

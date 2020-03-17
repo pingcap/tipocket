@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -18,7 +18,7 @@ type multiBankClient struct {
 	accountNum int
 }
 
-func (c *multiBankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *multiBankClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -55,7 +55,7 @@ func (c *multiBankClient) SetUp(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-func (c *multiBankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+func (c *multiBankClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	return c.db.Close()
 }
 
@@ -85,7 +85,7 @@ func (c *multiBankClient) invokeRead(ctx context.Context, r bankRequest) bankRes
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *multiBankClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) interface{} {
+func (c *multiBankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -175,12 +175,17 @@ func (c *multiBankClient) DumpState(ctx context.Context) (interface{}, error) {
 	return balances, nil
 }
 
+// Start runs self scheduled cases
+func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+	return nil
+}
+
 // MultiBankClientCreator creates a bank test client for tidb.
 type MultiBankClientCreator struct {
 }
 
 // Create creates a client.
-func (MultiBankClientCreator) Create(node cluster.ClientNode) core.Client {
+func (MultiBankClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return &multiBankClient{
 		accountNum: accountNum,
 	}

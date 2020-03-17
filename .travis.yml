@@ -9,6 +9,7 @@ jobs:
     - name: "tipocket"
       stage: test
       script:
+        - make tidy
         - make fmt
         - make test
         - make build

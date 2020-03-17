@@ -2,17 +2,14 @@ package cluster
 
 import (
 	"context"
-	"os"
+	"errors"
 	"regexp"
-	"strings"
-	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/tests/util"
-
-	"k8s.io/client-go/tools/clientcmd"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
 var (
@@ -21,133 +18,110 @@ var (
 
 // K8sProvisioner implement Provisioner in k8s
 type K8sProvisioner struct {
-	*util.E2eCli
+	*tests.TestCli
 }
 
 // NewK8sProvisioner create k8s provisioner
-func NewK8sProvisioner() (Provisioner, error) {
-	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, err
-	}
+func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
 	return &K8sProvisioner{
-		E2eCli: util.NewE2eCli(conf),
+		TestCli: tests.TestClient,
 	}, nil
 }
 
 // SetUp sets up cluster, returns err or all nodes info
-func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error) {
+func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
-		return k.setUpTiDBCluster(ctx, s)
+		return k.setUpTiDBCluster(s)
+	case *binlog.ClusterRecommendation:
+		return k.setUpBinlogCluster(s)
 	default:
 		panic("unreachable")
 	}
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown() error {
-	return nil
+func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+	switch s := spec.(type) {
+	case *tidb.TiDBClusterRecommendation:
+		return k.tearDownTiDBCluster(s)
+	default:
+		return errors.New("unreachable")
+	}
 }
 
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommand *tidb.TiDBClusterRecommendation) ([]Node, []ClientNode, error) {
+// TODO: move the set up process into tidb package and make it a interface
+func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
-		nodes       []Node
-		clientNodes []ClientNode
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
-
-	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommand.TidbCluster)
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+	err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	// TODO: use ctx for wait end
-	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommand.TidbCluster, 10*time.Minute)
+	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.E2eCli.TiDB.ApplyTiDBService(recommand.Service)
+	err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	pods, err := k.E2eCli.TiDB.GetNodes(recommand.TidbCluster.ObjectMeta.Namespace)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
-	nodes = parseNodeFromPodList(pods)
-
-	k8sNodes, err := k.E2eCli.GetNodes()
+	nodes, err = k.TestCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	svc, err := k.E2eCli.TiDB.GetTiDBServiceByMeta(&recommand.Service.ObjectMeta)
+	clientNodes, err = k.TestCli.TiDB.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
-	clientNodes = append(clientNodes, ClientNode{
-		Namespace: svc.ObjectMeta.Namespace,
-		IP:        getNodeIP(k8sNodes),
-		Port:      getTiDBNodePort(svc),
-	})
 
 	return nodes, clientNodes, err
 }
 
-func parseNodeFromPodList(pods *corev1.PodList) []Node {
-	var nodes []Node
-	for _, pod := range pods.Items {
-		if strings.Contains(pod.ObjectMeta.Name, "discovery") {
-			continue
-		}
-		nodes = append(nodes, Node{
-			Namespace: pod.ObjectMeta.Namespace,
-			PodName:   pod.ObjectMeta.Name,
-			IP:        pod.Status.PodIP,
-			Port:      findPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
-		})
+func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	var (
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
+		err         error
+	)
+
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	return nodes
+	err = k.TestCli.Binlog.Apply(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	nodes, err = k.TestCli.Binlog.GetNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	clientNodes, err = k.TestCli.Binlog.GetClientNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	return nodes, clientNodes, err
 }
 
-func findPort(podName string, ports []corev1.ContainerPort) int32 {
-	if len(ports) == 0 {
-		return 0
+func (k *K8sProvisioner) tearDownTiDBCluster(recommend *tidb.TiDBClusterRecommendation) error {
+	if err := k.TestCli.TiDB.DeleteTiDBCluster(recommend.TidbCluster); err != nil {
+		return err
 	}
-
-	var priorityPort int32 = 0
-	if strings.Contains(podName, "pd") {
-		priorityPort = 2379
-	} else if strings.Contains(podName, "tikv") {
-		priorityPort = 20160
-	} else if strings.Contains(podName, "tidb") {
-		priorityPort = 4000
+	if fixture.Context.PurgeNsOnSuccess {
+		return k.TestCli.DeleteNamespace(recommend.Name)
 	}
-
-	for _, port := range ports {
-		if port.ContainerPort == priorityPort {
-			return priorityPort
-		}
-	}
-
-	return ports[0].ContainerPort
-}
-
-func getTiDBNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 4000 {
-			return port.NodePort
-		}
-	}
-	return 0
-}
-
-func getNodeIP(nodeList *corev1.NodeList) string {
-	if len(nodeList.Items) == 0 {
-		return ""
-	}
-	return nodeList.Items[0].Status.Addresses[0].Address
+	return nil
 }

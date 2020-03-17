@@ -6,21 +6,24 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|github.com/pingcap/tipocket/||'
 
-LDFLAGS += -X "github.com/pingcap/tipocket/pkg/pocket/util.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
-LDFLAGS += -X "github.com/pingcap/tipocket/pkg/pocket/util.BuildHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
+LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildHash=$(shell git rev-parse HEAD)"
 
 GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
+
+DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: build
 
 all: build
 
-build: fmt chaos verifier
-
-chaos: tidb
+build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
+
+tpcc:
+	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
 
 rawkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-rawkv cmd/rawkv/main.go
@@ -37,8 +40,31 @@ pocket:
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
+ledger:
+	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
+
+txn-rand-pessimistic:
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
+
+on-dup:
+	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+
+block-writer:
+	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
+
+sqllogic:
+	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
+
+region-available:
+	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
+
 fmt: groupimports
 	go fmt ./...
+
+tidy:
+	@echo "go mod tidy"
+	GO111MODULE=on go mod tidy
+	@git diff --exit-code -- go.mod
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
@@ -54,5 +80,11 @@ clean:
 
 test:
 	$(GOTEST) ./...
+
+image:
+	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+
+docker-push:
+	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
 
 .PHONY: all clean pocket compare test fmt

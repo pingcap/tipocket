@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/pingcap/tipocket/pkg/core"
 )
@@ -17,6 +18,7 @@ import (
 type opRecord struct {
 	Action string          `json:"action"`
 	Proc   int64           `json:"proc"`
+	Time   time.Time       `json:"time"`
 	Data   json.RawMessage `json:"data"`
 }
 
@@ -61,6 +63,16 @@ func (r *Recorder) RecordResponse(proc int64, op interface{}) error {
 	return r.record(proc, core.ReturnOperation, op)
 }
 
+// RecordInvokeNemesis records nemesis invocation events on history file
+func (r *Recorder) RecordInvokeNemesis(nemesisRecord core.NemesisGeneratorRecord) error {
+	return r.record(-1, core.InvokeNemesis, nemesisRecord)
+}
+
+// RecordRecoverNemesis records nemesis recovery events on history file
+func (r *Recorder) RecordRecoverNemesis(op string) error {
+	return r.record(-1, core.RecoverNemesis, op)
+}
+
 func (r *Recorder) record(proc int64, action string, op interface{}) error {
 	// Marshal the op to json in order to store it in a history file.
 	data, err := json.Marshal(op)
@@ -71,6 +83,7 @@ func (r *Recorder) record(proc int64, action string, op interface{}) error {
 	v := opRecord{
 		Action: action,
 		Proc:   proc,
+		Time:   time.Now(),
 		Data:   json.RawMessage(data),
 	}
 
@@ -135,17 +148,30 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 			if data, err = p.OnResponse(record.Data); err != nil {
 				return nil, nil, err
 			}
-		} else {
+		} else if record.Action == dumpOperation {
 			if state, err = p.OnState(record.Data); err != nil {
 				return nil, nil, err
 			}
 			// A dumped state is not an operation.
 			continue
+		} else if record.Action == core.InvokeNemesis {
+			var nemesis core.NemesisGeneratorRecord
+			if err := json.Unmarshal(record.Data, &nemesis); err != nil {
+				return nil, nil, err
+			}
+			data = nemesis
+		} else if record.Action == core.RecoverNemesis {
+			var nemesis string
+			if err := json.Unmarshal(record.Data, &nemesis); err != nil {
+				return nil, nil, err
+			}
+			data = nemesis
 		}
 
 		op := core.Operation{
 			Action: record.Action,
 			Proc:   record.Proc,
+			Time:   record.Time,
 			Data:   data,
 		}
 		ops = append(ops, op)
@@ -176,7 +202,7 @@ func CompleteOperations(ops []core.Operation, p RecordParser) ([]core.Operation,
 			}
 			procID[op.Proc] = struct{}{}
 			compOps = append(compOps, op)
-		} else {
+		} else if op.Action == core.ReturnOperation {
 			if _, ok := procID[op.Proc]; !ok {
 				return nil, fmt.Errorf("missing invoke, op: %v", op)
 			}
@@ -184,6 +210,8 @@ func CompleteOperations(ops []core.Operation, p RecordParser) ([]core.Operation,
 				continue
 			}
 			delete(procID, op.Proc)
+			compOps = append(compOps, op)
+		} else {
 			compOps = append(compOps, op)
 		}
 	}
