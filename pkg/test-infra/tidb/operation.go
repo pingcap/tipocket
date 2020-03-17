@@ -252,6 +252,10 @@ func (t *TidbOps) DeleteTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	return t.cli.Delete(context.TODO(), tc)
 }
 
+func (t *TidbOps) DeleteTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+	return t.cli.Delete(context.TODO(), tm)
+}
+
 func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
