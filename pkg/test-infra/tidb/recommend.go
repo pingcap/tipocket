@@ -26,7 +26,8 @@ import (
 )
 
 type TiDBClusterRecommendation struct {
-	*v1alpha1.TidbCluster
+	TidbCluster *v1alpha1.TidbCluster
+	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
 	NS   string
 	Name string
@@ -88,7 +89,7 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 				Namespace: ns,
 				Labels: map[string]string{
 					"app":      "tipocket-tidbcluster",
-					"instance": "name",
+					"instance": name,
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
@@ -127,6 +128,54 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 						Image:   buildImage("tidb"),
 					},
 				},
+			},
+		},
+		TidbMonitor: &v1alpha1.TidbMonitor{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      name,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app":      "tipocket-tidbmonitor",
+					"instance": name,
+				},
+			},
+			Spec: v1alpha1.TidbMonitorSpec{
+				Clusters: []v1alpha1.TidbClusterRef{
+					{
+						Namespace: ns,
+						Name:      name,
+					},
+				},
+				Persistent: false,
+				Prometheus: v1alpha1.PrometheusSpec{
+					MonitorContainer: v1alpha1.MonitorContainer{
+						BaseImage: "prom/prometheus",
+						Version:   "v2.11.1",
+					},
+					LogLevel: "info",
+				},
+				Grafana: &v1alpha1.GrafanaSpec{
+					Service: v1alpha1.ServiceSpec{
+						Type: corev1.ServiceType(fixture.Context.TiDBMonitorSvcType),
+					},
+					MonitorContainer: v1alpha1.MonitorContainer{
+						BaseImage: "grafana/grafana",
+						Version:   "6.0.1",
+					},
+				},
+				Initializer: v1alpha1.InitializerSpec{
+					MonitorContainer: v1alpha1.MonitorContainer{
+						BaseImage: "pingcap/tidb-monitor-initializer",
+						Version:   "v3.0.5",
+					},
+				},
+				Reloader: v1alpha1.ReloaderSpec{
+					MonitorContainer: v1alpha1.MonitorContainer{
+						BaseImage: "pingcap/tidb-monitor-reloader",
+						Version:   "v1.0.1",
+					},
+				},
+				ImagePullPolicy: corev1.PullAlways,
 			},
 		},
 		Service: &corev1.Service{
