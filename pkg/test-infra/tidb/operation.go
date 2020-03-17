@@ -237,8 +237,23 @@ func (t *TidbOps) WaitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Du
 	})
 }
 
+func (t *TidbOps) ApplyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+	desired := tm.DeepCopy()
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tm, func() error {
+		tm.Spec = desired.Spec
+		tm.Annotations = desired.Annotations
+		tm.Labels = desired.Labels
+		return nil
+	})
+	return err
+}
+
 func (t *TidbOps) DeleteTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	return t.cli.Delete(context.TODO(), tc)
+}
+
+func (t *TidbOps) DeleteTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+	return t.cli.Delete(context.TODO(), tm)
 }
 
 func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {

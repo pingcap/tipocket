@@ -45,6 +45,7 @@ type fixtureContext struct {
 	PurgeNsOnSuccess         bool
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
+	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
 	TiDBVersion              string
 	MySQLVersion             string
@@ -151,6 +152,7 @@ func init() {
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
+	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
