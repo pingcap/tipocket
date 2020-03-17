@@ -11,7 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -19,7 +19,7 @@ type networkPartitionGenerator struct {
 	name string
 }
 
-func (g networkPartitionGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
+func (g networkPartitionGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
 	n := 1
 	switch g.name {
 	case "partition_one":
@@ -27,24 +27,23 @@ func (g networkPartitionGenerator) Generate(nodes []cluster.Node) []*core.Nemesi
 	default:
 		n = 1
 	}
-	return partitionNodes(nodes, n)
+	return partitionNodes(nodes, n, time.Second*time.Duration(rand.Intn(120)+60))
 }
 
 func (g networkPartitionGenerator) Name() string {
 	return g.name
 }
 
-func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
+func partitionNodes(nodes []clusterTypes.Node, n int, duration time.Duration) []*core.NemesisOperation {
 	if n < 1 {
 		log.Panicf("the partition part size cannot be less than 1")
 	}
-	ops := make([]*core.NemesisOperation, len(nodes))
-
+	var ops []*core.NemesisOperation
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
 
-	var onePartNodes []cluster.Node
-	var anotherPartNodes []cluster.Node
+	var onePartNodes []clusterTypes.Node
+	var anotherPartNodes []clusterTypes.Node
 	for i := 0; i < n; i++ {
 		onePartNodes = append(onePartNodes, nodes[indices[i]])
 	}
@@ -52,13 +51,13 @@ func partitionNodes(nodes []cluster.Node, n int) []*core.NemesisOperation {
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
-	name := fmt.Sprintf("%s-%s-%s", onePartNodes[0].Namespace, anotherPartNodes[0].Namespace, uuid.NewV4().String())
-	ops[0] = &core.NemesisOperation{
+	name := fmt.Sprintf("%s-%s", onePartNodes[0].Namespace, uuid.NewV4().String())
+	ops = append(ops, &core.NemesisOperation{
 		Type:        core.NetworkPartition,
 		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},
 		RecoverArgs: []interface{}{name, onePartNodes, anotherPartNodes},
-		RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
-	}
+		RunTime:     duration,
+	})
 
 	return ops
 }
@@ -69,11 +68,12 @@ func NewNetworkPartitionGenerator(name string) core.NemesisGenerator {
 	return networkPartitionGenerator{name: name}
 }
 
+// networkPartition implements Nemesis
 type networkPartition struct {
 	k8sNemesisClient
 }
 
-func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cluster.Node) chaosv1alpha1.NetworkChaosSpec {
+func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []clusterTypes.Node) chaosv1alpha1.NetworkChaosSpec {
 	return chaosv1alpha1.NetworkChaosSpec{
 		Action: chaosv1alpha1.PartitionAction,
 		Mode:   chaosv1alpha1.AllPodMode,
@@ -94,7 +94,7 @@ func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cl
 	}
 }
 
-func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...interface{}) error {
+func (n networkPartition) Invoke(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
@@ -106,7 +106,7 @@ func (n networkPartition) Invoke(ctx context.Context, _ cluster.Node, args ...in
 	})
 }
 
-func (n networkPartition) Recover(ctx context.Context, _ cluster.Node, args ...interface{}) error {
+func (n networkPartition) Recover(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
 	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,14 +122,14 @@ func (n networkPartition) Name() string {
 	return string(core.NetworkPartition)
 }
 
-func extractArgs(args ...interface{}) (string, []cluster.Node, []cluster.Node) {
+func extractArgs(args ...interface{}) (string, []clusterTypes.Node, []clusterTypes.Node) {
 	var name = args[0].(string)
-	var networkParts [][]cluster.Node
-	var onePart []cluster.Node
-	var anotherPart []cluster.Node
+	var networkParts [][]clusterTypes.Node
+	var onePart []clusterTypes.Node
+	var anotherPart []clusterTypes.Node
 
 	for _, arg := range args[1:] {
-		networkPart := arg.([]cluster.Node)
+		networkPart := arg.([]clusterTypes.Node)
 		networkParts = append(networkParts, networkPart)
 	}
 
@@ -144,7 +144,7 @@ func extractArgs(args ...interface{}) (string, []cluster.Node, []cluster.Node) {
 	return name, onePart, anotherPart
 }
 
-func extractPodNames(nodes []cluster.Node) []string {
+func extractPodNames(nodes []clusterTypes.Node) []string {
 	var podNames []string
 
 	for _, node := range nodes {

@@ -1,3 +1,16 @@
+// Copyright 2020 PingCAP, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package util
 
 import (
@@ -9,8 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster"
-
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/util/ssh"
 )
 
@@ -191,7 +203,7 @@ func StopDaemon(ctx context.Context, node string, cmd string, pidFile string) er
 }
 
 // KillDaemon runs on node and kills the daemon process.
-func KillDaemon(ctx context.Context, node cluster.Node, cmd string, pidFile string) error {
+func KillDaemon(ctx context.Context, node clusterTypes.Node, cmd string, pidFile string) error {
 	return stopDaemon(ctx, node.IP, cmd, pidFile, "KILL")
 }
 
@@ -209,4 +221,14 @@ func IsDaemonRunning(ctx context.Context, node string, cmd string, pidFile strin
 	err := ssh.Exec(ctx, node, "start-stop-daemon", "--status", "--pidfile", pidFile, "--name", name)
 
 	return err == nil
+}
+
+// MatchInArray returns true if the given string value is in the array.
+func MatchInArray(arr []string, value string) bool {
+	for _, v := range arr {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }

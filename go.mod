@@ -5,35 +5,38 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20190205033716-f6fec466e840
-	github.com/coreos/etcd v3.3.17+incompatible
+	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/google/uuid v1.1.1
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
-	github.com/onsi/ginkgo v1.11.0
-	github.com/onsi/gomega v1.7.1
+	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/pingcap/advanced-statefulset v0.2.4
-	github.com/pingcap/chaos-mesh v0.0.0-20200207073207-757280b5c05c
+	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
+	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
+	github.com/pingcap/kvproto v0.0.0-20200102065152-5d51d93be892
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-operator v1.1.0-alpha.4.0.20191224115938-02e8501761a5
+	github.com/pingcap/tidb-operator v1.1.0-beta.1
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.5.0 // indirect
+	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
+	golang.org/x/sys v0.0.0-20200120151820-655fe14d7479 // indirect
+	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
-	k8s.io/component-base v0.0.0
 	k8s.io/klog v1.0.0
-	k8s.io/kubernetes v1.16.0
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 	sigs.k8s.io/controller-runtime v0.4.0
 )
 
-replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
 replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
 
@@ -41,7 +44,7 @@ replace github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.2020011
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 
-replace github.com/uber-go/atomic => go.uber.org/atomic v1.4.0
+replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
 
 replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 

@@ -2,12 +2,9 @@ package nemesis
 
 import (
 	"math/rand"
-	"os"
-
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/test-infra/pkg/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 )
 
 type k8sNemesisClient struct {
@@ -15,29 +12,15 @@ type k8sNemesisClient struct {
 }
 
 func init() {
-	client := k8sNemesisClient{mustCreateClient()}
+	client := k8sNemesisClient{New(tests.TestClient.Cli)}
 	core.RegisterNemesis(kill{client})
+	core.RegisterNemesis(podKill{client})
+	core.RegisterNemesis(containerKill{client})
 	core.RegisterNemesis(networkPartition{client})
-}
-
-func createClient() (*Chaos, error) {
-	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, err
-	}
-	kubeCli, err := fixture.BuildGenericKubeClient(conf)
-	if err != nil {
-		return nil, err
-	}
-	return New(kubeCli), nil
-}
-
-func mustCreateClient() *Chaos {
-	cli, err := createClient()
-	if err != nil {
-		panic(err)
-	}
-	return cli
+	core.RegisterNemesis(netem{client})
+	core.RegisterNemesis(scaling{client})
+	core.RegisterNemesis(scheduler{})
+	core.RegisterNemesis(newLeaderShuffler())
 }
 
 func shuffleIndices(n int) []int {
