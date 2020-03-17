@@ -75,6 +75,12 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 		return nodes, clientNodes, err
 	}
 
+	// TODO: maybe we need wait tidb monitor ready here?
+	err = k.TestCli.TiDB.ApplyTiDBMonitor(recommend.TidbMonitor)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
 	nodes, err = k.TestCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
@@ -117,11 +123,14 @@ func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendat
 }
 
 func (k *K8sProvisioner) tearDownTiDBCluster(recommend *tidb.TiDBClusterRecommendation) error {
+	if err := k.TestCli.TiDB.DeleteTiDBMonitor(recommend.TidbMonitor); err != nil {
+		return err
+	}
 	if err := k.TestCli.TiDB.DeleteTiDBCluster(recommend.TidbCluster); err != nil {
 		return err
 	}
 	if fixture.Context.PurgeNsOnSuccess {
-		return k.TestCli.DeleteNamespace(recommend.Name)
+		return k.TestCli.DeleteNamespace(recommend.Namespace)
 	}
 	return nil
 }
