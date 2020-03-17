@@ -32,7 +32,7 @@ func NewLokiClient(address, username, password string) *lokiClient {
 	}
 }
 
-// FetchContainerLogs gets logs from loki API. ns and containerName are used
+// FetchContainerLogs gets container logs from loki API. ns and containerName are used
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
 //  is a set of strings you don't want to match. lookbackTime is the query duration.
@@ -56,7 +56,7 @@ func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 		op = equalMatcher
 	}
 
-	// Format the logql query for loki.
+	// Format the query to loki.
 	query := fmt.Sprintf(`{container_name="%s", namespace="%s"} %s"%s"`,
 		containerName, ns, op, match)
 
@@ -66,7 +66,13 @@ func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 	}
 	query += nonEqual
 
-	res, err := c.cli.QueryRange(query, 1000, time.Now().Truncate(lookbackTime), time.Now(), logproto.BACKWARD, 15*time.Second, true)
+	queryTo := time.Now()
+	queryFrom := queryTo.Add(-lookbackTime)
+	if queryFrom.Before(c.startTime) {
+		queryFrom = c.startTime
+	}
+
+	res, err := c.cli.QueryRange(query, 1000, queryFrom, queryTo, logproto.BACKWARD, 15*time.Second, true)
 	if err != nil {
 		return nil, 0, err
 	}
