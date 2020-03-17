@@ -23,7 +23,7 @@ type detectorClient struct {
 	*Config
 	*singleStatementRollbackCase
 	*deadlockCase
-	db   *sql.DB
+	db *sql.DB
 }
 
 // CaseCreator creates detectorClient
