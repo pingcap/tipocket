@@ -260,6 +260,9 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewSchedulerGenerator(name)
 	case "scaling":
 		g = nemesis.NewScalingGenerator(name)
+	// TODO: Change that name
+	case "leader-shuffle":
+		g = nemesis.NewLeaderShuffleGenerator(name)
 	case "noop":
 		g = core.NoopNemesisGenerator{}
 	default:

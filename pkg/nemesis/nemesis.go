@@ -18,8 +18,9 @@ func init() {
 	core.RegisterNemesis(containerKill{client})
 	core.RegisterNemesis(networkPartition{client})
 	core.RegisterNemesis(netem{client})
-	core.RegisterNemesis(Scheduler{})
 	core.RegisterNemesis(scaling{client})
+	core.RegisterNemesis(scheduler{})
+	core.RegisterNemesis(newLeaderShuffler())
 }
 
 func shuffleIndices(n int) []int {

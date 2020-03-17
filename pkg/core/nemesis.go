@@ -13,18 +13,20 @@ import (
 type ChaosKind string
 
 const (
-	// PodFailure Apply pod failure
+	// PodFailure Applies pod failure
 	PodFailure ChaosKind = "Pod-Failure"
 	// PodKill will random kill a pod, this will make the Node be illegal
 	PodKill ChaosKind = "Pod-Kill"
 	// ContainerKill will random kill the specified container of pod, but retain the pod
 	ContainerKill ChaosKind = "Container-Kill"
-	// NetworkPartition parts network between nodes
+	// NetworkPartition partitions network between nodes
 	NetworkPartition ChaosKind = "Network-Partition"
-	// NetemChaos add corrupt or other chaos.
+	// NetemChaos adds corrupt or other chaos.
 	NetemChaos ChaosKind = "Netem-Chaos"
-	// PDScheduler add scheduler
+	// PDScheduler adds scheduler
 	PDScheduler ChaosKind = "PD-Scheduler"
+	// PDLeaderShuffler will randomly shuffle pds.
+	PDLeaderShuffler ChaosKind = "PD-Leader-Shuffler"
 	// Scaling scale cluster
 	Scaling ChaosKind = "Scaling"
 )
