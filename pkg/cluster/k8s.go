@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 
@@ -10,7 +11,9 @@ import (
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
@@ -91,6 +94,42 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	if err != nil {
 		return nodes, clientNodes, err
 	}
+
+	// CDC sink
+	mysql, err := k.TestCli.MySQL.ApplyMySQL(&mysql.MySQLSpec{
+		Namespace: recommend.NS,
+		Name:      recommend.Name,
+		Resource:  fixture.Medium,
+		Storage:   fixture.StorageTypeLocal,
+	})
+	fmt.Println(err)
+	fmt.Println("111111111111")
+
+
+
+	cdcSpec := &cdc.CDCSpec{
+		Namespace: recommend.NS,
+		Name:      recommend.Name,
+		Resources: fixture.Small,
+		Replicas:  3,
+		Source:    recommend.TidbCluster,
+	}
+	cc, err := k.TestCli.CDC.ApplyCDC(cdcSpec)
+	fmt.Println(err)
+	fmt.Println("333333")
+
+
+	_ = &cdc.CDCJob{
+		CDC:     cc,
+		SinkURI: mysql.URI(),
+	}
+	// start CDC has to run in env that has cdc binary installed and could access PD address, run it manually is a more feasible idea now
+	err = k.TestCli.CDC.StartJob(&cdc.CDCJob{
+		CDC:     cc,
+		SinkURI: mysql.URI(),
+	}, cdcSpec)
+	fmt.Println(err)
+	fmt.Println("55555")
 
 	return nodes, clientNodes, err
 }

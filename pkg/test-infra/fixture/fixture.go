@@ -148,6 +148,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
+	flag.StringVar(&Context.CDCImage, "cdc-image", "hub.pingcap.net/aylei/cdc:latest", "Default CDC image")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
