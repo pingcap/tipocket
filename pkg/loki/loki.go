@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/loki/pkg/loghttp"
 	"github.com/grafana/loki/pkg/logproto"
 	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
 )
 
 const (
@@ -35,8 +36,8 @@ func NewLokiClient(address, username, password string) *lokiClient {
 // FetchContainerLogs gets container logs from loki API. ns and containerName are used
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
-//  is a set of strings you don't want to match. lookbackTime is the query duration.
-func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatch []string, lookbackTime time.Duration, isRegex bool) ([]string, int, error) {
+//  is a set of strings you don't want to match.
+func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, int, error) {
 	if ns == "" {
 		return nil, 0, errors.New("namespace must be set")
 	}
@@ -47,6 +48,16 @@ func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 
 	if match == "" {
 		return nil, 0, errors.New("match query must be set")
+	}
+
+	if !queryFrom.Before(queryTo) {
+		return nil, 0, errors.New("query to time must be after query from time")
+	}
+
+	if queryFrom.Before(c.startTime) {
+		log.Info("query from time cannot be early than case start time. " +
+			"set to case start time by default")
+		queryFrom = c.startTime
 	}
 
 	var op string
@@ -65,12 +76,6 @@ func (c *lokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 		nonEqual += fmt.Sprintf(` !="%s"`, v)
 	}
 	query += nonEqual
-
-	queryTo := time.Now()
-	queryFrom := queryTo.Add(-lookbackTime)
-	if queryFrom.Before(c.startTime) {
-		queryFrom = c.startTime
-	}
 
 	res, err := c.cli.QueryRange(query, 1000, queryFrom, queryTo, logproto.BACKWARD, 15*time.Second, true)
 	if err != nil {
