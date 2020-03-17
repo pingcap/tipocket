@@ -11,17 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Note: This part of the code is port from https://github.com/pingcap/schrodinger-test/tree/master/transaction/bank .
-//  And it changes schrodinger-test to kubernetes-style tests.
-
 package main
 
 import (
 	"context"
 	"flag"
-	"time"
+	"log"
 
-	"github.com/ngaut/log"
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -29,25 +27,16 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/bank"
+	blockwriter "github.com/pingcap/tipocket/tests/block-writer"
 )
 
 var (
-	// case config
-	retryLimit  = flag.Int("retry-limit", 2, "retry count")
-	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
-	interval    = flag.Duration("interval", 2*time.Second, "the interval")
-	pessimistic = flag.Bool("pessimistic", false, "use pessimistic transaction")
-	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
-	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
-	tables      = flag.Int("tables", 1, "the number of the tables")
+	tables      = flag.Int("tables", 10, "the number of the tables")
+	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
 )
 
 func main() {
 	flag.Parse()
-
-	flag.Parse()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
@@ -56,25 +45,14 @@ func main() {
 		RunRound:    1,
 	}
 
-	bankConfig := bank.Config{
-		EnableLongTxn: *longTxn,
-		Pessimistic:   *pessimistic,
-		RetryLimit:    *retryLimit,
-		Accounts:      *accounts,
-		Tables:        *tables,
-		Interval:      *interval,
-		Concurrency:   *concurrency,
-	}
-
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	suit := util.Suit{
 		Config:        &cfg,
 		Provisioner:   provisioner,
-		ClientCreator: bank.CaseCreator{Cfg: &bankConfig},
+		ClientCreator: blockwriter.CaseCreator{TableNum: *tables, Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:    verify.Suit{},
 		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),

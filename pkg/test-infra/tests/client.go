@@ -15,50 +15,49 @@ package tests
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // auth in cluster
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
-	"github.com/pingcap/tipocket/pkg/test-infra/br"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
-	"github.com/pingcap/tipocket/pkg/test-infra/chaos"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	corev1 "k8s.io/api/core/v1"
-	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// E2eCli contains clients
-type E2eCli struct {
+// TestClient encapsulates many kinds of clients
+var TestClient *TestCli
+
+// TestCli contains clients
+type TestCli struct {
 	Config *rest.Config
 	Cli    client.Client
-	Chaos  *chaos.Chaos
-	BR     *br.BrOps
 	CDC    *cdc.CdcOps
 	MySQL  *mysql.MySQLOps
 	TiDB   *tidb.TidbOps
 	Binlog *binlog.Ops
 }
 
-// NewE2eCli creates e2e client
-func NewE2eCli(conf *rest.Config) *E2eCli {
+func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
-		e2elog.Failf("error creating kube-client: %v", err)
+		log.Fatalf("error creating kube-client: %v", err)
 	}
 	tidbClient := tidb.New(kubeCli)
-	return &E2eCli{
+	return &TestCli{
 		Config: conf,
 		Cli:    kubeCli,
-		Chaos:  chaos.New(kubeCli),
-		BR:     br.New(kubeCli),
 		CDC:    cdc.New(kubeCli),
 		MySQL:  mysql.New(kubeCli),
 		TiDB:   tidbClient,
@@ -67,7 +66,7 @@ func NewE2eCli(conf *rest.Config) *E2eCli {
 }
 
 // GetNodes gets physical nodes
-func (e *E2eCli) GetNodes() (*corev1.NodeList, error) {
+func (e *TestCli) GetNodes() (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
 	err := e.Cli.List(context.TODO(), nodes)
 	if err != nil {
@@ -77,7 +76,7 @@ func (e *E2eCli) GetNodes() (*corev1.NodeList, error) {
 }
 
 // CreateNamespace creates the specified namespace if not exist.
-func (e *E2eCli) CreateNamespace(name string) error {
+func (e *TestCli) CreateNamespace(name string) error {
 	ns := &corev1.Namespace{}
 	if err := e.Cli.Get(context.TODO(), types.NamespacedName{Name: name}, ns); err != nil {
 		if errors.IsNotFound(err) {
@@ -93,4 +92,31 @@ func (e *E2eCli) CreateNamespace(name string) error {
 		return err
 	}
 	return nil
+}
+
+// DeleteNamespace delete the specified namespace
+func (e *TestCli) DeleteNamespace(name string) error {
+	ns := &corev1.Namespace{}
+	if err := e.Cli.Get(context.TODO(), types.NamespacedName{Name: name}, ns); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("get namespace %s failed: %+v", name, err)
+	}
+	if err := e.Cli.Delete(context.TODO(), &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}); err != nil {
+		return fmt.Errorf("delete namespace %s failed: %+v", name, err)
+	}
+	return nil
+}
+
+func init() {
+	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		log.Fatalf("build config failed: %+v", err)
+	}
+	TestClient = newTestCli(conf)
 }

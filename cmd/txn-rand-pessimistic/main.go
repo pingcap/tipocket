@@ -17,36 +17,25 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
 	"strconv"
 	"strings"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/pessimistic"
-	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/verify"
+	"github.com/pingcap/tipocket/tests/pessimistic"
+	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
 )
 
 const caseName = "txn-rand-pessimistic"
 
 var (
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
-
-	// case config
 	randTxnDBName      = flag.String("rand-txn-db-name", "randtxn", "database name for random transaction")
 	randTxnConcurrency = flag.Int("rand-txn-concurrency", 32, "concurrency for random transaction")
 	tableNum           = flag.Int("table-num", 1, "table number")
@@ -65,28 +54,18 @@ var (
 	hongbaoConcurrency = flag.Int("hongbao-concurrency", 32, "concurrency for hongbao case")
 	hongbaoNum         = flag.Int("hongbao-num", 5, "number of hongbao for each concurrency")
 
-	txnMode  = flag.String("txn-mode", "mix", "transaction mode, mix|pessimistic|optimistic")
-	caseMode = flag.String("case-mode", "online", "case mode, support values: online / dev, default value: online")
+	txnMode = flag.String("txn-mode", "mix", "transaction mode, mix|pessimistic|optimistic")
 )
-
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
 
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
 
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
 
 	ignoreCodesO, err := splitToSlice(*ignoreO)
@@ -131,9 +110,9 @@ func main() {
 				TxnMode:        *txnMode,
 			},
 		}},
-		NemesisGens: util.ParseNemesisGenerators(*nemesises),
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: tidb.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

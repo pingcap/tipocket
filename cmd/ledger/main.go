@@ -17,8 +17,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net/http"
-	_ "net/http/pprof"
 	"time"
 
 	// use mysql
@@ -35,39 +33,19 @@ import (
 )
 
 var (
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
-	runTime      = flag.Duration("run-time", 100*time.Minute, "client test run time")
-	// case config
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
 	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
 )
 
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
-
 func main() {
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		RunTime:     *runTime,
+		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
 
@@ -84,9 +62,9 @@ func main() {
 			Interval:    *interval,
 			TxnMode:     *txnMode,
 		}},
-		NemesisGens: util.ParseNemesisGenerators(*nemesises),
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: tidb.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

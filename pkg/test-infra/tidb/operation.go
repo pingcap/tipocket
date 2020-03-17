@@ -159,7 +159,7 @@ func (t *TidbOps) GetK8sNodes() (*corev1.NodeList, error) {
 func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	desired := tc.DeepCopy()
 	if tc.Spec.Version == "" {
-		tc.Spec.Version = fixture.E2eContext.TiDBVersion
+		tc.Spec.Version = fixture.Context.TiDBVersion
 	}
 
 	klog.Info("Apply tidb discovery")
@@ -538,7 +538,7 @@ func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node
 		nodes = append(nodes, clusterTypes.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			// TODO use better way to retrieve version?
-			Version:   fixture.E2eContext.ImageVersion,
+			Version:   fixture.Context.ImageVersion,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
 			Component: clusterTypes.Component(component),

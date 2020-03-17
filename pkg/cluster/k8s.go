@@ -3,18 +3,13 @@ package cluster
 import (
 	"context"
 	"errors"
-	"os"
 	"regexp"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -23,17 +18,13 @@ var (
 
 // K8sProvisioner implement Provisioner in k8s
 type K8sProvisioner struct {
-	*tests.E2eCli
+	*tests.TestCli
 }
 
 // NewK8sProvisioner create k8s provisioner
 func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
-	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, err
-	}
 	return &K8sProvisioner{
-		E2eCli: tests.NewE2eCli(conf),
+		TestCli: tests.TestClient,
 	}, nil
 }
 
@@ -41,9 +32,9 @@ func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
 func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
-		return k.setUpTiDBCluster(ctx, s)
+		return k.setUpTiDBCluster(s)
 	case *binlog.ClusterRecommendation:
-		return k.setUpBinlogCluster(ctx, s)
+		return k.setUpBinlogCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -53,44 +44,43 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 	switch s := spec.(type) {
 	case *tidb.TiDBClusterRecommendation:
-		return k.E2eCli.TiDB.DeleteTiDBCluster(s.TidbCluster)
+		return k.tearDownTiDBCluster(s)
 	default:
 		return errors.New("unreachable")
 	}
 }
 
 // TODO: move the set up process into tidb package and make it a interface
-func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
-	if err := k.E2eCli.CreateNamespace(recommend.NS); err != nil {
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	err = k.E2eCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
+	err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	// TODO: use ctx for wait end
-	err = k.E2eCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, 10*time.Minute)
+	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.E2eCli.TiDB.ApplyTiDBService(recommend.Service)
+	err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	nodes, err = k.E2eCli.TiDB.GetNodes(recommend)
+	nodes, err = k.TestCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	clientNodes, err = k.E2eCli.TiDB.GetClientNodes(recommend)
+	clientNodes, err = k.TestCli.TiDB.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
@@ -98,27 +88,27 @@ func (k *K8sProvisioner) setUpTiDBCluster(ctx context.Context, recommend *tidb.T
 	return nodes, clientNodes, err
 }
 
-func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
 
-	if err := k.E2eCli.CreateNamespace(recommend.NS); err != nil {
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	err = k.E2eCli.Binlog.Apply(recommend)
+	err = k.TestCli.Binlog.Apply(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	nodes, err = k.E2eCli.Binlog.GetNodes(recommend)
+	nodes, err = k.TestCli.Binlog.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	clientNodes, err = k.E2eCli.Binlog.GetClientNodes(recommend)
+	clientNodes, err = k.TestCli.Binlog.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
@@ -126,18 +116,12 @@ func (k *K8sProvisioner) setUpBinlogCluster(ctx context.Context, recommend *binl
 	return nodes, clientNodes, err
 }
 
-func getTiDBNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 4000 {
-			return port.NodePort
-		}
+func (k *K8sProvisioner) tearDownTiDBCluster(recommend *tidb.TiDBClusterRecommendation) error {
+	if err := k.TestCli.TiDB.DeleteTiDBCluster(recommend.TidbCluster); err != nil {
+		return err
 	}
-	return 0
-}
-
-func getNodeIP(nodeList *corev1.NodeList) string {
-	if len(nodeList.Items) == 0 {
-		return ""
+	if fixture.Context.PurgeNsOnSuccess {
+		return k.TestCli.DeleteNamespace(recommend.Name)
 	}
-	return nodeList.Items[0].Status.Addresses[0].Address
+	return nil
 }

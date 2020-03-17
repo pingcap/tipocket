@@ -17,9 +17,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"math"
-	"net/http"
-	_ "net/http/pprof"
 	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -33,45 +30,23 @@ import (
 )
 
 var (
-	clientCount  = flag.Int("client", 5, "client count")
-	requestCount = flag.Int("request-count", math.MaxInt64, "client test request count")
-	round        = flag.Int("round", 3, "client test request round")
-	ticker       = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
-	runTime      = flag.Duration("run-time", 10*time.Minute, "client test run time")
-	historyFile  = flag.String("history", "./history.log", "history file")
-	qosFile      = flag.String("qos-file", "./qos.log", "qos file")
-	nemesises    = flag.String("nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
-	checkerName  = flag.String("checker", "consistency", "consistency or qos")
-	pprofAddr    = flag.String("pprof", "0.0.0.0:8080", "Pprof address")
-	namespace    = flag.String("namespace", "tidb-cluster", "test namespace")
-	hub          = flag.String("hub", "", "hub address, default to docker hub")
-	imageVersion = flag.String("image-version", "latest", "image version")
-	storageClass = flag.String("storage-class", "local-storage", "storage class name")
+	ticker      = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
+	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
+	checkerName = flag.String("checker", "consistency", "consistency or qos")
 )
-
-func initE2eContext() {
-	fixture.E2eContext.LocalVolumeStorageClass = *storageClass
-	fixture.E2eContext.HubAddress = *hub
-	fixture.E2eContext.DockerRepository = "pingcap"
-	fixture.E2eContext.ImageVersion = *imageVersion
-}
 
 func main() {
 	util.PrintInfo()
 	flag.Parse()
-	initE2eContext()
-	go func() {
-		http.ListenAndServe(*pprofAddr, nil)
-	}()
 
 	cfg := control.Config{
 		DB:           "noop",
 		Mode:         control.ModeSequential,
-		ClientCount:  *clientCount,
-		RequestCount: *requestCount,
-		RunRound:     *round,
-		RunTime:      *runTime,
-		History:      *historyFile,
+		ClientCount:  fixture.Context.ClientCount,
+		RequestCount: fixture.Context.RequestCount,
+		RunRound:     fixture.Context.RunRound,
+		RunTime:      fixture.Context.RunTime,
+		History:      fixture.Context.HistoryFile,
 	}
 	clientCreator := &tidb.TPCCClientCreator{}
 	creator := clientCreator
@@ -93,7 +68,7 @@ func main() {
 	}
 
 	var waitWarmUpNemesisGens []core.NemesisGenerator
-	for _, gen := range util.ParseNemesisGenerators(*nemesises) {
+	for _, gen := range util.ParseNemesisGenerators(fixture.Context.Nemesis) {
 		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
 			Gen:   gen,
 			Delay: time.Minute * time.Duration(2),
@@ -106,7 +81,7 @@ func main() {
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(*namespace, *namespace),
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }

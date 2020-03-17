@@ -25,6 +25,8 @@ const (
 	NetemChaos ChaosKind = "Netem-Chaos"
 	// PDScheduler add scheduler
 	PDScheduler ChaosKind = "PD-Scheduler"
+	// Scaling scale cluster
+	Scaling ChaosKind = "Scaling"
 )
 
 // Nemesis injects failure and disturbs the database.

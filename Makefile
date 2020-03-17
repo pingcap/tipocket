@@ -17,9 +17,9 @@ default: build
 
 all: build
 
-build: fmt chaos verifier pocket tpcc ledger txn-rand-pessimistic on-dup bank
-
 chaos: tidb
+
+build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available bank
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -43,7 +43,7 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 ledger:
-	$(GOBUILD) $(GOMOD) -o bin/ledge cmd/ledger/*.go
+	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
@@ -54,12 +54,22 @@ txn-rand-pessimistic:
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
 
+block-writer:
+	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
+
+sqllogic:
+	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
+
+region-available:
+	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
+
 fmt: groupimports
 	go fmt ./...
 
-mod:
+tidy:
+	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
-	@git diff --exit-code -- go.sum go.mod
+	@git diff --exit-code -- go.mod
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
@@ -82,4 +92,4 @@ image:
 docker-push:
 	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
 
-.PHONY: all clean pocket compare test fmt bank
+.PHONY: all clean pocket compare test fmt

@@ -1,25 +1,11 @@
-// Copyright 2020 PingCAP, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
 	"context"
 	"flag"
-	"log"
+	"time"
 
-	// use mysql
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -27,13 +13,15 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/ondup"
+	ra "github.com/pingcap/tipocket/tests/region-available"
 )
 
 var (
-	dbName     = flag.String("db", "test", "database name")
-	numRows    = flag.Int("num-rows", 10000, "number of rows")
-	retryLimit = flag.Int("retry-limit", 2, "retry count")
+	dbName          = flag.String("db", "test", "database name")
+	totalRows       = flag.Int("rows", 500000, "total rows")
+	maxRespDuration = flag.Duration("max-resp-duration", 2*time.Second, "max response duration in seconds")
+	concurrency     = flag.Int("concurrency", 1, "concurrency read worker count")
+	sleepDuration   = flag.Duration("sleep-duration", 0, "sleep duration between two queries in milliseconds")
 )
 
 func main() {
@@ -50,14 +38,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: provisioner,
-		ClientCreator: ondup.CaseCreator{Cfg: &ondup.Config{
-			DBName:     *dbName,
-			NumRows:    *numRows,
-			RetryLimit: *retryLimit,
+		ClientCreator: ra.CaseCreator{Cfg: &ra.Config{
+			DBName:          *dbName,
+			TotalRows:       *totalRows,
+			Concurrency:     *concurrency,
+			MaxResponseTime: *maxRespDuration,
+			SleepDuration:   *sleepDuration,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},

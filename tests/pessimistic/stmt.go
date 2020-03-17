@@ -1,11 +1,10 @@
 package pessimistic
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
-
-	"context"
 
 	"github.com/cznic/mathutil"
 	_ "github.com/go-sql-driver/mysql"

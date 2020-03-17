@@ -52,15 +52,6 @@ type Config struct {
 	TxnMode     string        `toml:"txn_mode"`
 }
 
-// ledgerClient simulates a complete record of financial transactions over the
-// life of a bank (or other company).
-type ledgerClient struct {
-	*Config
-	wg   sync.WaitGroup
-	stop int32
-	db   *sql.DB
-}
-
 // CaseCreator creates ledgerClient
 type CaseCreator struct {
 	Cfg *Config
@@ -70,6 +61,15 @@ func (l CaseCreator) Create(node types.ClientNode) core.Client {
 	return &ledgerClient{
 		Config: l.Cfg,
 	}
+}
+
+// ledgerClient simulates a complete record of financial transactions over the
+// life of a bank (or other company).
+type ledgerClient struct {
+	*Config
+	wg   sync.WaitGroup
+	stop int32
+	db   *sql.DB
 }
 
 func (c *ledgerClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {

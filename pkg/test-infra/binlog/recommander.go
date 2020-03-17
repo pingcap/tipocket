@@ -63,7 +63,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		configmapMountMode int32 = 420
 	)
 
-	if fixture.E2eContext.BinlogConfig.EnableRelayLog {
+	if fixture.Context.BinlogConfig.EnableRelayLog {
 		drainerConfigModel.RelayPath = "/data/relay"
 	}
 
@@ -74,7 +74,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 	upstream.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
 		Replicas:             3,
 		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
-		StorageClassName:     &fixture.E2eContext.LocalVolumeStorageClass,
+		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
 			Image: buildBinlogImage("tidb-binlog"),
 		},
@@ -124,7 +124,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 					Name:      drainerName,
 					Namespace: ns,
 					Labels: map[string]string{
-						"app":      "e2e-tidbcluster",
+						"app":      "tipocket-tidbcluster",
 						"instance": "name",
 					},
 				},
@@ -203,7 +203,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 							},
 							Spec: corev1.PersistentVolumeClaimSpec{
 								AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								StorageClassName: &fixture.E2eContext.LocalVolumeStorageClass,
+								StorageClassName: &fixture.Context.LocalVolumeStorageClass,
 								Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
 							},
 						},
@@ -217,17 +217,17 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 func buildBinlogImage(name string) string {
 	var (
 		b       strings.Builder
-		version = fixture.E2eContext.ImageVersion
+		version = fixture.Context.ImageVersion
 	)
 
-	if fixture.E2eContext.BinlogConfig.BinlogVersion != "" {
-		version = fixture.E2eContext.BinlogConfig.BinlogVersion
+	if fixture.Context.BinlogConfig.BinlogVersion != "" {
+		version = fixture.Context.BinlogConfig.BinlogVersion
 	}
-	if fixture.E2eContext.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.E2eContext.HubAddress)
+	if fixture.Context.HubAddress != "" {
+		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
 	}
 
-	b.WriteString(fixture.E2eContext.DockerRepository)
+	b.WriteString(fixture.Context.DockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")

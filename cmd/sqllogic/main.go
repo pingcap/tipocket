@@ -18,18 +18,23 @@ import (
 	"flag"
 	"log"
 
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
-	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
+	"github.com/pingcap/tipocket/tests/sqllogictest"
 )
 
 var (
-	configPath = flag.String("config", "", "config file path")
+	sqllogicCaseURL = flag.String("p", "", "case url")
+	testDir         = flag.String("d", "sqllogictest", "test case dir")
+	taskCount       = flag.Int("t", 10, "concurrency")
+	skipError       = flag.Bool("skip-error", false, "skip error for query test")
 )
 
 func main() {
@@ -38,26 +43,28 @@ func main() {
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		CaseConfig:  *configPath,
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
 
-	verifySuit := verify.Suit{
-		Model:   &core.NoopModel{},
-		Checker: core.NoopChecker{},
-		Parser:  nil,
-	}
 	provisioner, err := cluster.NewK8sProvisioner()
 	if err != nil {
 		log.Fatal(err)
 	}
 	suit := util.Suit{
-		Config:           &cfg,
-		Provisioner:      provisioner,
-		ClientCreator:    creator.PocketCreator{},
-		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClientRequestGen: util.OnClientLoop,
-		VerifySuit:       verifySuit,
-		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		Config:      &cfg,
+		Provisioner: provisioner,
+		ClientCreator: &sqllogictest.CaseCreator{
+			Config: &sqllogictest.Config{
+				SkipError: *skipError,
+				TaskCount: 10,
+				CaseURL:   *sqllogicCaseURL,
+				TestDir:   *testDir,
+			},
+		},
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		VerifySuit:  verify.Suit{},
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }
