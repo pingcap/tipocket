@@ -32,6 +32,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -68,6 +69,9 @@ type Suit struct {
 func (suit *Suit) Run(ctx context.Context) {
 	var err error
 	sctx, cancel := context.WithCancel(ctx)
+
+	// update cluster spec if there is an io chaos nemesis
+	suit.updateClusterDef(hasIOChaos(suit.NemesisGens))
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, suit.ClusterDefs)
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
@@ -269,6 +273,9 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	// TODO: Change that name
 	case "leader-shuffle":
 		g = nemesis.NewLeaderShuffleGenerator(name)
+	case "delay_tikv", "delay_pd", "errno_tikv", "errno_pd",
+		"mixed_tikv", "mixed_pd":
+		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
 	}
@@ -285,4 +292,36 @@ func ParseNemesisGenerators(names string) (nemesisGens []core.NemesisGenerator) 
 		nemesisGens = append(nemesisGens, ParseNemesisGenerator(name))
 	}
 	return
+}
+
+// hasIOChaos checks if there is any io chaos nemesis
+func hasIOChaos(ngs []core.NemesisGenerator) string {
+	for _, v := range ngs {
+		if _, ok := v.(nemesis.IOChaosGenerator); ok {
+			switch v.Name() {
+			case "delay_tikv", "errno_tikv", "mixed_tikv":
+				return "tikv"
+			case "delay_pd", "errno_pd", "mixed_pd":
+				return "pd"
+			}
+		}
+	}
+	return ""
+}
+
+// TODO(yeya24): support other cluster types
+func (suit *Suit) updateClusterDef(ioChaosType string) {
+	switch s := suit.ClusterDefs.(type) {
+	case *tidb.TiDBClusterRecommendation:
+		if ioChaosType == "tikv" {
+			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+			}
+		} else if ioChaosType == "pd" {
+			s.TidbCluster.Spec.PD.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		}
+		suit.ClusterDefs = s
+	}
 }

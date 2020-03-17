@@ -87,6 +87,10 @@ func (e *TestCli) CreateNamespace(name string) error {
 			if err = e.Cli.Create(context.TODO(), &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
+					// admission-webhook is needed for injecting io chaos
+					Labels: map[string]string{
+						"app.kubernetes.io/component": "webhook",
+					},
 				},
 			}); err != nil {
 				return err
