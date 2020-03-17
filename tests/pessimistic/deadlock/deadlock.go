@@ -43,18 +43,9 @@ func (d *deadlockCase) initialize(ctx context.Context) error {
 	}
 
 	// Initialize DB
-	if _, err := d.db.Exec("DROP TABLE IF EXISTS deadlock"); err != nil {
-		return errors.Trace(err)
-	}
-	if _, err := d.db.Exec("CREATE TABLE deadlock (v int)"); err != nil {
-		return errors.Trace(err)
-	}
-	if _, err := d.db.Exec("INSERT INTO deadlock VALUES (0), (1)"); err != nil {
-		return errors.Trace(err)
-	}
-	//util.MustExec(d.db, "DROP TABLE IF EXISTS deadlock")
-	//util.MustExec(d.db, "CREATE TABLE deadlock (v int)")
-	//util.MustExec(d.db, "INSERT INTO deadlock VALUES (0), (1)")
+	util.MustExec(d.db, "DROP TABLE IF EXISTS deadlock")
+	util.MustExec(d.db,"CREATE TABLE deadlock (v int)")
+	util.MustExec(d.db, "INSERT INTO deadlock VALUES (0), (1)")
 	return nil
 }
 

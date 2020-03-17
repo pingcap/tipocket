@@ -66,19 +66,10 @@ func (s *singleStatementRollbackCase) openDB() error {
 
 func (s *singleStatementRollbackCase) createTables() error {
 	for i := 0; i < s.tableNum; i++ {
-		if _, err := s.db.Query(fmt.Sprintf("DROP TABLE IF EXISTS ssr%d", i)); err != nil {
-			return errors.Trace(err)
-		}
-		if _, err := s.db.Query(fmt.Sprintf("CREATE TABLE ssr%d(id INT PRIMARY KEY, v BIGINT)", i)); err != nil {
-			return errors.Trace(err)
-		}
-		if _, err := s.db.Query(fmt.Sprintf("INSERT INTO ssr%d VALUES (0, 0)", i)); err != nil {
-			return errors.Trace(err)
-		}
-		//util.MustExec(s.db, fmt.Sprintf("DROP TABLE IF EXISTS ssr%d", i))
-		//util.MustExec(s.db,
-		//	fmt.Sprintf("CREATE TABLE ssr%d(id INT PRIMARY KEY, v BIGINT)", i))
-		//util.MustExec(s.db, fmt.Sprintf("INSERT INTO ssr%d VALUES (0, 0)", i))
+		util.MustExec(s.db, fmt.Sprintf("DROP TABLE IF EXISTS ssr%d", i))
+		util.MustExec(s.db,
+			fmt.Sprintf("CREATE TABLE ssr%d(id INT PRIMARY KEY, v BIGINT)", i))
+		util.MustExec(s.db, fmt.Sprintf("INSERT INTO ssr%d VALUES (0, 0)", i))
 	}
 
 	// UPDATE ssr0, ssr1, .. SET ssr0.v = ssr0.v + 1, ssr1.v = ssr1.v + 1, .. where ssr0.id = 0, ssr1.id = 0, ..
