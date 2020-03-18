@@ -196,16 +196,15 @@ type netem struct {
 	k8sNemesisClient
 }
 
-func (n netem) extractChaos(node *clusterTypes.Node, fnName string, args ...interface{}) chaosv1alpha1.NetworkChaos {
-	log.Printf("%v was called", fnName)
+func (n netem) extractChaos(node *clusterTypes.Node, args ...interface{}) chaosv1alpha1.NetworkChaos {
 	if len(args) != 1 {
-		panic("netem.Invoke argument numbers of args is wrong")
+		panic("netem args number is wrong")
 	}
 	var nChaos netemChaos
 	var ok bool
 
 	if nChaos, ok = args[0].(netemChaos); !ok {
-		panic("netem.Invoke get wrong type")
+		panic("netem get wrong type")
 	}
 	networkChaosSpec := nChaos.defaultTemplate(node.Namespace, []string{node.PodName})
 	return chaosv1alpha1.NetworkChaos{
@@ -218,12 +217,14 @@ func (n netem) extractChaos(node *clusterTypes.Node, fnName string, args ...inte
 }
 
 func (n netem) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
+	log.Printf("Invoke netem chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	chaosSpec := n.extractChaos(node, args...)
 	return n.cli.ApplyNetChaos(&chaosSpec)
 }
 
 func (n netem) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	chaosSpec := n.extractChaos(node, "netem.Invoke", args...)
+	log.Printf("Recover netem chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	chaosSpec := n.extractChaos(node, args...)
 	return n.cli.CancelNetChaos(&chaosSpec)
 }
 
