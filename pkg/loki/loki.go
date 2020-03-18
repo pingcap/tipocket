@@ -23,6 +23,9 @@ type LokiClient struct {
 
 // NewLokiClient creates a client to query loki.
 func NewLokiClient(address, username, password string) *LokiClient {
+	if address == "" {
+		return nil
+	}
 	return &LokiClient{
 		cli: &client.Client{
 			Address:  address,
