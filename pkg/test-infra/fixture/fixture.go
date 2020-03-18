@@ -148,7 +148,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
-	flag.StringVar(&Context.CDCImage, "cdc-image", "hub.pingcap.net/aylei/cdc:latest", "Default CDC image")
+	flag.StringVar(&Context.CDCImage, "cdc-image", "hub.pingcap.net/ticdc/ticdc:latest", "Default CDC image")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")

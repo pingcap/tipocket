@@ -16,6 +16,7 @@ package cdc
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/pingcap/errors"
@@ -118,12 +119,11 @@ func (c CdcOps) renderSyncJob(job *CDCJob, spec *CDCSpec) (*batchv1.Job, error) 
 	cmds := []string{
 		"/cdc",
 		"cli",
-		"--pd-addr",
-		pdAddr,
-		"--start-ts",
-		"1",
-		"--sink-uri",
-		job.SinkURI,
+		"changefeed",
+		"create",
+		fmt.Sprintf("--pd=%s", pdAddr),
+		"--start-ts=0",
+		fmt.Sprintf("--sink-uri=mysql://%s/", (strings.Split(job.SinkURI, "@")[0] + ":@" + strings.Split(strings.Split(job.SinkURI, "(")[1], ")")[0])),
 	}
 
 	syncJob := &batchv1.Job{
@@ -176,8 +176,9 @@ func (c *CdcOps) renderCdc(spec *CDCSpec) (*CDC, error) {
 	cmds := []string{
 		"/cdc",
 		"server",
-		"--pd-endpoints",
-		pdAddr,
+		fmt.Sprintf("--pd=%s", pdAddr),
+		"--log-file=ticdc.log",
+		"--status-addr=127.0.0.1:8301",
 	}
 	return &CDC{
 		Sts: &appsv1.StatefulSet{

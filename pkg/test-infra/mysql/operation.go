@@ -55,7 +55,7 @@ type MySQL struct {
 }
 
 func (m *MySQL) URI() string {
-	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/mysql", m.Svc.Name, m.Svc.Namespace)
+	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/test", m.Svc.Name, m.Svc.Namespace)
 }
 
 func (m *MySQLOps) ApplyMySQL(spec *MySQLSpec) (*MySQL, error) {

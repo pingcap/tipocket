@@ -78,6 +78,7 @@ func buildImage(name string) string {
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 	enablePVReclaim, exposeStatus := true, true
+	always := corev1.PullAlways
 
 	return &TiDBClusterRecommendation{
 		NS:   ns,
@@ -100,8 +101,9 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("pd"),
+						Version:         &fixture.Context.ImageVersion,
+						Image:           buildImage("pd"),
+						ImagePullPolicy: &always,
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
@@ -109,8 +111,9 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("tikv"),
+						Version:         &fixture.Context.ImageVersion,
+						Image:           buildImage("tikv"),
+						ImagePullPolicy: &always,
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -123,8 +126,9 @@ func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
 						ExposeStatus: &exposeStatus,
 					},
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("tidb"),
+						Version:         &fixture.Context.ImageVersion,
+						Image:           buildImage("tidb"),
+						ImagePullPolicy: &always,
 					},
 				},
 			},

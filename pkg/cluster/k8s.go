@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -104,8 +105,7 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	})
 	fmt.Println(err)
 	fmt.Println("111111111111")
-
-
+	time.Sleep(time.Second * 60)
 
 	cdcSpec := &cdc.CDCSpec{
 		Namespace: recommend.NS,
@@ -118,7 +118,6 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	fmt.Println(err)
 	fmt.Println("333333")
 
-
 	_ = &cdc.CDCJob{
 		CDC:     cc,
 		SinkURI: mysql.URI(),
@@ -130,6 +129,8 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	}, cdcSpec)
 	fmt.Println(err)
 	fmt.Println("55555")
+
+	time.Sleep(time.Second * 300)
 
 	return nodes, clientNodes, err
 }
