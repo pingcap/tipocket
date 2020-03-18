@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"strings"
 	"time"
@@ -80,7 +81,7 @@ func timeChaosLevel(chaos string) TimeChaosLevels {
 func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType) (int, int) {
 	var secs, nanoSec int
 	if levels == StrobeSkews {
-		deltaMs := rand.Intn(200)
+		deltaMs := rand.Intn(StrobeSkewsBios)
 		nanoSec = deltaMs * int(MsToNS)
 	} else {
 		var lastVal uint
@@ -90,12 +91,19 @@ func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType)
 			lastVal = 0
 		}
 
-		deltaMs := uint(rand.Int31n(int32(skewTimeMap[levels+1]-lastVal)*2)) + 2*lastVal - skewTimeMap[levels+1]
-		if deltaMs > SecToNS {
+		// [-skewTimeMap[levels+1], -lastVal] Union [lastVal, skewTimeMap[levels+1]]
+		deltaMs := uint(rand.Intn(int(skewTimeMap[levels+1]-lastVal))) + lastVal
+
+		if uint(math.Abs(float64(deltaMs))) > SecToNS {
 			secs = int(deltaMs) / int(SecToNS)
 			deltaMs = deltaMs % SecToNS
 		}
 		nanoSec = int(deltaMs * MsToNS)
+
+		if rand.Int()%2 == 1 {
+			nanoSec = -nanoSec
+			secs = -secs
+		}
 	}
 
 	return secs, nanoSec
