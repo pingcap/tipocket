@@ -29,7 +29,9 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -90,6 +92,8 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
+		loki.NewLokiClient(fixture.Context.LokiAddress,
+			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 
 	sigs := make(chan os.Signal, 1)
