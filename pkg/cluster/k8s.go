@@ -96,15 +96,12 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 		return nodes, clientNodes, err
 	}
 
-	// CDC sink
 	mysql, err := k.TestCli.MySQL.ApplyMySQL(&mysql.MySQLSpec{
 		Namespace: recommend.NS,
 		Name:      recommend.Name,
 		Resource:  fixture.Medium,
 		Storage:   fixture.StorageTypeLocal,
 	})
-	fmt.Println(err)
-	fmt.Println("111111111111")
 	time.Sleep(time.Second * 60)
 
 	cdcSpec := &cdc.CDCSpec{
@@ -115,20 +112,16 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 		Source:    recommend.TidbCluster,
 	}
 	cc, err := k.TestCli.CDC.ApplyCDC(cdcSpec)
-	fmt.Println(err)
-	fmt.Println("333333")
 
 	_ = &cdc.CDCJob{
 		CDC:     cc,
 		SinkURI: mysql.URI(),
 	}
-	// start CDC has to run in env that has cdc binary installed and could access PD address, run it manually is a more feasible idea now
+
 	err = k.TestCli.CDC.StartJob(&cdc.CDCJob{
 		CDC:     cc,
 		SinkURI: mysql.URI(),
 	}, cdcSpec)
-	fmt.Println(err)
-	fmt.Println("55555")
 
 	time.Sleep(time.Second * 300)
 
