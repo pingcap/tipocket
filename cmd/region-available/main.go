@@ -5,8 +5,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/ngaut/log"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -33,14 +31,9 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: ra.CaseCreator{Cfg: &ra.Config{
 			DBName:          *dbName,
 			TotalRows:       *totalRows,

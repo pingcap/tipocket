@@ -22,10 +22,10 @@ type K8sProvisioner struct {
 }
 
 // NewK8sProvisioner create k8s provisioner
-func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
+func NewK8sProvisioner() clusterTypes.Provisioner {
 	return &K8sProvisioner{
 		TestCli: tests.TestClient,
-	}, nil
+	}
 }
 
 // SetUp sets up cluster, returns err or all nodes info

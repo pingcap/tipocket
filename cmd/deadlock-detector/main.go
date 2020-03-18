@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -47,14 +46,9 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: dlc.CaseCreator{Cfg: &dlc.Config{
 			DBName:           *dbName,
 			TableNum:         *tableNum,

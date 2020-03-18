@@ -9,6 +9,7 @@ import (
 
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
+
 	"github.com/pingcap/tipocket/util"
 )
 
