@@ -40,21 +40,21 @@ func NewLokiClient(address, username, password string) *LokiClient {
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
 //  is a set of strings you don't want to match.
-func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, int, error) {
+func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
 	if ns == "" {
-		return nil, 0, errors.New("namespace must be set")
+		return nil, errors.New("namespace must be set")
 	}
 
 	if containerName == "" {
-		return nil, 0, errors.New("container name must be set")
+		return nil, errors.New("container name must be set")
 	}
 
 	if match == "" {
-		return nil, 0, errors.New("match query must be set")
+		return nil, errors.New("match query must be set")
 	}
 
 	if !queryFrom.Before(queryTo) {
-		return nil, 0, errors.New("query to time must be after query from time")
+		return nil, errors.New("query to time must be after query from time")
 	}
 
 	if queryFrom.Before(c.startTime) {
@@ -82,7 +82,7 @@ func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 
 	res, err := c.cli.QueryRange(query, 1000, queryFrom, queryTo, logproto.BACKWARD, 15*time.Second, true)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	var ret []string
@@ -93,5 +93,5 @@ func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 		}
 	}
 
-	return ret, len(ret), nil
+	return ret, nil
 }
