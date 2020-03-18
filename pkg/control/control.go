@@ -468,25 +468,27 @@ func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterType
 	from := to.Add(-dur)
 
 	for _, n := range nodes {
-		if n.Component == clusterTypes.Monitor {
-			continue
-		}
-		wg.Add(1)
-		var nonMatch []string
-		if n.Component == clusterTypes.TiKV {
-			nonMatch = []string{"panic-when-unexpected-key-or-data"}
-		}
+		switch n.Component {
+		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
 
-		go func(ns, podName string, nonMatch []string) {
-			defer wg.Done()
-			texts, err := c.lokiClient.FetchPodLogs(ns, podName,
-				"panic", nonMatch, from, to, false)
-			if err != nil {
-				log.Printf("failed to fetch logs from loki for pod %s in ns %s\n", podName, ns)
-			} else if len(texts) > 0 {
-				log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v\n", len(texts), ns, podName, texts)
+			wg.Add(1)
+			var nonMatch []string
+			if n.Component == clusterTypes.TiKV {
+				nonMatch = []string{"panic-when-unexpected-key-or-data"}
 			}
-		}(n.Namespace, n.PodName, nonMatch)
+
+			go func(ns, podName string, nonMatch []string) {
+				defer wg.Done()
+				texts, err := c.lokiClient.FetchPodLogs(ns, podName,
+					"panic", nonMatch, from, to, false)
+				if err != nil {
+					log.Printf("failed to fetch logs from loki for pod %s in ns %s\n", podName, ns)
+				} else if len(texts) > 0 {
+					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v\n", len(texts), ns, podName, texts)
+				}
+			}(n.Namespace, n.PodName, nonMatch)
+		default:
+		}
 	}
 
 	wg.Wait()
