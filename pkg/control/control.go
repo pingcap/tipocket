@@ -44,6 +44,7 @@ type Controller struct {
 	proc         int64
 	requestCount int64
 
+	// TODO(yeya24): make log service an interface
 	lokiClient *loki.LokiClient
 
 	suit verify.Suit
