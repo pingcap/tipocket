@@ -36,17 +36,17 @@ func NewLokiClient(address, username, password string) *LokiClient {
 	}
 }
 
-// FetchContainerLogs gets container logs from loki API. ns and containerName are used
+// FetchPodLogs gets pod logs from loki API. ns and podName are used
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
 //  is a set of strings you don't want to match.
-func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
+func (c *LokiClient) FetchPodLogs(ns, podName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
 	if ns == "" {
 		return nil, errors.New("namespace must be set")
 	}
 
-	if containerName == "" {
-		return nil, errors.New("container name must be set")
+	if podName == "" {
+		return nil, errors.New("pod name must be set")
 	}
 
 	if match == "" {
@@ -71,8 +71,8 @@ func (c *LokiClient) FetchContainerLogs(ns, containerName, match string, nonMatc
 	}
 
 	// Format the query to loki.
-	query := fmt.Sprintf(`{container_name="%s", namespace="%s"} %s"%s"`,
-		containerName, ns, op, match)
+	query := fmt.Sprintf(`{instance="%s", namespace="%s"} %s"%s"`,
+		podName, ns, op, match)
 
 	var nonEqual string
 	for _, v := range nonMatch {
