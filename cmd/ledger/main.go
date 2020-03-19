@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"time"
 
 	// use mysql
@@ -48,14 +47,9 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: ledger.CaseCreator{Cfg: &ledger.Config{
 			NumAccounts: *accounts,
 			Concurrency: *concurrency,

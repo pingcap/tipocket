@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -46,13 +45,9 @@ func main() {
 		Checker: core.NoopChecker{},
 		Parser:  nil,
 	}
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      provisioner,
+		Provisioner:      cluster.NewK8sProvisioner(),
 		ClientCreator:    creator.PocketCreator{},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,

@@ -76,14 +76,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("[%s] parse argment error: %v", caseName, err)
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: pessimistic.CaseCreator{Cfg: &pessimistic.Config{
 			PessimisticCaseConfig: pessimistic.PessimisticCaseConfig{
 				DBName:         *randTxnDBName,

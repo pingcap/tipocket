@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -46,14 +45,9 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: &sqllogictest.CaseCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
