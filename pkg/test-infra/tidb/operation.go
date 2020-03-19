@@ -156,6 +156,25 @@ func (t *TidbOps) GetK8sNodes() (*corev1.NodeList, error) {
 	return nodes, nil
 }
 
+func (t *TidbOps) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error) {
+	tc := &v1alpha1.TidbCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+	}
+	key, err := client.ObjectKeyFromObject(tc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.cli.Get(context.TODO(), key, tc); err != nil {
+		return nil, err
+	}
+
+	return tc, nil
+}
+
 func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 	desired := tc.DeepCopy()
 	if tc.Spec.Version == "" {
