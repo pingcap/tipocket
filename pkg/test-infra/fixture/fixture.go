@@ -16,9 +16,8 @@ package fixture
 import (
 	"flag"
 	"net/http"
-	"time"
-
 	_ "net/http/pprof" // pprof
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -53,6 +52,10 @@ type fixtureContext struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
+	// Loki
+	LokiAddress  string
+	LokiUsername string
+	LokiPassword string
 	// Other
 	pprofAddr string
 }
@@ -158,6 +161,10 @@ func init() {
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
 	flag.BoolVar(&Context.PurgeNsOnSuccess, "purge", false, "purge the specified namespace on success")
+
+	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
+	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
+	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 	Context.DockerRepository = "pingcap"
 
 	go func() {
