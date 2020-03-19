@@ -41,7 +41,6 @@ func main() {
 
 	var (
 		creator core.ClientCreator
-		checker core.Checker
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
 		cfg     = control.Config{
@@ -90,19 +89,14 @@ func main() {
 		}
 	}
 
-	checker = core.MultiChecker("tidb checkers", checkers...)
 	verifySuit := verify.Suit{
 		Model:   model,
-		Checker: checker,
+		Checker: core.MultiChecker("tidb checkers", checkers...),
 		Parser:  parser,
-	}
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
 	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      provisioner,
+		Provisioner:      cluster.NewK8sProvisioner(),
 		ClientCreator:    creator,
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,

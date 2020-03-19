@@ -21,8 +21,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/ngaut/log"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -66,14 +64,9 @@ func main() {
 		Concurrency:   *concurrency,
 	}
 
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	suit := util.Suit{
 		Config:        &cfg,
-		Provisioner:   provisioner,
+		Provisioner:   cluster.NewK8sProvisioner(),
 		ClientCreator: bank.CaseCreator{Cfg: &bankConfig},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:    verify.Suit{},

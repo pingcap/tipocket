@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -62,11 +61,6 @@ func main() {
 		Checker: checker,
 		Parser:  tidb.TPCCParser(),
 	}
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var waitWarmUpNemesisGens []core.NemesisGenerator
 	for _, gen := range util.ParseNemesisGenerators(fixture.Context.Nemesis) {
 		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
@@ -76,7 +70,7 @@ func main() {
 	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      provisioner,
+		Provisioner:      cluster.NewK8sProvisioner(),
 		ClientCreator:    creator,
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
