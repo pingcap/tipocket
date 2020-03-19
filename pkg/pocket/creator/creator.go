@@ -12,15 +12,25 @@ import (
 	pocketCore "github.com/pingcap/tipocket/pkg/pocket/core"
 )
 
+// Config struct
+type Config struct {
+	ConfigPath string
+	Mode       string
+}
+
 // PocketCreator create pocket instances
-type PocketCreator struct{}
+type PocketCreator struct {
+	Config
+}
 
 // PocketClient runs pocket
-type PocketClient struct{}
+type PocketClient struct {
+	Config
+}
 
 // Create client
-func (PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
-	return PocketClient{}
+func (p PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
+	return PocketClient{p.Config}
 }
 
 // SetUp sets up the client.
@@ -49,10 +59,10 @@ func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNodes []clusterTypes.ClientNode) error {
 	var (
-		upstream, downstream = makeDSN(clientNodes[0].String()), makeDSN(clientNodes[1].String())
-		cfgPath              = caseConfig.(string)
+		db1, db2 = makeDSN(clientNodes[0].String()), makeDSN(clientNodes[1].String())
+		cfgPath  = p.Config.ConfigPath
 	)
 
 	cfg := config.Init()
@@ -61,8 +71,8 @@ func (PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNod
 		return errors.Trace(err)
 	}
 
-	cfg.Mode = "binlog"
-	cfg.DSN1, cfg.DSN2 = upstream, downstream
+	cfg.Mode = p.Config.Mode
+	cfg.DSN1, cfg.DSN2 = db1, db2
 
 	return pocketCore.New(cfg).Start(ctx)
 }

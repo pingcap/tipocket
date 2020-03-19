@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
@@ -35,6 +36,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 		return k.setUpTiDBCluster(s)
 	case *binlog.ClusterRecommendation:
 		return k.setUpBinlogCluster(s)
+	case *abtest.Recommendation:
+		return k.setUpABTestCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -115,6 +118,29 @@ func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendat
 	}
 
 	clientNodes, err = k.TestCli.Binlog.GetClientNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	return nodes, clientNodes, err
+}
+
+func (k *K8sProvisioner) setUpABTestCluster(recommend *abtest.Recommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	var (
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
+		err         error
+	)
+
+	err = k.TestCli.ABTest.Apply(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	nodes, err = k.TestCli.ABTest.GetNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	clientNodes, err = k.TestCli.ABTest.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}

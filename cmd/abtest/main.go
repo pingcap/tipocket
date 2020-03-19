@@ -16,13 +16,14 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
@@ -37,7 +38,6 @@ func main() {
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		CaseConfig:  *configPath,
 	}
 
 	verifySuit := verify.Suit{
@@ -45,19 +45,23 @@ func main() {
 		Checker: core.NoopChecker{},
 		Parser:  nil,
 	}
+	provisioner, err := cluster.NewK8sProvisioner()
+	if err != nil {
+		log.Fatal(err)
+	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Provisioner: provisioner,
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,
-				Mode:       "binlog",
+				Mode:       "abtest",
 			},
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:      abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }
