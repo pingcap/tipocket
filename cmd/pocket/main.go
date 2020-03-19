@@ -37,7 +37,8 @@ func main() {
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
-		CaseConfig:  *configPath,
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
 
 	verifySuit := verify.Suit{

@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -38,6 +37,8 @@ func main() {
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
 		DB:          "noop",
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
 
 	verifySuit := verify.Suit{
@@ -45,13 +46,10 @@ func main() {
 		Checker: core.NoopChecker{},
 		Parser:  nil,
 	}
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
+
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,

@@ -131,11 +131,15 @@ func (k *K8sProvisioner) setUpABTestCluster(recommend *abtest.Recommendation) ([
 		clientNodes []clusterTypes.ClientNode
 		err         error
 	)
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
 
 	err = k.TestCli.ABTest.Apply(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
+
 	nodes, err = k.TestCli.ABTest.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err

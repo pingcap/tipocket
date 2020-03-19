@@ -67,8 +67,10 @@ func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientN
 
 	cfg := config.Init()
 
-	if err := cfg.Load(cfgPath); err != nil {
-		return errors.Trace(err)
+	if cfgPath != "" {
+		if err := cfg.Load(cfgPath); err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	cfg.Mode = p.Config.Mode

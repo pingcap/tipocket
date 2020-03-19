@@ -13,7 +13,11 @@
 
 package abtest
 
-import "github.com/pingcap/tipocket/pkg/test-infra/tidb"
+import (
+	"fmt"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+)
 
 // Recommendation defines 2 clusters for abtest
 type Recommendation struct {
@@ -26,8 +30,8 @@ type Recommendation struct {
 // RecommendedCluster gives recommand cluster
 func RecommendedCluster(ns, name string) *Recommendation {
 	return &Recommendation{
-		Cluster1: tidb.RecommendedTiDBCluster(ns, name),
-		Cluster2: tidb.RecommendedTiDBCluster(ns, name),
+		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name)),
+		Cluster2: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-b", name)),
 		NS:       ns,
 		Name:     name,
 	}

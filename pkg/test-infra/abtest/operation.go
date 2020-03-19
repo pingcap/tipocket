@@ -44,9 +44,11 @@ func (t *Ops) Apply(tc *Recommendation) error {
 	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
 		errs = append(errs, t.ApplyTiDBCluster(tc.Cluster1))
 	}()
 	go func() {
+		defer wg.Done()
 		errs = append(errs, t.ApplyTiDBCluster(tc.Cluster2))
 	}()
 
