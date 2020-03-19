@@ -23,6 +23,7 @@ func init() {
 	core.RegisterNemesis(scheduler{})
 	core.RegisterNemesis(newLeaderShuffler())
 	core.RegisterNemesis(iochaos{client})
+	core.RegisterNemesis(dynamicConfig{})
 }
 
 func shuffleIndices(n int) []int {

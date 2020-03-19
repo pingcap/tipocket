@@ -15,17 +15,19 @@ require (
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/kvproto v0.0.0-20200102065152-5d51d93be892
-	github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
+	github.com/pingcap/kvproto v0.0.0-20200317095539-c42a1d8db7d3
+	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
+	github.com/pingcap/pd/v4 v4.0.0-beta.2
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-beta.1
 
 	github.com/satori/go.uuid v1.2.0
+	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
-	golang.org/x/net v0.0.0-20191112182307-2180aed22343
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0

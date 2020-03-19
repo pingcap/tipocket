@@ -32,6 +32,8 @@ const (
 	Scaling ChaosKind = "Scaling"
 	// IOChaos adds io chaos.
 	IOChaos ChaosKind = "IO-Chaos"
+	// DynamicConfig adjust
+	DynamicConfig ChaosKind = "dynamic-config"
 )
 
 // Nemesis injects failure and disturbs the database.
