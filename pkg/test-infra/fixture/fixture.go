@@ -167,8 +167,9 @@ func init() {
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
-	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "cluster1-version", "", "specify version for cluster1")
-	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "cluster2-version", "", "specify version for cluster2")
+	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "abtest.a.version", "", "specify version for cluster a")
+	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.b.version", "", "specify version for cluster b")
+	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	Context.DockerRepository = "pingcap"
 
 	go func() {

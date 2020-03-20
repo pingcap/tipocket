@@ -50,7 +50,7 @@ func main() {
 
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = ""
+	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),

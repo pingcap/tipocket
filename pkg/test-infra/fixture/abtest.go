@@ -17,4 +17,5 @@ package fixture
 type ABTestConfig struct {
 	Cluster1Version string
 	Cluster2Version string
+	LogPath         string
 }

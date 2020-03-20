@@ -14,9 +14,8 @@
 package abtest
 
 import (
-	"sync"
-
 	"github.com/pingcap/errors"
+	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -37,29 +36,16 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 
 // Apply abtest cluster
 func (t *Ops) Apply(tc *Recommendation) error {
-	var (
-		wg   sync.WaitGroup
-		errs []error
-	)
-	wg.Add(2)
+	var g errgroup.Group
 
-	go func() {
-		defer wg.Done()
-		errs = append(errs, t.ApplyTiDBCluster(tc.Cluster1))
-	}()
-	go func() {
-		defer wg.Done()
-		errs = append(errs, t.ApplyTiDBCluster(tc.Cluster2))
-	}()
+	g.Go(func() error {
+		return t.ApplyTiDBCluster(tc.Cluster1)
+	})
+	g.Go(func() error {
+		return t.ApplyTiDBCluster(tc.Cluster2)
+	})
 
-	wg.Wait()
-
-	for _, err := range errs {
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return g.Wait()
 }
 
 // ApplyTiDBCluster apply a tidb cluster
