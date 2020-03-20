@@ -26,6 +26,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
 	golang.org/x/net v0.0.0-20191112182307-2180aed22343
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0

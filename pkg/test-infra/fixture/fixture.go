@@ -42,6 +42,7 @@ type fixtureContext struct {
 	Namespace                string
 	WaitClusterReadyDuration time.Duration
 	PurgeNsOnSuccess         bool
+	ABTestConfig
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
@@ -165,6 +166,10 @@ func init() {
 	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
+
+	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "abtest.a.version", "", "specify version for cluster a")
+	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.b.version", "", "specify version for cluster b")
+	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	Context.DockerRepository = "pingcap"
 
 	go func() {

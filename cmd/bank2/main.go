@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 	"time"
 
 	// use mysql

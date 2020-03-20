@@ -23,7 +23,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
@@ -49,7 +49,7 @@ func main() {
 	}
 
 	pocketConfig := config.Init()
-	pocketConfig.Options.Serialize = false
+	pocketConfig.Options.Serialize = true
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	suit := util.Suit{
 		Config:      &cfg,
@@ -57,14 +57,14 @@ func main() {
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,
-				Mode:       "binlog",
+				Mode:       "abtest",
 				Config:     pocketConfig,
 			},
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:      abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }
