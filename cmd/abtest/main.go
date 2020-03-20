@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
@@ -47,6 +48,9 @@ func main() {
 		Parser:  nil,
 	}
 
+	pocketConfig := config.Init()
+	pocketConfig.Options.Serialize = true
+	pocketConfig.Options.Path = "log"
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -54,6 +58,7 @@ func main() {
 			Config: creator.Config{
 				ConfigPath: *configPath,
 				Mode:       "abtest",
+				Config:     pocketConfig,
 			},
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),

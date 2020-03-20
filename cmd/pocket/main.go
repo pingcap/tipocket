@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
@@ -46,6 +47,10 @@ func main() {
 		Checker: core.NoopChecker{},
 		Parser:  nil,
 	}
+
+	pocketConfig := config.Init()
+	pocketConfig.Options.Serialize = false
+	pocketConfig.Options.Path = ""
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -53,6 +58,7 @@ func main() {
 			Config: creator.Config{
 				ConfigPath: *configPath,
 				Mode:       "binlog",
+				Config:     pocketConfig,
 			},
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),

@@ -14,6 +14,7 @@ import (
 
 // Config struct
 type Config struct {
+	*config.Config
 	ConfigPath string
 	Mode       string
 }
@@ -65,8 +66,7 @@ func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientN
 		cfgPath  = p.Config.ConfigPath
 	)
 
-	cfg := config.Init()
-	cfg.Options.Path = ""
+	cfg := p.Config.Config
 	if cfgPath != "" {
 		if err := cfg.Load(cfgPath); err != nil {
 			return errors.Trace(err)
