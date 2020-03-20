@@ -1,12 +1,98 @@
 package tidb
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path"
 	"sort"
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/core"
 )
+
+type rtoMetrics struct {
+	name             string
+	nemesis          *core.NemesisGeneratorRecord
+	totalMeasureTime time.Duration
+	baseline         float64
+	p80              time.Duration
+	p90              time.Duration
+	p99              time.Duration
+}
+
+type timeSeries []time.Time
+
+func (t timeSeries) Len() int {
+	return len(t)
+}
+
+func (t timeSeries) Less(i, j int) bool {
+	return t[i].Before(t[j])
+}
+
+func (t timeSeries) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+func (m *rtoMetrics) Record(filePath string) error {
+	os.MkdirAll(path.Dir(""), 0755)
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	data, err := json.Marshal(m.nemesis)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(fmt.Sprintf("workload:%s,nemesis:%s,measure_time:%.2f,baseline:%.2f,tpm_p80:%.2f,tpm_p90:%.2f,tpm_p99:%.2f,detail:%s\n",
+		m.name,
+		m.nemesis.Name,
+		m.totalMeasureTime.Seconds(),
+		m.baseline,
+		m.p80.Seconds(), m.p90.Seconds(), m.p99.Seconds(), string(data))); err != nil {
+		return err
+	}
+	return nil
+}
+
+type countWindow struct {
+	series []time.Time
+	pos    int
+	start  bool
+}
+
+// Next move to next pos
+func (f *countWindow) Next() bool {
+	if !f.start {
+		f.start = true
+		return f.pos < len(f.series)
+	}
+	f.pos++
+	return f.pos < len(f.series)
+}
+
+// Count counts failure number in continuous minutes from f.pos
+func (f *countWindow) Count(duration time.Duration) (*time.Time, int) {
+	var (
+		count     = 0
+		pos       = f.pos
+		startTime = f.series[pos]
+	)
+
+	for pos < len(f.series) {
+		t := f.series[pos]
+		if t.After(startTime.Add(duration)) {
+			break
+		}
+		count++
+		pos++
+	}
+	return &startTime, count
+}
 
 type tpccQoSChecker struct {
 	warmUpDuration time.Duration

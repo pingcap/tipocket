@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"flag"
+	"time"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -26,13 +27,21 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/ondup"
+	"github.com/pingcap/tipocket/tests/bank2"
 )
 
 var (
-	dbName     = flag.String("db", "test", "database name")
-	numRows    = flag.Int("num-rows", 10000, "number of rows")
-	retryLimit = flag.Int("retry-limit", 2, "retry count")
+	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
+	interval    = flag.Duration("interval", 2*time.Second, "the interval")
+	tables      = flag.Int("tables", 1, "the number of the tables")
+	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
+	retryLimit  = flag.Int("retry-limit", 200, "retry count")
+	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
+	runMode     = flag.String("run-mode", "online", "case mode, support values: online / dev, default value: online")
+	contention  = flag.String("contention", "low", "contention level, support values: high / low, default value: low")
+	pessimistic = flag.Bool("pessimistic", false, "use pessimistic transaction")
+	minLength   = flag.Int("min-value-length", 0, "minimum value inserted into rocksdb")
+	maxLength   = flag.Int("max-value-length", 128, "maximum value inserted into rocksdb")
 )
 
 func main() {
@@ -44,13 +53,22 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
+
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ondup.CaseCreator{Cfg: &ondup.Config{
-			DBName:     *dbName,
-			NumRows:    *numRows,
-			RetryLimit: *retryLimit,
+		ClientCreator: bank2.CaseCreator{Cfg: &bank2.Config{
+			NumAccounts:   *accounts,
+			Interval:      *interval,
+			TableNum:      *tables,
+			Concurrency:   *concurrency,
+			RetryLimit:    *retryLimit,
+			RunMode:       *runMode,
+			MinLength:     *minLength,
+			MaxLength:     *maxLength,
+			EnableLongTxn: *longTxn,
+			Contention:    *contention,
+			Pessimistic:   *pessimistic,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},

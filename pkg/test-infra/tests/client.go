@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
@@ -47,6 +48,7 @@ type TestCli struct {
 	MySQL  *mysql.MySQLOps
 	TiDB   *tidb.TidbOps
 	Binlog *binlog.Ops
+	ABTest *abtest.Ops
 }
 
 func newTestCli(conf *rest.Config) *TestCli {
@@ -62,6 +64,7 @@ func newTestCli(conf *rest.Config) *TestCli {
 		MySQL:  mysql.New(kubeCli),
 		TiDB:   tidbClient,
 		Binlog: binlog.New(kubeCli, tidbClient),
+		ABTest: abtest.New(kubeCli, tidbClient),
 	}
 }
 

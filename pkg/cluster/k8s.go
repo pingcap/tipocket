@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
@@ -22,10 +23,10 @@ type K8sProvisioner struct {
 }
 
 // NewK8sProvisioner create k8s provisioner
-func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
+func NewK8sProvisioner() clusterTypes.Provisioner {
 	return &K8sProvisioner{
 		TestCli: tests.TestClient,
-	}, nil
+	}
 }
 
 // SetUp sets up cluster, returns err or all nodes info
@@ -35,6 +36,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 		return k.setUpTiDBCluster(s)
 	case *binlog.ClusterRecommendation:
 		return k.setUpBinlogCluster(s)
+	case *abtest.Recommendation:
+		return k.setUpABTestCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -60,27 +63,31 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
 
-	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
+	if tc, err := k.TestCli.TiDB.GetTiDBCluster(recommend.NS, recommend.NS); err == nil {
+		recommend.TidbCluster = tc
+	} else {
+		err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
 
-	err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
+		err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
 
-	// TODO: maybe we need wait tidb monitor ready here?
-	err = k.TestCli.TiDB.ApplyTiDBMonitor(recommend.TidbMonitor)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
+		err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
 
+		// TODO: maybe we need wait tidb monitor ready here?
+		err = k.TestCli.TiDB.ApplyTiDBMonitor(recommend.TidbMonitor)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
+	}
 	nodes, err = k.TestCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
@@ -115,6 +122,33 @@ func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendat
 	}
 
 	clientNodes, err = k.TestCli.Binlog.GetClientNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	return nodes, clientNodes, err
+}
+
+func (k *K8sProvisioner) setUpABTestCluster(recommend *abtest.Recommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	var (
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
+		err         error
+	)
+	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+
+	err = k.TestCli.ABTest.Apply(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	nodes, err = k.TestCli.ABTest.GetNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	clientNodes, err = k.TestCli.ABTest.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}

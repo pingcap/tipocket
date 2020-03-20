@@ -17,7 +17,10 @@ default: build
 
 all: build
 
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer region-available deadlock-detector
+chaos: tidb
+
+build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
+		region-available deadlock-detector crud bank bank2 abtest
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -43,6 +46,12 @@ compare:
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
+bank:
+	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
+
+bank2:
+	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
+
 txn-rand-pessimistic:
 	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
@@ -60,6 +69,12 @@ region-available:
 
 deadlock-detector:
 	$(GOBUILD) $(GOMOD) -o bin/deadlock-detector cmd/deadlock-detector/*.go
+
+crud:
+	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go
+
+abtest:
+	$(GOBUILD) $(GOMOD) -o bin/abtest cmd/abtest/*.go
 
 fmt: groupimports
 	go fmt ./...
