@@ -621,9 +621,10 @@ func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node
 			Component: clusterTypes.Component(component),
 			Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
 			Client: &clusterTypes.Client{
-				Namespace: pod.ObjectMeta.Namespace,
-				PDMemberFunc: func(ns string) (string, []string, error) {
-					return t.GetPDMember(ns, ns)
+				Namespace:   pod.ObjectMeta.Namespace,
+				ClusterName: pod.ObjectMeta.Labels["app.kubernetes.io/instance"],
+				PDMemberFunc: func(ns, name string) (string, []string, error) {
+					return t.GetPDMember(ns, name)
 				},
 			},
 		})
