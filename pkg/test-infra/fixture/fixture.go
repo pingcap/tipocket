@@ -53,9 +53,9 @@ type fixtureContext struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
-	TiDBConfigMap            string
-	TiKVConfigMap            string
-	PDConfigMap              string
+	TiDBConfigFile           string
+	TiKVConfigFile           string
+	PDConfigFile             string
 	// Loki
 	LokiAddress  string
 	LokiUsername string
@@ -157,10 +157,6 @@ func init() {
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
-	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
-	flag.StringVar(&Context.TiDBConfigMap, "tidb-configmap", "", "path of tidb configmap")
-	flag.StringVar(&Context.TiKVConfigMap, "tikv-configmap", "", "path of tikv configmap")
-	flag.StringVar(&Context.PDConfigMap, "pd-configmap", "", "path of pd configmap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
@@ -173,9 +169,17 @@ func init() {
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
+	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
+	flag.StringVar(&Context.TiDBConfigFile, "tidb-configmap", "", "path of tidb configmap (cluster A in abtest case)")
+	flag.StringVar(&Context.TiKVConfigFile, "tikv-configmap", "", "path of tikv configmap (cluster A in abtest case)")
+	flag.StringVar(&Context.PDConfigFile, "pd-configmap", "", "path of pd configmap (cluster A in abtest case)")
+	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.b.tidb-configmap", "", "tidb configmap for cluster b")
+	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.b.tikv-configmap", "", "tikv configmap for cluster b")
+	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.b.pd-configmap", "", "pd configmap for cluster b")
 	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "abtest.a.version", "", "specify version for cluster a")
 	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.b.version", "", "specify version for cluster b")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
+
 	Context.DockerRepository = "pingcap"
 
 	go func() {

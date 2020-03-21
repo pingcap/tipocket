@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
@@ -36,12 +37,19 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 // Apply abtest cluster
 func (t *Ops) Apply(tc *Recommendation) error {
 	var g errgroup.Group
-
 	g.Go(func() error {
-		return t.ApplyTiDBCluster(tc.Cluster1)
+		return t.ApplyTiDBCluster(tc.Cluster1, tidb.Config{
+			Tikv: fixture.Context.TiKVConfigFile,
+			Tidb: fixture.Context.TiDBConfigFile,
+			Pd:   fixture.Context.PDConfigFile,
+		})
 	})
 	g.Go(func() error {
-		return t.ApplyTiDBCluster(tc.Cluster2)
+		return t.ApplyTiDBCluster(tc.Cluster2, tidb.Config{
+			Tikv: fixture.Context.ABTestConfig.TiKVConfigFile,
+			Tidb: fixture.Context.ABTestConfig.TiDBConfigFile,
+			Pd:   fixture.Context.ABTestConfig.PDConfigFile,
+		})
 	})
 
 	return g.Wait()

@@ -19,6 +19,7 @@ func init() {
 	core.RegisterNemesis(networkPartition{client})
 	core.RegisterNemesis(netem{client})
 	core.RegisterNemesis(scaling{client})
+	core.RegisterNemesis(timeChaos{client})
 	core.RegisterNemesis(scheduler{})
 	core.RegisterNemesis(newLeaderShuffler())
 }

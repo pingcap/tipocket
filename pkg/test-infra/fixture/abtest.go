@@ -15,6 +15,9 @@ package fixture
 
 // ABTestConfig for abtest component
 type ABTestConfig struct {
+	TiDBConfigFile  string
+	TiKVConfigFile  string
+	PDConfigFile    string
 	Cluster1Version string
 	Cluster2Version string
 	LogPath         string

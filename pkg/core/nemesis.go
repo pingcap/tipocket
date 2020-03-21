@@ -22,6 +22,8 @@ const (
 	NetworkPartition ChaosKind = "Network-Partition"
 	// NetemChaos adds corrupt or other chaos.
 	NetemChaos ChaosKind = "Netem-Chaos"
+	// TimeChaos means
+	TimeChaos ChaosKind = "Time-Chaos"
 	// PDScheduler adds scheduler
 	PDScheduler ChaosKind = "PD-Scheduler"
 	// PDLeaderShuffler will randomly shuffle pds.
