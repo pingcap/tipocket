@@ -16,6 +16,7 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -439,9 +440,24 @@ func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {
 	}
 }
 
+func readFileAsString(filename string) (string, error) {
+	if filename == "" {
+		return ``, nil
+	}
+	if bytes, err := ioutil.ReadFile(filename); err != nil {
+		return ``, err
+	} else {
+		return string(bytes), nil
+	}
+}
+
 // TODO: use the latest tidb-operator feature instead
 func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	s, err := RenderPDStartScript(&PDStartScriptModel{})
+	if err != nil {
+		return nil, err
+	}
+	configFile, err := readFileAsString(fixture.Context.PDConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -452,13 +468,17 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    ``,
+			"config-file":    configFile,
 		},
 	}, nil
 }
 
 func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	s, err := RenderTiDBStartScript(&TidbStartScriptModel{ClusterName: tc.Name})
+	if err != nil {
+		return nil, err
+	}
+	configFile, err := readFileAsString(fixture.Context.TiDBConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -469,13 +489,17 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    ``,
+			"config-file":    configFile,
 		},
 	}, nil
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	s, err := RenderTiKVStartScript(&TiKVStartScriptModel{})
+	if err != nil {
+		return nil, err
+	}
+	configFile, err := readFileAsString(fixture.Context.TiKVConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -486,7 +510,7 @@ func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    ``,
+			"config-file":    configFile,
 		},
 	}, nil
 }

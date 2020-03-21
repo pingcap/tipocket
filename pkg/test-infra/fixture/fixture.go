@@ -53,6 +53,9 @@ type fixtureContext struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
+	TiDBConfigMap            string
+	TiKVConfigMap            string
+	PDConfigMap              string
 	// Loki
 	LokiAddress  string
 	LokiUsername string
@@ -155,6 +158,9 @@ func init() {
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
+	flag.StringVar(&Context.TiDBConfigMap, "tidb-configmap", "", "path of tidb configmap")
+	flag.StringVar(&Context.TiKVConfigMap, "tikv-configmap", "", "path of tikv configmap")
+	flag.StringVar(&Context.PDConfigMap, "pd-configmap", "", "path of pd configmap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
