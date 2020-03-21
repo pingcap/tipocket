@@ -60,11 +60,11 @@ func init() {
 	}
 
 	skewTimeStrMap = map[string]TimeChaosLevels{
-		"small-skews":       SmallSkews,
-		"subcritical-skews": SubCriticalSkews,
-		"critical-skews":    CriticalSkews,
-		"big-skews":         BigSkews,
-		"huge-skews":        HugeSkews,
+		"small_skews":       SmallSkews,
+		"subcritical_skews": SubCriticalSkews,
+		"critical_skews":    CriticalSkews,
+		"big_skews":         BigSkews,
+		"huge_skews":        HugeSkews,
 		"strobe-skews":      StrobeSkews,
 	}
 }

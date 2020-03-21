@@ -24,15 +24,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate TiDB with binlog on k8s
 type Ops struct {
-	cli        client.Client
-	tidbClient *tidb.TidbOps
+	cli client.Client
+	*tidb.TidbOps
 }
 
 // New creates binlog ops
@@ -41,7 +40,7 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 }
 
 // Apply binlog cluster
-func (t *Ops) Apply(tc *ClusterRecommendation) error {
+func (t *Ops) Apply(tc *Recommendation) error {
 	if err := t.ApplyTiDBCluster(tc.Upstream); err != nil {
 		return err
 	}
@@ -57,19 +56,12 @@ func (t *Ops) Apply(tc *ClusterRecommendation) error {
 }
 
 // Delete binlog cluster
-func (t *Ops) Delete(tc *ClusterRecommendation) error {
-	return nil
-}
-
-// ApplyTiDBCluster applies a cluster
-func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation) error {
-	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster); err != nil {
+func (t *Ops) Delete(tc *Recommendation) error {
+	if err := t.TidbOps.Delete(tc.Upstream); err != nil {
 		return err
 	}
-	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, fixture.Context.WaitClusterReadyDuration); err != nil {
-		return err
-	}
-	if err := t.tidbClient.ApplyTiDBService(tc.Service); err != nil {
+	// TODO: delete drainer
+	if err := t.TidbOps.Delete(tc.Downstream); err != nil {
 		return err
 	}
 	return nil
@@ -124,14 +116,14 @@ func (t *Ops) GetDrainerNode(d *Drainer) (clusterTypes.Node, error) {
 	}, nil
 }
 
-func (t *Ops) GetNodes(tc *ClusterRecommendation) ([]clusterTypes.Node, error) {
+func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	var nodes []clusterTypes.Node
 
-	upstreamNodes, err := t.tidbClient.GetNodes(tc.Upstream)
+	upstreamNodes, err := t.TidbOps.GetNodes(tc.Upstream)
 	if err != nil {
 		return nodes, err
 	}
-	downstreamNodes, err := t.tidbClient.GetNodes(tc.Downstream)
+	downstreamNodes, err := t.TidbOps.GetNodes(tc.Downstream)
 	if err != nil {
 		return nodes, err
 	}
@@ -143,13 +135,13 @@ func (t *Ops) GetNodes(tc *ClusterRecommendation) ([]clusterTypes.Node, error) {
 	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
 }
 
-func (t *Ops) GetClientNodes(tc *ClusterRecommendation) ([]clusterTypes.ClientNode, error) {
+func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
-	upstreamClientNodes, err := t.tidbClient.GetClientNodes(tc.Upstream)
+	upstreamClientNodes, err := t.TidbOps.GetClientNodes(tc.Upstream)
 	if err != nil {
 		return clientNodes, err
 	}
-	downstreamClientNodes, err := t.tidbClient.GetClientNodes(tc.Downstream)
+	downstreamClientNodes, err := t.TidbOps.GetClientNodes(tc.Downstream)
 	if err != nil {
 		return clientNodes, err
 	}

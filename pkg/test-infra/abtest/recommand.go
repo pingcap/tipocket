@@ -23,8 +23,8 @@ import (
 
 // Recommendation defines 2 clusters for abtest
 type Recommendation struct {
-	Cluster1 *tidb.TiDBClusterRecommendation
-	Cluster2 *tidb.TiDBClusterRecommendation
+	Cluster1 *tidb.Recommendation
+	Cluster2 *tidb.Recommendation
 	NS       string
 	Name     string
 }
@@ -38,13 +38,13 @@ func RecommendedCluster(ns, name string) *Recommendation {
 		Name:     name,
 	}
 
-	overwriteClusterVeresion(fixture.Context.ABTestConfig.Cluster1Version, r.Cluster1)
-	overwriteClusterVeresion(fixture.Context.ABTestConfig.Cluster2Version, r.Cluster2)
+	overwriteClusterVersion(fixture.Context.ABTestConfig.Cluster1Version, r.Cluster1)
+	overwriteClusterVersion(fixture.Context.ABTestConfig.Cluster2Version, r.Cluster2)
 
 	return &r
 }
 
-func overwriteClusterVeresion(version string, tc *tidb.TiDBClusterRecommendation) {
+func overwriteClusterVersion(version string, tc *tidb.Recommendation) {
 	if version == "" {
 		return
 	}
