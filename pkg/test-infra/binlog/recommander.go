@@ -35,17 +35,17 @@ type Drainer struct {
 	*appsv1.StatefulSet
 }
 
-// ClusterRecommendation defines binlog cluster
-type ClusterRecommendation struct {
+// Recommendation defines binlog cluster
+type Recommendation struct {
 	*Drainer
-	Upstream   *tidb.TiDBClusterRecommendation
-	Downstream *tidb.TiDBClusterRecommendation
+	Upstream   *tidb.Recommendation
+	Downstream *tidb.Recommendation
 	NS         string
 	Name       string
 }
 
 // RecommendedBinlogCluster create cluster with binlog
-func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
+func RecommendedBinlogCluster(ns, name string) *Recommendation {
 	var (
 		enableBinlog             = true
 		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name))
@@ -83,7 +83,7 @@ func RecommendedBinlogCluster(ns, name string) *ClusterRecommendation {
 		},
 	}
 
-	return &ClusterRecommendation{
+	return &Recommendation{
 		NS:         ns,
 		Name:       name,
 		Upstream:   upstream,

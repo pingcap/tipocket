@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type TiDBClusterRecommendation struct {
+type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
@@ -33,11 +33,11 @@ type TiDBClusterRecommendation struct {
 	Name string
 }
 
-func (t *TiDBClusterRecommendation) Make() *v1alpha1.TidbCluster {
+func (t *Recommendation) Make() *v1alpha1.TidbCluster {
 	return t.TidbCluster
 }
 
-func (t *TiDBClusterRecommendation) EnablePump(replicas int32) *TiDBClusterRecommendation {
+func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	if t.TidbCluster.Spec.Pump == nil {
 		t.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
 			Replicas:             replicas,
@@ -48,17 +48,17 @@ func (t *TiDBClusterRecommendation) EnablePump(replicas int32) *TiDBClusterRecom
 	return t
 }
 
-func (t *TiDBClusterRecommendation) PDReplicas(replicas int32) *TiDBClusterRecommendation {
+func (t *Recommendation) PDReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.PD.Replicas = replicas
 	return t
 }
 
-func (t *TiDBClusterRecommendation) TiKVReplicas(replicas int32) *TiDBClusterRecommendation {
+func (t *Recommendation) TiKVReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiKV.Replicas = replicas
 	return t
 }
 
-func (t *TiDBClusterRecommendation) TiDBReplicas(replicas int32) *TiDBClusterRecommendation {
+func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiDB.Replicas = replicas
 	return t
 }
@@ -77,10 +77,10 @@ func buildImage(name string) string {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string) *TiDBClusterRecommendation {
+func RecommendedTiDBCluster(ns, name string) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 
-	return &TiDBClusterRecommendation{
+	return &Recommendation{
 		NS:   ns,
 		Name: name,
 		TidbCluster: &v1alpha1.TidbCluster{

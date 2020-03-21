@@ -28,11 +28,12 @@ const (
 // Client provides useful methods about cluster
 type Client struct {
 	Namespace    string
-	PDMemberFunc func(ns string) (string, []string, error)
+	ClusterName  string
+	PDMemberFunc func(ns, name string) (string, []string, error)
 }
 
 func (c *Client) PDMember() (string, []string, error) {
-	return c.PDMemberFunc(c.Namespace)
+	return c.PDMemberFunc(c.Namespace, c.ClusterName)
 }
 
 // Node is the cluster endpoint in K8s, it's maybe podIP:port or CLUSTER-IP:port
