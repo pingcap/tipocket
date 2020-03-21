@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-tpcc-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-tpcc
+  templates:
+    - name: call-tipocket-tpcc
+      steps:
+        - - name: call-tipocket-tpcc
+            templateRef:
+              name: tipocket-tpcc
+              template: tipocket-tpcc
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-block-writer-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-block-writer
+  templates:
+    - name: call-tipocket-block-writer
+      steps:
+        - - name: call-tipocket-block-writer
+            templateRef:
+              name: tipocket-block-writer
+              template: tipocket-block-writer
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

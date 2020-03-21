@@ -6,6 +6,8 @@ spec:
     - name: tipocket-region-available
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-region-available
           - name: image_version
           - name: storage_class
       container:
@@ -16,12 +18,15 @@ spec:
           - '-c'
           - |
             /bin/region-available \
-            -namespace=tipocket-region-available-test \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge=true \
             -run-time=8h \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

@@ -6,6 +6,8 @@ spec:
     - name: tipocket-ledger
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-ledger
           - name: image_version
           - name: storage_class
       container:
@@ -16,13 +18,16 @@ spec:
           - '-c'
           - |
             /bin/ledger \
-            -namespace=tipocket-ledger \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge=true \
             -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
-            -run-time=60m
+            -run-time=60m \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

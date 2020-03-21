@@ -9,11 +9,8 @@ spec:
           - name: ns
             default: tipocket-abtest
           - name: image_version
-            default: latest
           - name: storage_class
-            default: pd-ssd
           - name: b_version
-            default: nightly
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -28,7 +25,10 @@ spec:
             -image-version={{inputs.parameters.image_version}} \
             -abtest.image-version={{inputs.parameters.b_version}} \
             -purge=true \
-            -client=2
+            -client=2 \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

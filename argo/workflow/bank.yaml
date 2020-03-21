@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-bank-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-bank
+  templates:
+    - name: call-tipocket-bank
+      steps:
+        - - name: call-tipocket-bank
+            templateRef:
+              name: tipocket-bank
+              template: tipocket-bank
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd
