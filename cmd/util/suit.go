@@ -322,6 +322,5 @@ func (suit *Suit) updateClusterDef(ioChaosType string) {
 				"admission-webhook.pingcap.com/request": "chaosfs-pd",
 			}
 		}
-		suit.ClusterDefs = s
 	}
 }
