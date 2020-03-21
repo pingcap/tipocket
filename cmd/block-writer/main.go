@@ -25,7 +25,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	blockwriter "github.com/pingcap/tipocket/tests/block-writer"
 )
 
@@ -39,7 +38,6 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
@@ -48,7 +46,6 @@ func main() {
 		Provisioner:   cluster.NewK8sProvisioner(),
 		ClientCreator: blockwriter.CaseCreator{TableNum: *tables, Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:    verify.Suit{},
 		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

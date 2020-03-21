@@ -49,7 +49,6 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
