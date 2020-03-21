@@ -63,3 +63,18 @@ func (c *Chaos) ApplyPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error 
 func (c *Chaos) CancelPodChaos(ctx context.Context, pc *v1alpha1.PodChaos) error {
 	return c.cli.Delete(ctx, pc)
 }
+
+// ApplyTimeChaos apply the pod chaos to cluster using Client.
+func (c *Chaos) ApplyTimeChaos(ctx context.Context, pc *v1alpha1.TimeChaos) error {
+	desired := pc.DeepCopy()
+	_, err := controllerutil.CreateOrUpdate(ctx, c.cli, pc, func() error {
+		pc.Spec = desired.Spec
+		return nil
+	})
+	return err
+}
+
+// CancelTimeChaos Delete the pod chaos using Client.
+func (c *Chaos) CancelTimeChaos(ctx context.Context, pc *v1alpha1.TimeChaos) error {
+	return c.cli.Delete(ctx, pc)
+}

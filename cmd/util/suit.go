@@ -254,6 +254,8 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewContainerKillGenerator(name)
 	case "random_drop", "all_drop", "minor_drop", "major_drop":
 		log.Panic("Unimplemented")
+	case "small-skews", "subcritical-skews", "critical-skews", "big-skews", "huge-skews", "strobe-skews":
+		g = nemesis.NewTimeChaos(name)
 	case "partition_one":
 		g = nemesis.NewNetworkPartitionGenerator(name)
 	case "loss", "delay", "duplicate", "corrupt":
