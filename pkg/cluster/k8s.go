@@ -3,22 +3,14 @@ package cluster
 import (
 	"context"
 	"errors"
-	"os"
 	"regexp"
-	"strings"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
-	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb_cdc_mysql"
 )
 
 var (
@@ -31,14 +23,10 @@ type K8sProvisioner struct {
 }
 
 // NewK8sProvisioner create k8s provisioner
-func NewK8sProvisioner() (clusterTypes.Provisioner, error) {
-	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
-	if err != nil {
-		return nil, err
-	}
+func NewK8sProvisioner() clusterTypes.Provisioner {
 	return &K8sProvisioner{
-		TestCli: tests.NewTestCli(conf),
-	}, nil
+		TestCli: tests.TestClient,
+	}
 }
 
 // SetUp sets up cluster, returns err or all nodes info
@@ -48,8 +36,6 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 		return k.setUpTiDBCluster(s)
 	case *binlog.ClusterRecommendation:
 		return k.setUpBinlogCluster(s)
-	case *tidb_cdc_mysql.TiDBCDCMySQLClusterRecommendation:
-		return k.setUpTiDBCDCCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -75,21 +61,31 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
 
-	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
+	if tc, err := k.TestCli.TiDB.GetTiDBCluster(recommend.NS, recommend.NS); err == nil {
+		recommend.TidbCluster = tc
+	} else {
+		err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
 
-	err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
+		err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
 
+		err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
+
+		// TODO: maybe we need wait tidb monitor ready here?
+		err = k.TestCli.TiDB.ApplyTiDBMonitor(recommend.TidbMonitor)
+		if err != nil {
+			return nodes, clientNodes, err
+		}
+	}
 	nodes, err = k.TestCli.TiDB.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
@@ -99,35 +95,6 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.TiDBClusterRecommendat
 	if err != nil {
 		return nodes, clientNodes, err
 	}
-
-	/*mysql, err := k.TestCli.MySQL.ApplyMySQL(&mysql.MySQLSpec{
-		Namespace: recommend.NS,
-		Name:      recommend.Name,
-		Resource:  fixture.Medium,
-		Storage:   fixture.StorageTypeLocal,
-	})
-	time.Sleep(time.Second * 60)
-
-	cdcSpec := &cdc.CDCSpec{
-		Namespace: recommend.NS,
-		Name:      recommend.Name,
-		Resources: fixture.Small,
-		Replicas:  3,
-		Source:    recommend.TidbCluster,
-	}
-	cc, err := k.TestCli.CDC.ApplyCDC(cdcSpec)
-
-	_ = &cdc.CDCJob{
-		CDC:     cc,
-		SinkURI: mysql.URI(),
-	}
-
-	err = k.TestCli.CDC.StartJob(&cdc.CDCJob{
-		CDC:     cc,
-		SinkURI: mysql.URI(),
-	}, cdcSpec)
-
-	time.Sleep(time.Second * 300)*/
 
 	return nodes, clientNodes, err
 }
@@ -160,7 +127,7 @@ func (k *K8sProvisioner) setUpBinlogCluster(recommend *binlog.ClusterRecommendat
 	return nodes, clientNodes, err
 }
 
-func (k *K8sProvisioner) setUpTiDBCDCCluster(recommend *tidb_cdc_mysql.TiDBCDCMySQLClusterRecommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvisioner) setUpABTestCluster(recommend *abtest.Recommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	var (
 		nodes       []clusterTypes.Node
 		clientNodes []clusterTypes.ClientNode
@@ -169,91 +136,33 @@ func (k *K8sProvisioner) setUpTiDBCDCCluster(recommend *tidb_cdc_mysql.TiDBCDCMy
 	if err := k.TestCli.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-	err = k.TestCli.TiDB.ApplyTiDBCluster(recommend.TidbCluster)
+
+	err = k.TestCli.ABTest.Apply(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
 
-	err = k.TestCli.TiDB.WaitTiDBClusterReady(recommend.TidbCluster, fixture.Context.WaitClusterReadyDuration)
+	nodes, err = k.TestCli.ABTest.GetNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
-
-	err = k.TestCli.TiDB.ApplyTiDBService(recommend.Service)
+	clientNodes, err = k.TestCli.ABTest.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}
-
-	var tcr *tidb.TiDBClusterRecommendation
-	tcr = tidb.RecommendedTiDBCluster(recommend.NS, recommend.Name)
-
-	nodes, err = k.TestCli.TiDB.GetNodes(tcr)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
-
-	clientNodes, err = k.TestCli.TiDB.GetClientNodes(tcr)
-	if err != nil {
-		return nodes, clientNodes, err
-	}
-
-	mysql, err := k.TestCli.MySQL.ApplyMySQL(&mysql.MySQLSpec{
-		Namespace: recommend.NS,
-		Name:      recommend.Name,
-		Resource:  fixture.Medium,
-		Storage:   fixture.StorageTypeLocal,
-	})
-
-	for {
-		pods := &corev1.PodList{}
-		err = k.TestCli.Cli.List(context.TODO(), pods)
-		var mysqlpod corev1.Pod
-
-		for _, pod := range pods.Items {
-			if (strings.Index(pod.Name,mysql.Svc.Name)!=-1 && len(pod.OwnerReferences)>0 && pod.OwnerReferences[0].Name==mysql.Svc.Name) {
-				mysqlpod = pod
-			}
-		}
-
-		time.Sleep(time.Second * 5)
-		if (mysqlpod.Status.Phase=="Running"){
-			break
-		}
-		if (mysqlpod.Status.Phase!="Running" && mysqlpod.Status.Phase!="Pending"){
-			return nodes, clientNodes, err
-		}
-	}
-
-	cdcSpec := &cdc.CDCSpec{
-		Namespace: recommend.NS,
-		Name:      recommend.Name,
-		Resources: fixture.Small,
-		Replicas:  3,
-		Source:    recommend.TidbCluster,
-	}
-	cc, err := k.TestCli.CDC.ApplyCDC(cdcSpec)
-
-	_ = &cdc.CDCJob{
-		CDC:     cc,
-		SinkURI: mysql.URI(),
-	}
-
-	err = k.TestCli.CDC.StartJob(&cdc.CDCJob{
-		CDC:     cc,
-		SinkURI: mysql.URI(),
-	}, cdcSpec)
-
-	time.Sleep(time.Second * 300)
 
 	return nodes, clientNodes, err
 }
 
 func (k *K8sProvisioner) tearDownTiDBCluster(recommend *tidb.TiDBClusterRecommendation) error {
+	if err := k.TestCli.TiDB.DeleteTiDBMonitor(recommend.TidbMonitor); err != nil {
+		return err
+	}
 	if err := k.TestCli.TiDB.DeleteTiDBCluster(recommend.TidbCluster); err != nil {
 		return err
 	}
 	if fixture.Context.PurgeNsOnSuccess {
-		return k.TestCli.DeleteNamespace(recommend.Name)
+		return k.TestCli.DeleteNamespace(recommend.Namespace)
 	}
 	return nil
 }

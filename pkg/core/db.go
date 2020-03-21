@@ -7,20 +7,12 @@ import (
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
-// DB allows Chaos to set up and tear down database.
+// DB allows to set up and tear down database.
 type DB interface {
 	// SetUp initializes the database.
 	SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error
 	// TearDown tears down the database.
 	TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error
-	// Start starts the database
-	Start(ctx context.Context, node clusterTypes.Node) error
-	// Stop stops the database
-	Stop(ctx context.Context, node clusterTypes.Node) error
-	// Kill kills the database
-	Kill(ctx context.Context, node clusterTypes.Node) error
-	// IsRunning checks whether the database is running or not
-	IsRunning(ctx context.Context, node clusterTypes.Node) bool
 	// Name returns the unique name for the database
 	Name() string
 }
@@ -39,29 +31,9 @@ func (NoopDB) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clus
 	return nil
 }
 
-// Start starts the database
-func (NoopDB) Start(ctx context.Context, node clusterTypes.Node) error {
-	return nil
-}
-
-// Stop stops the database
-func (NoopDB) Stop(ctx context.Context, node clusterTypes.Node) error {
-	return nil
-}
-
-// Kill kills the database
-func (NoopDB) Kill(ctx context.Context, node clusterTypes.Node) error {
-	return nil
-}
-
-// IsRunning checks whether the database is running or not
-func (NoopDB) IsRunning(ctx context.Context, node clusterTypes.Node) bool {
-	return true
-}
-
 // Name returns the unique name for the database
 func (NoopDB) Name() string {
-	return "noop"
+	return ""
 }
 
 var dbs = map[string]DB{}

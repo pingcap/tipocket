@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"time"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -13,18 +12,22 @@ import (
 type ChaosKind string
 
 const (
-	// PodFailure Apply pod failure
+	// PodFailure Applies pod failure
 	PodFailure ChaosKind = "Pod-Failure"
 	// PodKill will random kill a pod, this will make the Node be illegal
 	PodKill ChaosKind = "Pod-Kill"
 	// ContainerKill will random kill the specified container of pod, but retain the pod
 	ContainerKill ChaosKind = "Container-Kill"
-	// NetworkPartition parts network between nodes
+	// NetworkPartition partitions network between nodes
 	NetworkPartition ChaosKind = "Network-Partition"
-	// NetemChaos add corrupt or other chaos.
+	// NetemChaos adds corrupt or other chaos.
 	NetemChaos ChaosKind = "Netem-Chaos"
-	// PDScheduler add scheduler
+	// TimeChaos means
+	TimeChaos ChaosKind = "Time-Chaos"
+	// PDScheduler adds scheduler
 	PDScheduler ChaosKind = "PD-Scheduler"
+	// PDLeaderShuffler will randomly shuffle pds.
+	PDLeaderShuffler ChaosKind = "PD-Leader-Shuffler"
 	// Scaling scale cluster
 	Scaling ChaosKind = "Scaling"
 )
@@ -42,36 +45,6 @@ type Nemesis interface {
 	Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error
 	// Name returns the unique name for the nemesis
 	Name() string
-}
-
-// NoopNemesis implements Nemesis but does nothing
-type NoopNemesis struct {
-}
-
-// // SetUp initializes the nemesis
-// func (NoopNemesis) SetUp(ctx context.Context, node string) error {
-// 	return nil
-// }
-
-// // TearDown tears down the nemesis
-// func (NoopNemesis) TearDown(ctx context.Context, node string) error {
-// 	return nil
-// }
-
-// Invoke executes the nemesis
-func (NoopNemesis) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	time.Sleep(time.Second * time.Duration(rand.Intn(10)+1))
-	return nil
-}
-
-// Recover recovers the nemesis
-func (NoopNemesis) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	return nil
-}
-
-// Name returns the unique name for the nemesis
-func (NoopNemesis) Name() string {
-	return "noop"
 }
 
 var nemesises = map[string]Nemesis{}
@@ -116,31 +89,6 @@ type NemesisGenerator interface {
 	Name() string
 }
 
-// NoopNemesisGenerator generates
-type NoopNemesisGenerator struct {
-}
-
-// Name returns the name
-func (NoopNemesisGenerator) Name() string {
-	return "noop"
-}
-
-//Generate generates the nemesis operation for the nodes.
-func (NoopNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperation {
-	ops := make([]*NemesisOperation, len(nodes))
-	for i := 0; i < len(ops); i++ {
-		ops[i] = &NemesisOperation{
-			// noop do nothing
-			Type:        "noop",
-			Node:        &nodes[i],
-			InvokeArgs:  nil,
-			RecoverArgs: nil,
-			RunTime:     0,
-		}
-	}
-	return ops
-}
-
 type DelayNemesisGenerator struct {
 	Gen   NemesisGenerator
 	Delay time.Duration
@@ -153,8 +101,4 @@ func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOpe
 
 func (d DelayNemesisGenerator) Name() string {
 	return d.Gen.Name()
-}
-
-func init() {
-	RegisterNemesis(NoopNemesis{})
 }

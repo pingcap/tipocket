@@ -29,7 +29,9 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -90,6 +92,8 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
+		loki.NewLokiClient(fixture.Context.LokiAddress,
+			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 
 	sigs := make(chan os.Signal, 1)
@@ -250,6 +254,8 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewContainerKillGenerator(name)
 	case "random_drop", "all_drop", "minor_drop", "major_drop":
 		log.Panic("Unimplemented")
+	case "small-skews", "subcritical-skews", "critical-skews", "big-skews", "huge-skews", "strobe-skews":
+		g = nemesis.NewTimeChaos(name)
 	case "partition_one":
 		g = nemesis.NewNetworkPartitionGenerator(name)
 	case "loss", "delay", "duplicate", "corrupt":
@@ -260,8 +266,9 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewSchedulerGenerator(name)
 	case "scaling":
 		g = nemesis.NewScalingGenerator(name)
-	case "noop":
-		g = core.NoopNemesisGenerator{}
+	// TODO: Change that name
+	case "leader-shuffle":
+		g = nemesis.NewLeaderShuffleGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
 	}

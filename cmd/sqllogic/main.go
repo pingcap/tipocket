@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"log"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -26,13 +25,13 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/sqllogictest"
 )
 
 var (
 	sqllogicCaseURL = flag.String("p", "", "case url")
-	taskCount       = flag.Int("t", 2, "concurrency")
+	testDir         = flag.String("d", "sqllogictest", "test case dir")
+	taskCount       = flag.Int("t", 10, "concurrency")
 	skipError       = flag.Bool("skip-error", false, "skip error for query test")
 )
 
@@ -41,27 +40,21 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
-	}
 	suit := util.Suit{
 		Config:      &cfg,
-		Provisioner: provisioner,
+		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: &sqllogictest.CaseCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
 				TaskCount: 10,
 				CaseURL:   *sqllogicCaseURL,
+				TestDir:   *testDir,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:  verify.Suit{},
 		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

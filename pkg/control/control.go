@@ -12,6 +12,7 @@ import (
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/verify"
 
 	// register nemesis
@@ -43,6 +44,9 @@ type Controller struct {
 	proc         int64
 	requestCount int64
 
+	// TODO(yeya24): make log service an interface
+	lokiClient *loki.LokiClient
+
 	suit verify.Suit
 }
 
@@ -54,21 +58,18 @@ func NewController(
 	nemesisGenerators []core.NemesisGenerator,
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
+	lokiCli *loki.LokiClient,
 ) *Controller {
-	if len(cfg.DB) == 0 {
-		log.Fatalf("empty database")
-	}
-
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
 	}
-
 	c := new(Controller)
 	c.cfg = cfg
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	c.nemesisGenerators = nemesisGenerators
 	c.clientRequestGenerator = clientRequestGenerator
 	c.suit = verifySuit
+	c.lokiClient = lokiCli
 
 	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))
@@ -103,6 +104,7 @@ func (c *Controller) Run() {
 func (c *Controller) RunMixed() {
 	c.setUpDB()
 	c.setUpClient()
+	c.checkPanicLogs()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	var nemesisWg sync.WaitGroup
@@ -173,6 +175,7 @@ ROUND:
 func (c *Controller) RunWithNemesisSequential() {
 	c.setUpDB()
 	c.setUpClient()
+	c.checkPanicLogs()
 ENTRY:
 	for _, g := range c.nemesisGenerators {
 		for round := 1; round <= c.cfg.RunRound; round++ {
@@ -239,6 +242,8 @@ ENTRY:
 func (c *Controller) RunSelfScheduled() {
 	c.setUpDB()
 	c.setUpClient()
+	c.checkPanicLogs()
+
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	var nemesisWg sync.WaitGroup
 	nemesisWg.Add(1)
@@ -429,4 +434,57 @@ func (c *Controller) onNemesisLoop(ctx context.Context, op *core.NemesisOperatio
 	if err := nemesis.Recover(context.TODO(), op.Node, op.RecoverArgs...); err != nil {
 		log.Printf("recover nemesis %s failed: %v", op.Type, err)
 	}
+}
+
+func (c *Controller) checkPanicLogs() {
+	if c.lokiClient == nil {
+		return
+	}
+
+	dur := time.Minute * 10
+	ticker := time.NewTicker(dur)
+
+	go func() {
+		for {
+			select {
+			case <-c.ctx.Done():
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				c.queryTiDBClusterLogs(dur, c.cfg.Nodes)
+			}
+		}
+	}()
+}
+
+func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterTypes.Node) {
+	wg := &sync.WaitGroup{}
+	to := time.Now()
+	from := to.Add(-dur)
+
+	for _, n := range nodes {
+		switch n.Component {
+		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
+
+			wg.Add(1)
+			var nonMatch []string
+			if n.Component == clusterTypes.TiKV {
+				nonMatch = []string{"panic-when-unexpected-key-or-data"}
+			}
+
+			go func(ns, podName string, nonMatch []string) {
+				defer wg.Done()
+				texts, err := c.lokiClient.FetchPodLogs(ns, podName,
+					"panic", nonMatch, from, to, false)
+				if err != nil {
+					log.Printf("failed to fetch logs from loki for pod %s in ns %s\n", podName, ns)
+				} else if len(texts) > 0 {
+					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v\n", len(texts), ns, podName, texts)
+				}
+			}(n.Namespace, n.PodName, nonMatch)
+		default:
+		}
+	}
+
+	wg.Wait()
 }

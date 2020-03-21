@@ -58,7 +58,7 @@ func TestBankVerifyUnknown(t *testing.T) {
 		newBankEvent(bankRequest{Op: 0}, 1),
 		newBankEvent(bankResponse{Balances: []int64{1000, 1000}, Tso: 1}, 1),
 		newBankEvent(bankRequest{Op: 1, From: 0, To: 1, Amount: 500}, 2),
-		// write return unknow, so we consider its return time is infinite.
+		// write return unknown, so we consider its return time is infinite.
 		// newBankEvent(bankResponse{Unknown: true}, 2),
 
 		newBankEvent(bankRequest{Op: 0}, 3),

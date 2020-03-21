@@ -16,6 +16,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+
 	"github.com/pingcap/errors"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"

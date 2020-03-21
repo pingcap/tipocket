@@ -41,11 +41,9 @@ func main() {
 
 	var (
 		creator core.ClientCreator
-		checker core.Checker
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
 		cfg     = control.Config{
-			DB:           "noop",
 			Mode:         control.Mode(fixture.Context.Mode),
 			ClientCount:  fixture.Context.ClientCount,
 			RequestCount: fixture.Context.RequestCount,
@@ -90,25 +88,20 @@ func main() {
 		}
 	}
 
-	checker = core.MultiChecker("tidb checkers", checkers...)
 	verifySuit := verify.Suit{
 		Model:   model,
-		Checker: checker,
+		Checker: core.MultiChecker("tidb checkers", checkers...),
 		Parser:  parser,
-	}
-	provisioner, err := cluster.NewK8sProvisioner()
-	if err != nil {
-		log.Fatal(err)
 	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      provisioner,
+		Provisioner:      cluster.NewK8sProvisioner(),
 		ClientCreator:    creator,
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs: 	  tidbCDC.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
-			//tidbCDC.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:      tidbCDC.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		//tidbCDC.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 		//tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

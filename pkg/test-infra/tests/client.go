@@ -17,12 +17,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // auth in cluster
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
@@ -33,6 +37,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// TestClient encapsulates many kinds of clients
+var TestClient *TestCli
+
 // TestCli contains clients
 type TestCli struct {
 	Config *rest.Config
@@ -41,10 +48,10 @@ type TestCli struct {
 	MySQL  *mysql.MySQLOps
 	TiDB   *tidb.TidbOps
 	Binlog *binlog.Ops
+	ABTest *abtest.Ops
 }
 
-// NewTestCli creates test client
-func NewTestCli(conf *rest.Config) *TestCli {
+func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		log.Fatalf("error creating kube-client: %v", err)
@@ -57,6 +64,7 @@ func NewTestCli(conf *rest.Config) *TestCli {
 		MySQL:  mysql.New(kubeCli),
 		TiDB:   tidbClient,
 		Binlog: binlog.New(kubeCli, tidbClient),
+		ABTest: abtest.New(kubeCli, tidbClient),
 	}
 }
 
@@ -106,4 +114,12 @@ func (e *TestCli) DeleteNamespace(name string) error {
 		return fmt.Errorf("delete namespace %s failed: %+v", name, err)
 	}
 	return nil
+}
+
+func init() {
+	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
+	if err != nil {
+		log.Fatalf("build config failed: %+v", err)
+	}
+	TestClient = newTestCli(conf)
 }
