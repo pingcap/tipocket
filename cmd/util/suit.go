@@ -312,7 +312,7 @@ func hasIOChaos(ngs []core.NemesisGenerator) string {
 // TODO(yeya24): support other cluster types
 func (suit *Suit) updateClusterDef(ioChaosType string) {
 	switch s := suit.ClusterDefs.(type) {
-	case *tidb.TiDBClusterRecommendation:
+	case *tidb.Recommendation:
 		if ioChaosType == "tikv" {
 			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tikv",

@@ -9,9 +9,10 @@ import (
 	"time"
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
