@@ -19,6 +19,7 @@ import (
 	_ "net/http/pprof" // pprof
 	"time"
 
+	"github.com/ngaut/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/rest"
@@ -181,6 +182,8 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 
 	Context.DockerRepository = "pingcap"
+
+	log.SetHighlighting(false)
 
 	go func() {
 		http.ListenAndServe(Context.pprofAddr, nil)
