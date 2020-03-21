@@ -41,8 +41,8 @@ type fixtureContext struct {
 	// Test-infra
 	Namespace                string
 	WaitClusterReadyDuration time.Duration
-	PurgeNsOnSuccess         bool
-	ABTestConfig
+	Purge                    bool
+	ABTestConfig             ABTestConfig
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
@@ -167,7 +167,7 @@ func init() {
 	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
-	flag.BoolVar(&Context.PurgeNsOnSuccess, "purge", false, "purge the specified namespace on success")
+	flag.BoolVar(&Context.Purge, "purge", false, "purge the whole cluster on success")
 
 	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")

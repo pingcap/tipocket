@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/label"
@@ -105,7 +107,7 @@ func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, er
 	return svc, nil
 }
 
-func (t *TidbOps) GetNodes(tc *TiDBClusterRecommendation) ([]clusterTypes.Node, error) {
+func (t *TidbOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
 	err := t.cli.List(context.TODO(), pods)
 	if err != nil {
@@ -123,7 +125,7 @@ func (t *TidbOps) GetNodes(tc *TiDBClusterRecommendation) ([]clusterTypes.Node, 
 	return t.parseNodeFromPodList(r), nil
 }
 
-func (t *TidbOps) GetClientNodes(tc *TiDBClusterRecommendation) ([]clusterTypes.ClientNode, error) {
+func (t *TidbOps) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
 	k8sNodes, err := t.GetK8sNodes()
@@ -176,45 +178,51 @@ func (t *TidbOps) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error)
 	return tc, nil
 }
 
-func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) ApplyTiDBCluster(cluster *Recommendation) error {
+	tc := cluster.TidbCluster
+	tm := cluster.TidbMonitor
+
 	desired := tc.DeepCopy()
 	if tc.Spec.Version == "" {
 		tc.Spec.Version = fixture.Context.TiDBVersion
 	}
 
 	klog.Info("Apply tidb discovery")
-	if err := t.ApplyDiscovery(tc); err != nil {
+	if err := t.applyDiscovery(tc); err != nil {
 		return err
 	}
 	klog.Info("Apply tidb configmap")
-	if err := t.ApplyTiDBConfigMap(tc); err != nil {
+	if err := t.applyTiDBConfigMap(tc); err != nil {
 		return err
 	}
 	klog.Info("Apply pd configmap")
-	if err := t.ApplyPDConfigMap(tc); err != nil {
+	if err := t.applyPDConfigMap(tc); err != nil {
 		return err
 	}
 	klog.Info("Apply tikv configmap")
-	if err := t.ApplyTiKVConfigMap(tc); err != nil {
+	if err := t.applyTiKVConfigMap(tc); err != nil {
 		return err
 	}
 	if tc.Spec.Pump != nil {
 		klog.Info("Apply pump configmap")
-		if err := t.ApplyPumpConfigMap(tc); err != nil {
+		if err := t.applyPumpConfigMap(tc); err != nil {
 			return err
 		}
 	}
-
+	// apply tc
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
 		tc.Spec = desired.Spec
 		tc.Annotations = desired.Annotations
 		tc.Labels = desired.Labels
 		return nil
 	})
-	return err
+	if err = t.waitTiDBClusterReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
+		return err
+	}
+	return t.applyTiDBMonitor(tm)
 }
 
-func (t *TidbOps) WaitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+func (t *TidbOps) waitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -257,7 +265,7 @@ func (t *TidbOps) WaitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Du
 	})
 }
 
-func (t *TidbOps) ApplyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+func (t *TidbOps) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	desired := tm.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tm, func() error {
 		tm.Spec = desired.Spec
@@ -268,15 +276,26 @@ func (t *TidbOps) ApplyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	return err
 }
 
-func (t *TidbOps) DeleteTiDBCluster(tc *v1alpha1.TidbCluster) error {
-	return t.cli.Delete(context.TODO(), tc)
+func (t *TidbOps) Delete(tc *Recommendation) error {
+	var g errgroup.Group
+	g.Go(func() error {
+		err := t.cli.Delete(context.TODO(), tc.TidbCluster)
+		if err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+		return nil
+	})
+	g.Go(func() error {
+		err := t.cli.Delete(context.TODO(), tc.TidbMonitor)
+		if err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+		return nil
+	})
+	return g.Wait()
 }
 
-func (t *TidbOps) DeleteTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
-	return t.cli.Delete(context.TODO(), tm)
-}
-
-func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) applyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
 		return err
@@ -288,7 +307,7 @@ func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) applyPDConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getPDConfigMap(tc)
 	if err != nil {
 		return err
@@ -300,7 +319,7 @@ func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) applyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
 	configMap, err := getTiKVConfigMap(tc)
 	if err != nil {
 		return err
@@ -312,7 +331,7 @@ func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	if tc.Spec.Pump == nil {
 		return nil
 	}
@@ -327,7 +346,7 @@ func (t *TidbOps) ApplyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyTiDBService(s *corev1.Service) error {
+func (t *TidbOps) applyTiDBService(s *corev1.Service) error {
 	err := t.cli.Create(context.TODO(), s)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
@@ -335,7 +354,7 @@ func (t *TidbOps) ApplyTiDBService(s *corev1.Service) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyDiscovery(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 
 	meta, _ := getDiscoveryMeta(tc)
 

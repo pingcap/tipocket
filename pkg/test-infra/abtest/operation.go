@@ -19,14 +19,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
 // Ops knows how to operate TiDB with binlog on k8s
 type Ops struct {
-	cli        client.Client
-	tidbClient *tidb.TidbOps
+	cli client.Client
+	*tidb.TidbOps
 }
 
 // New creates binlog ops
@@ -48,29 +47,27 @@ func (t *Ops) Apply(tc *Recommendation) error {
 	return g.Wait()
 }
 
-// ApplyTiDBCluster apply a tidb cluster
-func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation) error {
-	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster); err != nil {
-		return err
-	}
-	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, fixture.Context.WaitClusterReadyDuration); err != nil {
-		return err
-	}
-	if err := t.tidbClient.ApplyTiDBService(tc.Service); err != nil {
-		return err
-	}
-	return nil
+func (t *Ops) Delete(tc *Recommendation) error {
+	var g errgroup.Group
+	g.Go(func() error {
+		return t.TidbOps.Delete(tc.Cluster1)
+	})
+
+	g.Go(func() error {
+		return t.TidbOps.Delete(tc.Cluster2)
+	})
+	return g.Wait()
 }
 
 // GetNodes get all nodes in this cluster
 func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	var nodes []clusterTypes.Node
 
-	cluster1Nodes, err := t.tidbClient.GetNodes(tc.Cluster1)
+	cluster1Nodes, err := t.TidbOps.GetNodes(tc.Cluster1)
 	if err != nil {
 		return nodes, err
 	}
-	cluster2Nodes, err := t.tidbClient.GetNodes(tc.Cluster2)
+	cluster2Nodes, err := t.TidbOps.GetNodes(tc.Cluster2)
 	if err != nil {
 		return nodes, err
 	}
@@ -82,11 +79,11 @@ func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
-	cluster1ClientNodes, err := t.tidbClient.GetClientNodes(tc.Cluster1)
+	cluster1ClientNodes, err := t.TidbOps.GetClientNodes(tc.Cluster1)
 	if err != nil {
 		return clientNodes, err
 	}
-	cluster2ClientNodes, err := t.tidbClient.GetClientNodes(tc.Cluster2)
+	cluster2ClientNodes, err := t.TidbOps.GetClientNodes(tc.Cluster2)
 	if err != nil {
 		return clientNodes, err
 	}
