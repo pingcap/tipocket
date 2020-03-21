@@ -269,8 +269,6 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	// TODO: Change that name
 	case "leader-shuffle":
 		g = nemesis.NewLeaderShuffleGenerator(name)
-	case "noop":
-		g = core.NoopNemesisGenerator{}
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
 	}

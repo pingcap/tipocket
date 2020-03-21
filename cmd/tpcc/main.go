@@ -39,7 +39,6 @@ func main() {
 	flag.Parse()
 
 	cfg := control.Config{
-		DB:           "noop",
 		Mode:         control.ModeSequential,
 		ClientCount:  fixture.Context.ClientCount,
 		RequestCount: fixture.Context.RequestCount,

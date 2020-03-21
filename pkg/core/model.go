@@ -39,33 +39,3 @@ type Operation struct {
 	Data   interface{} `json:"data"`
 	Time   time.Time   `json:"time"`
 }
-
-// NoopModel is noop model.
-type NoopModel struct {
-	perparedState interface{}
-}
-
-// Prepare the initial state of the data object.
-func (n *NoopModel) Prepare(state interface{}) {
-	n.perparedState = state
-}
-
-// Init initials state of the data object.
-func (n *NoopModel) Init() interface{} {
-	return n.perparedState
-}
-
-// Step function for the data object.
-func (*NoopModel) Step(state interface{}, input interface{}, output interface{}) (bool, interface{}) {
-	return true, state
-}
-
-// Equal returns equality on states.
-func (*NoopModel) Equal(state1, state2 interface{}) bool {
-	return true
-}
-
-// Name returns the unique name for the model.
-func (*NoopModel) Name() string {
-	return "NoopModel"
-}

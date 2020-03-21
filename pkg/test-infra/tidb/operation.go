@@ -47,6 +47,13 @@ type TidbOps struct {
 	cli client.Client
 }
 
+// configmaps of tidb/tikv/pd on applying TiDB cluster
+type ConfigMaps struct {
+	Tidb string
+	Tikv string
+	Pd   string
+}
+
 func New(cli client.Client) *TidbOps {
 	return &TidbOps{cli}
 }
@@ -176,7 +183,22 @@ func (t *TidbOps) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error)
 	return tc, nil
 }
 
-func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster, cfgmaps ...ConfigMaps) error {
+	if len(cfgmaps) > 1 {
+		return errors.Errorf("too many configmaps args: expected 1, but %d got", len(cfgmaps))
+	}
+	c := &ConfigMaps{
+		Tikv: fixture.Context.TiKVConfigMap,
+		Pd:   fixture.Context.PDConfigMap,
+		Tidb: fixture.Context.TiDBConfigMap,
+	}
+	if len(cfgmaps) == 1 {
+		c = &cfgmaps[0]
+	}
+	return t.applyTiDBCluster(tc, c.Tidb, c.Pd, c.Tikv)
+}
+
+func (t *TidbOps) applyTiDBCluster(tc *v1alpha1.TidbCluster, dbCfgMap, pdCfgMap, kvCfgMap string) error {
 	desired := tc.DeepCopy()
 	if tc.Spec.Version == "" {
 		tc.Spec.Version = fixture.Context.TiDBVersion
@@ -187,15 +209,15 @@ func (t *TidbOps) ApplyTiDBCluster(tc *v1alpha1.TidbCluster) error {
 		return err
 	}
 	klog.Info("Apply tidb configmap")
-	if err := t.ApplyTiDBConfigMap(tc); err != nil {
+	if err := t.ApplyTiDBConfigMap(tc, dbCfgMap); err != nil {
 		return err
 	}
 	klog.Info("Apply pd configmap")
-	if err := t.ApplyPDConfigMap(tc); err != nil {
+	if err := t.ApplyPDConfigMap(tc, pdCfgMap); err != nil {
 		return err
 	}
 	klog.Info("Apply tikv configmap")
-	if err := t.ApplyTiKVConfigMap(tc); err != nil {
+	if err := t.ApplyTiKVConfigMap(tc, kvCfgMap); err != nil {
 		return err
 	}
 	if tc.Spec.Pump != nil {
@@ -276,11 +298,14 @@ func (t *TidbOps) DeleteTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	return t.cli.Delete(context.TODO(), tm)
 }
 
-func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster, cfgPath string) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
 		return err
 	}
+	if configMap.Data["config-file"], err = readFileAsString(cfgPath); err != nil {
+		return err
+	}
 	err = t.cli.Create(context.TODO(), configMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
@@ -288,11 +313,14 @@ func (t *TidbOps) ApplyTiDBConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster, cfgPath string) error {
 	configMap, err := getPDConfigMap(tc)
 	if err != nil {
 		return err
 	}
+	if configMap.Data["config-file"], err = readFileAsString(cfgPath); err != nil {
+		return err
+	}
 	err = t.cli.Create(context.TODO(), configMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
@@ -300,9 +328,12 @@ func (t *TidbOps) ApplyPDConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *TidbOps) ApplyTiKVConfigMap(tc *v1alpha1.TidbCluster, cfgPath string) error {
 	configMap, err := getTiKVConfigMap(tc)
 	if err != nil {
+		return err
+	}
+	if configMap.Data["config-file"], err = readFileAsString(cfgPath); err != nil {
 		return err
 	}
 	err = t.cli.Create(context.TODO(), configMap)
@@ -457,10 +488,6 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	if err != nil {
 		return nil, err
 	}
-	configFile, err := readFileAsString(fixture.Context.PDConfigMap)
-	if err != nil {
-		return nil, err
-	}
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: tc.Namespace,
@@ -468,17 +495,13 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    configFile,
+			"config-file":    "",
 		},
 	}, nil
 }
 
 func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	s, err := RenderTiDBStartScript(&TidbStartScriptModel{ClusterName: tc.Name})
-	if err != nil {
-		return nil, err
-	}
-	configFile, err := readFileAsString(fixture.Context.TiDBConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -489,17 +512,13 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    configFile,
+			"config-file":    "",
 		},
 	}, nil
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	s, err := RenderTiKVStartScript(&TiKVStartScriptModel{})
-	if err != nil {
-		return nil, err
-	}
-	configFile, err := readFileAsString(fixture.Context.TiKVConfigMap)
 	if err != nil {
 		return nil, err
 	}
@@ -510,7 +529,7 @@ func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 		},
 		Data: map[string]string{
 			"startup-script": s,
-			"config-file":    configFile,
+			"config-file":    "",
 		},
 	}, nil
 }

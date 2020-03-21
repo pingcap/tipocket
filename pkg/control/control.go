@@ -60,14 +60,9 @@ func NewController(
 	verifySuit verify.Suit,
 	lokiCli *loki.LokiClient,
 ) *Controller {
-	if len(cfg.DB) == 0 {
-		log.Fatalf("empty database")
-	}
-
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
 	}
-
 	c := new(Controller)
 	c.cfg = cfg
 	c.ctx, c.cancel = context.WithCancel(ctx)
