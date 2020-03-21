@@ -2,6 +2,7 @@ package nemesis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -78,6 +79,9 @@ func timeChaosLevel(chaos string) TimeChaosLevels {
 	return level
 }
 
+// selectChaosDuration selects a random (seconds, nano seconds) form Level and duration type.
+// `TimeChaosLevels` is ported from Jepsen, which means different time bios.
+// `ChaosDurationType` means start from zero ([0, 200ms]) or start from last level [100ms, 200ms].
 func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType) (int, int) {
 	var secs, nanoSec int
 	if levels == StrobeSkews {
@@ -151,8 +155,14 @@ func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interfa
 	if len(args) != 2 {
 		panic("args number error")
 	}
-	secs := args[0].(int)
-	nanoSecs := args[1].(int)
+	secs, ok := args[0].(int)
+	if !ok {
+		return errors.New("the first argument of timeChaos.Invoke should be an integer")
+	}
+	nanoSecs, ok := args[1].(int)
+	if !ok {
+		return errors.New("the second argument of timeChaos.Invoke should be an integer")
+	}
 	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
@@ -162,8 +172,14 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if len(args) != 2 {
 		panic("args number error")
 	}
-	secs := args[0].(int)
-	nanoSecs := args[1].(int)
+	secs, ok := args[0].(int)
+	if !ok {
+		return errors.New("the first argument of timeChaos.Invoke should be an integer")
+	}
+	nanoSecs, ok := args[1].(int)
+	if !ok {
+		return errors.New("the second argument of timeChaos.Invoke should be an integer")
+	}
 	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
@@ -173,7 +189,7 @@ func (t timeChaos) Name() string {
 	return string(core.TimeChaos)
 }
 
-func buildTimeChaos(ns string, chaosNs string, podName string, secs, nanoSecs int64) chaosv1alpha1.TimeChaos {
+func buildTimeChaos(ns, chaosNs, podName string, secs, nanoSecs int64) chaosv1alpha1.TimeChaos {
 	pods := make(map[string][]string)
 	pods[ns] = []string{podName}
 	return chaosv1alpha1.TimeChaos{
