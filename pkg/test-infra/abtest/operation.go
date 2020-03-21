@@ -39,18 +39,26 @@ func (t *Ops) Apply(tc *Recommendation) error {
 	var g errgroup.Group
 
 	g.Go(func() error {
-		return t.ApplyTiDBCluster(tc.Cluster1)
+		return t.ApplyTiDBCluster(tc.Cluster1, tidb.ConfigMaps{
+			Tikv: fixture.Context.TiKVConfigMap,
+			Tidb: fixture.Context.TiDBConfigMap,
+			Pd:   fixture.Context.PDConfigMap,
+		})
 	})
 	g.Go(func() error {
-		return t.ApplyTiDBCluster(tc.Cluster2)
+		return t.ApplyTiDBCluster(tc.Cluster2, tidb.ConfigMaps{
+			Tikv: fixture.Context.ABTestConfig.TiKV2ConfigMap,
+			Tidb: fixture.Context.ABTestConfig.TiDB2ConfigMap,
+			Pd:   fixture.Context.ABTestConfig.PD2ConfigMap,
+		})
 	})
 
 	return g.Wait()
 }
 
 // ApplyTiDBCluster apply a tidb cluster
-func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation) error {
-	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster); err != nil {
+func (t *Ops) ApplyTiDBCluster(tc *tidb.TiDBClusterRecommendation, cm tidb.ConfigMaps) error {
+	if err := t.tidbClient.ApplyTiDBCluster(tc.TidbCluster, cm); err != nil {
 		return err
 	}
 	if err := t.tidbClient.WaitTiDBClusterReady(tc.TidbCluster, fixture.Context.WaitClusterReadyDuration); err != nil {
