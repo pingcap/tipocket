@@ -22,7 +22,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/ledger"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -43,7 +42,6 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
@@ -57,7 +55,6 @@ func main() {
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:  verify.Suit{},
 		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

@@ -16,9 +16,8 @@ package fixture
 import (
 	"flag"
 	"net/http"
-	"time"
-
 	_ "net/http/pprof" // pprof
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -43,6 +42,7 @@ type fixtureContext struct {
 	Namespace                string
 	WaitClusterReadyDuration time.Duration
 	PurgeNsOnSuccess         bool
+	ABTestConfig
 	BinlogConfig             BinlogConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
@@ -53,6 +53,13 @@ type fixtureContext struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
+	TiDBConfigMap            string
+	TiKVConfigMap            string
+	PDConfigMap              string
+	// Loki
+	LokiAddress  string
+	LokiUsername string
+	LokiPassword string
 	// Other
 	pprofAddr string
 }
@@ -151,6 +158,9 @@ func init() {
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
+	flag.StringVar(&Context.TiDBConfigMap, "tidb-configmap", "", "path of tidb configmap")
+	flag.StringVar(&Context.TiKVConfigMap, "tikv-configmap", "", "path of tikv configmap")
+	flag.StringVar(&Context.PDConfigMap, "pd-configmap", "", "path of pd configmap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
@@ -158,6 +168,14 @@ func init() {
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
 	flag.BoolVar(&Context.PurgeNsOnSuccess, "purge", false, "purge the specified namespace on success")
+
+	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
+	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
+	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
+
+	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "abtest.a.version", "", "specify version for cluster a")
+	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.b.version", "", "specify version for cluster b")
+	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	Context.DockerRepository = "pingcap"
 
 	go func() {

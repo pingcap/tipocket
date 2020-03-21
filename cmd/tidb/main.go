@@ -44,7 +44,6 @@ func main() {
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
 		cfg     = control.Config{
-			DB:           "noop",
 			Mode:         control.Mode(fixture.Context.Mode),
 			ClientCount:  fixture.Context.ClientCount,
 			RequestCount: fixture.Context.RequestCount,

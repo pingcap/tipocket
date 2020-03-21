@@ -25,7 +25,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/ondup"
 )
 
@@ -40,7 +39,6 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
@@ -53,7 +51,6 @@ func main() {
 			RetryLimit: *retryLimit,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:  verify.Suit{},
 		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

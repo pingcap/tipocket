@@ -20,11 +20,10 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
-	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/verify"
 )
 
 var (
@@ -36,22 +35,24 @@ func main() {
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
-		DB:          "noop",
-		CaseConfig:  *configPath,
+		RunTime:     fixture.Context.RunTime,
+		RunRound:    1,
 	}
-
-	verifySuit := verify.Suit{
-		Model:   &core.NoopModel{},
-		Checker: core.NoopChecker{},
-		Parser:  nil,
-	}
+	pocketConfig := config.Init()
+	pocketConfig.Options.Serialize = false
+	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	suit := util.Suit{
-		Config:           &cfg,
-		Provisioner:      cluster.NewK8sProvisioner(),
-		ClientCreator:    creator.PocketCreator{},
+		Config:      &cfg,
+		Provisioner: cluster.NewK8sProvisioner(),
+		ClientCreator: creator.PocketCreator{
+			Config: creator.Config{
+				ConfigPath: *configPath,
+				Mode:       "binlog",
+				Config:     pocketConfig,
+			},
+		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		VerifySuit:       verifySuit,
 		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())

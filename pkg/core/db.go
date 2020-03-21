@@ -33,7 +33,7 @@ func (NoopDB) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clus
 
 // Name returns the unique name for the database
 func (NoopDB) Name() string {
-	return "noop"
+	return ""
 }
 
 var dbs = map[string]DB{}

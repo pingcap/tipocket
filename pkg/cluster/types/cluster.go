@@ -19,6 +19,8 @@ const (
 	Pump Component = "pump"
 	// Drainer Component identifier
 	Drainer Component = "drainer"
+	// Monitor Component identifier
+	Monitor Component = "monitor"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )

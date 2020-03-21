@@ -68,7 +68,7 @@ var initConfig = Config{
 			Duration: time.Minute,
 		},
 		OnlineDDL:  true,
-		Serialize:  false,
+		Serialize:  true,
 		GeneralLog: false,
 	},
 	Generator: Generator{

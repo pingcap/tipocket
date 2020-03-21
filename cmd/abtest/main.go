@@ -17,22 +17,17 @@ import (
 	"context"
 	"flag"
 
-	// use mysql
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/pocket/config"
+	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/tests/sqllogictest"
 )
 
 var (
-	sqllogicCaseURL = flag.String("p", "", "case url")
-	testDir         = flag.String("d", "sqllogictest", "test case dir")
-	taskCount       = flag.Int("t", 10, "concurrency")
-	skipError       = flag.Bool("skip-error", false, "skip error for query test")
+	configPath = flag.String("config", "", "config file path")
 )
 
 func main() {
@@ -43,19 +38,23 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
+
+	pocketConfig := config.Init()
+	pocketConfig.Options.Serialize = true
+	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: &sqllogictest.CaseCreator{
-			Config: &sqllogictest.Config{
-				SkipError: *skipError,
-				TaskCount: 10,
-				CaseURL:   *sqllogicCaseURL,
-				TestDir:   *testDir,
+		ClientCreator: creator.PocketCreator{
+			Config: creator.Config{
+				ConfigPath: *configPath,
+				Mode:       "abtest",
+				Config:     pocketConfig,
 			},
 		},
-		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		ClientRequestGen: util.OnClientLoop,
+		ClusterDefs:      abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace),
 	}
 	suit.Run(context.Background())
 }
