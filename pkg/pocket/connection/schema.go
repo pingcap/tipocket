@@ -20,6 +20,10 @@ import (
 	"github.com/juju/errors"
 )
 
+const (
+	indexColumnName = "Key_name"
+)
+
 var binlogSyncTablePattern = regexp.MustCompile(`^t[0-9]+$`)
 
 // FetchDatabases database list
@@ -149,7 +153,7 @@ func (c *Connection) FetchIndexes(db, table string) ([]string, error) {
 		}
 
 		for index, resultItem := range rowResultSets {
-			if columnTypes[index].Name() != "Key_name" {
+			if columnTypes[index].Name() != indexColumnName {
 				continue
 			}
 			r := *resultItem.(*interface{})
@@ -163,7 +167,6 @@ func (c *Connection) FetchIndexes(db, table string) ([]string, error) {
 			indexes = append(indexes, keyname)
 		}
 	}
-	fmt.Println("indexes is", indexes)
 	return indexes, nil
 }
 
