@@ -15,17 +15,19 @@ require (
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/kvproto v0.0.0-20200102065152-5d51d93be892
-	github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
+	github.com/pingcap/kvproto v0.0.0-20200228095611-2cf9a243b8d5
+	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
 
-	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
+	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
+	github.com/pingcap/pd v2.1.17+incompatible
+	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-beta.1
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
-	golang.org/x/net v0.0.0-20191112182307-2180aed22343
+	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	k8s.io/api v0.0.0
@@ -37,10 +39,6 @@ require (
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
-
-replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
-
-replace github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 
@@ -99,3 +97,5 @@ replace k8s.io/node-api => k8s.io/node-api v0.0.0-20190918163711-2299658ad911
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
 
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+
+replace github.com/pingcap/tidb => github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200322134657-d5eaf9eb4b62

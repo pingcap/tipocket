@@ -19,7 +19,7 @@ all: build
 
 chaos: tidb
 
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
+build: fmt tidb pocket tpcc ledger resolve_lock txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest
 
 tidb:
@@ -45,6 +45,9 @@ compare:
 
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
+
+resolve-lock:
+	$(GOBUILD) $(GOMOD) -o bin/resolve-lock cmd/resolve-lock/*.go
 
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
