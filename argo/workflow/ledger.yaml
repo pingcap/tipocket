@@ -12,7 +12,15 @@ spec:
               template: tipocket-ledger
             arguments:
               parameters:
+                - name: ns
+                  value: tipocket-ledger
+                - name: purge
+                  value: "true"
                 - name: image_version
-                  value: latest
+                  value: nightly
                 - name: storage_class
                   value: pd-ssd
+                - name: nemesis
+                  value: ""
+                - name: run_time
+                  value: "60m"

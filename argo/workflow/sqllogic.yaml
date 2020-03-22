@@ -12,7 +12,11 @@ spec:
               template: tipocket-sqllogic
             arguments:
               parameters:
+                - name: ns
+                  value: tipocket-sqllogic
+                - name: purge
+                  value: "true"
                 - name: image_version
-                  value: latest
+                  value: nightly
                 - name: storage_class
                   value: pd-ssd

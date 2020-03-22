@@ -3,9 +3,10 @@ package nemesis
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/ngaut/log"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -56,9 +57,10 @@ func (s scheduler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
 	client := pdutil.NewPDClient(http.DefaultClient, pdAddr)
 	if err := client.AddScheduler(schedulerName); err != nil {
-		log.Fatalf("pd scheduling error: %+v", err)
+		log.Errorf("pd scheduling error: %+v", err)
+	} else {
+		log.Infof("add scheduler %s successfully", schedulerName)
 	}
-	log.Printf("add scheduler %s successfully", schedulerName)
 	return nil
 }
 
@@ -70,9 +72,10 @@ func (s scheduler) Recover(ctx context.Context, node *clusterTypes.Node, args ..
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
 	client := pdutil.NewPDClient(http.DefaultClient, pdAddr)
 	if err := client.RemoveScheduler(schedulerName); err != nil {
-		log.Fatalf("pd scheduling error: %+v", err)
+		log.Errorf("pd scheduling error: %+v", err)
+	} else {
+		log.Infof("remove scheduler %s successfully", schedulerName)
 	}
-	log.Printf("remove scheduler %s successfully", schedulerName)
 	return nil
 }
 

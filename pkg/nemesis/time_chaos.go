@@ -181,7 +181,7 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("Recovering time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }

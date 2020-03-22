@@ -9,9 +9,15 @@ spec:
           - name: ns
             default: tipocket-region-available
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "4h"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,7 +31,8 @@ spec:
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
-            -run-time=8h \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin
