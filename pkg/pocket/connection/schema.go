@@ -131,7 +131,10 @@ func (c *Connection) FetchIndexes(db, table string) ([]string, error) {
 		return []string{}, errors.Trace(err)
 	}
 
-	columnTypes, _ := res.ColumnTypes()
+	columnTypes, err := res.ColumnTypes()
+	if err != nil {
+		return indexes, errors.Trace(err)
+	}
 	for res.Next() {
 		var (
 			keyname       string
