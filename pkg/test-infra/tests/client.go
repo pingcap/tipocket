@@ -25,6 +25,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // auth in cluster
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -78,20 +79,24 @@ func (e *TestCli) GetNodes() (*corev1.NodeList, error) {
 	return nodes, nil
 }
 
-// CreateNamespace creates the specified namespace if not exist.
+// CreateNamespace creates the specified namespace
+// and enable admission webhook if not exist.
 func (e *TestCli) CreateNamespace(name string) error {
-	ns := &corev1.Namespace{}
-	if err := e.Cli.Get(context.TODO(), types.NamespacedName{Name: name}, ns); err != nil {
-		if errors.IsNotFound(err) {
-			log.Printf("Namespace %s doesn't exist. Creating...", name)
-			if err = e.Cli.Create(context.TODO(), &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: name,
-				},
-			}); err != nil {
-				return err
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), e.Cli, ns, func() error {
+		if ns.Labels != nil {
+			ns.Labels["admission-webhook"] = "enabled"
+		} else {
+			ns.Labels = map[string]string{
+				"admission-webhook": "enabled",
 			}
 		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil

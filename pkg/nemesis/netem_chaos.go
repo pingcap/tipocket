@@ -166,7 +166,7 @@ func selectNetem(name string) netemChaos {
 	case "corrupt":
 		return corrupt{}
 	default:
-		panic("selectNetem received an unexists tag")
+		panic("unsupported netem action")
 	}
 }
 
