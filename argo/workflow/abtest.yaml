@@ -12,10 +12,16 @@ spec:
               template: tipocket-abtest
             arguments:
               parameters:
+                - name: ns
+                  value: tipocket-abtest-mahjonp
+                - name: purge
+                  value: "true"
                 - name: image_version
-                  value: latest
+                  value: nightly
                 - name: storage_class
                   value: pd-ssd
                 - name: b_version
-                  value: nightly
+                  value: latest
+                - name: nemesis
+                  value: ""
 
