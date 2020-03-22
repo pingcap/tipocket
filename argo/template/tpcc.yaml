@@ -9,9 +9,19 @@ spec:
           - name: ns
             default: tipocket-tpcc
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
+          - name: client
+            default: "100"
+          - name: request_count
+            default: "1000000"
+          - name: round
+            default: "10"
+          - name: nemesis
+            default: ""
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,10 +35,10 @@ spec:
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
-            -client=100 \
-            -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
-            -round=5 \
-            -request-count=100000 \
+            -client={{inputs.parameters.client}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -round={{inputs.parameters.round}} \
+            -request-count={{inputs.parameters.request_count}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin

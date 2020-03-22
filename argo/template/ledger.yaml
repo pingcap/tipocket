@@ -9,9 +9,15 @@ spec:
           - name: ns
             default: tipocket-ledger
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "60m"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,8 +31,8 @@ spec:
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
-            -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
-            -run-time=60m \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin
