@@ -27,6 +27,7 @@ import (
 	"k8s.io/utils/pointer"
 )
 
+// CDC defines the configuration for running on Kubernetes
 type CDC struct {
 	*appsv1.StatefulSet
 	*batchv1.Job

@@ -180,6 +180,7 @@ func (c *Ops) ApplyJob(job *batchv1.Job) error {
 	return c.waitJobCompleted(job, 5*time.Second)
 }
 
+// GetClientNodes returns the client nodes
 func (c *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 	upstreamClientNodes, err := c.TidbOps.GetClientNodes(tc.Upstream)
@@ -199,6 +200,7 @@ func (c *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, err
 	return clientNodes, nil
 }
 
+// GetNodes returns all nodes
 func (c *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	var nodes []clusterTypes.Node
 
@@ -218,6 +220,7 @@ func (c *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
 }
 
+// GetCDCNode returns the nodes of cdc
 func (c *Ops) GetCDCNode(cdc *CDC) (clusterTypes.Node, error) {
 	pod := &corev1.Pod{}
 	err := c.cli.Get(context.Background(), client.ObjectKey{
