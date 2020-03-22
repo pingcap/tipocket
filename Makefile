@@ -76,6 +76,9 @@ crud:
 abtest:
 	$(GOBUILD) $(GOMOD) -o bin/abtest cmd/abtest/*.go
 
+cdc-pocket:
+	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
+
 fmt: groupimports
 	go fmt ./...
 

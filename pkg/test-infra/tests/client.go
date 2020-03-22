@@ -44,7 +44,7 @@ var TestClient *TestCli
 type TestCli struct {
 	Config *rest.Config
 	Cli    client.Client
-	CDC    *cdc.CdcOps
+	CDC    *cdc.Ops
 	MySQL  *mysql.MySQLOps
 	TiDB   *tidb.TidbOps
 	Binlog *binlog.Ops
@@ -60,7 +60,7 @@ func newTestCli(conf *rest.Config) *TestCli {
 	return &TestCli{
 		Config: conf,
 		Cli:    kubeCli,
-		CDC:    cdc.New(kubeCli),
+		CDC:    cdc.New(kubeCli, tidbClient),
 		MySQL:  mysql.New(kubeCli),
 		TiDB:   tidbClient,
 		Binlog: binlog.New(kubeCli, tidbClient),

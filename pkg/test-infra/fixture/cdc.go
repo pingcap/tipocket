@@ -11,19 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tidb_cdc_mysql
+package fixture
 
-import (
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-)
-
-func (t *TidbOps) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
-	// TODO: implement
-	return nil, nil
-}
-
-func (t *TidbOps) DeleteDrainer(drainer appsv1.StatefulSet) error {
-	// TODO: implement
-	return nil
+// CDCConfig for binlog component
+type CDCConfig struct {
+	CDCVersion       string
+	DockerRepository string
+	HubAddress       string
 }

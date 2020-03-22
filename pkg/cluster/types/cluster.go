@@ -19,6 +19,8 @@ const (
 	Pump Component = "pump"
 	// Drainer Component identifier
 	Drainer Component = "drainer"
+	// CDC Component identifier
+	CDC Component = "cdc"
 	// Monitor Component identifier
 	Monitor Component = "monitor"
 	// Unknown component identifier
