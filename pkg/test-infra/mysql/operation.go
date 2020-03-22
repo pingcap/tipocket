@@ -105,7 +105,6 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 	if spec.Resource.Requests != nil {
 		size := spec.Resource.Requests[fixture.Storage]
 		q = size
-		fmt.Println(q)
 	}
 	return &MySQL{
 		Sts: &appsv1.StatefulSet{

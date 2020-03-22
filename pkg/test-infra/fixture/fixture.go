@@ -181,9 +181,10 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 
-	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc-version", "", `overwrite "-image-version" flag for CDC`)
-	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc-repository", "", `specify docker registry for CDC`)
-	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc-hub", "", `overwrite "-hub" flag for CDC`)
+	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
+	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
+	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
+	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 
 	Context.DockerRepository = "pingcap"
 

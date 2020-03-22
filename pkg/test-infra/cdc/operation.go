@@ -34,19 +34,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Ops knows how to operate TiDB CDC on k8s
-type Ops struct {
+// CDCOps knows how to operate TiDB CDC on k8s
+type CDCOps struct {
 	cli client.Client
 	*tidb.TidbOps
 }
 
 // New creates cdc ops
-func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
-	return &Ops{cli, tidbClient}
+func New(cli client.Client, tidbClient *tidb.TidbOps) *CDCOps {
+	return &CDCOps{cli, tidbClient}
 }
 
 // Apply CDC cluster
-func (c *Ops) Apply(tc *Recommendation) error {
+func (c *CDCOps) Apply(tc *Recommendation) error {
 	if err := c.ApplyTiDBCluster(tc.Upstream); err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (c *Ops) Apply(tc *Recommendation) error {
 		return err
 	}
 
-	if err := c.ApplyJob(tc.CDC.Job); err != nil {
+	if err := c.applyJob(tc.CDC.Job); err != nil {
 		return err
 	}
 
@@ -69,7 +69,7 @@ func (c *Ops) Apply(tc *Recommendation) error {
 }
 
 // Delete CDC cluster
-func (c *Ops) Delete(tc *Recommendation) error {
+func (c *CDCOps) Delete(tc *Recommendation) error {
 	if err := c.TidbOps.Delete(tc.Upstream); err != nil {
 		return err
 	}
@@ -85,8 +85,8 @@ func (c *Ops) Delete(tc *Recommendation) error {
 	return nil
 }
 
-func (c *Ops) ApplyCDC(cc *CDC) error {
-	if err := c.ApplyObject(cc.StatefulSet); err != nil {
+func (c *CDCOps) ApplyCDC(cc *CDC) error {
+	if err := c.applyObject(cc.StatefulSet); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (c *Ops) ApplyCDC(cc *CDC) error {
 	return nil
 }
 
-func (c *Ops) waitCDCReady(st *appsv1.StatefulSet, timeout time.Duration) error {
+func (c *CDCOps) waitCDCReady(st *appsv1.StatefulSet, timeout time.Duration) error {
 	local := st.DeepCopy()
 	log.Infof("Waiting up to %v for StatefulSet %s to have all replicas ready",
 		timeout, st.Name)
@@ -109,27 +109,27 @@ func (c *Ops) waitCDCReady(st *appsv1.StatefulSet, timeout time.Duration) error 
 
 		err = c.cli.Get(context.TODO(), key, local)
 		if err != nil && errors.IsNotFound(err) {
-			return false, err
+			return false, nil
 		}
 		if err != nil {
 			log.Errorf("error getting cdc statefulset: %v", err)
 			return false, err
 		}
 		if local.Status.ReadyReplicas != *local.Spec.Replicas {
-			log.Infof("StatefulSet %s found but there are %d ready replicas and %d total replicas.",
+			log.Infof("CDC %s do not have enough ready replicas, ready: %d, desired: %d",
 				local.Name, local.Status.ReadyReplicas, *local.Spec.Replicas)
 			return false, nil
 		}
-		log.Infof("All %d replicas of StatefulSet %s are ready.", local.Status.ReadyReplicas, local.Name)
+		log.Infof("All %d replicas of CDC %s are ready.", local.Status.ReadyReplicas, local.Name)
 		return true, nil
 	})
 }
 
-func (c *Ops) waitJobCompleted(job *batchv1.Job, timeout time.Duration) error {
+func (c *CDCOps) waitJobCompleted(job *batchv1.Job) error {
 	local := job.DeepCopy()
 	log.Infof("Waiting up to %s for job completed", local.Name)
 
-	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
+	return wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
 		if err != nil {
 			return false, err
@@ -137,7 +137,7 @@ func (c *Ops) waitJobCompleted(job *batchv1.Job, timeout time.Duration) error {
 
 		err = c.cli.Get(context.TODO(), key, local)
 		if err != nil && errors.IsNotFound(err) {
-			return false, err
+			return false, nil
 		}
 		if err != nil {
 			log.Errorf("error getting cdc job: %v", err)
@@ -154,8 +154,7 @@ func (c *Ops) waitJobCompleted(job *batchv1.Job, timeout time.Duration) error {
 	})
 }
 
-// ApplyObject applies object
-func (c *Ops) ApplyObject(object runtime.Object) error {
+func (c *CDCOps) applyObject(object runtime.Object) error {
 	err := c.cli.Create(context.TODO(), object)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
@@ -164,7 +163,7 @@ func (c *Ops) ApplyObject(object runtime.Object) error {
 }
 
 // Delete cdc component
-func (c *Ops) DeleteCDC(cc *CDC) error {
+func (c *CDCOps) DeleteCDC(cc *CDC) error {
 	err := c.cli.Delete(context.TODO(), cc.StatefulSet)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -172,16 +171,15 @@ func (c *Ops) DeleteCDC(cc *CDC) error {
 	return nil
 }
 
-//  ApplyJob applies cdc job
-func (c *Ops) ApplyJob(job *batchv1.Job) error {
-	if err := c.ApplyObject(job); err != nil {
+func (c *CDCOps) applyJob(job *batchv1.Job) error {
+	if err := c.applyObject(job); err != nil {
 		return err
 	}
-	return c.waitJobCompleted(job, 5*time.Second)
+	return c.waitJobCompleted(job)
 }
 
 // GetClientNodes returns the client nodes
-func (c *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
+func (c *CDCOps) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 	upstreamClientNodes, err := c.TidbOps.GetClientNodes(tc.Upstream)
 	if err != nil {
@@ -201,7 +199,7 @@ func (c *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, err
 }
 
 // GetNodes returns all nodes
-func (c *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
+func (c *CDCOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	var nodes []clusterTypes.Node
 
 	upstreamNodes, err := c.TidbOps.GetNodes(tc.Upstream)
@@ -221,7 +219,7 @@ func (c *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 }
 
 // GetCDCNode returns the nodes of cdc
-func (c *Ops) GetCDCNode(cdc *CDC) (clusterTypes.Node, error) {
+func (c *CDCOps) GetCDCNode(cdc *CDC) (clusterTypes.Node, error) {
 	pod := &corev1.Pod{}
 	err := c.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: cdc.StatefulSet.ObjectMeta.Namespace,

@@ -18,4 +18,5 @@ type CDCConfig struct {
 	CDCVersion       string
 	DockerRepository string
 	HubAddress       string
+	LogPath          string
 }
