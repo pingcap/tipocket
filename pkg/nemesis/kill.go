@@ -14,6 +14,10 @@ import (
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
+const (
+	chaosDurationFiveMin = time.Minute * 5
+)
+
 // killGenerator generate PodFailure chaos.
 type killGenerator struct {
 	name string
@@ -35,23 +39,23 @@ func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperat
 		n = len(nodes)
 	case "kill_tikv_1node_5min":
 		n = 1
-		duration = time.Minute * time.Duration(5)
+		duration = chaosDurationFiveMin
 		cmp := clusterTypes.TiKV
 		component = &cmp
 	case "kill_tikv_2node_5min":
 		n = 2
-		duration = time.Minute * time.Duration(5)
+		duration = chaosDurationFiveMin
 		cmp := clusterTypes.TiKV
 		component = &cmp
 	case "kill_pd_leader_5min":
 		n = 1
-		duration = time.Minute * time.Duration(5)
+		duration = chaosDurationFiveMin
 		cmp := clusterTypes.PD
 		component = &cmp
 		nodes = findPDMember(nodes, true)
 	case "kill_pd_non_leader_5min":
 		n = 1
-		duration = time.Minute * time.Duration(5)
+		duration = chaosDurationFiveMin
 		cmp := clusterTypes.PD
 		component = &cmp
 		nodes = findPDMember(nodes, false)
