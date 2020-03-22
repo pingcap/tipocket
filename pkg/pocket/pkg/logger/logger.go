@@ -56,7 +56,7 @@ func (l *Logger) writeLine(line string) error {
 	if l.mute {
 		return nil
 	} else if l.print {
-		log.Info(line)
+		log.Info(fmt.Sprintf("[%s] %s", l.logPath, line))
 		return nil
 	}
 	f, err := os.OpenFile(l.logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
