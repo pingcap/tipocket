@@ -9,10 +9,17 @@ spec:
           - name: ns
             default: tipocket-abtest
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
+          - name: abtest_version
+            value: latest
           - name: storage_class
-          - name: b_version
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: client
+            default: "2"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,8 +32,9 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.image-version={{inputs.parameters.b_version}} \
+            -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
             -client=2 \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \

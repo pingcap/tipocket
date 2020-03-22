@@ -9,9 +9,11 @@ spec:
           - name: ns
             default: tipocket-sqllogic
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
