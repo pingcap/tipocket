@@ -130,14 +130,37 @@ func (c *Connection) FetchIndexes(db, table string) ([]string, error) {
 	if err != nil {
 		return []string{}, errors.Trace(err)
 	}
+
+	columnTypes, _ := res.ColumnTypes()
 	for res.Next() {
-		var keyname string
-		var col1, col2, col4, col5, col6, col7, col8, col9, col10, col11, col12, col13 interface{}
-		if err = res.Scan(&col1, &col2, &keyname, &col4, &col5, &col6, &col7, &col8, &col9, &col10, &col11, &col12, &col13); err != nil {
+		var (
+			keyname       string
+			rowResultSets []interface{}
+		)
+
+		for range columnTypes {
+			rowResultSets = append(rowResultSets, new(interface{}))
+		}
+		if err = res.Scan(rowResultSets...); err != nil {
 			return []string{}, errors.Trace(err)
 		}
-		indexes = append(indexes, keyname)
+
+		for index, resultItem := range rowResultSets {
+			if columnTypes[index].Name() != "Key_name" {
+				continue
+			}
+			r := *resultItem.(*interface{})
+			if r != nil {
+				bytes := r.([]byte)
+				keyname = string(bytes)
+			}
+		}
+
+		if keyname != "" {
+			indexes = append(indexes, keyname)
+		}
 	}
+	fmt.Println("indexes is", indexes)
 	return indexes, nil
 }
 
