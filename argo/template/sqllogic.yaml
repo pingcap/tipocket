@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-sqllogic
+          - name: purge
+            default: true
           - name: image_version
           - name: storage_class
       container:
@@ -22,7 +24,7 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
+            -purge={{inputs.parameters.purge}} \
             -run-time=8h \
             -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
             -d=sqllogictest-tipocket \

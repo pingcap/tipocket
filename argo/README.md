@@ -64,3 +64,19 @@ Name:                tipocket-ledger
 Namespace:           argo
 Created:             Sat Mar 21 13:21:13 -0400 (now)
 ```
+
+### Validate workflow manifests
+
+```bash
+argo lint workflow/*.yaml
+
+workflow/abtest.yaml is valid
+workflow/bank.yaml is valid
+workflow/block-writer.yaml is valid
+workflow/ledger.yaml is valid
+workflow/region-available.yaml is valid
+workflow/sqllogic.yaml is valid
+workflow/tpcc.yaml is valid
+workflow/txn-rand-pessimistic.yaml is valid
+Workflow manifests validated
+```

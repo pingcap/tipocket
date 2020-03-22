@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-abtest
+          - name: purge
+            default: true
           - name: image_version
           - name: storage_class
           - name: b_version
@@ -24,7 +26,7 @@ spec:
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -abtest.image-version={{inputs.parameters.b_version}} \
-            -purge=true \
+            -purge={{inputs.parameters.purge}} \
             -client=2 \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \

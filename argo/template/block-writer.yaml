@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-block-writer
+          - name: purge
+            default: true
           - name: image_version
           - name: storage_class
       container:
@@ -22,7 +24,7 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
+            -purge={{inputs.parameters.purge}} \
             -run-time=60m \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
