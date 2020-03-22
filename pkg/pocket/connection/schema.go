@@ -20,6 +20,10 @@ import (
 	"github.com/juju/errors"
 )
 
+const (
+	indexColumnName = "Key_name"
+)
+
 var binlogSyncTablePattern = regexp.MustCompile(`^t[0-9]+$`)
 
 // FetchDatabases database list
@@ -130,13 +134,38 @@ func (c *Connection) FetchIndexes(db, table string) ([]string, error) {
 	if err != nil {
 		return []string{}, errors.Trace(err)
 	}
+
+	columnTypes, err := res.ColumnTypes()
+	if err != nil {
+		return indexes, errors.Trace(err)
+	}
 	for res.Next() {
-		var keyname string
-		var col1, col2, col4, col5, col6, col7, col8, col9, col10, col11, col12, col13 interface{}
-		if err = res.Scan(&col1, &col2, &keyname, &col4, &col5, &col6, &col7, &col8, &col9, &col10, &col11, &col12, &col13); err != nil {
+		var (
+			keyname       string
+			rowResultSets []interface{}
+		)
+
+		for range columnTypes {
+			rowResultSets = append(rowResultSets, new(interface{}))
+		}
+		if err = res.Scan(rowResultSets...); err != nil {
 			return []string{}, errors.Trace(err)
 		}
-		indexes = append(indexes, keyname)
+
+		for index, resultItem := range rowResultSets {
+			if columnTypes[index].Name() != indexColumnName {
+				continue
+			}
+			r := *resultItem.(*interface{})
+			if r != nil {
+				bytes := r.([]byte)
+				keyname = string(bytes)
+			}
+		}
+
+		if keyname != "" {
+			indexes = append(indexes, keyname)
+		}
 	}
 	return indexes, nil
 }
