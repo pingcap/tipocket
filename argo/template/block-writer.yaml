@@ -6,7 +6,12 @@ spec:
     - name: tipocket-block-writer
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-block-writer
+          - name: purge
+            default: true
           - name: image_version
+          - name: storage_class
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -15,12 +20,15 @@ spec:
           - '-c'
           - |
             /bin/block-writer \
-            -namespace=tipocket-block-writer \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
-            -run-time=60m
+            -purge={{inputs.parameters.purge}} \
+            -run-time=60m \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

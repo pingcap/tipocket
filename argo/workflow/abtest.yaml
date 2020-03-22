@@ -1,0 +1,21 @@
+metadata:
+  generateName: tipocket-abtest-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-abtest
+  templates:
+    - name: call-tipocket-abtest
+      steps:
+        - - name: call-tipocket-abtest
+            templateRef:
+              name: tipocket-abtest
+              template: tipocket-abtest
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd
+                - name: b_version
+                  value: nightly
+

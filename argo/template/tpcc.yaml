@@ -6,6 +6,10 @@ spec:
     - name: tipocket-tpcc
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-tpcc
+          - name: purge
+            default: true
           - name: image_version
           - name: storage_class
       container:
@@ -16,16 +20,18 @@ spec:
           - '-c'
           - |
             /bin/tpcc \
-            -namespace=tipocket-tpcc-test \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
-            -storage-class=local-scsi \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
+            -purge={{inputs.parameters.purge}} \
             -client=100 \
             -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
             -round=5 \
-            -request-count=100000
+            -request-count=100000 \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always
