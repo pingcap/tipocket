@@ -72,6 +72,7 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	}
 
 	conn, err := connection.New(dsn, &connection.Option{
+		Name:       fmt.Sprintf("conn-%d", opt.ID),
 		Log:        connLogPath,
 		Mute:       opt.Mute,
 		GeneralLog: opt.GeneralLog,
@@ -79,7 +80,7 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	l, err := logger.New(executorLogPath, false)
+	l, err := logger.New(fmt.Sprintf("single-%d", opt.ID), executorLogPath, false)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -110,6 +111,7 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	}
 
 	conn1, err := connection.New(dsn1, &connection.Option{
+		Name:       fmt.Sprintf("conn-1-%d", opt.ID),
 		Log:        conn1LogPath,
 		Mute:       opt.Mute,
 		GeneralLog: opt.GeneralLog,
@@ -118,6 +120,7 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 		return nil, errors.Trace(err)
 	}
 	conn2, err := connection.New(dsn2, &connection.Option{
+		Name:       fmt.Sprintf("conn-2-%d", opt.ID),
 		Log:        conn2LogPath,
 		Mute:       opt.Mute,
 		GeneralLog: opt.GeneralLog,
@@ -125,7 +128,7 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	l, err := logger.New(executorLogPath, opt.Mute)
+	l, err := logger.New(fmt.Sprintf("abtest-%d", opt.ID), executorLogPath, opt.Mute)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

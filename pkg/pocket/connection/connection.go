@@ -22,6 +22,7 @@ import (
 
 // Option struct
 type Option struct {
+	Name       string
 	Log        string
 	Mute       bool
 	GeneralLog bool
@@ -36,7 +37,7 @@ type Connection struct {
 
 // New create Connection instance from dsn
 func New(dsn string, opt *Option) (*Connection, error) {
-	l, err := logger.New(opt.Log, opt.Mute)
+	l, err := logger.New(opt.Name, opt.Log, opt.Mute)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

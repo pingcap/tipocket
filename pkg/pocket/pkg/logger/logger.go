@@ -25,14 +25,16 @@ import (
 
 // Logger struct
 type Logger struct {
+	name    string
 	logPath string
 	print   bool
 	mute    bool
 }
 
 // New init Logger struct
-func New(logPath string, mute bool) (*Logger, error) {
+func New(name, logPath string, mute bool) (*Logger, error) {
 	logger := Logger{
+		name:    name,
 		logPath: logPath,
 		print:   logPath == "",
 		mute:    mute,
@@ -56,7 +58,7 @@ func (l *Logger) writeLine(line string) error {
 	if l.mute {
 		return nil
 	} else if l.print {
-		log.Info(line)
+		log.Info(fmt.Sprintf("[%s] %s", l.name, line))
 		return nil
 	}
 	f, err := os.OpenFile(l.logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
