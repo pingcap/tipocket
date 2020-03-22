@@ -49,10 +49,11 @@ type Node struct {
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
 type ClientNode struct {
-	Namespace string // Cluster k8s' namespace
-	Component Component
-	IP        string
-	Port      int32
+	Namespace   string // Cluster k8s' namespace
+	ClusterName string // Cluster name, use to differentiate different TiDB clusters running on same namespace
+	Component   Component
+	IP          string
+	Port        int32
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
