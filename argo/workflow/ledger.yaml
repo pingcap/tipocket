@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-ledger-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-ledger
+  templates:
+    - name: call-tipocket-ledger
+      steps:
+        - - name: call-tipocket-ledger
+            templateRef:
+              name: tipocket-ledger
+              template: tipocket-ledger
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

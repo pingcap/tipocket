@@ -44,6 +44,15 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
+const (
+	tikvDir     = "/var/lib/tikv"
+	tikvDataDir = "/var/lib/tikv/data"
+	pdDir       = "/var/lib/pd"
+	pdDataDir   = "/var/lib/pd/data"
+
+	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
+)
+
 // TidbOps knows how to operate TiDB on k8s
 type TidbOps struct {
 	cli client.Client
@@ -321,8 +330,11 @@ func (t *TidbOps) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string
 	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), configMap)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	desired := configMap.DeepCopy()
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+		configMap.Data = desired.Data
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -336,8 +348,11 @@ func (t *TidbOps) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) 
 	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), configMap)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	desired := configMap.DeepCopy()
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+		configMap.Data = desired.Data
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -351,8 +366,11 @@ func (t *TidbOps) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string
 	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), configMap)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	desired := configMap.DeepCopy()
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+		configMap.Data = desired.Data
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -366,8 +384,11 @@ func (t *TidbOps) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	if err != nil {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), configMap)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	desired := configMap.DeepCopy()
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+		configMap.Data = desired.Data
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -497,7 +518,11 @@ func readFileAsString(filename string) (string, error) {
 }
 
 func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderPDStartScript(&PDStartScriptModel{})
+	scriptModel := &PDStartScriptModel{DataDir: pdDir}
+	if getIOChaosAnnotation(tc, "pd") == "chaosfs-pd" {
+		scriptModel.DataDir = pdDataDir
+	}
+	s, err := RenderPDStartScript(scriptModel)
 	if err != nil {
 		return nil, err
 	}
@@ -529,7 +554,11 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderTiKVStartScript(&TiKVStartScriptModel{})
+	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir}
+	if getIOChaosAnnotation(tc, "tikv") == "chaosfs-tikv" {
+		scriptModel.DataDir = tikvDataDir
+	}
+	s, err := RenderTiKVStartScript(scriptModel)
 	if err != nil {
 		return nil, err
 	}
@@ -656,4 +685,23 @@ func getTiDBNodePort(svc *corev1.Service) int32 {
 		}
 	}
 	return 0
+}
+
+func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {
+	switch component {
+	case "tikv":
+		if tc.Spec.TiKV.Annotations != nil {
+			if s, ok := tc.Spec.TiKV.Annotations[ioChaosAnnotation]; ok {
+				return s
+			}
+		}
+	case "pd":
+		if tc.Spec.PD.Annotations != nil {
+			if s, ok := tc.Spec.PD.Annotations[ioChaosAnnotation]; ok {
+				return s
+			}
+		}
+	}
+
+	return ""
 }

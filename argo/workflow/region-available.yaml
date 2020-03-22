@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-region-available-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-region-available
+  templates:
+    - name: call-tipocket-region-available
+      steps:
+        - - name: call-tipocket-region-available
+            templateRef:
+              name: tipocket-region-available
+              template: tipocket-region-available
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

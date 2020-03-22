@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-txn-rand-pessimistic-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-txn-rand-pessimistic
+  templates:
+    - name: call-tipocket-txn-rand-pessimistic
+      steps:
+        - - name: call-tipocket-txn-rand-pessimistic
+            templateRef:
+              name: tipocket-txn-rand-pessimistic
+              template: tipocket-txn-rand-pessimistic
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

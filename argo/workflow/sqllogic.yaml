@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-sqllogic-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-sqllogic
+  templates:
+    - name: call-tipocket-sqllogic
+      steps:
+        - - name: call-tipocket-sqllogic
+            templateRef:
+              name: tipocket-sqllogic
+              template: tipocket-sqllogic
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: pd-ssd

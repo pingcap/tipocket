@@ -28,8 +28,10 @@ const (
 	PDScheduler ChaosKind = "PD-Scheduler"
 	// PDLeaderShuffler will randomly shuffle pds.
 	PDLeaderShuffler ChaosKind = "PD-Leader-Shuffler"
-	// Scaling scale cluster
+	// Scaling scales cluster
 	Scaling ChaosKind = "Scaling"
+	// IOChaos adds io chaos.
+	IOChaos ChaosKind = "IO-Chaos"
 )
 
 // Nemesis injects failure and disturbs the database.

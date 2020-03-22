@@ -19,6 +19,8 @@ FROM alpine:3.8
 RUN apk update && apk upgrade && \
     apk add --no-cache bash curl wget
 
+RUN mkdir -p /config
 COPY --from=0 /src/bin/* /bin/
+COPY --from=0 /src/configmap/* /config/
 
 EXPOSE 8080
