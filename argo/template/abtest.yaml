@@ -26,7 +26,7 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.b.version={{inputs.parameters.b_version}} \
+            -abtest.image-version={{inputs.parameters.b_version}} \
             -purge=true \
             -client=2
       retryStrategy:
