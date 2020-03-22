@@ -16,6 +16,7 @@ package core
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/juju/errors"
 
@@ -70,6 +71,8 @@ func (c *Core) mustExec() error {
 			return errors.Trace(err)
 		}
 	}
+	// sleep 10s waiting for global variable becoming effective
+	time.Sleep(10 * time.Second)
 	return nil
 }
 
