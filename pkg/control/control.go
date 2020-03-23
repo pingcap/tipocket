@@ -469,7 +469,10 @@ func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterType
 			wg.Add(1)
 			var nonMatch []string
 			if n.Component == clusterTypes.TiKV {
-				nonMatch = []string{"panic-when-unexpected-key-or-data"}
+				nonMatch = []string{
+					"panic-when-unexpected-key-or-data",
+					"No space left on device",
+				}
 			}
 
 			go func(ns, podName string, nonMatch []string) {
