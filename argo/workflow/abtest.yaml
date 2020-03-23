@@ -20,7 +20,7 @@ spec:
                   value: nightly
                 - name: storage_class
                   value: pd-ssd
-                - name: b_version
+                - name: abtest_version
                   value: latest
                 - name: nemesis
                   value: ""
