@@ -1,4 +1,4 @@
-package resolveLock
+package resolvelock
 
 import (
 	"bytes"
