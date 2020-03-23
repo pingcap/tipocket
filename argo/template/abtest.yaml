@@ -20,6 +20,8 @@ spec:
             default: ""
           - name: client
             default: "2"
+          - name: run_time
+            default: "48h"
           - name: tidb_config
             default: ""
           - name: tikv_config
@@ -48,6 +50,7 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -client=2 \
+            -run-time={{inputs.parameters.run_time}} \
             -tidb-config={{inputs.parameters.tidb_config}} \
             -tikv-config={{inputs.parameters.tikv_config}} \
             -pd-config={{inputs.parameters.pd_config}} \
