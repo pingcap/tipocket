@@ -8,11 +8,7 @@ WORKDIR /src
 COPY go.mod .
 COPY go.sum .
 
-RUN go mod download
-
 COPY . .
-
-RUN make build
 
 FROM alpine:3.8
 
@@ -21,6 +17,6 @@ RUN apk update && apk upgrade && \
 
 RUN mkdir -p /config
 COPY --from=0 /src/bin/* /bin/
-COPY --from=0 /src/configmap/* /config/
+COPY --from=0 /src/configmap /config
 
 EXPOSE 8080
