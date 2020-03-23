@@ -21,6 +21,6 @@ RUN apk update && apk upgrade && \
 
 RUN mkdir -p /config
 COPY --from=0 /src/bin/* /bin/
-COPY --from=0 /src/configmap/* /config/
+COPY --from=0 /src/configmap /config
 
 EXPOSE 8080
