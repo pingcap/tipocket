@@ -179,6 +179,7 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
+	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 
 	Context.DockerRepository = "pingcap"
 
