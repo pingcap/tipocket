@@ -1,0 +1,28 @@
+metadata:
+  generateName: tipocket-binlog-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-binlog
+  templates:
+    - name: call-tipocket-binlog
+      steps:
+        - - name: call-tipocket-binlog
+            templateRef:
+              name: tipocket-binlog
+              template: tipocket-binlog
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-binlog
+                - name: purge
+                  value: "false"
+                - name: image_version
+                  value: nightly
+                - name: storage_class
+                  value: pd-ssd
+                - name: nemesis
+                  value: ""
+                - name: run_time
+                  value: "60m"
+                - name: relay_log
+                  value: "true"

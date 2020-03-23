@@ -1,0 +1,44 @@
+metadata:
+  name: tipocket-binlog
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-binlog
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-binlog
+          - name: purge
+            default: "false"
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "60m"
+          - name: relay_log
+            default: "true"
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/pocket \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -relay-log={{inputs.parameters.relay_log}} \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always
