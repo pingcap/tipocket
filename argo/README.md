@@ -17,7 +17,7 @@ After downloading the cli, we can list the current workflows, submit new workflo
 ### List all workflows
 
 ``` bash
-argo list
+argo list -n argo
 
 NAME                                  STATUS      AGE   DURATION   PRIORITY
 tipocket-bank-timechaos-tfzvk         Running     8m    8m         0
@@ -29,7 +29,7 @@ tipocket-ledger-iochaos-wx4zl         Succeeded   2h    1h         0
 ### Submit a new workflow
 
 ```bash
-argo submit workflow/bank.yaml
+argo submit workflow/bank.yaml -n argo
 
 Name:                tipocket-bank-d8vr4
 Namespace:           argo
@@ -44,7 +44,7 @@ Parameters:
 ### Submit a new workflow with parameter overwritten
 
 ```bash
-argo submit workflow/bank.yaml -p image_version=nightly
+argo submit workflow/bank.yaml -p image_version=nightly -n argo
 
 Name:                tipocket-bank-xqnm2
 Namespace:           argo
@@ -59,7 +59,7 @@ Parameters:
 ### Submit a new template
 
 ```bash
-argo template create template/ledger.yaml
+argo template create template/ledger.yaml -n argo
 Name:                tipocket-ledger
 Namespace:           argo
 Created:             Sat Mar 21 13:21:13 -0400 (now)

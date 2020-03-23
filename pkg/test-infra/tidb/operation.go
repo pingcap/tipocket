@@ -158,9 +158,10 @@ func (t *TidbOps) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode,
 		return clientNodes, err
 	}
 	clientNodes = append(clientNodes, clusterTypes.ClientNode{
-		Namespace: svc.ObjectMeta.Namespace,
-		IP:        ip,
-		Port:      getTiDBNodePort(svc),
+		Namespace:   svc.ObjectMeta.Namespace,
+		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
+		IP:          ip,
+		Port:        getTiDBNodePort(svc),
 	})
 	return clientNodes, nil
 }
