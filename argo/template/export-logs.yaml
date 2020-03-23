@@ -1,0 +1,50 @@
+metadata:
+  name: export-logs
+  namespace: argo
+spec:
+  templates:
+    - name: export-logs
+      inputs:
+        parameters:
+          - name: ns
+          - name: limit
+            default: 20000
+      container:
+        name: upload-logs
+        workingDir: /src/tidb-logs
+        image: 'yeya24/kubectl:logcli'
+        command:
+          - sh
+          - '-c'
+          - |
+            start=`kubectl get wf {{workflow.name}} -n {{workflow.namespace}} -o json | jq -r '.metadata.creationTimestamp'`
+            echo $start
+
+            pods=`curl -sg 'http://loki:admin@gateway.loki.svc/loki/api/v1/series?' \
+            -d "start=$start"  -d 'match={namespace="{{inputs.parameters.ns}}"}' \
+            | jq -r '.data[] | "\(.instance)"' | grep -v 'monitor\|discovery'`
+
+            for pod in $pods
+            do
+               echo $pod
+               logcli query -q -o raw --no-labels --addr="http://gateway.loki.svc" \
+               --username=loki --password=admin  --from=$start --limit={{inputs.parameters.limit}} \
+               '{namespace="{{inputs.parameters.ns}}", instance="'$pod'"}' > $pod.log
+            done
+
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /src/tidb-logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              key: "{{workflow.name}}/{{pod.name}}/tidb-logs.tar.gz"
+              insecure: true
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred

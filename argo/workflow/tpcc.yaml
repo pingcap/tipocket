@@ -3,7 +3,18 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-tpcc
+  onExit: call-export-logs
   templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-tpcc
     - name: call-tipocket-tpcc
       steps:
         - - name: call-tipocket-tpcc
