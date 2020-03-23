@@ -20,6 +20,18 @@ spec:
             default: ""
           - name: client
             default: "2"
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: abtest_tidb_config
+            default: ""
+          - name: abtest_tikv_config
+            default: ""
+          - name: abtest_pd_config
+            default: ""
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -36,6 +48,12 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -client=2 \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
+            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
+            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin

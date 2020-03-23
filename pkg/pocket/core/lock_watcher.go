@@ -14,6 +14,7 @@
 package core
 
 import (
+	"context"
 	"math/rand"
 	"sync"
 	"time"
@@ -23,7 +24,8 @@ import (
 )
 
 const (
-	maxExecuteTime = 4.0 // Second
+	maxExecuteTime   = 4 * time.Second
+	maxFinishTxnTime = 4 * time.Second
 )
 
 func (c *Core) watchLock() {
@@ -35,7 +37,7 @@ func (c *Core) watchLock() {
 		go func() {
 			ticker := time.Tick(time.Second)
 			for range ticker {
-				if time.Now().Sub(lastExecTime).Seconds() > maxExecuteTime {
+				if time.Now().Sub(lastExecTime) > maxExecuteTime {
 					// deadlock detected
 					if c.ifLock {
 						// if the core goroutine block in another lock, skip deadlock
@@ -55,18 +57,17 @@ func (c *Core) watchLock() {
 }
 
 func (c *Core) resolveDeadLock(all bool) {
-	// log.Info(e.order.GetHistroy())
 	var wg sync.WaitGroup
 	if all && c.nowExec != nil && c.order.Has(c.nowExec.GetID()) {
 		wg.Add(1)
-		go c.resolveDeadLockOne(c.nowExec, &wg)
+		c.resolveDeadLockOne(c.nowExec, &wg)
 	}
 	for c.order.Next() {
 		for _, executor := range c.executors {
 			if executor.GetID() == c.order.Val() {
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(50 * time.Millisecond)
 				wg.Add(1)
-				go c.resolveDeadLockOne(executor, &wg)
+				c.resolveDeadLockOne(executor, &wg)
 			}
 		}
 	}
@@ -91,16 +92,30 @@ func (c *Core) resolveDeadLockOne(executor *executor.Executor, wg *sync.WaitGrou
 			SQLStmt: "ROLLBACK",
 		}
 	}
-	// exec commit/rollback
-	executor.ExecSQL(&sql)
-	// wait for txn finish
+
+	ch := make(chan struct{}, 1)
+	ctx, cancel := context.WithTimeout(context.Background(), maxFinishTxnTime)
+	defer cancel()
+
 	go func() {
+		// exec commit/rollback
+		executor.ExecSQL(&sql)
+		// wait for txn finish
 		for true {
 			time.Sleep(time.Millisecond)
 			if !executor.IfTxn() {
 				wg.Done()
-				break
+				ch <- struct{}{}
+				return
 			}
 		}
 	}()
+
+	select {
+	case <-ctx.Done():
+		// the transaction submit is locked, go to next session
+		return
+	case <-ch:
+		return
+	}
 }

@@ -29,7 +29,7 @@ type Recommendation struct {
 	Name     string
 }
 
-// RecommendedCluster gives recommand cluster
+// RecommendedCluster gives a recommend cluster
 func RecommendedCluster(ns, name string) *Recommendation {
 	r := Recommendation{
 		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name)),

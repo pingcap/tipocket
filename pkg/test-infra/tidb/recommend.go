@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	"k8s.io/utils/pointer"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 
@@ -109,6 +110,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 					Replicas:             3,
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
+					MaxFailoverCount:     pointer.Int32Ptr(3),
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Version: &fixture.Context.ImageVersion,
 						Image:   buildImage("tikv"),
@@ -123,6 +125,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 						},
 						ExposeStatus: &exposeStatus,
 					},
+					MaxFailoverCount: pointer.Int32Ptr(3),
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Version: &fixture.Context.ImageVersion,
 						Image:   buildImage("tidb"),
