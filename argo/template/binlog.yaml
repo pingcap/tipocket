@@ -17,7 +17,7 @@ spec:
           - name: nemesis
             default: ""
           - name: run_time
-            default: "60m"
+            default: "48h"
           - name: relay_log
             default: "true"
       container:
