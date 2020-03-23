@@ -19,7 +19,6 @@ require (
 	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
 
 	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
-	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-beta.1
@@ -33,12 +32,13 @@ require (
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/klog v1.0.0
 	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6
 	sigs.k8s.io/controller-runtime v0.4.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
+
+replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 

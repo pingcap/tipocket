@@ -19,6 +19,7 @@ import (
 	_ "net/http/pprof" // pprof
 	"time"
 
+	"github.com/ngaut/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/rest"
@@ -170,17 +171,18 @@ func init() {
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
-	flag.StringVar(&Context.TiDBConfigFile, "tidb-configmap", "", "path of tidb configmap (cluster A in abtest case)")
-	flag.StringVar(&Context.TiKVConfigFile, "tikv-configmap", "", "path of tikv configmap (cluster A in abtest case)")
-	flag.StringVar(&Context.PDConfigFile, "pd-configmap", "", "path of pd configmap (cluster A in abtest case)")
-	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.b.tidb-configmap", "", "tidb configmap for cluster b")
-	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.b.tikv-configmap", "", "tikv configmap for cluster b")
-	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.b.pd-configmap", "", "pd configmap for cluster b")
-	flag.StringVar(&Context.ABTestConfig.Cluster1Version, "abtest.a.version", "", "specify version for cluster a")
-	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.b.version", "", "specify version for cluster b")
+	flag.StringVar(&Context.TiDBConfigFile, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiKVConfigFile, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
+	flag.StringVar(&Context.PDConfigFile, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 
 	Context.DockerRepository = "pingcap"
+
+	log.SetHighlighting(false)
 
 	go func() {
 		http.ListenAndServe(Context.pprofAddr, nil)

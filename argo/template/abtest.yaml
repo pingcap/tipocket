@@ -8,12 +8,18 @@ spec:
         parameters:
           - name: ns
             default: tipocket-abtest
+          - name: purge
+            default: "false"
           - name: image_version
-            default: latest
-          - name: storage_class
-            default: pd-ssd
-          - name: b_version
             default: nightly
+          - name: abtest_version
+            value: latest
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: client
+            default: "2"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -26,9 +32,13 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.b.version={{inputs.parameters.b_version}} \
-            -purge=true \
-            -client=2
+            -abtest.image-version={{inputs.parameters.abtest_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -client=2 \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

@@ -6,8 +6,18 @@ spec:
     - name: tipocket-region-available
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-region-available
+          - name: purge
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "4h"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -16,12 +26,16 @@ spec:
           - '-c'
           - |
             /bin/region-available \
-            -namespace=tipocket-region-available-test \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
-            -run-time=8h \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

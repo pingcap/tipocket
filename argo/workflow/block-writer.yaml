@@ -1,0 +1,26 @@
+metadata:
+  generateName: tipocket-block-writer-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-block-writer
+  templates:
+    - name: call-tipocket-block-writer
+      steps:
+        - - name: call-tipocket-block-writer
+            templateRef:
+              name: tipocket-block-writer
+              template: tipocket-block-writer
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-block-writer
+                - name: purge
+                  value: "true"
+                - name: image_version
+                  value: nightly
+                - name: storage_class
+                  value: pd-ssd
+                - name: nemesis
+                  value: ""
+                - name: run_time
+                  value: "60m"

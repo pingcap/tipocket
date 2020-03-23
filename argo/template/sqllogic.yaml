@@ -6,8 +6,14 @@ spec:
     - name: tipocket-sqllogic
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-sqllogic
+          - name: purge
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -16,15 +22,17 @@ spec:
           - '-c'
           - |
             /bin/sqllogic \
-            -namespace=tipocket-sqllogic-test \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
-            -storage-class=local-scsi \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
+            -purge={{inputs.parameters.purge}} \
             -run-time=8h \
-            -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket
-            -d=sqllogictest-tipocket
+            -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
+            -d=sqllogictest-tipocket \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

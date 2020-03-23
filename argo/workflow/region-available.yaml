@@ -1,0 +1,26 @@
+metadata:
+  generateName: tipocket-region-available-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-region-available
+  templates:
+    - name: call-tipocket-region-available
+      steps:
+        - - name: call-tipocket-region-available
+            templateRef:
+              name: tipocket-region-available
+              template: tipocket-region-available
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-region-available
+                - name: purge
+                  value: "true"
+                - name: image_version
+                  value: nightly
+                - name: storage_class
+                  value: pd-ssd
+                - name: nemesis
+                  value: ""
+                - name: run_time
+                  value: "4h"

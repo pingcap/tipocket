@@ -6,8 +6,18 @@ spec:
     - name: tipocket-txn-rand-pessimistic
       inputs:
         parameters:
+          - name: ns
+            default: tipocket-txn-rand-pessimistic
+          - name: purge
+            default: "false"
           - name: image_version
+            default: nightly
           - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "4h"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -16,13 +26,16 @@ spec:
           - '-c'
           - |
             /bin/txn-rand-pessimistic \
-            -namespace=tipocket-txn-rand-pessimistic-test \
+            -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -purge=true \
-            -nemesis=random_kill,short_kill_tikv_1node,short_kill_pd_leader,kill_tikv_1node_5min \
-            -run-time=8h
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
       retryStrategy:
         limit: 0
         retryPolicy: Always

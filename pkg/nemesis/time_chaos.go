@@ -73,7 +73,7 @@ func init() {
 func timeChaosLevel(chaos string) TimeChaosLevels {
 	var level TimeChaosLevels
 	var ok bool
-	if level, ok = skewTimeStrMap[chaos]; ok {
+	if level, ok = skewTimeStrMap[chaos]; !ok {
 		panic(fmt.Sprintf("timeChaosLevel receive chaos %s, which is not supported.", chaos))
 	}
 	return level
@@ -124,7 +124,8 @@ type timeChaosGenerator struct {
 func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 
-	for _, node := range nodes {
+	for idx := range nodes {
+		node := nodes[idx]
 		secs, nanoSecs := selectChaosDuration(timeChaosLevel(t.name), FromLast)
 		ops = append(ops, &core.NemesisOperation{
 			Type:        core.TimeChaos,
@@ -180,7 +181,7 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("Recovering time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }

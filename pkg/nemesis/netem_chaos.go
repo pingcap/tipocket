@@ -166,7 +166,7 @@ func selectNetem(name string) netemChaos {
 	case "corrupt":
 		return corrupt{}
 	default:
-		panic("selectNetem received an unexists tag")
+		panic("unsupported netem action")
 	}
 }
 
@@ -175,7 +175,8 @@ func (g netemChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.Nemesis
 	nChaos := selectNetem(g.name)
 	ops := make([]*core.NemesisOperation, len(nodes))
 
-	for _, node := range nodes {
+	for idx := range nodes {
+		node := nodes[idx]
 		ops = append(ops, &core.NemesisOperation{
 			Type:        core.NetemChaos,
 			Node:        &node,
