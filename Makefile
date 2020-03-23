@@ -19,7 +19,7 @@ all: build
 
 chaos: tidb
 
-build: fmt tidb pocket tpcc ledger resolve_lock txn-rand-pessimistic on-dup sqllogic block-writer \
+build: fmt tidb pocket tpcc ledger resolve-lock txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest
 
 tidb:
