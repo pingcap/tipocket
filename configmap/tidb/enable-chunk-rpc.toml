@@ -1,0 +1,3 @@
+[tikv-client]
+# Enable chunk encoded data for coprocessor requests.
+enable-chunk-rpc = true
