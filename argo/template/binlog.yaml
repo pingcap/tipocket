@@ -1,39 +1,25 @@
 metadata:
-  name: tipocket-abtest
+  name: tipocket-binlog
   namespace: argo
 spec:
   templates:
-    - name: tipocket-abtest
+    - name: tipocket-binlog
       inputs:
         parameters:
           - name: ns
-            default: tipocket-abtest
+            default: tipocket-binlog
           - name: purge
             default: "false"
           - name: image_version
             default: nightly
-          - name: abtest_version
-            value: latest
           - name: storage_class
             default: standard
           - name: nemesis
             default: ""
-          - name: client
-            default: "2"
           - name: run_time
             default: "48h"
-          - name: tidb_config
-            default: ""
-          - name: tikv_config
-            default: ""
-          - name: pd_config
-            default: ""
-          - name: abtest_tidb_config
-            default: ""
-          - name: abtest_tikv_config
-            default: ""
-          - name: abtest_pd_config
-            default: ""
+          - name: relay_log
+            default: "true"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -41,22 +27,15 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/abtest \
+            /bin/pocket \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -client=2 \
             -run-time={{inputs.parameters.run_time}} \
-            -tidb-config={{inputs.parameters.tidb_config}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -pd-config={{inputs.parameters.pd_config}} \
-            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
-            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
-            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
+            -relay-log={{inputs.parameters.relay_log}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin
