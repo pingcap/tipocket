@@ -1,0 +1,2 @@
+# Controls whether to enable the temporary storage for some operators when a single SQL statement exceeds the memory quota specified by mem-quota-query.
+oom-use-tmp-storage = false
