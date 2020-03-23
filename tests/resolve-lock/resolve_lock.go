@@ -122,13 +122,9 @@ func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 		}
 	}
 
-	// TODO: Is this the correct way to create the PD client and kv client?
-	pdAddrs := make([]string, 0)
-	for _, node := range nodes {
-		if node.Component == types.PD {
-			pdAddrs = append(pdAddrs, fmt.Sprintf("%v:%v", node.IP, node.Port))
-		}
-	}
+	clusterName := nodes[0].ClusterName
+	ns := nodes[0].Namespace
+	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
 
 	if len(pdAddrs) == 0 {
 		return errors.New("No pd node found")
