@@ -1,0 +1,39 @@
+metadata:
+  generateName: tmp-storage-abtest-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-abtest
+  templates:
+    - name: call-tipocket-abtest
+      steps:
+        - - name: call-tipocket-abtest
+            templateRef:
+              name: tipocket-abtest
+              template: tipocket-abtest
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-ab-tmp-storage
+                - name: purge
+                  value: "true"
+                - name: image_version
+                  value: nightly
+                - name: storage_class
+                  value: pd-ssd
+                - name: abtest_version
+                  value: nightly
+                - name: nemesis
+                  value: ""
+                - name: tidb_config
+                  value: "/config/tidb/oom-use-tmp-storage.toml"
+                - name: tikv_config
+                  value: ""
+                - name: pd_config
+                  value: ""
+                - name: abtest_tidb_config
+                  value: "/config/tidb/oom-use-tmp-storage-false.toml"
+                - name: abtest_tikv_config
+                  value: ""
+                - name: abtest_pd_config
+                  value: ""
+
