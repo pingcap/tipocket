@@ -1,4 +1,4 @@
-package resolve_lock
+package resolveLock
 
 import (
 	"bytes"
@@ -38,6 +38,7 @@ type CaseCreator struct {
 	Cfg *Config
 }
 
+// Create creates the resolveLockClient from the CaseCreator
 func (l CaseCreator) Create(node types.ClientNode) core.Client {
 	return &resolveLockClient{
 		Config: l.Cfg,

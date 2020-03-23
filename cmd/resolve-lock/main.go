@@ -25,7 +25,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	resolve_lock "github.com/pingcap/tipocket/tests/resolve-lock"
+	resolveLock "github.com/pingcap/tipocket/tests/resolve-lock"
 )
 
 var (
@@ -45,7 +45,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: resolve_lock.CaseCreator{Cfg: &resolve_lock.Config{
+		ClientCreator: resolveLock.CaseCreator{Cfg: &resolveLock.Config{
 			Concurrency:             *concurrency,
 			EnableGreenGC:           * enableGreenGC,
 			TableSize:               *tableSize,
