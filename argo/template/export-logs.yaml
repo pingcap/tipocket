@@ -8,7 +8,7 @@ spec:
         parameters:
           - name: ns
           - name: limit
-            default: 20000
+            default: 2000000
       container:
         name: upload-logs
         workingDir: /src/tidb-logs

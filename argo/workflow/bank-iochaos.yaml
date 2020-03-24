@@ -13,6 +13,6 @@ spec:
             arguments:
               parameters:
                 - name: image_version
-                  value: latest
+                  value: release-4.0-nightly
                 - name: storage_class
                   value: local-scsi
