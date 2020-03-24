@@ -14,6 +14,8 @@ spec:
         value: release-4.0-nightly
       - name: storage_class
         value: pd-ssd
+      - name: run_time
+        value: "8h"
   templates:
     - name: call-export-logs
       steps:
@@ -41,3 +43,5 @@ spec:
                   value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
                   value: "{{workflow.parameters.storage_class}}"
+                - name: run_time
+                  value: "{{workflow.parameters.run_time}}"

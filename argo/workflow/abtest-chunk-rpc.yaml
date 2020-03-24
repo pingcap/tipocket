@@ -18,6 +18,8 @@ spec:
         value: release-4.0-nightly
       - name: nemesis
         value: ""
+      - name: client
+        value: "2"
       - name: tidb_config
         value: "/config/tidb/enable-chunk-rpc.toml"
       - name: tikv_config
@@ -61,6 +63,8 @@ spec:
                   value: "{{workflow.parameters.abtest_version}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
                 - name: tidb_config
                   value: "{{workflow.parameters.tidb_config}}"
                 - name: tikv_config

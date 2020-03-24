@@ -55,7 +55,7 @@ spec:
             -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -client=2 \
+            -client={{inputs.parameters.client}} \
             -run-time={{inputs.parameters.run_time}} \
             -tidb-config={{inputs.parameters.tidb_config}} \
             -tikv-config={{inputs.parameters.tikv_config}} \

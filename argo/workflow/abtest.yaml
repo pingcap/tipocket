@@ -18,6 +18,8 @@ spec:
         value: latest
       - name: nemesis
         value: ""
+      - name: client
+        value: "2"
       - name: tidb_config
         value: ""
       - name: tikv_config
@@ -61,6 +63,8 @@ spec:
                   value: "{{workflow.parameters.abtest_version}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
                 - name: tidb_config
                   value: "{{workflow.parameters.tidb_config}}"
                 - name: tikv_config
