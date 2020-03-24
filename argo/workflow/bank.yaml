@@ -24,7 +24,7 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-bank
+                  value: tipocket-bank-single-tikv
                 - name: purge
                   value: "true"
                 - name: image_version
@@ -32,11 +32,18 @@ spec:
                 - name: storage_class
                   value: pd-ssd
                 - name: nemesis
-                  value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+                  value: mixed_tikv,random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+                - name: tikv-replicas
+                  value: "1"
                 - name: client
                   value: "5"
                 - name: request_count
                   value: "20000"
                 - name: round
                   value: "100"
-
+                - name: loki-addr
+                  value: ""
+                - name: loki-username
+                  value: ""
+                - name: loki-password
+                  value: ""

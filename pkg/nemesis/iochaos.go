@@ -69,6 +69,7 @@ func (d ioDelay) template(
 	podMode chaosv1alpha1.PodMode,
 	layer chaosv1alpha1.IOLayer,
 	config string,
+	methods []string,
 	args ...string,
 ) chaosv1alpha1.IoChaosSpec {
 
@@ -86,12 +87,13 @@ func (d ioDelay) template(
 		ConfigName: config,
 		Delay:      args[0],
 		Percent:    args[1],
+		Methods:    methods,
 	}
 }
 
 func (d ioDelay) defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec {
 	return d.template(ns, pods, chaosv1alpha1.OnePodMode,
-		chaosv1alpha1.FileSystemLayer, configMap, "50ms", "50")
+		chaosv1alpha1.FileSystemLayer, configMap, nil,"50ms", "50")
 }
 
 type ioErrno struct{}
@@ -106,6 +108,7 @@ func (e ioErrno) template(
 	podMode chaosv1alpha1.PodMode,
 	layer chaosv1alpha1.IOLayer,
 	config string,
+	methods []string,
 	args ...string,
 ) chaosv1alpha1.IoChaosSpec {
 
@@ -123,13 +126,54 @@ func (e ioErrno) template(
 		ConfigName: config,
 		Errno:      args[0],
 		Percent:    args[1],
+		Methods:    methods,
 	}
 }
 
 func (e ioErrno) defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec {
 	return e.template(ns, pods, chaosv1alpha1.OnePodMode,
-		chaosv1alpha1.FileSystemLayer, configMap, randomErrno, "50")
+		chaosv1alpha1.FileSystemLayer, configMap, nil, randomErrno, "50")
 }
+
+type ioReadEerr struct{}
+
+func (e ioReadEerr) ioChaosType() chaosv1alpha1.IOChaosAction {
+	return chaosv1alpha1.IOErrnoAction
+}
+
+func (e ioReadEerr) template(
+	ns string,
+	pods []string,
+	podMode chaosv1alpha1.PodMode,
+	layer chaosv1alpha1.IOLayer,
+	config string,
+	methods []string,
+	args ...string,
+) chaosv1alpha1.IoChaosSpec {
+
+	if len(args) != 2 {
+		panic("args number error")
+	}
+	return chaosv1alpha1.IoChaosSpec{
+		Action: chaosv1alpha1.IOErrnoAction,
+		Selector: chaosv1alpha1.SelectorSpec{
+			Namespaces: []string{ns},
+			Pods:       map[string][]string{ns: pods},
+		},
+		Layer:      layer,
+		Mode:       podMode,
+		ConfigName: config,
+		Errno:      args[0],
+		Percent:    args[1],
+		Methods:    methods,
+	}
+}
+
+func (e ioReadEerr) defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec {
+	return e.template(ns, pods, chaosv1alpha1.OnePodMode,
+		chaosv1alpha1.FileSystemLayer, configMap, []string{"read"}, randomErrno, "50")
+}
+
 
 type ioMixed struct{}
 
@@ -143,6 +187,7 @@ func (m ioMixed) template(
 	podMode chaosv1alpha1.PodMode,
 	layer chaosv1alpha1.IOLayer,
 	configName string,
+	methods []string,
 	args ...string,
 ) chaosv1alpha1.IoChaosSpec {
 
@@ -161,18 +206,19 @@ func (m ioMixed) template(
 		Delay:      args[0],
 		Errno:      args[1],
 		Percent:    args[2],
+		Methods:    methods,
 	}
 }
 
 func (m ioMixed) defaultTemplate(ns, configName string, pods []string) chaosv1alpha1.IoChaosSpec {
 	return m.template(ns, pods, chaosv1alpha1.OnePodMode,
-		chaosv1alpha1.FileSystemLayer, configName, "50ms", randomErrno, "50")
+		chaosv1alpha1.FileSystemLayer, configName, nil, "50ms", randomErrno, "50")
 }
 
 type ioChaos interface {
 	ioChaosType() chaosv1alpha1.IOChaosAction
 	template(ns string, pods []string, podMode chaosv1alpha1.PodMode,
-		layer chaosv1alpha1.IOLayer, configMap string, args ...string) chaosv1alpha1.IoChaosSpec
+		layer chaosv1alpha1.IOLayer, configMap string,methods []string, args ...string) chaosv1alpha1.IoChaosSpec
 	defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec
 }
 
@@ -184,6 +230,8 @@ func selectIOChaos(name string) ioChaos {
 		return ioErrno{}
 	case "mixed":
 		return ioMixed{}
+	case "readerr":
+		return ioReadEerr{}
 	default:
 		panic("unsupported io chaos action")
 	}
