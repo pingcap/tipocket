@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	stmtsCreate []string = []string{
+	stmtsCreate = []string{
 		`CREATE TABLE IF NOT EXISTS bank2_accounts (
 		id INT,
 		balance INT NOT NULL,
@@ -58,7 +58,7 @@ var (
 		`TRUNCATE TABLE bank2_transaction;`,
 		`TRUNCATE TABLE bank2_transaction_leg;`,
 	}
-	remark string = strings.Repeat("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq", 16)
+	remark = strings.Repeat("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq", 16)
 
 	// PadLength returns a random padding length for `remark` field within user
 	// specified bound.
