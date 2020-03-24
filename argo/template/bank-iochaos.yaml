@@ -1,0 +1,48 @@
+metadata:
+  name: tipocket-bank-iochaos
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-bank-iochaos
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-bank-iochaos
+          - name: purge
+            default: "false"
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: "delay_tikv"
+          - name: client
+            default: "5"
+          - name: request_count
+            default: "10000"
+          - name: round
+            default: "100"
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/chaos-tidb \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -case=bank \
+            -client={{inputs.parameters.client}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -round={{inputs.parameters.round}} \
+            -request-count={{inputs.parameters.request_count}} \
+            -loki-addr=http://gateway.loki.svc \
+            -loki-username=loki \
+            -loki-password=admin
+      retryStrategy:
+        limit: 0
+        retryPolicy: Always
