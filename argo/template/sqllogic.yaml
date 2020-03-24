@@ -14,6 +14,12 @@ spec:
             default: nightly
           - name: storage_class
             default: standard
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -30,9 +36,6 @@ spec:
             -run-time=8h \
             -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
             -d=sqllogictest-tipocket \
-            -loki-addr=http://gateway.loki.svc \
-            -loki-username=loki \
-            -loki-password=admin
-      retryStrategy:
-        limit: 0
-        retryPolicy: Always
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}
