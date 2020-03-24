@@ -27,7 +27,7 @@ spec:
             for pod in $pods
             do
                echo $pod
-               logcli query -q -o raw --no-labels --addr="http://gateway.loki.svc" \
+               logcli query -q -o raw --forward --no-labels --addr="http://gateway.loki.svc" \
                --username=loki --password=admin  --from=$start --limit={{inputs.parameters.limit}} \
                '{namespace="{{inputs.parameters.ns}}", instance="'$pod'"}' > $pod.log
             done
