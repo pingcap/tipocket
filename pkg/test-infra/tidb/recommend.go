@@ -16,6 +16,7 @@ package tidb
 import (
 	"fmt"
 	"strings"
+	"unsafe"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"k8s.io/utils/pointer"
@@ -80,6 +81,8 @@ func buildImage(name string) string {
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
+	var TiKVRep *int32
+	TiKVRep = (*int32)(unsafe.Pointer(&fixture.Context.TiKVReP))
 
 	return &Recommendation{
 		NS:   ns,
@@ -107,7 +110,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             3,
+					Replicas:             *TiKVRep,
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					MaxFailoverCount:     pointer.Int32Ptr(3),
