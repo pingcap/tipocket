@@ -72,7 +72,6 @@ func (k *K8sProvisioner) setUpTiDBCluster(recommend *tidb.Recommendation) ([]clu
 	if err := k.CreateNamespace(recommend.NS); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
 	}
-
 	if tc, err := k.TiDB.GetTiDBCluster(recommend.NS, recommend.NS); err == nil {
 		recommend.TidbCluster = tc
 	} else {
