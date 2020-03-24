@@ -55,7 +55,7 @@ type MySQL struct {
 }
 
 func (m *MySQL) URI() string {
-	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/mysql", m.Svc.Name, m.Svc.Namespace)
+	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/test", m.Svc.Name, m.Svc.Namespace)
 }
 
 func (m *MySQLOps) ApplyMySQL(spec *MySQLSpec) (*MySQL, error) {
@@ -103,11 +103,8 @@ func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
 	var q resource.Quantity
 	// var err error
 	if spec.Resource.Requests != nil {
-		// size := spec.Resource.Requests[fixture.Storage]
-		// q, err = resource.ParseQuantity(size)
-		// if err != nil {
-		// 	return nil, fmt.Errorf("cant' get storage size for mysql: %v", err)
-		// }
+		size := spec.Resource.Requests[fixture.Storage]
+		q = size
 	}
 	return &MySQL{
 		Sts: &appsv1.StatefulSet{
