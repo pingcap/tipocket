@@ -186,7 +186,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		id := fmt.Sprintf("gc-worker-%v", loopNum)
 		greenGCUsed, err := gcworker.RunDistributedGCJob(ctx, c.kv, c.pd, safePoint, id, 3, c.EnableGreenGC)
 		if err != nil {
-			return errors.Trace(err)
+			log.Errorf("failed to run GC at safe point %v. This may be caused by nemesis or there is really something wrong.")
 		}
 
 		if greenGCUsed {

@@ -98,4 +98,4 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+inc
 
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 
-replace github.com/pingcap/tidb => github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200322134657-d5eaf9eb4b62
+replace github.com/pingcap/tidb => github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200324104751-03724b530d33

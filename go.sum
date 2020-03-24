@@ -76,6 +76,8 @@ github.com/Microsoft/go-winio v0.4.12/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcy
 github.com/Microsoft/hcsshim v0.8.6/go.mod h1:Op3hHsoHPAvb6lceZHDtd9OkTew38wNoXnJs8iY7rUg=
 github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200322134657-d5eaf9eb4b62 h1:P7gBcSpoMc1v/WyYfa5QXuapEkCAYsjzOk2ZPGaeyDI=
 github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200322134657-d5eaf9eb4b62/go.mod h1:4CGOiKZSaOU/Da3QYMtp0c3uBE2SxpcLOpESXmeQhcs=
+github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200324104751-03724b530d33 h1:xAxY+lB9M5JuPx73HXPUaG7mweM8l6gP+sTdX+hgcZo=
+github.com/MyonKeminta/tidb v1.1.0-alpha.1.0.20200324104751-03724b530d33/go.mod h1:4CGOiKZSaOU/Da3QYMtp0c3uBE2SxpcLOpESXmeQhcs=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
