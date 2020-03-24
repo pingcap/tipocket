@@ -28,6 +28,6 @@ spec:
                 - name: purge
                   value: "true"
                 - name: image_version
-                  value: nightly
+                  value: release-4.0-nightly
                 - name: storage_class
                   value: pd-ssd
