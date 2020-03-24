@@ -24,7 +24,6 @@ spec:
           - '-c'
           - |
             start=`kubectl get wf {{workflow.name}} -n {{workflow.namespace}} -o json | jq -r '.metadata.creationTimestamp'`
-            echo $start
 
             pods=`curl -sg 'http://loki:admin@gateway.loki.svc/loki/api/v1/series?' \
             -d "start=$start"  -d 'match={namespace="{{inputs.parameters.ns}}"}' \
