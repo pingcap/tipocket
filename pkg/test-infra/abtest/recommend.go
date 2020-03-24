@@ -15,9 +15,7 @@ package abtest
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
@@ -30,43 +28,11 @@ type Recommendation struct {
 }
 
 // RecommendedCluster gives a recommend cluster
-func RecommendedCluster(ns, name string) *Recommendation {
-	r := Recommendation{
-		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name)),
-		Cluster2: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-b", name)),
+func RecommendedCluster(ns, name, versionA, versionB string) *Recommendation {
+	return &Recommendation{
+		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name), versionA),
+		Cluster2: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-b", name), versionB),
 		NS:       ns,
 		Name:     name,
 	}
-
-	overwriteClusterVersion(fixture.Context.ABTestConfig.Cluster1Version, r.Cluster1)
-	overwriteClusterVersion(fixture.Context.ABTestConfig.Cluster2Version, r.Cluster2)
-
-	return &r
-}
-
-func overwriteClusterVersion(version string, tc *tidb.Recommendation) {
-	if version == "" {
-		return
-	}
-
-	tc.TidbCluster.Spec.Version = version
-	tc.TidbCluster.Spec.TiDB.ComponentSpec.Version = &version
-	tc.TidbCluster.Spec.TiDB.ComponentSpec.Image = buildImage("tidb", version)
-	tc.TidbCluster.Spec.TiKV.ComponentSpec.Version = &version
-	tc.TidbCluster.Spec.TiKV.ComponentSpec.Image = buildImage("tikv", version)
-	tc.TidbCluster.Spec.PD.ComponentSpec.Version = &version
-	tc.TidbCluster.Spec.PD.ComponentSpec.Image = buildImage("pd", version)
-}
-
-func buildImage(name, version string) string {
-	var b strings.Builder
-	if fixture.Context.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
-	}
-	b.WriteString(fixture.Context.DockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	b.WriteString(version)
-	return b.String()
 }

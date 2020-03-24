@@ -49,7 +49,6 @@ type fixtureContext struct {
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
-	TiDBVersion              string
 	MySQLVersion             string
 	HubAddress               string
 	DockerRepository         string
@@ -180,7 +179,7 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 
