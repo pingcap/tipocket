@@ -37,6 +37,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 		return k.setUpTiDBCluster(s)
 	case *binlog.Recommendation:
 		return k.setUpBinlogCluster(s)
+	case *abtest.Recommendation:
+		return k.setUpABTestCluster(s)
 	case *cdc.Recommendation:
 		return k.setUpCDCCluster(s)
 	default:

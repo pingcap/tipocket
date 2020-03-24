@@ -63,8 +63,6 @@ func (c *CDCOps) Apply(tc *Recommendation) error {
 		return err
 	}
 
-	time.Sleep(2 * time.Second)
-
 	return nil
 }
 
