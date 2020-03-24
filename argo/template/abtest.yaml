@@ -9,10 +9,31 @@ spec:
           - name: ns
             default: tipocket-abtest
           - name: purge
-            default: true
+            default: "false"
           - name: image_version
+            default: nightly
+          - name: abtest_version
+            value: latest
           - name: storage_class
-          - name: b_version
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: client
+            default: "2"
+          - name: run_time
+            default: "48h"
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: abtest_tidb_config
+            default: ""
+          - name: abtest_tikv_config
+            default: ""
+          - name: abtest_pd_config
+            default: ""
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,9 +46,17 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.image-version={{inputs.parameters.b_version}} \
+            -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
             -client=2 \
+            -run-time={{inputs.parameters.run_time}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
+            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
+            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin

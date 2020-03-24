@@ -57,6 +57,7 @@ type fixtureContext struct {
 	TiDBConfigFile           string
 	TiKVConfigFile           string
 	PDConfigFile             string
+	TiKVReplicas             int
 	// Loki
 	LokiAddress  string
 	LokiUsername string
@@ -175,11 +176,13 @@ func init() {
 	flag.StringVar(&Context.TiDBConfigFile, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiKVConfigFile, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.PDConfigFile, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.IntVar(&Context.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
+	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)

@@ -1,0 +1,18 @@
+metadata:
+  generateName: tipocket-bank-iochaos-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-bank-iochaos
+  templates:
+    - name: call-tipocket-bank-iochaos
+      steps:
+        - - name: call-tipocket-bank-iochaos
+            templateRef:
+              name: tipocket-bank-iochaos
+              template: tipocket-bank-iochaos
+            arguments:
+              parameters:
+                - name: image_version
+                  value: latest
+                - name: storage_class
+                  value: local-scsi

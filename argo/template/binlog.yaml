@@ -1,13 +1,13 @@
 metadata:
-  name: tipocket-ledger
+  name: tipocket-binlog
   namespace: argo
 spec:
   templates:
-    - name: tipocket-ledger
+    - name: tipocket-binlog
       inputs:
         parameters:
           - name: ns
-            default: tipocket-ledger
+            default: tipocket-binlog
           - name: purge
             default: "false"
           - name: image_version
@@ -17,7 +17,9 @@ spec:
           - name: nemesis
             default: ""
           - name: run_time
-            default: "60m"
+            default: "48h"
+          - name: relay_log
+            default: "true"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,7 +27,7 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/ledger \
+            /bin/pocket \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
@@ -33,6 +35,7 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
+            -relay-log={{inputs.parameters.relay_log}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin

@@ -1,13 +1,13 @@
 metadata:
-  name: tipocket-ledger
+  name: tipocket-bank-iochaos
   namespace: argo
 spec:
   templates:
-    - name: tipocket-ledger
+    - name: tipocket-bank-iochaos
       inputs:
         parameters:
           - name: ns
-            default: tipocket-ledger
+            default: tipocket-bank-iochaos
           - name: purge
             default: "false"
           - name: image_version
@@ -15,9 +15,13 @@ spec:
           - name: storage_class
             default: standard
           - name: nemesis
-            default: ""
-          - name: run_time
-            default: "60m"
+            default: "delay_tikv"
+          - name: client
+            default: "5"
+          - name: request_count
+            default: "10000"
+          - name: round
+            default: "100"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -25,14 +29,17 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/ledger \
+            /bin/chaos-tidb \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
+            -case=bank \
+            -client={{inputs.parameters.client}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
+            -round={{inputs.parameters.round}} \
+            -request-count={{inputs.parameters.request_count}} \
             -loki-addr=http://gateway.loki.svc \
             -loki-username=loki \
             -loki-password=admin

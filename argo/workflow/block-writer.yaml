@@ -3,7 +3,18 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-block-writer
+  onExit: call-export-logs
   templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-block-writer
     - name: call-tipocket-block-writer
       steps:
         - - name: call-tipocket-block-writer
@@ -12,7 +23,15 @@ spec:
               template: tipocket-block-writer
             arguments:
               parameters:
+                - name: ns
+                  value: tipocket-block-writer
+                - name: purge
+                  value: "true"
                 - name: image_version
-                  value: latest
+                  value: nightly
                 - name: storage_class
                   value: pd-ssd
+                - name: nemesis
+                  value: ""
+                - name: run_time
+                  value: "60m"
