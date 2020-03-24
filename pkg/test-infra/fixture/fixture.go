@@ -57,7 +57,7 @@ type fixtureContext struct {
 	TiDBConfigFile           string
 	TiKVConfigFile           string
 	PDConfigFile             string
-	TiKVReplicas                  int
+	TiKVReplicas             int
 	// Loki
 	LokiAddress  string
 	LokiUsername string
