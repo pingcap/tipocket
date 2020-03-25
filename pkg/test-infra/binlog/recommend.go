@@ -125,7 +125,7 @@ func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 					Namespace: ns,
 					Labels: map[string]string{
 						"app":      "tipocket-tidbcluster",
-						"instance": "name",
+						"instance": name,
 					},
 				},
 				Spec: appsv1.StatefulSetSpec{

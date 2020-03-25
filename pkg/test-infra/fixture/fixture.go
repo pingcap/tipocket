@@ -46,6 +46,7 @@ type fixtureContext struct {
 	ABTestConfig             ABTestConfig
 	BinlogConfig             BinlogConfig
 	CDCConfig                CDCConfig
+	TiFlashConfig            TiFlashConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
@@ -159,6 +160,7 @@ func init() {
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
+	flag.StringVar(&Context.DockerRepository, "repo", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
@@ -189,7 +191,12 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 
-	Context.DockerRepository = "pingcap"
+	flag.StringVar(&Context.TiFlashConfig.TiFlashVersion, "tiflash.version", "", `overwrite "-image-version" flag for TiFlash`)
+	flag.StringVar(&Context.TiFlashConfig.DockerRepository, "tiflash.repository", "", `specify docker registry for TiFlash`)
+	flag.StringVar(&Context.TiFlashConfig.HubAddress, "tiflash.hub", "", `overwrite "-hub" flag for TiFlash`)
+	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for tiflash test, default to stdout")
+
+	Context.DockerRepository = "tiflash"
 
 	log.SetHighlighting(false)
 

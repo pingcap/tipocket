@@ -23,6 +23,8 @@ const (
 	CDC Component = "cdc"
 	// Monitor Component identifier
 	Monitor Component = "monitor"
+	// TiFlash Component identifier
+	TiFlash Component = "tiflash"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )

@@ -1,0 +1,7 @@
+[log]
+level = "info"
+[replication]
+location-labels = ["region", "zone", "rack", "host"]
+enable-placement-rules = true
+[schedule]
+merge-schedule-limit = 0
