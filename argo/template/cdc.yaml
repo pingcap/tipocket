@@ -19,11 +19,11 @@ spec:
           - name: run_time
             default: "48h"
           - name: cdc_hub
-            default: "hub.pingcap.net"
+            default: docker.io
           - name: cdc_repository
-            default: "qa"
+            default: pingcap
           - name: cdc_version
-            default: "master"
+            default: nightly
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -51,6 +51,3 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-      retryStrategy:
-        limit: 0
-        retryPolicy: Always
