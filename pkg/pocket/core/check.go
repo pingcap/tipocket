@@ -129,10 +129,12 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	if err != nil {
 		c.Unlock()
+		c.execMutex.Lock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
+		c.execMutex.Lock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestSelect(makeCompareSQLs(schema)[0]); err != nil {
@@ -145,7 +147,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	defer func() {
 		log.Info("free lock")
 		c.Unlock()
-		defer c.execMutex.Unlock()
+		c.execMutex.Unlock()
 	}()
 
 	// delay will hold on this snapshot and check it later
@@ -219,7 +221,11 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	// go on other transactions
 	// defer can be removed
 	// but here we use it for protect environment
-	defer c.Unlock()
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+		c.execMutex.Lock()
+	}()
 
 	// delay will hold on this snapshot and check it later
 	if delay {
