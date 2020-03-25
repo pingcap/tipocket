@@ -39,8 +39,9 @@ type Core struct {
 	lockWatchCh chan int
 	order       *types.Order
 	// lock
-	mutex  sync.Mutex
-	ifLock bool
+	mutex     sync.Mutex
+	execMutex sync.Mutex
+	ifLock    bool
 }
 
 // New creates a Core struct

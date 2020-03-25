@@ -23,6 +23,8 @@ import (
 )
 
 func (c *Core) execute(e *executor.Executor, sql *types.SQL) {
+	c.execMutex.Lock()
+	defer c.execMutex.Unlock()
 	// wait for execute finish
 	// may not ignore the errors here
 	if c.cfg.Options.Serialize && sql.ExecTime != 0 {
