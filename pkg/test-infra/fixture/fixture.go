@@ -58,7 +58,7 @@ type fixtureContext struct {
 	TiKVConfigFile           string
 	PDConfigFile             string
 	TiKVReplicas             int
-	TiDB_row_format_version  int
+	TiDBRowFormatVersion  int
 	// Loki
 	LokiAddress  string
 	LokiUsername string
@@ -178,7 +178,7 @@ func init() {
 	flag.StringVar(&Context.TiKVConfigFile, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.PDConfigFile, "pd-config", "", "path of pd config file (cluster A in abtest case)")
 	flag.IntVar(&Context.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
-	flag.IntVar(&Context.TiDB_row_format_version, "tidb-row-format", 1, "version of tidb row format")
+	flag.IntVar(&Context.TiDBRowFormatVersion, "tidb-row-format", 1, "version of tidb row format")
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")

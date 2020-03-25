@@ -34,7 +34,7 @@ func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node cluster
 		return err
 	}
 
-	cmd := fmt.Sprintf("set @@global.tidb_row_format_version=%d;", fixture.Context.TiKVReplicas)
+	cmd := fmt.Sprintf("set @@global.tidb_row_format_version=%d;", fixture.Context.TiDBRowFormatVersion)
 	if _, err = db.ExecContext(ctx, cmd); err != nil {
 		return err
 	}
