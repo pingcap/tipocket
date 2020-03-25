@@ -4,6 +4,20 @@ metadata:
 spec:
   entrypoint: call-tipocket-cdc
   onExit: call-export-logs
+  arguments:
+    parameters:
+        - name: ns
+          value: tipocket-cdc
+            - name: purge
+              value: "false"
+            - name: image_version
+              value: release-4.0-nightly
+            - name: storage_class
+              value: pd-ssd
+            - name: nemesis
+              value: ""
+            - name: run_time
+              value: "60m"
   templates:
     - name: call-export-logs
       steps:
@@ -24,16 +38,14 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-cdc
+                  value: "{{workflow.parameters.ns}}"
                 - name: purge
-                  value: "false"
+                  value: "{{workflow.parameters.purge}}"
                 - name: image_version
-                  value: release-4.0-nightly
+                  value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
-                  value: pd-ssd
+                  value: "{{workflow.parameters.storage_class}}"
                 - name: nemesis
-                  value: ""
+                  value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
-                  value: "60m"
-                - name: relay_log
-                  value: "true"
+                  value: "{{workflow.parameters.run_time}}"

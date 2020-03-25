@@ -24,6 +24,12 @@ spec:
             default: "qa"
           - name: cdc_version
             default: "master"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -42,9 +48,9 @@ spec:
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
-            -loki-addr=http://gateway.loki.svc \
-            -loki-username=loki \
-            -loki-password=admin
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}
       retryStrategy:
         limit: 0
         retryPolicy: Always
