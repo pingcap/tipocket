@@ -93,7 +93,7 @@ func (d ioDelay) template(
 
 func (d ioDelay) defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec {
 	return d.template(ns, pods, chaosv1alpha1.OnePodMode,
-		chaosv1alpha1.FileSystemLayer, configMap, nil,"50ms", "50")
+		chaosv1alpha1.FileSystemLayer, configMap, nil, "50ms", "50")
 }
 
 type ioErrno struct{}
