@@ -97,6 +97,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 				Version:         fixture.Context.TiDBVersion,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
+				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
 					Replicas:             3,
 					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
