@@ -25,7 +25,7 @@ type NoopDB struct {
 
 // SetUp initializes the database.
 func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
-	if node.Component != clusterTypes.TiDB {
+	/*if node.Component != clusterTypes.TiDB {
 		return nil
 	}
 
@@ -37,7 +37,7 @@ func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node cluster
 	cmd := fmt.Sprintf("set @@global.tidb_row_format_version=%d;", fixture.Context.TiDBRowFormatVersion)
 	if _, err = db.ExecContext(ctx, cmd); err != nil {
 		return err
-	}
+	}*/
 	return nil
 }
 
