@@ -19,11 +19,11 @@ spec:
       - name: run_time
         value: "60m"
       - name: cdc_hub
-        value: "hub.pingcap.net"
+        value: "docker.io"
       - name: cdc_repository
-        value: "qa"
+        value: "pingcap"
       - name: cdc_version
-        value: "master"
+        value: "nightly"
   templates:
     - name: call-export-logs
       steps:
