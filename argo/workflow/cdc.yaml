@@ -6,24 +6,24 @@ spec:
   onExit: call-export-logs
   arguments:
     parameters:
-        - name: ns
-          value: tipocket-cdc
-        - name: purge
-          value: "false"
-        - name: image_version
-          value: release-4.0-nightly
-        - name: storage_class
-          value: pd-ssd
-        - name: nemesis
-          value: ""
-        - name: run_time
-          value: "60m"
-        - name: cdc_hub
-          default: "hub.pingcap.net"
-        - name: cdc_repository
-          default: "qa"
-        - name: cdc_version
-          default: "master"
+      - name: ns
+        value: tipocket-cdc
+      - name: purge
+        value: "false"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: nemesis
+        value: ""
+      - name: run_time
+        value: "60m"
+      - name: cdc_hub
+        default: "hub.pingcap.net"
+      - name: cdc_repository
+        default: "qa"
+      - name: cdc_version
+        default: "master"
   templates:
     - name: call-export-logs
       steps:
