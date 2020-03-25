@@ -19,11 +19,11 @@ spec:
       - name: run_time
         value: "60m"
       - name: cdc_hub
-        default: "hub.pingcap.net"
+        value: "hub.pingcap.net"
       - name: cdc_repository
-        default: "qa"
+        value: "qa"
       - name: cdc_version
-        default: "master"
+        value: "master"
   templates:
     - name: call-export-logs
       steps:
