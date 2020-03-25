@@ -211,9 +211,6 @@ func (t *TidbOps) ApplyTiDBCluster(cluster *Recommendation, config ...Config) er
 		c = &config[0]
 	}
 	desired := tc.DeepCopy()
-	if tc.Spec.Version == "" {
-		tc.Spec.Version = fixture.Context.TiDBVersion
-	}
 
 	log.Info("Apply tidb discovery")
 	if err := t.applyDiscovery(tc); err != nil {
