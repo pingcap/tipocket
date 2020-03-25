@@ -174,7 +174,6 @@ func (e ioReadEerr) defaultTemplate(ns, configMap string, pods []string) chaosv1
 		chaosv1alpha1.FileSystemLayer, configMap, []string{"read"}, randomErrno, "50")
 }
 
-
 type ioMixed struct{}
 
 func (m ioMixed) ioChaosType() chaosv1alpha1.IOChaosAction {
