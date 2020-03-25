@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/pingcap/go-tpc/tpcc"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"

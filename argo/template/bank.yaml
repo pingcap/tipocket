@@ -43,6 +43,7 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -case=bank \
             -client={{inputs.parameters.client}} \
+            -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \
             -request-count={{inputs.parameters.request_count}} \
