@@ -54,6 +54,7 @@ func (e *Executor) reloadSchema() error {
 	e.ss.LoadSchema(schema, indexes)
 	e.ss.SetDB(e.dbname)
 	e.ss.SetStable(e.opt.Stable)
+	e.ss.SetHint(e.opt.Hint)
 	e.BeginWithOnlineTables()
 	return nil
 }

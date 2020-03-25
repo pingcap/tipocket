@@ -41,6 +41,7 @@ func (s *SQLSmith) selectStmt(depth int) ast.Node {
 		selectStmtNode.Where = s.binaryOperationExpr(util.Rd(depth), 1)
 	}
 
+	selectStmtNode.TableHints = s.tableHintsExpr()
 	selectStmtNode.From = s.tableRefsClause(depth)
 
 	return &selectStmtNode
@@ -66,8 +67,10 @@ func (s *SQLSmith) updateStmt() ast.Node {
 	if whereRand < 8 {
 		updateStmtNode.Where = s.binaryOperationExpr(whereRand, 0)
 	} else {
-		updateStmtNode.Where = ast.NewValueExpr(1)
+		updateStmtNode.Where = ast.NewValueExpr(1, "", "")
 	}
+
+	updateStmtNode.TableHints = s.tableHintsExpr()
 
 	return &updateStmtNode
 }
@@ -94,10 +97,35 @@ func (s *SQLSmith) deleteStmt() ast.Node {
 	if whereRand < 8 {
 		deleteStmtNode.Where = s.binaryOperationExpr(whereRand, 0)
 	} else {
-		deleteStmtNode.Where = ast.NewValueExpr(1)
+		deleteStmtNode.Where = ast.NewValueExpr(1, "", "")
 	}
 
+	deleteStmtNode.TableHints = s.tableHintsExpr()
+
 	return &deleteStmtNode
+}
+
+func (s *SQLSmith) tableHintsExpr() (hints []*ast.TableOptimizerHint) {
+	if !s.Hint() {
+		return
+	}
+	length := 0
+	switch n := util.Rd(7)*util.Rd(7) - 17; {
+	case n <= 0:
+		length = 0
+	case n < 4:
+		length = 1
+	case n < 9:
+		length = 2
+	case n < 14:
+		length = 3
+	default:
+		length = 4
+	}
+	for i := 0; i < length; i++ {
+		hints = append(hints, &ast.TableOptimizerHint{})
+	}
+	return
 }
 
 func (s *SQLSmith) tableRefsClause(depth int) *ast.TableRefsClause {
@@ -177,7 +205,7 @@ func (s *SQLSmith) binaryOperationExpr(depth, complex int) ast.ExprNode {
 				node.Op = opcode.EQ
 			}
 			node.L = &ast.ColumnNameExpr{}
-			node.R = ast.NewValueExpr(1)
+			node.R = ast.NewValueExpr(1, "", "")
 		}
 	}
 	return &node
@@ -189,7 +217,7 @@ func (s *SQLSmith) patternInExpr() *ast.PatternInExpr {
 	// case *ast.SubqueryExpr:
 	// 	// may need refine after fully support of ResultSetNode interface
 	// 	node.Query.(*ast.SelectStmt).Limit = &ast.Limit {
-	// 		Count: ast.NewValueExpr(1),
+	// 		Count: ast.NewValueExpr(1, "", ""),
 	// 	}
 	// }
 
@@ -215,7 +243,7 @@ func (s *SQLSmith) exprNode(cons bool) ast.ExprNode {
 	default:
 		// hope there is an empty value type
 		if cons {
-			return ast.NewValueExpr(1)
+			return ast.NewValueExpr(1, "", "")
 		}
 		return &ast.ColumnNameExpr{}
 	}

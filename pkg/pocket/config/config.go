@@ -36,6 +36,7 @@ type Options struct {
 	Serialize     bool           `toml:"serialize"`
 	GeneralLog    bool           `toml:"general-log"`
 	SyncTimeout   types.Duration `toml:"check-duration"`
+	EnableHint    bool           `toml:"enable-hint"`
 }
 
 // Generator Config
@@ -74,6 +75,7 @@ var initConfig = Config{
 		SyncTimeout: types.Duration{
 			Duration: 10 * time.Minute,
 		},
+		EnableHint: true,
 	},
 	Generator: Generator{
 		SQLSmith: SQLSmith{

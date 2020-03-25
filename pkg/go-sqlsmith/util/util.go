@@ -40,3 +40,17 @@ func TimeMustParse(layout, value string) time.Time {
 	}
 	return t
 }
+
+func MinInt(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
+}
+
+func MaxInt(a, b int) int {
+	if a < b {
+		return b
+	}
+	return a
+}
