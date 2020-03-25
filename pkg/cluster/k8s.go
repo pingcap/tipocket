@@ -57,6 +57,8 @@ func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 		err = k.tearDownTiDBCluster(s)
 	case *binlog.Recommendation:
 		err = k.tearDownBinlogCluster(s)
+	case *cdc.Recommendation:
+		err = k.tearDownCDCCluster(s)
 	case *abtest.Recommendation:
 		err = k.tearDownABtestCluster(s)
 	default:
@@ -177,6 +179,13 @@ func (k *K8sProvisioner) tearDownTiDBCluster(tc *tidb.Recommendation) error {
 
 func (k *K8sProvisioner) tearDownBinlogCluster(tc *binlog.Recommendation) error {
 	if err := k.Binlog.Delete(tc); err != nil {
+		return err
+	}
+	return k.DeleteNamespace(tc.NS)
+}
+
+func (k *K8sProvisioner) tearDownCDCCluster(tc *cdc.Recommendation) error {
+	if err := k.CDC.Delete(tc); err != nil {
 		return err
 	}
 	return k.DeleteNamespace(tc.NS)
