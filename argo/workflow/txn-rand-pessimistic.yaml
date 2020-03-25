@@ -4,6 +4,20 @@ metadata:
 spec:
   entrypoint: call-tipocket-txn-rand-pessimistic
   onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-txn-rand-pessimistic
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: nemesis
+        value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+      - name: run_time
+        value: "4h"
   templates:
     - name: call-export-logs
       steps:
@@ -24,14 +38,14 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-txn-rand-pessimistic
+                  value: "{{workflow.parameters.ns}}"
                 - name: purge
-                  value: "true"
+                  value: "{{workflow.parameters.purge}}"
                 - name: image_version
-                  value: release-4.0-nightly
+                  value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
-                  value: pd-ssd
+                  value: "{{workflow.parameters.storage_class}}"
                 - name: nemesis
-                  value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+                  value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
-                  value: "4h"
+                  value: "{{workflow.parameters.run_time}}"
