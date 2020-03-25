@@ -3,7 +3,36 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-bank-iochaos
+  onExit: call-export-logs
+  inputs:
+    parameters:
+      - name: ns
+        value: tipocket-bank-iochaos
+      - name: purge
+        value: "false"
+      - name: image_version
+        value: nightly
+      - name: storage_class
+        value: local-scsi
+      - name: nemesis
+        value: "delay_tikv"
+      - name: client
+        value: "5"
+      - name: request_count
+        value: "10000"
+      - name: round
+        value: "100"
   templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-bank-iochaos
       steps:
         - - name: call-tipocket-bank-iochaos
@@ -12,7 +41,19 @@ spec:
               template: tipocket-bank-iochaos
             arguments:
               parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
                 - name: image_version
-                  value: release-4.0-nightly
+                  value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
-                  value: local-scsi
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: request_count
+                  value: "{{workflow.parameters.request_count}}"
+                - name: round
+                  value: "{{workflow.parameters.round}}"
