@@ -218,7 +218,7 @@ func (m ioMixed) defaultTemplate(ns, configName string, pods []string) chaosv1al
 type ioChaos interface {
 	ioChaosType() chaosv1alpha1.IOChaosAction
 	template(ns string, pods []string, podMode chaosv1alpha1.PodMode,
-		layer chaosv1alpha1.IOLayer, configMap string,methods []string, args ...string) chaosv1alpha1.IoChaosSpec
+		layer chaosv1alpha1.IOLayer, configMap string, methods []string, args ...string) chaosv1alpha1.IoChaosSpec
 	defaultTemplate(ns, configMap string, pods []string) chaosv1alpha1.IoChaosSpec
 }
 
