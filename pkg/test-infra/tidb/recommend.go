@@ -80,7 +80,7 @@ func buildImage(name string) string {
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-
+	
 	return &Recommendation{
 		NS:   ns,
 		Name: name,
@@ -107,7 +107,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             *pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
+					Replicas:             int32(fixture.Context.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
