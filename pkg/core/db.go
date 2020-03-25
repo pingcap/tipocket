@@ -2,8 +2,10 @@ package core
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
@@ -23,6 +25,19 @@ type NoopDB struct {
 
 // SetUp initializes the database.
 func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
+	if node.Component != clusterTypes.TiDB {
+		return nil
+	}
+
+	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	if err != nil {
+		return err
+	}
+
+	cmd := fmt.Sprintf("set @@global.tidb_row_format_version=%d;", fixture.Context.TiKVReplicas)
+	if _, err = db.ExecContext(ctx, cmd); err != nil {
+		return err
+	}
 	return nil
 }
 
