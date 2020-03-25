@@ -16,6 +16,7 @@ package tidb
 import (
 	"fmt"
 	"strings"
+	"unsafe"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 
@@ -107,8 +108,7 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 						Image:   buildImage("pd"),
 					},
 				},
-				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             int32(fixture.Context.TiKVReplicas),
+				TiKV: v1alpha1.TiKVSpec{Replicas:             int32(fixture.Context.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "100Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
