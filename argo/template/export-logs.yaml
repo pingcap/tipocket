@@ -8,7 +8,13 @@ spec:
         parameters:
           - name: ns
           - name: limit
-            default: 20000
+            default: 2000000
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
       container:
         name: upload-logs
         workingDir: /src/tidb-logs
@@ -27,8 +33,9 @@ spec:
             for pod in $pods
             do
                echo $pod
-               logcli query -q -o raw --forward --no-labels --addr="http://gateway.loki.svc" \
-               --username=loki --password=admin  --from=$start --limit={{inputs.parameters.limit}} \
+               logcli query -q -o raw --forward --no-labels --addr="{{inputs.parameters.loki-addr}}" \
+               --username={{inputs.parameters.loki-username}} --password={{inputs.parameters.loki-password}} \
+               --from=$start --limit={{inputs.parameters.limit}} \
                '{namespace="{{inputs.parameters.ns}}", instance="'$pod'"}' > $pod.log
             done
 

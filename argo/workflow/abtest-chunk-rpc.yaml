@@ -4,6 +4,34 @@ metadata:
 spec:
   entrypoint: call-tipocket-abtest
   onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-ab-enable-thunk
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: abtest_version
+        value: release-4.0-nightly
+      - name: nemesis
+        value: ""
+      - name: client
+        value: "2"
+      - name: tidb_config
+        value: "/config/tidb/enable-chunk-rpc.toml"
+      - name: tikv_config
+        value: ""
+      - name: pd_config
+        value: ""
+      - name: abtest_tidb_config
+        value: "/config/tidb/enable-chunk-rpc-false.toml"
+      - name: abtest_tikv_config
+        value: ""
+      - name: abtest_pd_config
+        value: ""
   templates:
     - name: call-export-logs
       steps:
@@ -14,7 +42,7 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-abtest
+                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-abtest
       steps:
         - - name: call-tipocket-abtest
@@ -24,27 +52,28 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-ab-enable-thunk
+                  value: "{{workflow.parameters.ns}}"
                 - name: purge
-                  value: "true"
+                  value: "{{workflow.parameters.purge}}"
                 - name: image_version
-                  value: nightly
+                  value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
-                  value: pd-ssd
+                  value: "{{workflow.parameters.storage_class}}"
                 - name: abtest_version
-                  value: nightly
+                  value: "{{workflow.parameters.abtest_version}}"
                 - name: nemesis
-                  value: ""
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
                 - name: tidb_config
-                  value: "/config/tidb/enable-chunk-rpc.toml"
+                  value: "{{workflow.parameters.tidb_config}}"
                 - name: tikv_config
-                  value: ""
+                  value: "{{workflow.parameters.tikv_config}}"
                 - name: pd_config
-                  value: ""
+                  value: "{{workflow.parameters.pd_config}}"
                 - name: abtest_tidb_config
-                  value: "/config/tidb/enable-chunk-rpc-false.toml"
+                  value: "{{workflow.parameters.abtest_tidb_config}}"
                 - name: abtest_tikv_config
-                  value: ""
+                  value: "{{workflow.parameters.abtest_tikv_config}}"
                 - name: abtest_pd_config
-                  value: ""
-
+                  value: "{{workflow.parameters.abtest_pd_config}}"

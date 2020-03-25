@@ -44,7 +44,7 @@ type Recommendation struct {
 	Name       string
 }
 
-// RecommendedBinlogCluster create cluster with binlog
+// RecommendedBinlogCluster creates cluster with binlog
 func RecommendedBinlogCluster(ns, name string) *Recommendation {
 	var (
 		enableBinlog             = true

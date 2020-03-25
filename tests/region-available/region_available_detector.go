@@ -81,6 +81,9 @@ func (d *regionAvailableDetector) SetUp(ctx context.Context, nodes []types.Clien
 		"(id int(10) PRIMARY KEY, pad varchar(255))", d.DBName)); err != nil {
 		log.Fatalf("[regionAvailableDetector] create table fail %v", err)
 	}
+	if _, err := d.db.Exec(fmt.Sprintf("TRUNCATE TABLE %s.region_available", d.DBName)); err != nil {
+		log.Fatalf("[regionAvailableDetector] truncate table fail %v", err)
+	}
 
 	// Load data
 	if err := d.loadData(); err != nil {

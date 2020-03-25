@@ -45,12 +45,12 @@ type fixtureContext struct {
 	Purge                    bool
 	ABTestConfig             ABTestConfig
 	BinlogConfig             BinlogConfig
+	CDCConfig                CDCConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
 	TiDBVersion              string
 	MySQLVersion             string
-	CDCImage                 string
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
@@ -158,6 +158,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
+	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
@@ -182,6 +183,11 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
+
+	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
+	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
+	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
+	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 
 	Context.DockerRepository = "pingcap"
 

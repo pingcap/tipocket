@@ -43,8 +43,10 @@ const (
 
 // Below are the SQL strings for testing tables.
 const (
-	CreateAccountTableTemplate = `create table if not exists accounts%s (id BIGINT PRIMARY KEY, balance BIGINT NOT NULL, remark VARCHAR(128))`
-	CreateRecordTableTemplate  = `create table if not exists record (id BIGINT AUTO_INCREMENT,
+	dropAccountTableTemplate   = `drop table if exists accounts%s`
+	dropRecordTableTemplate    = `drop table if exists record`
+	createAccountTableTemplate = `create table if not exists accounts%s (id BIGINT PRIMARY KEY, balance BIGINT NOT NULL, remark VARCHAR(128))`
+	createRecordTableTemplate  = `create table if not exists record (id BIGINT AUTO_INCREMENT,
 from_id BIGINT NOT NULL,
 to_id BIGINT NOT NULL,
 from_balance BIGINT NOT NULL,
@@ -291,8 +293,10 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 		return nil
 	}
 
-	util.MustExec(db, fmt.Sprintf(CreateAccountTableTemplate, index))
-	util.MustExec(db, CreateRecordTableTemplate)
+	util.MustExec(db, fmt.Sprintf(dropAccountTableTemplate, index))
+	util.MustExec(db, dropRecordTableTemplate)
+	util.MustExec(db, fmt.Sprintf(createAccountTableTemplate, index))
+	util.MustExec(db, createRecordTableTemplate)
 	var wg sync.WaitGroup
 
 	// TODO: fix the error is NumAccounts can't be divided by batchSize.

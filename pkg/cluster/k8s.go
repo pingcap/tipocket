@@ -8,6 +8,7 @@ import (
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
+	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
@@ -38,6 +39,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 		return k.setUpBinlogCluster(s)
 	case *abtest.Recommendation:
 		return k.setUpABTestCluster(s)
+	case *cdc.Recommendation:
+		return k.setUpCDCCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -135,6 +138,30 @@ func (k *K8sProvisioner) setUpABTestCluster(recommend *abtest.Recommendation) ([
 		return nodes, clientNodes, err
 	}
 	clientNodes, err = k.ABTest.GetClientNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	return nodes, clientNodes, err
+}
+
+func (k *K8sProvisioner) setUpCDCCluster(recommend *cdc.Recommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	var (
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
+		err         error
+	)
+	if err := k.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+	err = k.CDC.Apply(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	nodes, err = k.CDC.GetNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	clientNodes, err = k.CDC.GetClientNodes(recommend)
 	if err != nil {
 		return nodes, clientNodes, err
 	}

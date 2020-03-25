@@ -4,6 +4,18 @@ metadata:
 spec:
   entrypoint: call-tipocket-sqllogic
   onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-sqllogic
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: run_time
+        value: "8h"
   templates:
     - name: call-export-logs
       steps:
@@ -14,7 +26,7 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-sqllogic
+                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-sqllogic
       steps:
         - - name: call-tipocket-sqllogic
@@ -24,10 +36,12 @@ spec:
             arguments:
               parameters:
                 - name: ns
-                  value: tipocket-sqllogic
+                  value: "{{workflow.parameters.ns}}"
                 - name: purge
-                  value: "true"
+                  value: "{{workflow.parameters.purge}}"
                 - name: image_version
-                  value: nightly
+                  value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
-                  value: pd-ssd
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: run_time
+                  value: "{{workflow.parameters.run_time}}"

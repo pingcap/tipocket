@@ -25,7 +25,9 @@ var (
 	retryLimit        = 200
 )
 
-const stmtCreate = `
+const (
+	stmtDrop   = `DROP TABLE IF EXISTS ledger_accounts`
+	stmtCreate = `
 CREATE TABLE IF NOT EXISTS ledger_accounts (
   causality_id BIGINT NOT NULL,
   posting_group_id BIGINT NOT NULL,
@@ -43,6 +45,7 @@ CREATE TABLE IF NOT EXISTS ledger_accounts (
 );
 TRUNCATE TABLE ledger_accounts;
 `
+)
 
 // Config is for ledgerClient
 type Config struct {
@@ -98,6 +101,11 @@ func (c *ledgerClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx 
 	defer func() {
 		log.Infof("init end...")
 	}()
+
+	if _, err := c.db.Exec(stmtDrop); err != nil {
+		log.Fatalf("execute statement %s error %v", stmtDrop, err)
+	}
+
 	if _, err := c.db.Exec(stmtCreate); err != nil {
 		log.Fatalf("execute statement %s error %v", stmtCreate, err)
 	}
