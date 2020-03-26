@@ -16,9 +16,9 @@ package tests
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/ngaut/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -55,7 +55,7 @@ type TestCli struct {
 func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
-		log.Fatalf("error creating kube-client: %v", err)
+		log.Errorf("error creating kube-client: %v", err)
 	}
 	tidbClient := tidb.New(kubeCli)
 	return &TestCli{
@@ -124,7 +124,7 @@ func (e *TestCli) DeleteNamespace(name string) error {
 func init() {
 	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 	if err != nil {
-		log.Fatalf("build config failed: %+v", err)
+		log.Errorf("build config failed: %+v", err)
 	}
 	TestClient = newTestCli(conf)
 }
