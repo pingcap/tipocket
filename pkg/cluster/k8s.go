@@ -31,8 +31,10 @@ func NewK8sProvisioner() clusterTypes.Provisioner {
 }
 
 // SetUp sets up cluster, returns err or all nodes info
-func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
-	switch s := spec.(type) {
+func (k *K8sProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	// update cluster spec if there is an io chaos nemesis
+	k.updateClusterDef(spec, k.hasIOChaos(spec.NemesisGens))
+	switch s := spec.Defs.(type) {
 	case *tidb.Recommendation:
 		return k.setUpTiDBCluster(s)
 	case *binlog.Recommendation:
@@ -47,12 +49,12 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec interface{}) ([]cluster
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+func (k *K8sProvisioner) TearDown(ctx context.Context, spec clusterTypes.ClusterSpecs) error {
 	var err error
 	if !fixture.Context.Purge {
 		return nil
 	}
-	switch s := spec.(type) {
+	switch s := spec.Defs.(type) {
 	case *tidb.Recommendation:
 		err = k.tearDownTiDBCluster(s)
 	case *binlog.Recommendation:
@@ -196,4 +198,33 @@ func (k *K8sProvisioner) tearDownABtestCluster(tc *abtest.Recommendation) error 
 		return err
 	}
 	return k.DeleteNamespace(tc.NS)
+}
+
+// hasIOChaos checks if there is any io chaos nemesis
+func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
+	for _, v := range ngs {
+		switch v {
+		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
+			return "tikv"
+		case "delay_pd", "errno_pd", "mixed_pd":
+			return "pd"
+		}
+	}
+	return ""
+}
+
+// TODO(yeya24): support other cluster types
+func (k *K8sProvisioner) updateClusterDef(spec clusterTypes.ClusterSpecs, ioChaosType string) {
+	switch s := spec.Defs.(type) {
+	case *tidb.Recommendation:
+		if ioChaosType == "tikv" {
+			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+			}
+		} else if ioChaosType == "pd" {
+			s.TidbCluster.Spec.PD.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		}
+	}
 }

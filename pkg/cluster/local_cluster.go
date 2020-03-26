@@ -31,7 +31,7 @@ type LocalClusterProvisioner struct {
 }
 
 // SetUp fills nodes and clientNodes
-func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ interface{}) ([]types.Node, []types.ClientNode, error) {
+func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ types.ClusterSpecs) ([]types.Node, []types.ClientNode, error) {
 	var nodes []types.Node
 	var clientNode []types.ClientNode
 	var nodeComponents = buildNodeComponent(l.DBs, types.TiDB)
@@ -66,7 +66,7 @@ func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ interface{}) ([]t
 }
 
 // TearDown does nothing here
-func (l *LocalClusterProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+func (l *LocalClusterProvisioner) TearDown(ctx context.Context, _ types.ClusterSpecs) error {
 	return nil
 }
 
