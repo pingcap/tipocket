@@ -46,7 +46,7 @@ func main() {
 		Provisioner:   cluster.NewK8sProvisioner(),
 		ClientCreator: blockwriter.CaseCreator{TableNum: *tables, Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
 	}
 	suit.Run(context.Background())
 }

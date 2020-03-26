@@ -55,7 +55,8 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.ImageVersion, fixture.Context.ABTestConfig.ClusterBVersion),
 	}
 	suit.Run(context.Background())
 }
