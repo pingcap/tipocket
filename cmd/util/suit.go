@@ -32,7 +32,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -67,12 +66,15 @@ type Suit struct {
 
 // Run runs the suit.
 func (suit *Suit) Run(ctx context.Context) {
-	var err error
+	var (
+		err         error
+		clusterSpec = clusterTypes.ClusterSpecs{
+			Defs:        suit.ClusterDefs,
+			NemesisGens: nemesisGeneratorNames(suit.NemesisGens),
+		}
+	)
 	sctx, cancel := context.WithCancel(ctx)
-
-	// update cluster spec if there is an io chaos nemesis
-	suit.updateClusterDef(hasIOChaos(suit.NemesisGens))
-	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, suit.ClusterDefs)
+	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, clusterSpec)
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
 	}
@@ -118,7 +120,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	c.Run()
 
 	log.Printf("tear down cluster...")
-	if err := suit.Provisioner.TearDown(context.TODO(), suit.ClusterDefs); err != nil {
+	if err := suit.Provisioner.TearDown(context.TODO(), clusterSpec); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
 	}
 }
@@ -247,8 +249,19 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	}
 }
 
-// ParseNemesisGenerator parse NemesisGenerator from string literal
-func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
+// ParseNemesisGenerators parses NemesisGenerator from string literal
+func ParseNemesisGenerators(names string) (nemesisGens []core.NemesisGenerator) {
+	for _, name := range strings.Split(names, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		nemesisGens = append(nemesisGens, parseNemesisGenerator(name))
+	}
+	return
+}
+
+func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	switch name {
 	case "random_kill", "all_kill", "minor_kill", "major_kill",
 		"kill_tikv_1node_5min", "kill_tikv_2node_5min",
@@ -282,45 +295,9 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	return
 }
 
-// ParseNemesisGenerators parses nemesis generator names separated by ","
-func ParseNemesisGenerators(names string) (nemesisGens []core.NemesisGenerator) {
-	for _, name := range strings.Split(names, ",") {
-		name := strings.TrimSpace(name)
-		if len(name) == 0 {
-			continue
-		}
-		nemesisGens = append(nemesisGens, ParseNemesisGenerator(name))
+func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
+	for _, gen := range gens {
+		names = append(names, gen.Name())
 	}
 	return
-}
-
-// hasIOChaos checks if there is any io chaos nemesis
-func hasIOChaos(ngs []core.NemesisGenerator) string {
-	for _, v := range ngs {
-		if _, ok := v.(nemesis.IOChaosGenerator); ok {
-			switch v.Name() {
-			case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
-				return "tikv"
-			case "delay_pd", "errno_pd", "mixed_pd":
-				return "pd"
-			}
-		}
-	}
-	return ""
-}
-
-// TODO(yeya24): support other cluster types
-func (suit *Suit) updateClusterDef(ioChaosType string) {
-	switch s := suit.ClusterDefs.(type) {
-	case *tidb.Recommendation:
-		if ioChaosType == "tikv" {
-			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
-			}
-		} else if ioChaosType == "pd" {
-			s.TidbCluster.Spec.PD.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-pd",
-			}
-		}
-	}
 }
