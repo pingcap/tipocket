@@ -12,6 +12,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/rogpeppe/fastuuid"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -21,6 +22,8 @@ import (
 var (
 	defaultVerifyTimeout = 6 * time.Hour
 	remark               = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq"
+
+	ReplicaRead = "leader"
 )
 
 var (
@@ -199,9 +202,11 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		}
 	}
 
-	query := fmt.Sprintf("select sum(balance) as total from accounts%s", index)
-	err = tx.QueryRow(query).Scan(&total)
-	if err != nil {
+	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
+
+	uuid := fastuuid.MustNewGenerator().Hex128()
+	query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)
+	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
 		log.Errorf("[%s] select sum error %v", c, err)
 		return errors.Trace(err)
 	}
@@ -215,10 +220,10 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 	tx.Commit()
 	check := c.cfg.Accounts * 1000
 	if total != check {
-		log.Errorf("[%s] accouts%s total must %d, but got %d", c, index, check, total)
+		log.Errorf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
 		atomic.StoreInt32(&c.stopped, 1)
 		c.wg.Wait()
-		log.Fatalf("[%s] accouts%s total must %d, but got %d", c, index, check, total)
+		log.Fatalf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
 	}
 
 	return nil

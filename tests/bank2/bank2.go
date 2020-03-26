@@ -12,6 +12,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/rogpeppe/fastuuid"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -64,6 +65,8 @@ var (
 	// specified bound.
 	baseLen      = [3]int{36, 48, 16}
 	TiDBDatabase = true
+
+	ReplicaRead = "leader"
 )
 
 type Config struct {
@@ -246,9 +249,12 @@ func (c *bank2Client) verify(db *sql.DB) {
 		}
 	}
 
+	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
+
 	var total int64
-	err = tx.QueryRow("SELECT SUM(balance) AS total FROM bank2_accounts").Scan(&total)
-	if err != nil {
+	uuid := fastuuid.MustNewGenerator().Hex128()
+	query := fmt.Sprintf("SELECT SUM(balance) AS total, '%s' as uuid FROM bank2_accounts", uuid)
+	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
 		// bank2VerifyFailedCounter.Inc()
 		_ = errors.Trace(err)
 		return
@@ -258,10 +264,10 @@ func (c *bank2Client) verify(db *sql.DB) {
 
 	expectTotal := (int64(c.Config.NumAccounts) * initialBalance) * 2
 	if total != expectTotal {
-		log.Errorf("[%s] bank2_accounts total should be %d, but got %d", c, expectTotal, total)
+		log.Errorf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 		atomic.StoreInt32(&c.stop, 1)
 		c.wg.Wait()
-		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d", c, expectTotal, total)
+		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 	}
 }
 
