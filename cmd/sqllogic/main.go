@@ -49,7 +49,7 @@ func main() {
 		ClientCreator: &sqllogictest.CaseCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
-				TaskCount: 10,
+				TaskCount: *taskCount,
 				CaseURL:   *sqllogicCaseURL,
 				TestDir:   *testDir,
 			},
