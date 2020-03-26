@@ -28,6 +28,12 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -43,6 +49,9 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -case=bank \
             -client={{inputs.parameters.client}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \
