@@ -1,0 +1,53 @@
+metadata:
+  name: tipocket-cdc
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-cdc
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-cdc
+          - name: purge
+            default: "false"
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "48h"
+          - name: cdc_hub
+            default: docker.io
+          - name: cdc_repository
+            default: pingcap
+          - name: cdc_version
+            default: nightly
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/cdc-pocket \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -cdc.hub={{inputs.parameters.cdc_hub}} \
+            -cdc.repository={{inputs.parameters.cdc_repository}} \
+            -cdc.version={{inputs.parameters.cdc_version}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}
