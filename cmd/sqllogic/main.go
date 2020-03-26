@@ -49,13 +49,13 @@ func main() {
 		ClientCreator: &sqllogictest.CaseCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
-				TaskCount: 10,
+				TaskCount: *taskCount,
 				CaseURL:   *sqllogicCaseURL,
 				TestDir:   *testDir,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
 	}
 	suit.Run(context.Background())
 }

@@ -120,6 +120,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 
 	// commit or rollback all transactions
 	log.Info("before lock")
+	c.execMutex.Lock()
 	c.Lock()
 	log.Info("after lock")
 	// no async here to ensure all transactions are committed or rollbacked in order
@@ -128,10 +129,12 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	if err != nil {
 		c.Unlock()
+		c.execMutex.Lock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
+		c.execMutex.Lock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestSelect(makeCompareSQLs(schema)[0]); err != nil {
@@ -144,6 +147,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	defer func() {
 		log.Info("free lock")
 		c.Unlock()
+		c.execMutex.Unlock()
 	}()
 
 	// delay will hold on this snapshot and check it later
@@ -173,6 +177,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 
 	// commit or rollback all transactions
 	// lock here before get snapshot
+	c.execMutex.Lock()
 	c.Lock()
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
@@ -208,6 +213,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
+		c.execMutex.Lock()
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
@@ -215,7 +221,11 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	// go on other transactions
 	// defer can be removed
 	// but here we use it for protect environment
-	defer c.Unlock()
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+		c.execMutex.Lock()
+	}()
 
 	// delay will hold on this snapshot and check it later
 	if delay {

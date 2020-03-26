@@ -45,11 +45,11 @@ type Recommendation struct {
 }
 
 // RecommendedBinlogCluster creates cluster with binlog
-func RecommendedBinlogCluster(ns, name string) *Recommendation {
+func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 	var (
 		enableBinlog             = true
-		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name))
-		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name))
+		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version)
+		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version)
 		drainerName              = fmt.Sprintf("%s-drainer", name)
 		drainerReplicas    int32 = 1
 		drainerServiceName       = drainerName

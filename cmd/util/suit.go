@@ -274,7 +274,7 @@ func ParseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	case "leader-shuffle":
 		g = nemesis.NewLeaderShuffleGenerator(name)
 	case "delay_tikv", "delay_pd", "errno_tikv", "errno_pd",
-		"mixed_tikv", "mixed_pd":
+		"mixed_tikv", "mixed_pd", "readerr_tikv":
 		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
@@ -299,7 +299,7 @@ func hasIOChaos(ngs []core.NemesisGenerator) string {
 	for _, v := range ngs {
 		if _, ok := v.(nemesis.IOChaosGenerator); ok {
 			switch v.Name() {
-			case "delay_tikv", "errno_tikv", "mixed_tikv":
+			case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
 				return "tikv"
 			case "delay_pd", "errno_pd", "mixed_pd":
 				return "pd"

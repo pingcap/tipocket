@@ -57,4 +57,3 @@ spec:
                   value: "{{workflow.parameters.request_count}}"
                 - name: round
                   value: "{{workflow.parameters.round}}"
-

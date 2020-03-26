@@ -18,8 +18,7 @@ type ABTestConfig struct {
 	TiDBConfigFile  string
 	TiKVConfigFile  string
 	PDConfigFile    string
-	Cluster1Version string
-	Cluster2Version string
+	ClusterBVersion string
 	LogPath         string
 	Concurrency     int
 }

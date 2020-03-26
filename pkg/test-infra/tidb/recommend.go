@@ -16,15 +16,14 @@ package tidb
 import (
 	"fmt"
 	"strings"
-	"unsafe"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"k8s.io/utils/pointer"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 )
 
 type Recommendation struct {
@@ -65,7 +64,7 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	return t
 }
 
-func buildImage(name string) string {
+func buildImage(name, version string) string {
 	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
@@ -74,15 +73,13 @@ func buildImage(name string) string {
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(fixture.Context.ImageVersion)
+	b.WriteString(version)
 	return b.String()
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string) *Recommendation {
+func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-	var TiKVReplicas *int32
-	TiKVReplicas = (*int32)(unsafe.Pointer(&fixture.Context.TiKVReplicas))
 
 	return &Recommendation{
 		NS:   ns,
@@ -97,26 +94,27 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Version:         fixture.Context.TiDBVersion,
+				Version:         version,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
+				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
 					Replicas:             3,
 					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("pd"),
+						Version: &version,
+						Image:   buildImage("pd", version),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             *TiKVReplicas,
-					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
+					Replicas:             int32(fixture.Context.TiKVReplicas),
+					ResourceRequirements: fixture.WithStorage(fixture.Medium, "100Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
-					MaxFailoverCount:     pointer.Int32Ptr(3),
+					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("tikv"),
+						Version: &version,
+						Image:   buildImage("tikv", version),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -130,8 +128,8 @@ func RecommendedTiDBCluster(ns, name string) *Recommendation {
 					},
 					MaxFailoverCount: pointer.Int32Ptr(3),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &fixture.Context.ImageVersion,
-						Image:   buildImage("tidb"),
+						Version: &version,
+						Image:   buildImage("tidb", version),
 					},
 				},
 			},
