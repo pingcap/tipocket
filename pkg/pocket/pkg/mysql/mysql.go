@@ -37,6 +37,7 @@ type DBConnect struct {
 type DBAccessor interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
 // MustExec must execute sql or fatal
@@ -78,6 +79,22 @@ func (conn *DBConnect) GetDBAccessor() DBAccessor {
 // IfTxn show if in a transaction
 func (conn *DBConnect) IfTxn() bool {
 	return conn.txn != nil
+}
+
+// GetTiDBTS get the txn begin timestamp from TiDB
+func (conn *DBConnect) GetTiDBTS() (uint64, error) {
+	conn.Lock()
+	defer conn.Unlock()
+
+	if !conn.IfTxn() {
+		return 0, nil
+	}
+
+	var tso uint64
+	if err := conn.GetDBAccessor().QueryRow("SELECT @@TIDB_CURRENT_TS").Scan(&tso); err != nil {
+		return 0, err
+	}
+	return tso, nil
 }
 
 // GetBeginTime get the begin time of a transaction

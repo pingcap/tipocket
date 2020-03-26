@@ -21,4 +21,5 @@ type ABTestConfig struct {
 	ClusterBVersion string
 	LogPath         string
 	Concurrency     int
+	GeneralLog      bool
 }

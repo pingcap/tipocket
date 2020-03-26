@@ -41,6 +41,8 @@ func main() {
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
+	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),

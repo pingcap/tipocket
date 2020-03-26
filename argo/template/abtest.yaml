@@ -34,6 +34,8 @@ spec:
             default: ""
           - name: abtest_pd_config
             default: ""
+          - name: abtest_general_log
+            default: "true"
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -63,6 +65,7 @@ spec:
             -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
             -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
             -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
+            -abtest.general={{inputs.parameters.abtest_general_log}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
