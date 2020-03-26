@@ -66,6 +66,7 @@ var (
 	baseLen      = [3]int{36, 48, 16}
 	TiDBDatabase = true
 
+	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
 	ReplicaRead = "leader"
 )
 

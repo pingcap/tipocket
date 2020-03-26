@@ -23,6 +23,7 @@ var (
 	defaultVerifyTimeout = 6 * time.Hour
 	remark               = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq"
 
+	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
 	ReplicaRead = "leader"
 )
 
