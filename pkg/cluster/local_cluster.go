@@ -15,7 +15,7 @@ type nodeComponent struct {
 	component types.Component
 }
 
-//NewLocalClusterProvisioner reuses a local cluster
+// NewLocalClusterProvisioner reuses a local cluster
 func NewLocalClusterProvisioner(dbs, pds, kvs []string) types.Provisioner {
 	return &LocalClusterProvisioner{
 		DBs: dbs,
@@ -30,6 +30,7 @@ type LocalClusterProvisioner struct {
 	KVs []string
 }
 
+// SetUp fills nodes and clientNodes
 func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ interface{}) ([]types.Node, []types.ClientNode, error) {
 	var nodes []types.Node
 	var clientNode []types.ClientNode
@@ -64,6 +65,7 @@ func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ interface{}) ([]t
 	return nodes, clientNode, nil
 }
 
+// TearDown does nothing here
 func (l *LocalClusterProvisioner) TearDown(ctx context.Context, spec interface{}) error {
 	return nil
 }
