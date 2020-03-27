@@ -14,6 +14,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -188,21 +189,37 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	for compareExecutor.SingleTestExecDDL(tableStmt) != nil {
 		time.Sleep(time.Second)
 	}
-	syncDone := false
-	for !syncDone {
-		time.Sleep(10 * time.Second)
-		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
-		if err != nil {
-			log.Error(err)
-			// return false, errors.Trace(err)
-		}
-		for _, t := range tables {
-			if t == table {
-				syncDone = true
+	var (
+		syncDone    = false
+		ctx, cancel = context.WithTimeout(context.Background(), c.cfg.Options.SyncTimeout.Duration)
+		syncReady   = make(chan struct{}, 1)
+	)
+	defer cancel()
+
+	go func() {
+		for !syncDone {
+			time.Sleep(10 * time.Second)
+			tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
+			if err != nil {
+				log.Error(err)
+				// return false, errors.Trace(err)
+			}
+			for _, t := range tables {
+				if t == table {
+					syncDone = true
+					syncReady <- struct{}{}
+				}
 			}
 		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return false, errors.New("sync timeout")
+	case <-syncReady:
 		log.Info("got sync status", syncDone)
 	}
+
 	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
