@@ -80,4 +80,4 @@ spec:
                 - name: abtest_pd_config
                   value: "{{workflow.parameters.abtest_pd_config}}"
                 - name: abtest_general_log
-                  value: "{{workflow.parameters.abtest_general_log}}""
+                  value: "{{workflow.parameters.abtest_general_log}}"
