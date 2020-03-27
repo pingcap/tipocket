@@ -1,0 +1,67 @@
+metadata:
+  generateName: tipocket-tiflash-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-tiflash
+  onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-tiflash
+      - name: purge
+        value: "false"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: nemesis
+        value: ""
+      - name: run_time
+        value: "6h"
+      - name: tikv_config
+        value: "/config/tiflash/tikv.toml"
+      - name: pd_config
+        value: "/config/tiflash/pd.toml"
+      - name: tiflash_image
+        value: "yeya24/tics:4.0"
+      - name: tiflash_replicas
+        value: 1
+  templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+    - name: call-tipocket-tiflash
+      steps:
+        - - name: call-tipocket-tiflash
+            templateRef:
+              name: tipocket-tiflash
+              template: tipocket-tiflash
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: run_time
+                  value: "{{workflow.parameters.run_time}}"
+                - name: tikv_config
+                  value: "{{workflow.parameters.tikv_config}}"
+                - name: pd_config
+                  value: "{{workflow.parameters.pd_config}}"
+                - name: tiflash_image
+                  value: "{{workflow.parameters.tiflash_image}}"
+                - name: tiflash_replicas
+                  value: "{{workflow.parameters.tiflash_replicas}}"
