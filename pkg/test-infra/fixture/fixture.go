@@ -101,11 +101,11 @@ var (
 	Large = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
-			Memory: resource.MustParse("8Gi"),
+			Memory: resource.MustParse("4Gi"),
 		},
 		Limits: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
-			Memory: resource.MustParse("8Gi"),
+			Memory: resource.MustParse("16Gi"),
 		},
 	}
 	XLarge = corev1.ResourceRequirements{

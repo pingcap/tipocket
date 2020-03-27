@@ -100,7 +100,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
 					Replicas:             3,
-					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
+					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Version: &version,
@@ -109,7 +109,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				},
 				TiKV: v1alpha1.TiKVSpec{
 					Replicas:             int32(fixture.Context.TiKVReplicas),
-					ResourceRequirements: fixture.WithStorage(fixture.Medium, "100Gi"),
+					ResourceRequirements: fixture.WithStorage(fixture.Large, "200Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
 					ComponentSpec: v1alpha1.ComponentSpec{
@@ -119,7 +119,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				},
 				TiDB: v1alpha1.TiDBSpec{
 					Replicas:             2,
-					ResourceRequirements: fixture.Medium,
+					ResourceRequirements: fixture.Large,
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
