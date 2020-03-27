@@ -47,12 +47,10 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 func (o *Ops) Apply(tc *Recommendation) error {
 	// config file initialization
 	if fixture.Context.TiKVConfigFile == "" {
-		//fixture.Context.TiKVConfigFile = "/config/tiflash/tikv.toml"
-		fixture.Context.TiKVConfigFile = "/Users/yeya24/hub/gowork/tipocket/configmap/tiflash/tikv.toml"
+		fixture.Context.TiKVConfigFile = "/config/tiflash/tikv.toml"
 	}
 	if fixture.Context.PDConfigFile == "" {
-		//fixture.Context.PDConfigFile = "/config/tiflash/pd.toml"
-		fixture.Context.PDConfigFile = "/Users/yeya24/hub/gowork/tipocket/configmap/tiflash/pd.toml"
+		fixture.Context.PDConfigFile = "/config/tiflash/pd.toml"
 	}
 
 	if err := o.ApplyTiDBCluster(tc.TiDBCluster); err != nil {

@@ -33,14 +33,14 @@ const (
 	busyboxImage = "busybox"
 )
 
-// CDC defines the configuration for running on Kubernetes
+// TiFlash defines the configuration for running on Kubernetes
 type TiFlash struct {
 	*appsv1.StatefulSet
 	*corev1.ConfigMap
 	*corev1.Service
 }
 
-// Recommendation defines binlog cluster
+// Recommendation defines TiFlash cluster
 type Recommendation struct {
 	*TiFlash
 	TiDBCluster *tidb.Recommendation

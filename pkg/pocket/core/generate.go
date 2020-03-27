@@ -15,6 +15,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -47,7 +48,12 @@ func (c *Core) beforeGenerate() error {
 		if e != nil && sql != nil {
 			c.execute(e, sql)
 		}
-		log.Infof("table %d generate", i)
+		log.Infof("table %s generate", sql.SQLTable)
+
+		// create TiFlash replica
+		if c.cfg.Mode == "tiflash" {
+			c.createTiFlashTableReplica(sql, e)
+		}
 	}
 	for _, e := range c.executors {
 		if err := e.ReloadSchema(); err != nil {
@@ -187,7 +193,7 @@ func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
 
 	switch c.randSQLType() {
 	case types.SQLTypeDDLCreateTable:
-		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
+		sql, err = e.GenerateDDLCreateTable()
 	case types.SQLTypeDDLAlterTable:
 		sql, err = e.GenerateDDLAlterTable(c.getDDLOptions(e))
 	case types.SQLTypeDDLCreateIndex:
@@ -219,6 +225,11 @@ func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
 	}
 	if sql != nil {
 		c.execute(e, sql)
+
+		if c.cfg.Mode == "tiflash" &&
+			sql.SQLType == types.SQLTypeDDLCreateTable {
+			c.createTiFlashTableReplica(sql, e)
+		}
 	}
 }
 
@@ -234,7 +245,7 @@ func (c *Core) serializeGenerateSQL() {
 
 	switch c.randSQLType() {
 	case types.SQLTypeDDLCreateTable:
-		sql, e, err = c.generateDDLAlterTable()
+		sql, e, err = c.generateDDLCreateTable()
 	case types.SQLTypeDDLAlterTable:
 		sql, e, err = c.generateDDLAlterTable()
 	case types.SQLTypeDDLCreateIndex:
@@ -267,6 +278,11 @@ func (c *Core) serializeGenerateSQL() {
 	c.nowExec = e
 	if e != nil && sql != nil {
 		c.execute(e, sql)
+
+		if c.cfg.Mode == "tiflash" &&
+			sql.SQLType == types.SQLTypeDDLCreateTable {
+			c.createTiFlashTableReplica(sql, e)
+		}
 	}
 }
 
@@ -469,4 +485,12 @@ func (c *Core) getDDLOptions(exec *executor.Executor) *generator.DDLOptions {
 		OnlineDDL: false,
 		Tables:    tables,
 	}
+}
+
+// createTiFlashTableReplica creates a replica for TiFlash
+func (c *Core) createTiFlashTableReplica(sql *types.SQL, e *executor.Executor) {
+	c.execute(e, &types.SQL{
+		SQLType: types.SQLTypeDDLAlterTable,
+		SQLStmt: fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", sql.SQLTable),
+	})
 }

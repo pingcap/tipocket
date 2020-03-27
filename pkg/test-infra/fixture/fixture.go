@@ -196,8 +196,6 @@ func init() {
 	flag.StringVar(&Context.TiFlashConfig.HubAddress, "tiflash.hub", "", `overwrite "-hub" flag for TiFlash`)
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for tiflash test, default to stdout")
 
-	Context.DockerRepository = "tiflash"
-
 	log.SetHighlighting(false)
 
 	go func() {

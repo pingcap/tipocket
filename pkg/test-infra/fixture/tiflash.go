@@ -1,6 +1,6 @@
 package fixture
 
-// TiFlashConfig for binlog component
+// TiFlashConfig for TiFlash component
 type TiFlashConfig struct {
 	TiFlashVersion   string
 	DockerRepository string

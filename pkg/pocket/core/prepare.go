@@ -73,6 +73,8 @@ func (c *Core) mustExec() error {
 		}
 	}
 
+	// TODO: move to session level, not global level
+	// when we need to support HTAP.
 	if c.cfg.Mode == "tiflash" {
 		if err := c.coreExec.Exec(setIsolationEngine); err != nil {
 			return errors.Trace(err)

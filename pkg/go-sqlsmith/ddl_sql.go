@@ -18,10 +18,10 @@ import (
 )
 
 // CreateTableStmt create table
-func (s *SQLSmith) CreateTableStmt() (string, error) {
+func (s *SQLSmith) CreateTableStmt() (string, string, error) {
 	tree := s.createTableStmt()
-	stmt, _, err := s.Walk(tree)
-	return stmt, err
+	stmt, table, err := s.Walk(tree)
+	return stmt, table, err
 }
 
 // AlterTableStmt alter table
