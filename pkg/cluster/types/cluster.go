@@ -58,12 +58,18 @@ type ClientNode struct {
 	Port        int32
 }
 
+// ClusterSpecs is a cluster specification
+type ClusterSpecs struct {
+	Defs        interface{}
+	NemesisGens []string
+}
+
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
 type Provisioner interface {
 	// SetUp sets up cluster, returns err or all nodes info
-	SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error)
+	SetUp(ctx context.Context, spec ClusterSpecs) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
-	TearDown(ctx context.Context, spec interface{}) error
+	TearDown(ctx context.Context, spec ClusterSpecs) error
 }
 
 func (node Node) String() string {

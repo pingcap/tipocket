@@ -49,7 +49,6 @@ type fixtureContext struct {
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
-	TiDBVersion              string
 	MySQLVersion             string
 	HubAddress               string
 	DockerRepository         string
@@ -102,11 +101,11 @@ var (
 	Large = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
-			Memory: resource.MustParse("8Gi"),
+			Memory: resource.MustParse("4Gi"),
 		},
 		Limits: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
-			Memory: resource.MustParse("8Gi"),
+			Memory: resource.MustParse("16Gi"),
 		},
 	}
 	XLarge = corev1.ResourceRequirements{
@@ -180,9 +179,10 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.Cluster2Version, "abtest.image-version", "", "specify version for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
+	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)

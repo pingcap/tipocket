@@ -1,41 +1,29 @@
 metadata:
-  name: tipocket-abtest
+  name: tipocket-cdc
   namespace: argo
 spec:
   templates:
-    - name: tipocket-abtest
+    - name: tipocket-cdc
       inputs:
         parameters:
           - name: ns
-            default: tipocket-abtest
+            default: tipocket-cdc
           - name: purge
             default: "false"
           - name: image_version
             default: nightly
-          - name: abtest_version
-            value: latest
           - name: storage_class
             default: standard
           - name: nemesis
             default: ""
-          - name: client
-            default: "2"
           - name: run_time
             default: "48h"
-          - name: tidb_config
-            default: ""
-          - name: tikv_config
-            default: ""
-          - name: pd_config
-            default: ""
-          - name: abtest_tidb_config
-            default: ""
-          - name: abtest_tikv_config
-            default: ""
-          - name: abtest_pd_config
-            default: ""
-          - name: abtest_general_log
-            default: "true"
+          - name: cdc_hub
+            default: docker.io
+          - name: cdc_repository
+            default: pingcap
+          - name: cdc_version
+            default: nightly
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -49,23 +37,17 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/abtest \
+            /bin/cdc-pocket \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
-            -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -client={{inputs.parameters.client}} \
             -run-time={{inputs.parameters.run_time}} \
-            -tidb-config={{inputs.parameters.tidb_config}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -pd-config={{inputs.parameters.pd_config}} \
-            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
-            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
-            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
-            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -cdc.hub={{inputs.parameters.cdc_hub}} \
+            -cdc.repository={{inputs.parameters.cdc_repository}} \
+            -cdc.version={{inputs.parameters.cdc_version}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

@@ -275,5 +275,5 @@ func makeCompareSQLs(schema [][5]string) []string {
 func generateWaitTable() (string, string) {
 	sec := time.Now().Unix()
 	table := fmt.Sprintf("t%d", sec)
-	return table, fmt.Sprintf("CREATE TABLE %s(id int)", table)
+	return table, fmt.Sprintf("CREATE TABLE %s(id int PRIMARY KEY)", table)
 }

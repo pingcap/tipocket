@@ -53,7 +53,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      cdc.RecommendedCDCCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:      cdc.RecommendedCDCCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
 	}
 	suit.Run(context.Background())
 }
