@@ -32,13 +32,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Ops knows how to operate TiDB TiFlash on k8s
+// Ops knows how to operate TiDB and TiFlash on k8s
 type Ops struct {
 	cli client.Client
 	*tidb.TidbOps
 }
 
-// New creates TiFlash ops
+// New creates Ops
 func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 	return &Ops{cli, tidbClient}
 }

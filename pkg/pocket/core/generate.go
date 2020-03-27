@@ -50,7 +50,6 @@ func (c *Core) beforeGenerate() error {
 		}
 		log.Infof("table %s generate", sql.SQLTable)
 
-		// create TiFlash replica
 		if c.cfg.Mode == "tiflash" {
 			c.createTiFlashTableReplica(sql, e)
 		}

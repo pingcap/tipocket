@@ -48,7 +48,7 @@ type Recommendation struct {
 	Name        string
 }
 
-// RecommendedTiFlashCluster creates cluster with TiFlash
+// RecommendedTiFlashCluster creates a cluster with TiFlash
 func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
 	var (
 		tiFlashName = name + "-tiflash"
