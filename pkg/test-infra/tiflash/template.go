@@ -126,25 +126,6 @@ var tiFlashTpl = template.Must(template.New("tiflash-config").Parse(`tmp_path = 
     metrics_port = 8234
 `))
 
-func renderTiFlashCmd(model *tiFlashConfig) (string, error) {
-	return renderTemplateFunc(tiFlashCmdTpl, model)
-}
-
-var tiFlashCmdTpl = template.Must(template.New("tiflash-cmd").Parse(`set -ex
-          [[ ${HOSTNAME} =~ -([0-9]+)$ ]] || exit 1
-          ordinal=${BASH_REMATCH[1]}
-		  echo ${ordinal}
-          set +ex
-          while true; do
-            nslookup {{.ClusterName}}-tiflash-${ordinal}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local
-            if [ ${?} -eq 0 ]; then
-              break;
-            fi
-            sleep 1
-          done
-          /tiflash server --config-file /data/config.toml
-`))
-
 func renderTiFlashProxyTpl(model *tiFlashConfig) (string, error) {
 	return renderTemplateFunc(tiFlashProxyTpl, model)
 }

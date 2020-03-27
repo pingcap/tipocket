@@ -84,8 +84,7 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 		MountPath: "/etc/tiflash",
 	}
 
-	cmd, _ := renderTiFlashCmd(model)
-	image := buildTiFlashImage("tics")
+	image := buildTiFlashImage("tiflash")
 
 	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -112,10 +111,10 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 					Containers: []corev1.Container{
 						{
 							Name:            "tiflash",
-							Command:         []string{"bash", "-c", cmd},
+							Command:         []string{"bash", "-c", "/tiflash/tiflash server --config-file /data/config.toml"},
 							Image:           image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Env:             []corev1.EnvVar{{Name: "LD_LIBRARY_PATH", Value: "/"}},
+							Env:             []corev1.EnvVar{{Name: "LD_LIBRARY_PATH", Value: "/tiflash"}},
 							VolumeMounts:    []corev1.VolumeMount{dataVol, configVol},
 							Ports: []corev1.ContainerPort{
 								{
