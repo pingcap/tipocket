@@ -14,52 +14,53 @@
 package tiflash
 
 import (
-	"bytes"
 	"html/template"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 const (
 	usersTemplate = `
-	[quotas]
+[quotas]
 
-    [quotas.default]
+[quotas.default]
 
-    [quotas.default.interval]
-    duration = 3600
-    queries = 0
-    errors = 0
-    result_rows = 0
-    read_rows = 0
-    execution_time = 0
+[quotas.default.interval]
+duration = 3600
+queries = 0
+errors = 0
+result_rows = 0
+read_rows = 0
+execution_time = 0
 
-    [users]
+[users]
 
-    [users.readonly]
-    password = ""
-    profile = "readonly"
-    quota = "default"
+[users.readonly]
+password = ""
+profile = "readonly"
+quota = "default"
 
-    [users.readonly.networks]
-    ip = "::/0"
+[users.readonly.networks]
+ip = "::/0"
 
-    [users.default]
-    password = ""
-    profile = "default"
-    quota = "default"
+[users.default]
+password = ""
+profile = "default"
+quota = "default"
 
-    [users.default.networks]
-    ip = "::/0"
+[users.default.networks]
+ip = "::/0"
 
-    [profiles]
+[profiles]
 
-    [profiles.readonly]
-    readonly = 1
+[profiles.readonly]
+readonly = 1
 
-    [profiles.default]
-    max_memory_usage = 10000000000
-    use_uncompressed_cache = 0
-    load_balancing = "random"
-	`
+[profiles.default]
+max_memory_usage = 10000000000
+use_uncompressed_cache = 0
+load_balancing = "random"
+`
 
 	tiFlashInitCmdTemplate = `set -ex
           [[ ${HOSTNAME} =~ -([0-9]+)$ ]] || exit 1
@@ -75,120 +76,111 @@ type tiFlashConfig struct {
 }
 
 func renderTiFlashConfig(model *tiFlashConfig) (string, error) {
-	return renderTemplateFunc(tiFlashTpl, model)
+	return util.RenderTemplateFunc(tiFlashTpl, model)
 }
 
 var tiFlashTpl = template.Must(template.New("tiflash-config").Parse(`tmp_path = "/data/tmp"
-    display_name = "TiFlash"
-    default_profile = "default"
-    users_config = "/etc/tiflash/users.toml"
-    path = "/data/db"
-    mark_cache_size = 5368709120
-    listen_host = "0.0.0.0"
-    tcp_port = 9000
-    http_port = 8123
-    interserver_http_port = 9009
+display_name = "TiFlash"
+default_profile = "default"
+users_config = "/etc/tiflash/users.toml"
+path = "/data/db"
+mark_cache_size = 5368709120
+listen_host = "0.0.0.0"
+tcp_port = 9000
+http_port = 8123
+interserver_http_port = 9009
 
-    [flash]
-    tidb_status_addr = "{{.ClusterName}}-tidb.{{.Namespace}}.svc.cluster.local:10080"
-	service_addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:3930"
-    overlap_threshold = 0.6
-    compact_log_min_period = 10
+[flash]
+tidb_status_addr = "{{.ClusterName}}-tidb.{{.Namespace}}.svc.cluster.local:10080"
+service_addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:3930"
+overlap_threshold = 0.6
+compact_log_min_period = 10
 
-    [flash.flash_cluster]
-    master_ttl = 60
-    refresh_interval = 20
-    update_rule_interval = 5
-    cluster_manager_path = "/flash_cluster_manager"
+[flash.flash_cluster]
+master_ttl = 60
+refresh_interval = 20
+update_rule_interval = 5
+cluster_manager_path = "/flash_cluster_manager"
 
-    [flash.proxy]
-    addr = "0.0.0.0:20170"
-    data-dir = "/data/proxy"
-    config = "/data/proxy.toml"
-    log-file = "/data/logs/proxy.log"
+[flash.proxy]
+addr = "0.0.0.0:20170"
+data-dir = "/data/proxy"
+config = "/data/proxy.toml"
+log-file = "/data/logs/proxy.log"
 
-    [logger]
-    level = "debug"
-    log = "/data/logs/server.log"
-    errorlog = "/data/logs/error.log"
-    size = "4000M"
-    count = 10
+[logger]
+level = "debug"
+log = "/data/logs/server.log"
+errorlog = "/data/logs/error.log"
+size = "4000M"
+count = 10
 
-    [application]
-    runAsDaemon = true
+[application]
+runAsDaemon = true
 
-    [raft]
-    kvstore_path = "/data/kvstore"
-    pd_addr = "{{.ClusterName}}-pd.{{.Namespace}}.svc.cluster.local:2379"
-    storage_engine = "dt"
+[raft]
+kvstore_path = "/data/kvstore"
+pd_addr = "{{.ClusterName}}-pd.{{.Namespace}}.svc.cluster.local:2379"
+storage_engine = "dt"
 
-    [status]
-    metrics_port = 8234
+[status]
+metrics_port = 8234
 `))
 
 func renderTiFlashProxyTpl(model *tiFlashConfig) (string, error) {
-	return renderTemplateFunc(tiFlashProxyTpl, model)
+	return util.RenderTemplateFunc(tiFlashProxyTpl, model)
 }
 
-var tiFlashProxyTpl = template.Must(template.New("tiflash-config").Parse(`log-level = "info"
+var tiFlashProxyTpl = template.Must(template.New("tiflash-proxy").Parse(`log-level = "info"
 
-    [readpool.storage]
+[readpool.storage]
 
-    [readpool.coprocessor]
+[readpool.coprocessor]
 
-    [server]
-    engine-addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:3930"
-    advertise-addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:20170"
+[server]
+engine-addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:3930"
+advertise-addr = "{{.ClusterName}}-tiflash-{pod_num}.{{.ClusterName}}-tiflash.{{.Namespace}}.svc.cluster.local:20170"
 
-    [storage]
+[storage]
 
-    [pd]
+[pd]
 
-    [metric]
+[metric]
 
-    [raftstore]
-    raftdb-path = ""
-    sync-log = true
-    #max-leader-missing-duration = "22s"
-    #abnormal-leader-missing-duration = "21s"
-    #peer-stale-state-check-interval = "20s"
-    hibernate-regions = false
+[raftstore]
+raftdb-path = ""
+sync-log = true
+#max-leader-missing-duration = "22s"
+#abnormal-leader-missing-duration = "21s"
+#peer-stale-state-check-interval = "20s"
+hibernate-regions = false
 
-    [coprocessor]
+[coprocessor]
 
-    [rocksdb]
-    wal-dir = ""
-    max-open-files = 1000
+[rocksdb]
+wal-dir = ""
+max-open-files = 1000
 
-    [rocksdb.defaultcf]
-    block-cache-size = "10GB"
+[rocksdb.defaultcf]
+block-cache-size = "10GB"
 
-    [rocksdb.lockcf]
-    block-cache-size = "4GB"
+[rocksdb.lockcf]
+block-cache-size = "4GB"
 
-    [rocksdb.writecf]
-    block-cache-size = "4GB"
+[rocksdb.writecf]
+block-cache-size = "4GB"
 
-    [raftdb]
-    max-open-files = 1000
+[raftdb]
+max-open-files = 1000
 
-    [raftdb.defaultcf]
-    block-cache-size = "1GB"
+[raftdb.defaultcf]
+block-cache-size = "1GB"
 
-    [security]
-    ca-path = ""
-    cert-path = ""
-    key-path = ""
+[security]
+ca-path = ""
+cert-path = ""
+key-path = ""
 
-    [import]
+[import]
 
 `))
-
-func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
-	buff := new(bytes.Buffer)
-	err := tpl.Execute(buff, model)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
-}

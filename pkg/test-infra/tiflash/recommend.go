@@ -15,14 +15,14 @@ package tiflash
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
 const (
@@ -84,8 +84,6 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 		MountPath: "/etc/tiflash",
 	}
 
-	image := buildTiFlashImage("tiflash")
-
 	return &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -94,7 +92,7 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: name,
-			Replicas:    pointer.Int32Ptr(1),
+			Replicas:    pointer.Int32Ptr(int32(fixture.Context.TiFlashConfig.Replica)),
 			Selector:    &metav1.LabelSelector{MatchLabels: lbls},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: lbls},
@@ -102,7 +100,7 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 					InitContainers: []corev1.Container{
 						{
 							Name:            "init-tiflash",
-							Image:           image,
+							Image:           fixture.Context.TiFlashConfig.Image,
 							Command:         []string{"bash", "-c", tiFlashInitCmdTemplate},
 							VolumeMounts:    []corev1.VolumeMount{dataVol, configVol},
 							ImagePullPolicy: corev1.PullIfNotPresent,
@@ -111,10 +109,10 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 					Containers: []corev1.Container{
 						{
 							Name:            "tiflash",
-							Command:         []string{"bash", "-c", "/tiflash/tiflash server --config-file /data/config.toml"},
-							Image:           image,
+							Command:         []string{"bash", "-c", "/tiflash server --config-file /data/config.toml"},
+							Image:           fixture.Context.TiFlashConfig.Image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							Env:             []corev1.EnvVar{{Name: "LD_LIBRARY_PATH", Value: "/tiflash"}},
+							Env:             []corev1.EnvVar{{Name: "LD_LIBRARY_PATH", Value: "/"}},
 							VolumeMounts:    []corev1.VolumeMount{dataVol, configVol},
 							Ports: []corev1.ContainerPort{
 								{
@@ -239,36 +237,4 @@ func tiFlashService(ns, name string, lbls map[string]string) *corev1.Service {
 			Selector:  lbls,
 		},
 	}
-}
-
-func buildTiFlashImage(name string) string {
-	var (
-		b                strings.Builder
-		version          = fixture.Context.ImageVersion
-		dockerRepository = fixture.Context.TiFlashConfig.DockerRepository
-		hubAddress       = fixture.Context.TiFlashConfig.HubAddress
-	)
-
-	if fixture.Context.TiFlashConfig.TiFlashVersion != "" {
-		version = fixture.Context.TiFlashConfig.TiFlashVersion
-	}
-
-	if hubAddress == "" {
-		hubAddress = fixture.Context.HubAddress
-	}
-
-	if hubAddress != "" {
-		fmt.Fprintf(&b, "%s/", hubAddress)
-	}
-
-	if dockerRepository == "" {
-		dockerRepository = fixture.Context.DockerRepository
-	}
-
-	b.WriteString(dockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	b.WriteString(version)
-	return b.String()
 }

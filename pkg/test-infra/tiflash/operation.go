@@ -15,21 +15,19 @@ package tiflash
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ngaut/log"
-	"github.com/pingcap/errors"
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate TiDB and TiFlash on k8s
@@ -45,14 +43,6 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 
 // Apply TiFlash cluster
 func (o *Ops) Apply(tc *Recommendation) error {
-	// config file initialization
-	if fixture.Context.TiKVConfigFile == "" {
-		fixture.Context.TiKVConfigFile = "/config/tiflash/tikv.toml"
-	}
-	if fixture.Context.PDConfigFile == "" {
-		fixture.Context.PDConfigFile = "/config/tiflash/pd.toml"
-	}
-
 	if err := o.ApplyTiDBCluster(tc.TiDBCluster); err != nil {
 		return err
 	}
@@ -159,10 +149,6 @@ func (o *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, err
 		return clientNodes, err
 	}
 
-	if len(clientNodes) != 1 {
-		return clientNodes, errors.New("clientNodes count not 1")
-	}
-
 	return clientNodes, nil
 }
 
@@ -174,30 +160,32 @@ func (o *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	if err != nil {
 		return nodes, err
 	}
-	tiFlashNode, err := o.GetTiFlashNode(tc.TiFlash)
+	tiFlashNodes, err := o.GetTiFlashNode(tc)
 	if err != nil {
 		return nodes, err
 	}
 
-	return append(tidbClusterNodes, tiFlashNode), nil
+	return append(tidbClusterNodes, tiFlashNodes...), nil
 }
 
 // GetTiFlashNode returns the nodes of TiFlash
-func (o *Ops) GetTiFlashNode(TiFlash *TiFlash) (clusterTypes.Node, error) {
-	pod := &corev1.Pod{}
-	objKey := client.ObjectKey{
-		Namespace: TiFlash.StatefulSet.ObjectMeta.Namespace,
-		Name:      fmt.Sprintf("%s-0", TiFlash.StatefulSet.ObjectMeta.Name),
-	}
-	if err := o.cli.Get(context.Background(), objKey, pod); err != nil {
-		return clusterTypes.Node{}, err
+func (o *Ops) GetTiFlashNode(tc *Recommendation) ([]clusterTypes.Node, error) {
+	pods := &corev1.PodList{}
+	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: tc.NS},
+		client.MatchingLabels{"app.kubernetes.io/instance": tc.Name + "-tiflash"}); err != nil {
+		return []clusterTypes.Node{}, err
 	}
 
-	return clusterTypes.Node{
-		Namespace: pod.ObjectMeta.Namespace,
-		PodName:   pod.ObjectMeta.Name,
-		IP:        pod.Status.PodIP,
-		Component: clusterTypes.TiFlash,
-		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
-	}, nil
+	nodes := make([]clusterTypes.Node, 0, len(pods.Items))
+	for _, pod := range pods.Items {
+		nodes = append(nodes, clusterTypes.Node{
+			Namespace: pod.ObjectMeta.Namespace,
+			PodName:   pod.ObjectMeta.Name,
+			IP:        pod.Status.PodIP,
+			Component: clusterTypes.TiFlash,
+			Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+		})
+	}
+
+	return nodes, nil
 }

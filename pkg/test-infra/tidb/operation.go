@@ -17,11 +17,9 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"time"
 
 	"github.com/ngaut/log"
-
 	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -125,18 +123,15 @@ func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, er
 
 func (t *TidbOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	err := t.cli.List(context.TODO(), pods)
-	if err != nil {
+	if err := t.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: tc.NS},
+		client.MatchingLabels{"app.kubernetes.io/instance": tc.Name}); err != nil {
 		return []clusterTypes.Node{}, err
 	}
-	// filter namespace
+
 	r := pods.DeepCopy()
 	r.Items = []corev1.Pod{}
 	for _, pod := range pods.Items {
-		if pod.ObjectMeta.Namespace == tc.NS &&
-			pod.ObjectMeta.Labels["app.kubernetes.io/instance"] == tc.Name {
-			r.Items = append(r.Items, pod)
-		}
+		r.Items = append(r.Items, pod)
 	}
 	return t.parseNodeFromPodList(r), nil
 }
@@ -640,13 +635,11 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 	var nodes []clusterTypes.Node
 	for _, pod := range pods.Items {
-		if strings.Contains(pod.ObjectMeta.Name, "discovery") {
-			continue
-		}
-
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
 		if !ok {
 			component = ""
+		} else if component == "discovery" || component == "monitor" {
+			continue
 		}
 
 		nodes = append(nodes, clusterTypes.Node{

@@ -191,15 +191,13 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 
-	flag.StringVar(&Context.TiFlashConfig.TiFlashVersion, "tiflash.version", "", `overwrite "-image-version" flag for TiFlash`)
-	flag.StringVar(&Context.TiFlashConfig.DockerRepository, "tiflash.repository", "", `specify docker registry for TiFlash`)
-	flag.StringVar(&Context.TiFlashConfig.HubAddress, "tiflash.hub", "", `overwrite "-hub" flag for TiFlash`)
-	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for tiflash test, default to stdout")
+	flag.IntVar(&Context.TiFlashConfig.Replica, "tiflash.replica", 1, "how many TiFlash replicas to run")
+	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")
+	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
 	log.SetHighlighting(false)
 
 	go func() {
 		http.ListenAndServe(Context.pprofAddr, nil)
 	}()
-
 }
