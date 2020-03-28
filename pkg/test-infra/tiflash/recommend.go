@@ -16,6 +16,7 @@ package tiflash
 import (
 	"fmt"
 
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,12 +59,19 @@ func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
 			"app.kubernetes.io/instance":  tiFlashName,
 		}
 		model = &tiFlashConfig{ClusterName: name, Namespace: ns}
+		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version)
 	)
 
+	// To make TiFlash work, we need to enable placement rules in pd.
+	tc.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
+		Replication: &v1alpha1.PDReplicationConfig{
+			EnablePlacementRules: pointer.BoolPtr(true),
+		},
+	}
 	return &Recommendation{
 		NS:          ns,
 		Name:        name,
-		TiDBCluster: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version),
+		TiDBCluster: tc,
 		TiFlash: &TiFlash{
 			StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
 			// we use name instead of tiFlashName here

@@ -1,3 +1,0 @@
-log-level = "info"
-[raftstore]
-hibernate-regions = false
