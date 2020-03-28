@@ -27,6 +27,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
+
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -43,13 +45,14 @@ var TestClient *TestCli
 
 // TestCli contains clients
 type TestCli struct {
-	Config *rest.Config
-	Cli    client.Client
-	CDC    *cdc.CDCOps
-	MySQL  *mysql.MySQLOps
-	TiDB   *tidb.TidbOps
-	Binlog *binlog.Ops
-	ABTest *abtest.Ops
+	Config  *rest.Config
+	Cli     client.Client
+	CDC     *cdc.CDCOps
+	MySQL   *mysql.MySQLOps
+	TiDB    *tidb.TidbOps
+	Binlog  *binlog.Ops
+	ABTest  *abtest.Ops
+	TiFlash *tiflash.Ops
 }
 
 func newTestCli(conf *rest.Config) *TestCli {
@@ -59,13 +62,14 @@ func newTestCli(conf *rest.Config) *TestCli {
 	}
 	tidbClient := tidb.New(kubeCli)
 	return &TestCli{
-		Config: conf,
-		Cli:    kubeCli,
-		CDC:    cdc.New(kubeCli, tidbClient),
-		MySQL:  mysql.New(kubeCli),
-		TiDB:   tidbClient,
-		Binlog: binlog.New(kubeCli, tidbClient),
-		ABTest: abtest.New(kubeCli, tidbClient),
+		Config:  conf,
+		Cli:     kubeCli,
+		CDC:     cdc.New(kubeCli, tidbClient),
+		MySQL:   mysql.New(kubeCli),
+		TiDB:    tidbClient,
+		Binlog:  binlog.New(kubeCli, tidbClient),
+		ABTest:  abtest.New(kubeCli, tidbClient),
+		TiFlash: tiflash.New(kubeCli, tidbClient),
 	}
 }
 

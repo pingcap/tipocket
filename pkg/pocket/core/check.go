@@ -235,12 +235,12 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	return c.compareData(compareExecutor, schema)
 }
 
-func (c *Core) compareData(beginnedConnect *executor.Executor, schema [][5]string) (bool, error) {
+func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {
 	sqls := makeCompareSQLs(schema)
 	for _, sql := range sqls {
-		if err := beginnedConnect.ABTestSelect(sql); err != nil {
+		if err := beganConnect.ABTestSelect(sql); err != nil {
 			log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
-				sql, err, util.FormatTimeStrAsLog(beginnedConnect.GetConn().GetBeginTime()))
+				sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
 		}
 	}
 	log.Info("consistency check pass")

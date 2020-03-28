@@ -62,13 +62,14 @@ func (e *Executor) reloadSchema() error {
 
 // GenerateDDLCreateTable rand create table statement
 func (e *Executor) GenerateDDLCreateTable() (*types.SQL, error) {
-	stmt, err := e.ss.CreateTableStmt()
+	stmt, table, err := e.ss.CreateTableStmt()
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &types.SQL{
-		SQLType: types.SQLTypeDDLCreateTable,
-		SQLStmt: stmt,
+		SQLType:  types.SQLTypeDDLCreateTable,
+		SQLTable: table,
+		SQLStmt:  stmt,
 	}, nil
 }
 

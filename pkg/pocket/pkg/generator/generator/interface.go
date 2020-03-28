@@ -35,7 +35,7 @@ type Generator interface {
 	// DeleteStmt generate delete SQL
 	DeleteStmt() (string, string, error)
 	// CreateTableStmt generate create table SQL
-	CreateTableStmt() (string, error)
+	CreateTableStmt() (string, string, error)
 	// AlterTableStmt generate create table SQL, table slice for avoiding online DDL
 	AlterTableStmt(opt *DDLOptions) (string, error)
 	// CreateIndexStmt generate create index SQL, table slice for avoiding online DDL

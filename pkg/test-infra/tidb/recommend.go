@@ -111,7 +111,8 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					Replicas:             int32(fixture.Context.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Large, "200Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
-					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
+					// disable auto fail over
+					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Version: &version,
 						Image:   buildImage("tikv", version),
@@ -126,7 +127,8 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 						},
 						ExposeStatus: &exposeStatus,
 					},
-					MaxFailoverCount: pointer.Int32Ptr(3),
+					// disable auto fail over
+					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Version: &version,
 						Image:   buildImage("tidb", version),
