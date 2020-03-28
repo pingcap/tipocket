@@ -61,10 +61,7 @@ func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
 
 // Start runs self scheduled cases
 func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNodes []clusterTypes.ClientNode) error {
-	var (
-		db1, db2 = makeDSN(clientNodes[0].String()), makeDSN(clientNodes[1].String())
-		cfgPath  = p.Config.ConfigPath
-	)
+	var cfgPath = p.Config.ConfigPath
 
 	cfg := p.Config.Config
 	if cfgPath != "" {
@@ -74,7 +71,12 @@ func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientN
 	}
 
 	cfg.Mode = p.Config.Mode
-	cfg.DSN1, cfg.DSN2 = db1, db2
+	cfg.DSN1 = makeDSN(clientNodes[0].String())
+
+	// In the tiflash case, there is only one client node.
+	if len(clientNodes) > 1 {
+		cfg.DSN2 = makeDSN(clientNodes[1].String())
+	}
 
 	return pocketCore.New(cfg).Start(ctx)
 }

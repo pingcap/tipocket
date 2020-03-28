@@ -20,7 +20,7 @@ all: build
 chaos: tidb
 
 build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
-		region-available deadlock-detector crud bank bank2 abtest cdc-pocket
+		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -78,6 +78,9 @@ abtest:
 
 cdc-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
+
+tiflash-pocket:
+	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go
 
 fmt: groupimports
 	go fmt ./...

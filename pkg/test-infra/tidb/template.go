@@ -14,8 +14,9 @@
 package tidb
 
 import (
-	"bytes"
 	"html/template"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // tidbStartScriptTpl is the template string of tidb start script
@@ -73,7 +74,7 @@ type TidbStartScriptModel struct {
 }
 
 func RenderTiDBStartScript(model *TidbStartScriptModel) (string, error) {
-	return renderTemplateFunc(tidbStartScriptTpl, model)
+	return util.RenderTemplateFunc(tidbStartScriptTpl, model)
 }
 
 var pdStartScriptTpl = template.Must(template.New("pd-start-script").Parse(`#!/bin/sh
@@ -173,7 +174,7 @@ type PDStartScriptModel struct {
 }
 
 func RenderPDStartScript(model *PDStartScriptModel) (string, error) {
-	return renderTemplateFunc(pdStartScriptTpl, model)
+	return util.RenderTemplateFunc(pdStartScriptTpl, model)
 }
 
 var tikvStartScriptTpl = template.Must(template.New("tikv-start-script").Parse(`#!/bin/sh
@@ -225,7 +226,7 @@ type TiKVStartScriptModel struct {
 }
 
 func RenderTiKVStartScript(model *TiKVStartScriptModel) (string, error) {
-	return renderTemplateFunc(tikvStartScriptTpl, model)
+	return util.RenderTemplateFunc(tikvStartScriptTpl, model)
 }
 
 var pumpConfigTpl = template.Must(template.New("pump-config-script").Parse(`detect-interval = 10
@@ -244,14 +245,5 @@ type PumpConfigModel struct {
 }
 
 func RenderPumpConfig(model *PumpConfigModel) (string, error) {
-	return renderTemplateFunc(pumpConfigTpl, model)
-}
-
-func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
-	buff := new(bytes.Buffer)
-	err := tpl.Execute(buff, model)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
+	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }
