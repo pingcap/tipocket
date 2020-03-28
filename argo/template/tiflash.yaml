@@ -30,7 +30,7 @@ spec:
             default: admin
       container:
         name: tipocket
-        image: 'yeya24/tipocket:tiflash'
+        image: 'pingcap/tipocket:latest'
         command:
           - sh
           - '-c'
