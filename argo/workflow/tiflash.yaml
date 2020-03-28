@@ -18,10 +18,6 @@ spec:
         value: ""
       - name: run_time
         value: "6h"
-      - name: tikv_config
-        value: "/config/tiflash/tikv.toml"
-      - name: pd_config
-        value: "/config/tiflash/pd.toml"
       - name: tiflash_image
         value: "yeya24/tics:4.0"
       - name: tiflash_replicas
@@ -57,10 +53,6 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
                   value: "{{workflow.parameters.run_time}}"
-                - name: tikv_config
-                  value: "{{workflow.parameters.tikv_config}}"
-                - name: pd_config
-                  value: "{{workflow.parameters.pd_config}}"
                 - name: tiflash_image
                   value: "{{workflow.parameters.tiflash_image}}"
                 - name: tiflash_replicas
