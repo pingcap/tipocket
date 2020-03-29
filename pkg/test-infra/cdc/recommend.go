@@ -85,7 +85,7 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 									"--status-addr=127.0.0.1:8301",
 								},
 								Image:           buildCDCImage("ticdc"),
-								ImagePullPolicy: corev1.PullIfNotPresent,
+								ImagePullPolicy: corev1.PullAlways,
 							}},
 						},
 					},
