@@ -14,8 +14,9 @@
 package binlog
 
 import (
-	"bytes"
 	"html/template"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 var drainerConfigTpl = template.Must(template.New("drainer-config-script").Parse(`# drainer Configuration.
@@ -114,7 +115,7 @@ type DrainerConfigModel struct {
 }
 
 func RenderDrainerConfig(model *DrainerConfigModel) (string, error) {
-	return renderTemplateFunc(drainerConfigTpl, model)
+	return util.RenderTemplateFunc(drainerConfigTpl, model)
 }
 
 var drainerCommandTpl = template.Must(template.New("drainer-command").Parse(`set -euo pipefail
@@ -156,14 +157,5 @@ type DrainerCommandModel struct {
 }
 
 func RenderDrainerCommand(model *DrainerCommandModel) (string, error) {
-	return renderTemplateFunc(drainerCommandTpl, model)
-}
-
-func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
-	buff := new(bytes.Buffer)
-	err := tpl.Execute(buff, model)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
+	return util.RenderTemplateFunc(drainerCommandTpl, model)
 }
