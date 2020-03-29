@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	usersTemplate = `
-[quotas]
+	usersTemplate = `[quotas]
 
 [quotas.default]
 
@@ -79,7 +78,8 @@ func renderTiFlashConfig(model *tiFlashConfig) (string, error) {
 	return util.RenderTemplateFunc(tiFlashTpl, model)
 }
 
-var tiFlashTpl = template.Must(template.New("tiflash-config").Parse(`tmp_path = "/data/tmp"
+var tiFlashTpl = template.Must(template.New("tiflash-config").Parse(`
+tmp_path = "/data/tmp"
 display_name = "TiFlash"
 default_profile = "default"
 users_config = "/etc/tiflash/users.toml"
@@ -125,13 +125,15 @@ storage_engine = "dt"
 
 [status]
 metrics_port = 8234
+
 `))
 
 func renderTiFlashProxyTpl(model *tiFlashConfig) (string, error) {
 	return util.RenderTemplateFunc(tiFlashProxyTpl, model)
 }
 
-var tiFlashProxyTpl = template.Must(template.New("tiflash-proxy").Parse(`log-level = "info"
+var tiFlashProxyTpl = template.Must(template.New("tiflash-proxy").Parse(`
+log-level = "info"
 
 [readpool.storage]
 

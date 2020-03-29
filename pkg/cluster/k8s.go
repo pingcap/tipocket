@@ -237,6 +237,8 @@ func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
 			return "tikv"
 		case "delay_pd", "errno_pd", "mixed_pd":
 			return "pd"
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			return "tiflash"
 		}
 	}
 	return ""
@@ -250,7 +252,7 @@ func (k *K8sProvisioner) updateClusterDef(spec clusterTypes.ClusterSpecs, ioChao
 		tc = s.TidbCluster
 	case *tiflash.Recommendation:
 		if ioChaosType == "tiflash" {
-			s.TiFlash.StatefulSet.Annotations = map[string]string{
+			s.TiFlash.StatefulSet.Spec.Template.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
 			return

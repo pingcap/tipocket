@@ -9,7 +9,7 @@ spec:
       - name: ns
         value: tipocket-binlog
       - name: purge
-        value: "false"
+        value: "true"
       - name: image_version
         value: release-4.0-nightly
       - name: storage_class
