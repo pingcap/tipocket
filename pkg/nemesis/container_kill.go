@@ -33,6 +33,10 @@ func (g containerKillGenerator) Generate(nodes []clusterTypes.Node) []*core.Neme
 		nodes = findPDMember(nodes, true)
 		cmp := clusterTypes.PD
 		component = &cmp
+	case "short_kill_tiflash_1node":
+		n = 1
+		cmp := clusterTypes.TiFlash
+		component = &cmp
 	}
 	return containerKillNodes(nodes, n, component, freq)
 }

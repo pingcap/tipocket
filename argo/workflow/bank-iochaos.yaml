@@ -4,7 +4,7 @@ metadata:
 spec:
   entrypoint: call-tipocket-bank-iochaos
   onExit: call-export-logs
-  inputs:
+  arguments:
     parameters:
       - name: ns
         value: tipocket-bank-iochaos
