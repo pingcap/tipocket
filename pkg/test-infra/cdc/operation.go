@@ -21,6 +21,8 @@ import (
 	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
+	"golang.org/x/sync/errgroup"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
@@ -47,11 +49,14 @@ func New(cli client.Client, tidbClient *tidb.TidbOps) *CDCOps {
 
 // Apply CDC cluster
 func (c *CDCOps) Apply(tc *Recommendation) error {
-	if err := c.ApplyTiDBCluster(tc.Upstream); err != nil {
-		return err
-	}
-
-	if err := c.ApplyTiDBCluster(tc.Downstream); err != nil {
+	var g errgroup.Group
+	g.Go(func() error {
+		return c.ApplyTiDBCluster(tc.Upstream)
+	})
+	g.Go(func() error {
+		return c.ApplyTiDBCluster(tc.Downstream)
+	})
+	if err := g.Wait(); err != nil {
 		return err
 	}
 
@@ -84,6 +89,9 @@ func (c *CDCOps) Delete(tc *Recommendation) error {
 }
 
 func (c *CDCOps) ApplyCDC(cc *CDC) error {
+	if err := c.applyObject(cc.Service); err != nil {
+		return err
+	}
 	if err := c.applyObject(cc.StatefulSet); err != nil {
 		return err
 	}
@@ -105,14 +113,14 @@ func (c *CDCOps) waitCDCReady(st *appsv1.StatefulSet, timeout time.Duration) err
 			return false, err
 		}
 
-		err = c.cli.Get(context.TODO(), key, local)
-		if err != nil && errors.IsNotFound(err) {
-			return false, nil
-		}
-		if err != nil {
-			log.Errorf("error getting cdc statefulset: %v", err)
+		if err = c.cli.Get(context.TODO(), key, local); err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			log.Errorf("error getting CDC statefulset: %v", err)
 			return false, err
 		}
+
 		if local.Status.ReadyReplicas != *local.Spec.Replicas {
 			log.Infof("CDC %s do not have enough ready replicas, ready: %d, desired: %d",
 				local.Name, local.Status.ReadyReplicas, *local.Spec.Replicas)
@@ -133,12 +141,11 @@ func (c *CDCOps) waitJobCompleted(job *batchv1.Job) error {
 			return false, err
 		}
 
-		err = c.cli.Get(context.TODO(), key, local)
-		if err != nil && errors.IsNotFound(err) {
-			return false, nil
-		}
-		if err != nil {
-			log.Errorf("error getting cdc job: %v", err)
+		if err = c.cli.Get(context.TODO(), key, local); err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			log.Errorf("error getting CDC job: %v", err)
 			return false, err
 		}
 
@@ -153,18 +160,25 @@ func (c *CDCOps) waitJobCompleted(job *batchv1.Job) error {
 }
 
 func (c *CDCOps) applyObject(object runtime.Object) error {
-	err := c.cli.Create(context.TODO(), object)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
+	if err := c.cli.Create(context.TODO(), object); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
 	}
 	return nil
 }
 
 // Delete cdc component
 func (c *CDCOps) DeleteCDC(cc *CDC) error {
-	err := c.cli.Delete(context.TODO(), cc.StatefulSet)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
+	if err := c.cli.Delete(context.TODO(), cc.Service); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+	}
+	if err := c.cli.Delete(context.TODO(), cc.StatefulSet); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
 	return nil
 }
@@ -208,12 +222,12 @@ func (c *CDCOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	if err != nil {
 		return nodes, err
 	}
-	drainerNode, err := c.GetCDCNode(tc.CDC)
+	cdcNode, err := c.GetCDCNode(tc.CDC)
 	if err != nil {
 		return nodes, err
 	}
 
-	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
+	return append(append(upstreamNodes, downstreamNodes...), cdcNode), nil
 }
 
 // GetCDCNode returns the nodes of cdc
