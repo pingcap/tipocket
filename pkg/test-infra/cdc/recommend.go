@@ -128,6 +128,7 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 					},
 				},
 				Spec: batchv1.JobSpec{
+					TTLSecondsAfterFinished: pointer.Int32Ptr(10),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
