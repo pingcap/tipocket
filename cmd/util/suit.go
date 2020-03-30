@@ -301,3 +301,24 @@ func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
 	}
 	return
 }
+
+var _ clusterTypes.Provisioner = &LocalProvisioner{}
+
+type LocalProvisioner struct {
+	IP   string
+	Port int32
+}
+
+func NewLocalProvisioner(ip string, port int32) *LocalProvisioner {
+	return &LocalProvisioner{IP: ip, Port: port}
+}
+
+func (l *LocalProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	node := clusterTypes.ClientNode{IP: l.IP, Port: l.Port}
+	return nil, []clusterTypes.ClientNode{node}, nil
+}
+
+func (l *LocalProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+	return nil
+}
+
