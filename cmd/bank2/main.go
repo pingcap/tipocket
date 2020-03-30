@@ -42,10 +42,13 @@ var (
 	pessimistic = flag.Bool("pessimistic", false, "use pessimistic transaction")
 	minLength   = flag.Int("min-value-length", 0, "minimum value inserted into rocksdb")
 	maxLength   = flag.Int("max-value-length", 128, "maximum value inserted into rocksdb")
+	replicaRead = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
 )
 
 func main() {
 	flag.Parse()
+	bank2.ReplicaRead = *replicaRead
+
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
