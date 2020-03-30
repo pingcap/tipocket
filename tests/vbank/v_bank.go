@@ -242,7 +242,7 @@ func (c *Client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 
 func (c *Client) beginTxn(ctx context.Context, reqType VBReqType) (uint64, error) {
 	opts := &sql.TxOptions{}
-	if c.cfg.ReadCommitted {
+	if c.cfg.ReadCommitted && reqType != reqTypeRead {
 		opts.Isolation = sql.LevelReadCommitted
 	}
 	tx, err := c.db.BeginTx(ctx, opts)
@@ -692,7 +692,15 @@ func (c *Client) NextRequest() interface{} {
 
 // DumpState implements the core.Client interface.
 func (c *Client) DumpState(ctx context.Context) (interface{}, error) {
-	return &Response{}, nil
+	resp := &Response{}
+	var err error
+	resp.TS, err = c.beginTxn(ctx, reqTypeRead)
+	if err != nil {
+		return nil, err
+	}
+	resp.ReadResult, err = c.invokeRead(ctx)
+	c.endTxn(ctx, resp, err)
+	return resp.ReadResult, err
 }
 
 // Start implements the core.Client interface.
@@ -723,14 +731,19 @@ var _ core.Model = &Model{}
 
 // Model implements the core.Model interface.
 type Model struct {
+	state *BankState
 }
 
 // Prepare implements the core.Model interface.
 func (m *Model) Prepare(state interface{}) {
+	m.state = state.(*BankState)
 }
 
 // Init implements the core.Model interface.
 func (m *Model) Init() interface{} {
+	if m.state != nil {
+		return m.state
+	}
 	state := &BankState{}
 	for i := 0; i < vbAccountNum; i++ {
 		state.append(i, vbInitialBalance)
