@@ -67,7 +67,7 @@ func (c *Core) coreInitDatabaseExecute(sql *types.SQL) error {
 			return errors.Trace(err)
 		}
 		return errors.Trace(c.waitSyncDatabase(sql.SQLType))
-	case "abtest":
+	case "abtest", "abtiflash":
 		err1 := c.coreExec.GetConn1().Exec(sql.SQLStmt)
 		err2 := c.coreExec.GetConn2().Exec(sql.SQLStmt)
 		if err1 != nil {

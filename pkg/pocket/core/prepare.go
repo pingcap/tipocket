@@ -79,6 +79,10 @@ func (c *Core) mustExec() error {
 		if err := c.coreExec.Exec(setIsolationEngine); err != nil {
 			return errors.Trace(err)
 		}
+	} else if c.cfg.Mode == "abtiflash" {
+		if err := c.coreExec.GetConn1().Exec(setIsolationEngine); err != nil {
+			return errors.Trace(err)
+		}
 	}
 	// sleep 10s waiting for global variable becoming effective
 	time.Sleep(10 * time.Second)

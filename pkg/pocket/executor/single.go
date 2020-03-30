@@ -43,7 +43,12 @@ func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
 		err = e.singleTestInsert(sql.SQLStmt)
 	case types.SQLTypeDMLDelete:
 		err = e.singleTestDelete(sql.SQLStmt)
-	case types.SQLTypeDDLCreateTable, types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
+	case types.SQLTypeDDLCreateTable:
+		err = e.singleTestExecDDL(sql.SQLStmt)
+		if e.TiFlash {
+			e.createTiFlashTableReplica(sql.SQLTable)
+		}
+	case types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
 		err = e.singleTestExecDDL(sql.SQLStmt)
 	case types.SQLTypeTxnBegin:
 		if err := e.reloadSchema(); err != nil {

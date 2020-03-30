@@ -17,7 +17,7 @@ default: tidy fmt lint build
 
 build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress rawkv-linearizability
+		read-stress rawkv-linearizability tiflash-abtest
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -87,6 +87,9 @@ tiflash-pocket:
 
 read-stress:
 	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
+
+tiflash-abtest:
+	$(GOBUILD) $(GOMOD) -o bin/tiflash-abtest cmd/abtiflash/*.go
 
 fmt: groupimports
 	go fmt ./...

@@ -61,6 +61,7 @@ type Executor struct {
 	ErrCh chan error
 	// OnlineTable record tables which are manipulated in transaction for avoiding online DDL
 	OnlineTable []string
+	TiFlash     bool
 }
 
 // New create Executor

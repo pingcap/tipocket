@@ -50,7 +50,7 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case "abtest", "binlog":
+	case "abtest", "binlog","abtiflash":
 		e, err = executor.NewABTest(removeDSNSchema(c.cfg.DSN1),
 			removeDSNSchema(c.cfg.DSN2),
 			c.generateExecutorOption(id))
@@ -73,7 +73,7 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 	switch c.cfg.Mode {
 	case "single", "tiflash":
 		mode = "single"
-	case "abtest":
+	case "abtest", "abtiflash":
 		mode = "abtest"
 	case "binlog":
 		if id == 0 {
@@ -93,6 +93,10 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+	}
+
+	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+		e.TiFlash = true
 	}
 
 	return e, nil
