@@ -664,15 +664,15 @@ func (c *Client) NextRequest() interface{} {
 	x := c.r.Intn(100)
 	if x < 3 {
 		return reqTypeDeleteAccount
-	} else if x < 12 {
+	}
+	if x < 12 {
 		// 3 times possibility so we can have enough accounts.
 		return reqTypeCreateAccount
 	}
 	if x < 50 {
 		return reqTypeRead
-	} else {
-		return reqTypeTransfer
 	}
+	return reqTypeTransfer
 }
 
 // DumpState implements the core.Client interface.
