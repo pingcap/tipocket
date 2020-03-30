@@ -59,11 +59,11 @@ func main() {
 		VerifySuit:       verifySuit,
 	}
 	if *local {
-		suit.Provisioner = util.NewLocalProvisioner("127.0.0.1", 4000)
+		suit.Provisioner = cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, nil, nil)
 	} else {
 		suit.Provisioner = cluster.NewK8sProvisioner()
 		suit.NemesisGens = util.ParseNemesisGenerators(fixture.Context.Nemesis)
-		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace)
+		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion)
 	}
 	vbCfg := &vbank.Config{
 		PKType:        *pkType,
