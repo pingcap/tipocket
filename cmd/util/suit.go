@@ -304,21 +304,24 @@ func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
 
 var _ clusterTypes.Provisioner = &LocalProvisioner{}
 
+// LocalProvisioner is a Provisioner that runs on a local cluster.
 type LocalProvisioner struct {
 	IP   string
 	Port int32
 }
 
+// NewLocalProvisioner creates a LocalProvisioner
 func NewLocalProvisioner(ip string, port int32) *LocalProvisioner {
 	return &LocalProvisioner{IP: ip, Port: port}
 }
 
-func (l *LocalProvisioner) SetUp(ctx context.Context, spec interface{}) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+// TearDown implements the Provisioner interface.
+func (l *LocalProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	node := clusterTypes.ClientNode{IP: l.IP, Port: l.Port}
 	return nil, []clusterTypes.ClientNode{node}, nil
 }
 
-func (l *LocalProvisioner) TearDown(ctx context.Context, spec interface{}) error {
+// TearDown implements the Provisioner interface.
+func (l *LocalProvisioner) TearDown(ctx context.Context, spec clusterTypes.ClusterSpecs) error {
 	return nil
 }
-

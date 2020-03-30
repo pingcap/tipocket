@@ -24,6 +24,7 @@ const (
 	PKTypeString  = "string"
 )
 
+// Config is the config of the test case.
 type Config struct {
 	// PKType
 	PKType string
@@ -39,6 +40,7 @@ type Config struct {
 	UpdateInPlace bool
 }
 
+// ConfigKey is the key to the Config.
 const ConfigKey = "v_bank_config"
 
 const (
@@ -86,6 +88,7 @@ func (c *Client) genInitialInsertSQL(id int) string {
 	)
 }
 
+// Response ...
 type Response struct {
 	ReqType        VBReqType
 	TS             uint64
@@ -106,7 +109,7 @@ func (r *Response) setErr(err error) {
 	r.Err = err.Error()
 }
 
-// Client runs in
+// Client implements the core.Client interface.
 type Client struct {
 	idx int
 	r   *rand.Rand
@@ -115,6 +118,7 @@ type Client struct {
 	cfg *Config
 }
 
+// SetUp implements the core.Client interface.
 func (c *Client) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	c.idx = idx
 	cfg := ctx.Value(ConfigKey)
@@ -152,6 +156,7 @@ func (c *Client) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx
 	return nil
 }
 
+// TearDown implements the core.Client interface.
 func (c *Client) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	if c.idx == 0 {
 		c.dropTables(ctx)
@@ -170,6 +175,7 @@ func (c *Client) dropTables(ctx context.Context) {
 	c.db.ExecContext(ctx, "DROP TABLE IF EXISTS v_bank_txn_status")
 }
 
+// VBReqType ...
 type VBReqType int
 
 func (rt VBReqType) String() string {
@@ -193,6 +199,7 @@ const (
 	reqTypeDeleteAccount VBReqType = 4
 )
 
+// Invoke implements the core.Client interface.
 func (c *Client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
 	rt := r.(VBReqType)
 	resp := &Response{}
@@ -317,11 +324,12 @@ func (c *Client) idValue(id int) string {
 	return strconv.Itoa(id)
 }
 
+// BankState is the state of the test case.
 type BankState struct {
 	Accounts []AccountState
 }
 
-func (bs *BankState) Equal(bs2 *BankState) bool {
+func (bs *BankState) equal(bs2 *BankState) bool {
 	if len(bs.Accounts) != len(bs2.Accounts) {
 		return false
 	}
@@ -333,7 +341,7 @@ func (bs *BankState) Equal(bs2 *BankState) bool {
 	return true
 }
 
-func (bs *BankState) Transfer(from, to int, amount float64) {
+func (bs *BankState) transfer(from, to int, amount float64) {
 	for i := range bs.Accounts {
 		acc := &bs.Accounts[i]
 		if acc.ID == from {
@@ -344,7 +352,7 @@ func (bs *BankState) Transfer(from, to int, amount float64) {
 	}
 }
 
-func (bs *BankState) CreateAccount(newID int) {
+func (bs *BankState) createAccount(newID int) {
 	bs.Accounts[0].Balance -= vbCreateInitialBalance
 	bs.append(newID, vbCreateInitialBalance)
 	sort.Slice(bs.Accounts, func(i, j int) bool {
@@ -352,7 +360,7 @@ func (bs *BankState) CreateAccount(newID int) {
 	})
 }
 
-func (bs *BankState) DeleteAccount(victimID int, balance float64) {
+func (bs *BankState) deleteAccount(victimID int, balance float64) {
 	bs.Accounts[0].Balance += balance
 	for i := range bs.Accounts {
 		if bs.Accounts[i].ID == victimID {
@@ -362,6 +370,7 @@ func (bs *BankState) DeleteAccount(victimID int, balance float64) {
 	}
 }
 
+// AccountState ...
 type AccountState struct {
 	ID      int
 	Balance float64
@@ -385,6 +394,7 @@ func (r *BankState) String() string {
 	return fmt.Sprintf("read_result(sum:%.0f,%s)", sum, strings.Join(parts, ","))
 }
 
+// Clone clones the state.
 func (r *BankState) Clone() *BankState {
 	n := &BankState{}
 	n.Accounts = append(n.Accounts, r.Accounts...)
@@ -442,6 +452,7 @@ func (c *Client) invokeReadSingleTable(ctx context.Context) (result *BankState, 
 	return
 }
 
+// TransferResult ...
 type TransferResult struct {
 	Aborted     bool
 	FromID      int
@@ -578,6 +589,7 @@ func (c *Client) invokeTransferUpdateInPlace(ctx context.Context) (r *TransferRe
 	return
 }
 
+// DeleteResult ...
 type DeleteResult struct {
 	VictimID int
 	Balance  float64
@@ -612,6 +624,7 @@ func (c *Client) invokeDeleteAccount(ctx context.Context) (res *DeleteResult, er
 	return
 }
 
+// CreateResult ...
 type CreateResult struct {
 	NewID   int
 	Balance float64
@@ -647,6 +660,7 @@ func (c *Client) invokeCreateAccount(ctx context.Context) (resp *CreateResult, e
 	return
 }
 
+// NextRequest implements the core.Client interface.
 func (c *Client) NextRequest() interface{} {
 	//return reqTypeRead
 	x := c.r.Intn(100)
@@ -663,10 +677,12 @@ func (c *Client) NextRequest() interface{} {
 	}
 }
 
+// DumpState implements the core.Client interface.
 func (c *Client) DumpState(ctx context.Context) (interface{}, error) {
 	return &Response{}, nil
 }
 
+// Start implements the core.Client interface.
 func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
 	return nil
 }
@@ -675,23 +691,26 @@ func (c *Client) logStr(err error) string {
 	return fmt.Sprintf("client(%d) error %s", c.idx, err.Error())
 }
 
-// MultiBankClientCreator creates a bank test client for tidb.
+// ClientCreator creates a test client.
 type ClientCreator struct {
 }
 
-// Create creates a client.
+// Create creates a Client.
 func (ClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return &Client{}
 }
 
 var _ core.Model = &Model{}
 
+// Model implements the core.Model interface.
 type Model struct {
 }
 
+// Prepare implements the core.Model interface.
 func (m *Model) Prepare(state interface{}) {
 }
 
+// Init implements the core.Model interface.
 func (m *Model) Init() interface{} {
 	state := &BankState{}
 	for i := 0; i < vbAccountNum; i++ {
@@ -700,12 +719,13 @@ func (m *Model) Init() interface{} {
 	return state
 }
 
+// Step implements the core.Model interface.
 func (m *Model) Step(state interface{}, input interface{}, output interface{}) (bool, interface{}) {
 	st := state.(*BankState)
 	reqType := input.(VBReqType)
 	resp := output.(*Response)
 	if reqType == reqTypeRead {
-		return resp.OK && st.Equal(resp.ReadResult), st
+		return resp.OK && st.equal(resp.ReadResult), st
 	}
 	if !resp.OK {
 		return true, st
@@ -717,50 +737,57 @@ func (m *Model) Step(state interface{}, input interface{}, output interface{}) (
 		if res.Aborted {
 			return true, st
 		}
-		newState.Transfer(res.FromID, res.ToID, res.Amount)
+		newState.transfer(res.FromID, res.ToID, res.Amount)
 	case reqTypeCreateAccount:
 		res := resp.CreateResult
-		newState.CreateAccount(res.NewID)
+		newState.createAccount(res.NewID)
 	case reqTypeDeleteAccount:
 		res := resp.DeleteResult
 		if res.Aborted {
 			return true, st
 		}
-		newState.DeleteAccount(res.VictimID, res.Balance)
+		newState.deleteAccount(res.VictimID, res.Balance)
 	}
 	return true, newState
 }
 
+// Equal implements the core.Model interface.
 func (m *Model) Equal(state1, state2 interface{}) bool {
 	rs1 := state1.(*BankState)
 	rs2 := state2.(*BankState)
-	return rs1.Equal(rs2)
+	return rs1.equal(rs2)
 }
 
+// Name implements the core.Model interface.
 func (m *Model) Name() string {
 	return "v_bank"
 }
 
 var _ history.RecordParser = &Parser{}
 
+// Parser implements the core.Parser interface.
 type Parser struct{}
 
+// OnRequest implements the core.Parser interface.
 func (p Parser) OnRequest(data json.RawMessage) (interface{}, error) {
 	var req VBReqType
 	err := json.Unmarshal(data, &req)
 	return req, err
 }
 
+// OnResponse implements the core.Parser interface.
 func (p Parser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := &Response{}
 	err := json.Unmarshal(data, r)
 	return r, err
 }
 
+// OnNoopResponse implements the core.Parser interface.
 func (p Parser) OnNoopResponse() interface{} {
 	return &Response{}
 }
 
+// OnState implements the core.Parser interface.
 func (p Parser) OnState(state json.RawMessage) (interface{}, error) {
 	readResult := &BankState{}
 	err := json.Unmarshal(state, readResult)
