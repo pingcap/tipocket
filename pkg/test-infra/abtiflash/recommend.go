@@ -7,7 +7,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
 )
 
-// Recommendation defines 2 clusters for abtest
+// Recommendation defines 2 clusters for TiFlash abtest
 type Recommendation struct {
 	Cluster1 *tiflash.Recommendation
 	Cluster2 *tidb.Recommendation

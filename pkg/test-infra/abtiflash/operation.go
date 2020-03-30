@@ -16,12 +16,12 @@ type Ops struct {
 	*tidb.TidbOps
 }
 
-// New creates binlog ops
+// New creates ops
 func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
 	return &Ops{cli: cli, tiflash: tiflash.New(cli, tidbClient), TidbOps: tidbClient}
 }
 
-// Apply abtest cluster
+// Apply TiFlash abtest cluster
 func (t *Ops) Apply(tc *Recommendation) error {
 	var g errgroup.Group
 	g.Go(func() error {
@@ -34,6 +34,7 @@ func (t *Ops) Apply(tc *Recommendation) error {
 	return g.Wait()
 }
 
+// Delete TiFlash abtest cluster
 func (t *Ops) Delete(tc *Recommendation) error {
 	var g errgroup.Group
 	g.Go(func() error {

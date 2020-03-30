@@ -123,10 +123,6 @@ func (e *Executor) TxnRollback() error {
 
 // since the tiflash cluster is always conn1 in TiFlash abtest, so it is
 // okay to just use single test ddl here.
-func (e *Executor) createTiFlashTableReplica(table string) {
-	var err error
-	stmt := fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", table)
-	e.logStmtTodo(stmt)
-	err = e.SingleTestExecDDL(stmt)
-	e.logStmtResult(stmt, err)
+func (e *Executor) createTiFlashTableReplica(table string) error {
+	return e.SingleTestExecDDL(fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", table))
 }

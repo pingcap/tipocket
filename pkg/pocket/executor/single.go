@@ -46,7 +46,9 @@ func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
 	case types.SQLTypeDDLCreateTable:
 		err = e.singleTestExecDDL(sql.SQLStmt)
 		if e.TiFlash {
-			e.createTiFlashTableReplica(sql.SQLTable)
+			if err := e.createTiFlashTableReplica(sql.SQLTable); err != nil {
+				return err
+			}
 		}
 	case types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
 		err = e.singleTestExecDDL(sql.SQLStmt)
