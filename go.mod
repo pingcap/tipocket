@@ -20,8 +20,8 @@ require (
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
+	github.com/rogpeppe/fastuuid v1.2.0
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
