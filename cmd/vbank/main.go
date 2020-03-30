@@ -52,9 +52,16 @@ func main() {
 		Checker: core.MultiChecker("v_bank checkers", porcupine.Checker{}),
 		Parser:  &vbank.Parser{},
 	}
+	vbCfg := &vbank.Config{
+		PKType:        *pkType,
+		Partition:     *partition,
+		Range:         *useRange,
+		ReadCommitted: *readCommitted,
+		UpdateInPlace: *updateInPlace,
+	}
 	suit := util.Suit{
 		Config:           &cfg,
-		ClientCreator:    &vbank.ClientCreator{},
+		ClientCreator:    vbank.NewClientCreator(vbCfg),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
 	}
@@ -65,13 +72,5 @@ func main() {
 		suit.NemesisGens = util.ParseNemesisGenerators(fixture.Context.Nemesis)
 		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion)
 	}
-	vbCfg := &vbank.Config{
-		PKType:        *pkType,
-		Partition:     *partition,
-		Range:         *useRange,
-		ReadCommitted: *readCommitted,
-		UpdateInPlace: *updateInPlace,
-	}
-	ctx := context.WithValue(context.Background(), vbank.ConfigKey, vbCfg)
-	suit.Run(ctx)
+	suit.Run(context.Background())
 }

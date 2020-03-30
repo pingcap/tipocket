@@ -41,9 +41,6 @@ type Config struct {
 	UpdateInPlace bool
 }
 
-// ConfigKey is the key to the Config.
-const ConfigKey = "v_bank_config"
-
 const (
 	vbAccountNum           = 10
 	vbInitialBalance       = 20
@@ -110,6 +107,26 @@ func (r *Response) setErr(err error) {
 	r.Err = err.Error()
 }
 
+func (r *Response) String() string {
+	var result, status string
+	switch r.ReqType {
+	case reqTypeRead:
+		result = r.ReadResult.String()
+	case reqTypeCreateAccount:
+		result = r.CreateResult.String()
+	case reqTypeDeleteAccount:
+		result = r.DeleteResult.String()
+	case reqTypeTransfer:
+		result = r.TransferResult.String()
+	}
+	if r.OK {
+		status = "ok"
+	} else {
+		status = r.Err
+	}
+	return fmt.Sprintf("%s %s ts:%d %s", r.ReqType, status, r.TS, result)
+}
+
 // Client implements the core.Client interface.
 type Client struct {
 	idx int
@@ -122,8 +139,6 @@ type Client struct {
 // SetUp implements the core.Client interface.
 func (c *Client) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	c.idx = idx
-	cfg := ctx.Value(ConfigKey)
-	c.cfg = cfg.(*Config)
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := nodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -691,11 +706,17 @@ func (c *Client) logStr(err error) string {
 
 // ClientCreator creates a test client.
 type ClientCreator struct {
+	cfg *Config
+}
+
+// NewClientCreator creates a new ClientCreator.
+func NewClientCreator(cfg *Config) *ClientCreator {
+	return &ClientCreator{cfg: cfg}
 }
 
 // Create creates a Client.
-func (ClientCreator) Create(node clusterTypes.ClientNode) core.Client {
-	return &Client{}
+func (cc *ClientCreator) Create(node clusterTypes.ClientNode) core.Client {
+	return &Client{cfg: cc.cfg}
 }
 
 var _ core.Model = &Model{}
