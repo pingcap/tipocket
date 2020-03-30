@@ -30,6 +30,7 @@ import (
 // CDC defines the configuration for running on Kubernetes
 type CDC struct {
 	*appsv1.StatefulSet
+	*corev1.Service
 	*batchv1.Job
 }
 
@@ -52,9 +53,9 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 		upstreamPDAddr = fmt.Sprintf("%s-upstream-pd", name)
 		downstreamDB   = fmt.Sprintf("%s-downstream-tidb", name)
 		cdcLabels      = map[string]string{
-			"app":      "cdc",
-			"instance": "cdc-server",
-			"name":     cdcName,
+			"app.kubernetes.io/name":      "tidb-cluster",
+			"app.kubernetes.io/component": "cdc",
+			"app.kubernetes.io/instance":  cdcName,
 		}
 	)
 
@@ -64,6 +65,24 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 		Upstream:   upstream,
 		Downstream: downstream,
 		CDC: &CDC{
+			Service: &corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cdcName,
+					Namespace: ns,
+					Labels:    cdcLabels,
+				},
+				Spec: corev1.ServiceSpec{
+					Type: corev1.ServiceTypeClusterIP,
+					Ports: []corev1.ServicePort{
+						{
+							Name: "http",
+							Port: 8300,
+						},
+					},
+					ClusterIP: corev1.ClusterIPNone,
+					Selector:  cdcLabels,
+				},
+			},
 			StatefulSet: &appsv1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      cdcName,
@@ -71,8 +90,9 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 					Labels:    cdcLabels,
 				},
 				Spec: appsv1.StatefulSetSpec{
-					Replicas: pointer.Int32Ptr(3),
-					Selector: &metav1.LabelSelector{MatchLabels: cdcLabels},
+					ServiceName: cdcName,
+					Replicas:    pointer.Int32Ptr(3),
+					Selector:    &metav1.LabelSelector{MatchLabels: cdcLabels},
 					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{Labels: cdcLabels},
 						Spec: corev1.PodSpec{
@@ -82,10 +102,16 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 									"/cdc",
 									"server",
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-									"--status-addr=127.0.0.1:8301",
+									"--status-addr=0.0.0.0:8300",
+								},
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8300,
+									},
 								},
 								Image:           buildCDCImage("ticdc"),
-								ImagePullPolicy: corev1.PullIfNotPresent,
+								ImagePullPolicy: corev1.PullAlways,
 							}},
 						},
 					},
@@ -96,12 +122,13 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 					Name:      cdcJobName,
 					Namespace: ns,
 					Labels: map[string]string{
-						"app":      "cdc",
-						"instance": "cdc-cli",
-						"name":     cdcJobName,
+						"app.kubernetes.io/name":      "tidb-cluster",
+						"app.kubernetes.io/component": "cdc",
+						"app.kubernetes.io/instance":  cdcJobName,
 					},
 				},
 				Spec: batchv1.JobSpec{
+					TTLSecondsAfterFinished: pointer.Int32Ptr(10),
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Containers: []corev1.Container{
