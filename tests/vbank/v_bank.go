@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/history"
 )
 
+// primary key types
 const (
 	PKTypeInt     = "int"
 	PKTypeDecimal = "decimal"
@@ -305,16 +306,13 @@ func (c *Client) getWhereClause(accID int) string {
 	if c.cfg.Partition {
 		if c.cfg.Range {
 			return fmt.Sprintf("id > %s and id < %s", c.idValue(accID-1), c.idValue(accID+1))
-		} else {
-			return fmt.Sprintf("id = %s", c.idValue(accID))
 		}
-	} else {
-		if c.cfg.Range {
-			return fmt.Sprintf("id >= %s", c.idValue(0))
-		} else {
-			return fmt.Sprintf("id = %s", c.idValue(0))
-		}
+		return fmt.Sprintf("id = %s", c.idValue(accID))
 	}
+	if c.cfg.Range {
+		return fmt.Sprintf("id >= %s", c.idValue(0))
+	}
+	return fmt.Sprintf("id = %s", c.idValue(0))
 }
 
 func (c *Client) idValue(id int) string {
@@ -376,18 +374,18 @@ type AccountState struct {
 	Balance float64
 }
 
-func (r *BankState) sum() float64 {
+func (bs *BankState) sum() float64 {
 	var x float64
-	for _, v := range r.Accounts {
+	for _, v := range bs.Accounts {
 		x += v.Balance
 	}
 	return x
 }
 
-func (r *BankState) String() string {
+func (bs *BankState) String() string {
 	var parts []string
 	var sum float64
-	for _, accState := range r.Accounts {
+	for _, accState := range bs.Accounts {
 		parts = append(parts, fmt.Sprintf("%d:%.0f", accState.ID, accState.Balance))
 		sum += accState.Balance
 	}
@@ -395,14 +393,14 @@ func (r *BankState) String() string {
 }
 
 // Clone clones the state.
-func (r *BankState) Clone() *BankState {
+func (bs *BankState) Clone() *BankState {
 	n := &BankState{}
-	n.Accounts = append(n.Accounts, r.Accounts...)
+	n.Accounts = append(n.Accounts, bs.Accounts...)
 	return n
 }
 
-func (r *BankState) append(id int, balance float64) {
-	r.Accounts = append(r.Accounts, AccountState{
+func (bs *BankState) append(id int, balance float64) {
+	bs.Accounts = append(bs.Accounts, AccountState{
 		ID:      id,
 		Balance: balance,
 	})

@@ -315,7 +315,7 @@ func NewLocalProvisioner(ip string, port int32) *LocalProvisioner {
 	return &LocalProvisioner{IP: ip, Port: port}
 }
 
-// TearDown implements the Provisioner interface.
+// SetUp implements the Provisioner interface.
 func (l *LocalProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
 	node := clusterTypes.ClientNode{IP: l.IP, Port: l.Port}
 	return nil, []clusterTypes.ClientNode{node}, nil
