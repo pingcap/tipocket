@@ -1,0 +1,59 @@
+metadata:
+  generateName: tipocket-vbank-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-vbank
+  onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-vbank
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: nemesis
+        value: "partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+      - name: client
+        value: "5"
+      - name: request_count
+        value: "20000"
+      - name: round
+        value: "100"
+  templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+    - name: call-tipocket-vbank
+      steps:
+        - - name: call-tipocket-vbank
+            templateRef:
+              name: tipocket-vbank
+              template: tipocket-vbank
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: request_count
+                  value: "{{workflow.parameters.request_count}}"
+                - name: round
+                  value: "{{workflow.parameters.round}}"
