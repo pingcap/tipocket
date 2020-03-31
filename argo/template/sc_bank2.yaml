@@ -52,5 +52,5 @@ spec:
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
             -tidb-replica-read={{inputs.parameters.tidb-replica-read}}
