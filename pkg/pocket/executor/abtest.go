@@ -191,61 +191,77 @@ func (e *Executor) abTestSelect(sql string) error {
 
 func (e *Executor) abTestUpdate(sql string) error {
 	var (
-		wg   sync.WaitGroup
-		err1 error
-		err2 error
+		wg            sync.WaitGroup
+		affectedRows1 int64
+		affectedRows2 int64
+		err1          error
+		err2          error
 	)
 	wg.Add(2)
 	go func() {
-		err1 = e.conn1.Update(sql)
+		affectedRows1, err1 = e.conn1.Update(sql)
 		wg.Done()
 	}()
 	go func() {
-		err2 = e.conn2.Update(sql)
+		affectedRows2, err2 = e.conn2.Update(sql)
 		wg.Done()
 	}()
 	wg.Wait()
 
-	return util.ErrorMustSame(err1, err2)
+	if err := util.ErrorMustSame(err1, err2); err != nil {
+		return err
+	}
+	return util.AffectedRowsMustSame(affectedRows1, affectedRows2)
 }
 
 func (e *Executor) abTestInsert(sql string) error {
 	var (
-		wg   sync.WaitGroup
-		err1 error
-		err2 error
+		wg            sync.WaitGroup
+		affectedRows1 int64
+		affectedRows2 int64
+		err1          error
+		err2          error
 	)
 	wg.Add(2)
 	go func() {
-		err1 = e.conn1.Insert(sql)
+		affectedRows1, err1 = e.conn1.Insert(sql)
 		wg.Done()
 	}()
 	go func() {
-		err2 = e.conn2.Insert(sql)
+		affectedRows2, err2 = e.conn2.Insert(sql)
 		wg.Done()
 	}()
 	wg.Wait()
 
-	return util.ErrorMustSame(err1, err2)
+	if err := util.ErrorMustSame(err1, err2); err != nil {
+		return err
+	}
+	return util.AffectedRowsMustSame(affectedRows1, affectedRows2)
 }
 
 func (e *Executor) abTestDelete(sql string) error {
 	var (
-		wg   sync.WaitGroup
-		err1 error
-		err2 error
+		wg            sync.WaitGroup
+		affectedRows1 int64
+		affectedRows2 int64
+		err1          error
+		err2          error
 	)
 	wg.Add(2)
 	go func() {
-		err1 = e.conn1.Delete(sql)
+		affectedRows1, err1 = e.conn1.Delete(sql)
 		wg.Done()
 	}()
 	go func() {
-		err2 = e.conn2.Delete(sql)
+		affectedRows2, err2 = e.conn2.Delete(sql)
 		wg.Done()
 	}()
 	wg.Wait()
-	return util.ErrorMustSame(err1, err2)
+
+	if err := util.ErrorMustSame(err1, err2); err != nil {
+		return err
+	}
+	return util.AffectedRowsMustSame(affectedRows1, affectedRows2)
 }
 
 // DDL
