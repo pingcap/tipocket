@@ -412,7 +412,7 @@ func (s tsoEvents) Less(i, j int) bool { return s[i].Tso < s[j].Tso }
 func generateTsoEvents(events []porcupine.Event) tsoEvents {
 	tEvents := make(tsoEvents, 0, len(events))
 
-	mapEvents := make(map[uint]porcupine.Event, len(events))
+	mapEvents := make(map[int]porcupine.Event, len(events))
 	for _, event := range events {
 		if event.Kind == porcupine.CallEvent {
 			mapEvents[event.Id] = event

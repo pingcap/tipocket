@@ -2,6 +2,7 @@ package porcupine
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 
 	"github.com/anishathalye/porcupine"
@@ -25,7 +26,20 @@ func (Checker) Check(m core.Model, ops []core.Operation) (bool, error) {
 		return false, err
 	}
 	log.Printf("begin to verify %d events", len(events))
-	return porcupine.CheckEvents(pModel, events), nil
+	res, info := porcupine.CheckEventsVerbose(pModel, events, 0)
+	if res != porcupine.Ok {
+		file, err := ioutil.TempFile("", "*.html")
+		if err != nil {
+			log.Fatalf("failed to create temp file")
+		}
+		err = porcupine.Visualize(pModel, info, file)
+		if err != nil {
+			log.Fatalf("visualization failed")
+		}
+		log.Printf("wrote visualization to %s", file.Name())
+		return false, nil
+	}
+	return true, nil
 }
 
 // Name is the name of porcupine checker
@@ -39,15 +53,16 @@ func ConvertOperationsToEvents(ops []core.Operation) ([]porcupine.Event, error) 
 		return nil, fmt.Errorf("history is not complete")
 	}
 
-	procID := map[int64]uint{}
-	id := uint(0)
+	procID := map[int64]int{}
+	id := int(0)
 	events := make([]porcupine.Event, 0, len(ops))
 	for _, op := range ops {
 		if op.Action == core.InvokeOperation {
 			event := porcupine.Event{
-				Kind:  porcupine.CallEvent,
-				Id:    id,
-				Value: op.Data,
+				ClientId: op.ClientId,
+				Kind:     porcupine.CallEvent,
+				Id:       id,
+				Value:    op.Data,
 			}
 			events = append(events, event)
 			procID[op.Proc] = id
@@ -60,9 +75,10 @@ func ConvertOperationsToEvents(ops []core.Operation) ([]porcupine.Event, error) 
 			matchID := procID[op.Proc]
 			delete(procID, op.Proc)
 			event := porcupine.Event{
-				Kind:  porcupine.ReturnEvent,
-				Id:    matchID,
-				Value: op.Data,
+				ClientId: op.ClientId,
+				Kind:     porcupine.ReturnEvent,
+				Id:       matchID,
+				Value:    op.Data,
 			}
 			events = append(events, event)
 		}

@@ -79,6 +79,9 @@ abtest:
 cdc-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
 
+rawkv-linearizability:
+	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
+
 fmt: groupimports
 	go fmt ./...
 
