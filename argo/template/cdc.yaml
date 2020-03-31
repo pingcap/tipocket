@@ -24,6 +24,12 @@ spec:
             default: pingcap
           - name: cdc_version
             default: nightly
+          - name: abtest_general_log
+            default: "true"
+          - name: binlog_sync_timeout
+            default: "1h"
+          - name: abtest_concurrency
+            default: "3"
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -48,6 +54,9 @@ spec:
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
+            -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
+            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

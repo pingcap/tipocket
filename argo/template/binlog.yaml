@@ -20,6 +20,12 @@ spec:
             default: "48h"
           - name: relay_log
             default: "true"
+          - name: abtest_general_log
+            default: "true"
+          - name: abtest_concurrency
+            default: "3"
+          - name: binlog_sync_timeout
+            default: "1h"
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -42,6 +48,9 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
             -relay-log={{inputs.parameters.relay_log}} \
+            -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
+            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

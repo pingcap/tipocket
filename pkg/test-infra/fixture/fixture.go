@@ -195,6 +195,8 @@ func init() {
 	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
+	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
+
 	log.SetHighlighting(false)
 
 	go func() {

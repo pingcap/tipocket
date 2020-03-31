@@ -24,6 +24,12 @@ spec:
         value: "pingcap"
       - name: cdc_version
         value: "nightly"
+      - name: abtest_general_log
+        value: "true"
+      - name: binlog_sync_timeout
+        value: "1h"
+      - name: abtest_concurrency
+        value: "3"
   templates:
     - name: call-export-logs
       steps:
@@ -61,3 +67,9 @@ spec:
                   value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
+                - name: abtest_general_log
+                  value: "{{workflow.parameters.abtest_general_log}}"
+                - name: binlog_sync_timeout
+                  value: "{{workflow.parameters.binlog_sync_timeout}}"
+                - name: abtest_concurrency
+                  value: "{{workflow.parameters.abtest_concurrency}}"
