@@ -4,12 +4,12 @@ metadata:
 spec:
   entrypoint: call-tipocket-bank-iochaos
   onExit: call-export-logs
-  inputs:
+  arguments:
     parameters:
       - name: ns
         value: tipocket-bank-iochaos
       - name: purge
-        value: "false"
+        value: "true"
       - name: image_version
         value: nightly
       - name: storage_class

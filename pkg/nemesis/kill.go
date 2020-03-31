@@ -59,6 +59,12 @@ func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperat
 		cmp := clusterTypes.PD
 		component = &cmp
 		nodes = findPDMember(nodes, false)
+	// only set this when you have more than 1 tiflash replicas
+	case "kill_tiflash_1node_5min":
+		n = 1
+		duration = chaosDurationFiveMin
+		cmp := clusterTypes.TiFlash
+		component = &cmp
 	default:
 		n = 1
 	}
