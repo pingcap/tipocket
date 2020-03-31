@@ -66,27 +66,36 @@ func (c *Connection) Select(stmt string, args ...interface{}) ([][]*QueryItem, e
 
 // Update run update statement and return error
 func (c *Connection) Update(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }
 
 // Insert run insert statement and return error
 func (c *Connection) Insert(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }
 
 // Delete run delete statement and return error
 func (c *Connection) Delete(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }

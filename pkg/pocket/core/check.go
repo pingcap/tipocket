@@ -190,37 +190,31 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 		time.Sleep(time.Second)
 	}
 	var (
-		syncDone    = false
 		ctx, cancel = context.WithTimeout(context.Background(), c.cfg.Options.SyncTimeout.Duration)
-		syncReady   = make(chan struct{}, 1)
+		ticker      = time.NewTicker(10 * time.Second)
 	)
 	defer cancel()
 
-	go func() {
-		for !syncDone {
-			time.Sleep(10 * time.Second)
+SYNC:
+	for {
+		select {
+		case <-ctx.Done():
+			return false, errors.Errorf("sync timeout in %s", c.cfg.Options.SyncTimeout.Duration)
+		case <-ticker.C:
 			tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
 			if err != nil {
+				// not throw error here
+				// may be caused by chaos
+				// we should wait for sync timeout before throwing an error
 				log.Error(err)
-				// return false, errors.Trace(err)
 			}
 			for _, t := range tables {
 				if t == table {
-					syncDone = true
-					syncReady <- struct{}{}
+					break SYNC
 				}
 			}
 		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		return false, errors.New("sync timeout")
-	case <-syncReady:
-		log.Info("got sync status", syncDone)
 	}
-
-	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	for err != nil {
