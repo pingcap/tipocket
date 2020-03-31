@@ -398,6 +398,9 @@ func (bs *BankState) sum() float64 {
 }
 
 func (bs *BankState) String() string {
+	if bs == nil {
+		return ""
+	}
 	var parts []string
 	var sum float64
 	for _, accState := range bs.Accounts {
@@ -476,6 +479,9 @@ type TransferResult struct {
 }
 
 func (tr *TransferResult) String() string {
+	if tr == nil {
+		return ""
+	}
 	if tr.Aborted {
 		return "transfer_aborted"
 	}
@@ -610,6 +616,9 @@ type DeleteResult struct {
 }
 
 func (dr *DeleteResult) String() string {
+	if dr == nil {
+		return ""
+	}
 	if dr.Aborted {
 		return "delete_aborted"
 	}
@@ -644,6 +653,9 @@ type CreateResult struct {
 }
 
 func (cr *CreateResult) String() string {
+	if cr == nil {
+		return ""
+	}
 	return fmt.Sprintf("create(%d)", cr.NewID)
 }
 
