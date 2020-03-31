@@ -28,6 +28,8 @@ spec:
         value: "true"
       - name: binlog_sync_timeout
         value: "1h"
+      - name: abtest_concurrency
+        value: "3"
   templates:
     - name: call-export-logs
       steps:
@@ -69,3 +71,5 @@ spec:
                   value: "{{workflow.parameters.abtest_general_log}}"
                 - name: binlog_sync_timeout
                   value: "{{workflow.parameters.binlog_sync_timeout}}"
+                - name: abtest_concurrency
+                  value: "{{workflow.parameters.abtest_concurrency}}"
