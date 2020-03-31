@@ -24,6 +24,14 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+// AffectedRowsMustSame return error if both affected rows are not same
+func AffectedRowsMustSame(rows1, rows2 int64) error {
+	if rows1 == rows2 {
+		return nil
+	}
+	return errors.Errorf("affected rows not same rows1: %d, rows2: %d", rows1, rows2)
+}
+
 // ErrorMustSame return error if both error not same
 func ErrorMustSame(err1, err2 error) error {
 	if err1 == nil && err2 == nil {

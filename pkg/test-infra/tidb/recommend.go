@@ -94,7 +94,6 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Version:         version,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
@@ -103,7 +102,6 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
 						Image:   buildImage("pd", version),
 					},
 				},
@@ -114,7 +112,6 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
 						Image:   buildImage("tikv", version),
 					},
 				},
@@ -130,7 +127,6 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
 						Image:   buildImage("tidb", version),
 					},
 				},
