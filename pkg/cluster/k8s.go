@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -236,6 +237,8 @@ func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
 			return "tikv"
 		case "delay_pd", "errno_pd", "mixed_pd":
 			return "pd"
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			return "tiflash"
 		}
 	}
 	return ""
@@ -243,16 +246,29 @@ func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
 
 // TODO(yeya24): support other cluster types
 func (k *K8sProvisioner) updateClusterDef(spec clusterTypes.ClusterSpecs, ioChaosType string) {
+	var tc *v1alpha1.TidbCluster
 	switch s := spec.Defs.(type) {
 	case *tidb.Recommendation:
-		if ioChaosType == "tikv" {
-			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+		tc = s.TidbCluster
+	case *tiflash.Recommendation:
+		if ioChaosType == "tiflash" {
+			s.TiFlash.StatefulSet.Spec.Template.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
-		} else if ioChaosType == "pd" {
-			s.TidbCluster.Spec.PD.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-pd",
-			}
+			return
+		}
+		tc = s.TiDBCluster.TidbCluster
+	default:
+		return
+	}
+
+	if ioChaosType == "tikv" {
+		tc.Spec.TiKV.Annotations = map[string]string{
+			"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+		}
+	} else if ioChaosType == "pd" {
+		tc.Spec.PD.Annotations = map[string]string{
+			"admission-webhook.pingcap.com/request": "chaosfs-pd",
 		}
 	}
 }
