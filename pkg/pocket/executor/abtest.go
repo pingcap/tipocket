@@ -37,12 +37,21 @@ func (e *Executor) execABTestSQL(sql *types.SQL) error {
 
 	switch sql.SQLType {
 	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.abTestSelect(sql.SQLStmt)
 	case types.SQLTypeDMLUpdate:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.abTestUpdate(sql.SQLStmt)
 	case types.SQLTypeDMLInsert:
 		err = e.abTestInsert(sql.SQLStmt)
 	case types.SQLTypeDMLDelete:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.abTestDelete(sql.SQLStmt)
 	case types.SQLTypeDDLCreateTable:
 		err = e.abTestExecDDL(sql.SQLStmt)

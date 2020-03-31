@@ -36,12 +36,21 @@ func (e *Executor) execSingleTestSQL(sql *types.SQL) error {
 
 	switch sql.SQLType {
 	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.singleTestSelect(sql.SQLStmt)
 	case types.SQLTypeDMLUpdate:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.singleTestUpdate(sql.SQLStmt)
 	case types.SQLTypeDMLInsert:
 		err = e.singleTestInsert(sql.SQLStmt)
 	case types.SQLTypeDMLDelete:
+		if e.TiFlash {
+			e.waitTiFlashTableSync(sql.SQLTable)
+		}
 		err = e.singleTestDelete(sql.SQLStmt)
 	case types.SQLTypeDDLCreateTable:
 		err = e.singleTestExecDDL(sql.SQLStmt)
