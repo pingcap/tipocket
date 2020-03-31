@@ -127,7 +127,7 @@ func (e *Executor) createTiFlashTableReplica(table string) error {
 	return e.SingleTestExecDDL(fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", table))
 }
 
-func (e *Executor) waitTiFlashTableSync(table string) error {
+func (e *Executor) WaitTiFlashTableSync(table string) error {
 	sql := fmt.Sprintf("SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA = '%s' and TABLE_NAME = '%s'",
 		e.dbname, table)
 	for {
@@ -141,8 +141,7 @@ func (e *Executor) waitTiFlashTableSync(table string) error {
 		}
 		// table sync completed
 		if res[0][0].ValString == "1" {
-			break
+			return nil
 		}
 	}
-	return nil
 }

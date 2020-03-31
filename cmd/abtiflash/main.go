@@ -28,8 +28,22 @@ func main() {
 
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = true
+	pocketConfig.Generator = config.Generator{SQLSmith: config.SQLSmith{
+		TxnBegin:           20,
+		TxnCommit:          20,
+		TxnRollback:        10,
+		DDLCreateTable:     0,
+		DDLAlterTable:      0,
+		DDLCreateIndex:     0,
+		DMLSelect:          10,
+		DMLSelectForUpdate: 30,
+		DMLDelete:          10,
+		DMLUpdate:          120,
+		DMLInsert:          120,
+		Sleep:              10,
+	}}
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
-	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
+	pocketConfig.Options.Concurrency = 1
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	suit := util.Suit{
 		Config:      &cfg,
