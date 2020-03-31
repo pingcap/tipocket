@@ -145,3 +145,18 @@ func (c *Connection) GeneralLog(v int) error {
 	_, err := c.db.Exec(fmt.Sprintf("set @@tidb_general_log=\"%d\"", v))
 	return err
 }
+
+// ShowDatabases list databases
+func (c *Connection) ShowDatabases() ([]string, error) {
+	res, err := c.Select("SHOW DATABASES")
+	if err != nil {
+		return nil, err
+	}
+	var dbs []string
+	for _, db := range res {
+		if len(db) == 1 {
+			dbs = append(dbs, db[0].ValString)
+		}
+	}
+	return dbs, nil
+}
