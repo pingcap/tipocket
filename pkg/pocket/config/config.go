@@ -72,7 +72,7 @@ var initConfig = Config{
 		Serialize:  true,
 		GeneralLog: false,
 		SyncTimeout: types.Duration{
-			Duration: time.Second,
+			Duration: 10 * time.Minute,
 		},
 	},
 	Generator: Generator{
