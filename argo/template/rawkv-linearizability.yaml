@@ -1,0 +1,80 @@
+metadata:
+  name: tipocket-rawkv-linearizability
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-rawkv-linearizability
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-rawkv-linearizability
+          - name: purge
+            default: "false"
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+          - name: client
+            default: "5"
+          - name: request_count
+            default: "10000"
+          - name: round
+            default: "100"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: tikv-replicas
+            default: "3"
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
+        workingDir: /logs
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/rawkv-linearizability \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -purge={{inputs.parameters.purge}} \
+            -client={{inputs.parameters.client}} \
+            -tikv-replicas={{inputs.parameters.tikv-replicas}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -round={{inputs.parameters.round}} \
+            -request-count={{inputs.parameters.request_count}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}
+      outputs:
+        artifacts:
+          - name: case-logs
+            archiveLogs: true
+            path: /logs
+            s3:
+              accessKeySecret:
+                key: accesskey
+                name: my-minio-cred
+              bucket: my-bucket
+              endpoint: minio:9000
+              key: "{{workflow.name}}/{{pod.name}}/case-logs.tar.gz"
+              insecure: true
+              secretKeySecret:
+                key: secretkey
+                name: my-minio-cred
