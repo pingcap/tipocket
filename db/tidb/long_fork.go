@@ -225,10 +225,6 @@ func (p lfParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p lfParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := lfResponse{}
 	err := json.Unmarshal(data, &r)
-	// I have no idea why we need this
-	if r.Unknown {
-		return nil, err
-	}
 	return r, err
 }
 

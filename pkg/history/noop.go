@@ -39,9 +39,6 @@ func (p NoopParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p NoopParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := NoopResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
 	return r, err
 }
 
