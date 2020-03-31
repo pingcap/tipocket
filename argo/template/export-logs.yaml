@@ -19,6 +19,7 @@ spec:
         name: upload-logs
         workingDir: /src/tidb-logs
         image: 'yeya24/kubectl:logcli'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'

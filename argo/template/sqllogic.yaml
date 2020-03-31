@@ -30,6 +30,7 @@ spec:
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'

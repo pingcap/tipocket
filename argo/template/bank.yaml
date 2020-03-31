@@ -49,7 +49,7 @@ spec:
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
-        workingDir: /logs
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'

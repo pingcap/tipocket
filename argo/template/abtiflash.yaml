@@ -48,7 +48,8 @@ spec:
             default: admin
       container:
         name: tipocket
-        image: 'yeya24/tipocket:abtiflash'
+        image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'

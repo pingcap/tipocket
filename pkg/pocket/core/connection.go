@@ -50,7 +50,7 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case "abtest", "binlog","abtiflash":
+	case "abtest", "binlog", "abtiflash":
 		e, err = executor.NewABTest(removeDSNSchema(c.cfg.DSN1),
 			removeDSNSchema(c.cfg.DSN2),
 			c.generateExecutorOption(id))

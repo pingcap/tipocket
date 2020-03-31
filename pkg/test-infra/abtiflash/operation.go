@@ -2,11 +2,12 @@ package abtiflash
 
 import (
 	"github.com/pingcap/errors"
+	"golang.org/x/sync/errgroup"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
-	"golang.org/x/sync/errgroup"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Ops knows how to operate TiDB with binlog on k8s
