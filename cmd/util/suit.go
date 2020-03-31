@@ -154,10 +154,9 @@ func OnClientLoop(
 		log.Printf("%s: call %+v", node, request)
 		response := client.Invoke(ctx, node, request)
 		log.Printf("%s: return %+v", node, response)
-		isUnknown := true
-		if v, ok := response.(core.UnknownResponse); ok {
-			isUnknown = v.IsUnknown()
-		}
+
+		v := response.(core.UnknownResponse)
+		isUnknown := v.IsUnknown()
 
 		if err := recorder.RecordResponse(clientId, procID, response); err != nil {
 			log.Fatalf("record response %v failed %v", response, err)
@@ -229,10 +228,9 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			log.Printf("[%d] %s: call %+v", procID, node.String(), request)
 			response := client.Invoke(ctx, node, request)
 			log.Printf("[%d] %s: return %+v", procID, node.String(), response)
-			isUnknown := true
-			if v, ok := response.(core.UnknownResponse); ok {
-				isUnknown = v.IsUnknown()
-			}
+
+			v := response.(core.UnknownResponse)
+			isUnknown := v.IsUnknown()
 
 			if err := recorder.RecordResponse(clientId, procID, response); err != nil {
 				log.Fatalf("record response %v failed %v", response, err)

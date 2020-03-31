@@ -114,8 +114,6 @@ type RecordParser interface {
 	// OnRequest parses an operation data to model's input.
 	OnRequest(data json.RawMessage) (interface{}, error)
 	// OnResponse parses an operation data to model's output.
-	// Return nil means the operation has an infinite end time.
-	// E.g, we meet timeout for a operation.
 	OnResponse(data json.RawMessage) (interface{}, error)
 	// If we have some infinite operations, we should return a
 	// noop response to complete the operation.

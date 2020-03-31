@@ -18,6 +18,10 @@ type NoopResponse struct {
 	Unknown bool
 }
 
+func (n NoopResponse) IsUnknown() bool {
+	return n.Unknown
+}
+
 type action struct {
 	proc int64
 	op   interface{}

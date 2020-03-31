@@ -177,7 +177,7 @@ func (c *ledgerClient) TearDown(ctx context.Context, nodes []types.ClientNode, i
 	return nil
 }
 
-func (c *ledgerClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *ledgerClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

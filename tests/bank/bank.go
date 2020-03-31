@@ -132,7 +132,7 @@ func (c *bankCase) TearDown(ctx context.Context, nodes []types.ClientNode, idx i
 	return nil
 }
 
-func (c *bankCase) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *bankCase) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

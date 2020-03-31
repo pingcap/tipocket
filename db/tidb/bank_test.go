@@ -22,7 +22,7 @@ func getBankModel(accountNum int) porcupine.Model {
 	}
 }
 
-func newBankEvent(v interface{}, id uint) porcupine.Event {
+func newBankEvent(v interface{}, id int) porcupine.Event {
 	if _, ok := v.(bankRequest); ok {
 		return porcupine.Event{Kind: porcupine.CallEvent, Value: v, Id: id}
 	}

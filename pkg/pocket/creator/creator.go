@@ -45,7 +45,7 @@ func (PocketClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNod
 }
 
 // Invoke invokes a request to the database.
-func (PocketClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (PocketClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	return nil
 }
 

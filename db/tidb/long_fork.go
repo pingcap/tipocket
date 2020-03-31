@@ -37,6 +37,10 @@ type lfResponse struct {
 	Values  []sql.NullInt64
 }
 
+func (l lfResponse) IsUnknown() bool {
+	return l.Unknown
+}
+
 var (
 	lfState = struct {
 		mu      sync.Mutex
@@ -110,7 +114,7 @@ func (c *longForkClient) TearDown(ctx context.Context, nodes []clusterTypes.Clie
 	return c.db.Close()
 }
 
-func (c *longForkClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (c *longForkClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(lfRequest)
 	if arg.Kind == lfWrite {
 

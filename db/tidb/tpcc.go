@@ -58,7 +58,7 @@ func (t *tpccClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNo
 	return nil
 }
 
-func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) (response interface{}) {
+func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) (response core.UnknownResponse) {
 	s := time.Now()
 	err := t.Workloader.Run(t.workloadCtx, 0)
 	// TPCC.InitThread will panic when establish connection failed

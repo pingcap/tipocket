@@ -75,7 +75,7 @@ func (c *rawkvClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientN
 	return nil
 }
 
-func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(rawkvRequest)
 
 	key := []byte(strconv.Itoa(int(request.Key)))
@@ -163,8 +163,8 @@ type rawkvResponse struct {
 	Error   string `json:",omitempty"`
 }
 
-func (t *rawkvResponse) IsUnknown() bool {
-	return t.Unknown
+func (r rawkvResponse) IsUnknown() bool {
+	return r.Unknown
 }
 
 type rawkvParser struct{}
