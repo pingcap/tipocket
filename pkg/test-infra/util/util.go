@@ -14,7 +14,9 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
@@ -58,4 +60,13 @@ func FindPort(podName string, ports []corev1.ContainerPort) int32 {
 	}
 
 	return ports[0].ContainerPort
+}
+
+func RenderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
+	buff := new(bytes.Buffer)
+	err := tpl.Execute(buff, model)
+	if err != nil {
+		return "", err
+	}
+	return buff.String(), nil
 }

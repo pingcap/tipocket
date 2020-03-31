@@ -11,11 +11,12 @@ import (
 	"time"
 
 	pd "github.com/pingcap/pd/client"
+	"github.com/tikv/client-go/config"
+	"github.com/tikv/client-go/rawkv"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
-	"github.com/tikv/client-go/config"
-	"github.com/tikv/client-go/rawkv"
 )
 
 const (

@@ -28,7 +28,7 @@ func (Checker) Check(m core.Model, ops []core.Operation) (bool, error) {
 	log.Printf("begin to verify %d events", len(events))
 	res, info := porcupine.CheckEventsVerbose(pModel, events, 0)
 	if res != porcupine.Ok {
-		file, err := ioutil.TempFile("", "*.html")
+		file, err := ioutil.TempFile("./", "*.html")
 		if err != nil {
 			log.Fatalf("failed to create temp file")
 		}

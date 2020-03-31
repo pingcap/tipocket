@@ -55,7 +55,7 @@ func (c *Core) executeByID(id int, sql *types.SQL) {
 
 func (c *Core) coreExecute(sql *types.SQL) error {
 	switch c.cfg.Mode {
-	case "single", "binlog":
+	case "single", "binlog", "tiflash":
 		return errors.Trace(c.coreExec.GetConn().Exec(sql.SQLStmt))
 	case "abtest":
 		err1 := c.coreExec.GetConn1().Exec(sql.SQLStmt)

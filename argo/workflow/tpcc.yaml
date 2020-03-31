@@ -6,22 +6,22 @@ spec:
   onExit: call-export-logs
   arguments:
     parameters:
-    - name: ns
-      value: tipocket-tpcc
-    - name: purge
-      value: "true"
-    - name: image_version
-      value: release-4.0-nightly
-    - name: storage_class
-      value: pd-ssd
-    - name: nemesis
-      value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
-    - name: client
-      value: "100"
-    - name: request_count
-      value: "1000000"
-    - name: round
-      value: "10"
+      - name: ns
+        value: tipocket-tpcc
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: nemesis
+        value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+      - name: client
+        value: "100"
+      - name: request_count
+        value: "1000000"
+      - name: round
+        value: "10"
   templates:
     - name: call-export-logs
       steps:

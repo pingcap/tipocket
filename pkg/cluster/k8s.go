@@ -5,6 +5,8 @@ import (
 	"errors"
 	"regexp"
 
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -12,6 +14,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
 )
 
 var (
@@ -43,6 +46,8 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpe
 		return k.setUpABTestCluster(s)
 	case *cdc.Recommendation:
 		return k.setUpCDCCluster(s)
+	case *tiflash.Recommendation:
+		return k.setUpTiFlashCluster(s)
 	default:
 		panic("unreachable")
 	}
@@ -172,6 +177,31 @@ func (k *K8sProvisioner) setUpCDCCluster(recommend *cdc.Recommendation) ([]clust
 	return nodes, clientNodes, err
 }
 
+func (k *K8sProvisioner) setUpTiFlashCluster(recommend *tiflash.Recommendation) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	var (
+		nodes       []clusterTypes.Node
+		clientNodes []clusterTypes.ClientNode
+		err         error
+	)
+	if err := k.CreateNamespace(recommend.NS); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + recommend.NS)
+	}
+	if err = k.TiFlash.Apply(recommend); err != nil {
+		return nodes, clientNodes, err
+	}
+
+	nodes, err = k.TiFlash.GetNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+
+	clientNodes, err = k.TiFlash.GetClientNodes(recommend)
+	if err != nil {
+		return nodes, clientNodes, err
+	}
+	return nodes, clientNodes, err
+}
+
 func (k *K8sProvisioner) tearDownTiDBCluster(tc *tidb.Recommendation) error {
 	if err := k.TiDB.Delete(tc); err != nil {
 		return err
@@ -208,6 +238,8 @@ func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
 			return "tikv"
 		case "delay_pd", "errno_pd", "mixed_pd":
 			return "pd"
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			return "tiflash"
 		}
 	}
 	return ""
@@ -215,16 +247,29 @@ func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
 
 // TODO(yeya24): support other cluster types
 func (k *K8sProvisioner) updateClusterDef(spec clusterTypes.ClusterSpecs, ioChaosType string) {
+	var tc *v1alpha1.TidbCluster
 	switch s := spec.Defs.(type) {
 	case *tidb.Recommendation:
-		if ioChaosType == "tikv" {
-			s.TidbCluster.Spec.TiKV.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+		tc = s.TidbCluster
+	case *tiflash.Recommendation:
+		if ioChaosType == "tiflash" {
+			s.TiFlash.StatefulSet.Spec.Template.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
-		} else if ioChaosType == "pd" {
-			s.TidbCluster.Spec.PD.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-pd",
-			}
+			return
+		}
+		tc = s.TiDBCluster.TidbCluster
+	default:
+		return
+	}
+
+	if ioChaosType == "tikv" {
+		tc.Spec.TiKV.Annotations = map[string]string{
+			"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+		}
+	} else if ioChaosType == "pd" {
+		tc.Spec.PD.Annotations = map[string]string{
+			"admission-webhook.pingcap.com/request": "chaosfs-pd",
 		}
 	}
 }

@@ -94,42 +94,40 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Version:         version,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
 					Replicas:             3,
-					ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
+					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("pd", version),
+						Image: buildImage("pd", version),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
 					Replicas:             int32(fixture.Context.TiKVReplicas),
-					ResourceRequirements: fixture.WithStorage(fixture.Medium, "100Gi"),
+					ResourceRequirements: fixture.WithStorage(fixture.Large, "200Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
-					MaxFailoverCount:     pointer.Int32Ptr(int32(fixture.Context.TiKVReplicas)),
+					// disable auto fail over
+					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("tikv", version),
+						Image: buildImage("tikv", version),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
 					Replicas:             2,
-					ResourceRequirements: fixture.Medium,
+					ResourceRequirements: fixture.Large,
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
 						},
 						ExposeStatus: &exposeStatus,
 					},
-					MaxFailoverCount: pointer.Int32Ptr(3),
+					// disable auto fail over
+					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("tidb", version),
+						Image: buildImage("tidb", version),
 					},
 				},
 			},

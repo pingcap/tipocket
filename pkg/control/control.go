@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -258,11 +259,10 @@ func (c *Controller) RunSelfScheduled() {
 	// the real multi clients logic should handle by case itself
 	err := c.clients[0].Start(nctx, c.cfg.CaseConfig, c.cfg.ClientNodes)
 	if err != nil {
-		log.Printf("case error %+v", err)
+		log.Panicf("start case error, %+v", errors.ErrorStack(err))
 	}
 
 	ncancel()
-
 	c.tearDownClient()
 	c.tearDownDB()
 }

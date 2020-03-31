@@ -6,12 +6,14 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20200229220004-848b8b5d43d9
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
+	github.com/go-openapi/jsonreference v0.19.3 // indirect
+	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/google/uuid v1.1.1
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
-	github.com/pingcap/advanced-statefulset v0.2.4
+	github.com/pingcap/advanced-statefulset v0.3.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
@@ -20,9 +22,10 @@ require (
 
 	github.com/pingcap/parser v0.0.0-20200109073933-a9496438d77d
 	github.com/pingcap/pd v2.1.17+incompatible
-	github.com/pingcap/pd/v4 v4.0.0-beta.2 // indirect
+	github.com/pingcap/sysutil v0.0.0-20200309085538-962fd285f3bb // indirect
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-operator v1.1.0-beta.1
+	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
+	github.com/rogpeppe/fastuuid v1.2.0
 
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
@@ -30,7 +33,9 @@ require (
 	github.com/uber-go/atomic v1.5.0 // indirect
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/tools v0.0.0-20200301222351-066e0c02454c // indirect
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v12.0.0+incompatible
@@ -43,6 +48,8 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 replace github.com/pingcap/pd => github.com/pingcap/pd v1.1.0-beta.0.20200106144140-f5a7aa985497
 
 replace github.com/pingcap/tidb => github.com/pingcap/tidb v1.1.0-beta.0.20200110034112-1b34cc234e82
+
+replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v1.8.2-0.20200213233353-b90be6f32a33
 
 replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
 

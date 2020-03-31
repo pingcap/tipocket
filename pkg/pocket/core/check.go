@@ -129,12 +129,12 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	if err != nil {
 		c.Unlock()
-		c.execMutex.Lock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
-		c.execMutex.Lock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestSelect(makeCompareSQLs(schema)[0]); err != nil {
@@ -213,7 +213,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
-		c.execMutex.Lock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
@@ -224,7 +224,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	defer func() {
 		log.Info("free lock")
 		c.Unlock()
-		c.execMutex.Lock()
+		c.execMutex.Unlock()
 	}()
 
 	// delay will hold on this snapshot and check it later
@@ -235,12 +235,12 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	return c.compareData(compareExecutor, schema)
 }
 
-func (c *Core) compareData(beginnedConnect *executor.Executor, schema [][5]string) (bool, error) {
+func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {
 	sqls := makeCompareSQLs(schema)
 	for _, sql := range sqls {
-		if err := beginnedConnect.ABTestSelect(sql); err != nil {
+		if err := beganConnect.ABTestSelect(sql); err != nil {
 			log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
-				sql, err, util.FormatTimeStrAsLog(beginnedConnect.GetConn().GetBeginTime()))
+				sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
 		}
 	}
 	log.Info("consistency check pass")
@@ -275,5 +275,5 @@ func makeCompareSQLs(schema [][5]string) []string {
 func generateWaitTable() (string, string) {
 	sec := time.Now().Unix()
 	table := fmt.Sprintf("t%d", sec)
-	return table, fmt.Sprintf("CREATE TABLE %s(id int)", table)
+	return table, fmt.Sprintf("CREATE TABLE %s(id int PRIMARY KEY)", table)
 }
