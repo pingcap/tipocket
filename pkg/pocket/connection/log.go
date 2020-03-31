@@ -14,13 +14,22 @@
 package connection
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ngaut/log"
 )
 
-func (c *Connection) logSQL(sql string, duration time.Duration, err error) {
-	if err := c.logger.Infof("Success: %t, Duration: %s, SQL: %s", err == nil, duration, sql); err != nil {
+func (c *Connection) logSQL(sql string, duration time.Duration, err error, args ...interface{}) {
+	line := fmt.Sprintf("Success: %t, Duration: %s", err == nil, duration)
+	for index, arg := range args {
+		if index == 0 {
+			if affectedRows, ok := arg.(int64); ok {
+				line = fmt.Sprintf("%s, Affected Rows: %d", line, affectedRows)
+			}
+		}
+	}
+	if err := c.logger.Infof("%s, SQL: %s", line, sql); err != nil {
 		log.Fatalf("fail to log to file %v", err)
 	}
 }

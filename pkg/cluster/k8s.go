@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"

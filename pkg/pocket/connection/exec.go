@@ -65,27 +65,30 @@ func (c *Connection) Select(stmt string, args ...interface{}) ([][]*QueryItem, e
 }
 
 // Update run update statement and return error
-func (c *Connection) Update(stmt string) error {
+func (c *Connection) Update(stmt string) (int64, error) {
 	start := time.Now()
-	_, err := c.db.Exec(stmt)
-	c.logSQL(stmt, time.Now().Sub(start), err)
-	return err
+	result, err := c.db.Exec(stmt)
+	affectedRows, _ := result.RowsAffected()
+	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
+	return affectedRows, err
 }
 
 // Insert run insert statement and return error
-func (c *Connection) Insert(stmt string) error {
+func (c *Connection) Insert(stmt string) (int64, error) {
 	start := time.Now()
-	_, err := c.db.Exec(stmt)
-	c.logSQL(stmt, time.Now().Sub(start), err)
-	return err
+	result, err := c.db.Exec(stmt)
+	affectedRows, _ := result.RowsAffected()
+	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
+	return affectedRows, err
 }
 
 // Delete run delete statement and return error
-func (c *Connection) Delete(stmt string) error {
+func (c *Connection) Delete(stmt string) (int64, error) {
 	start := time.Now()
-	_, err := c.db.Exec(stmt)
-	c.logSQL(stmt, time.Now().Sub(start), err)
-	return err
+	result, err := c.db.Exec(stmt)
+	affectedRows, _ := result.RowsAffected()
+	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
+	return affectedRows, err
 }
 
 // ExecDDL do DDL actions
