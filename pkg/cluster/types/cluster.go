@@ -3,6 +3,8 @@ package types
 import (
 	"context"
 	"fmt"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 )
 
 // Component is the identifier of Cluster
@@ -73,7 +75,7 @@ func (node ClientNode) String() string {
 
 // ClusterSpecs is a cluster specification
 type ClusterSpecs struct {
-	Defs        interface{}
+	Cluster     operation.Cluster
 	NemesisGens []string
 }
 

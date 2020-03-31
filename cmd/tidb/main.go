@@ -27,7 +27,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -100,7 +100,8 @@ func main() {
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
+		ClusterDefs: operation.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 )
 
 var (
@@ -45,6 +45,7 @@ func main() {
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
+	c := fixture.Context
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -57,8 +58,8 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace,
-			fixture.Context.ImageVersion, fixture.Context.ABTestConfig.ClusterBVersion),
+		ClusterDefs: operation.NewABTestCluster(c.Namespace, c.Namespace, c.ImageVersion,
+			c.ABTestConfig.ClusterBVersion, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())
 }

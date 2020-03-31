@@ -26,59 +26,59 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate TiDB and TiFlash on k8s
 type Ops struct {
-	cli     client.Client
-	TidbOps *tidb.Ops
+	cli client.Client
+	tf  *tiFlash
 }
 
 // New creates Ops
-func New(cli client.Client, tidbClient *tidb.Ops) *Ops {
-	return &Ops{cli, tidbClient}
+func New(namespace, name, version string) *Ops {
+	return &Ops{tf: newTiFlash(namespace, name, version)}
+}
+
+func (o *Ops) Namespace() string {
+	return o.tf.Namespace
 }
 
 // Apply TiFlash cluster
-func (o *Ops) Apply(tc *Recommendation) error {
-	if err := o.TidbOps.ApplyTiDBCluster(tc.TiDBCluster); err != nil {
+func (o *Ops) Apply() error {
+	if err := o.applyObject(o.tf.ConfigMap); err != nil {
 		return err
 	}
-	if err := o.ApplyTiFlash(tc.TiFlash); err != nil {
+	if err := o.applyObject(o.tf.Service); err != nil {
 		return err
 	}
+	if err := o.applyObject(o.tf.StatefulSet); err != nil {
+		return err
+	}
+
+	if err := o.waitTiFlashReady(o.tf.StatefulSet, 5*time.Minute); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // Delete TiFlash cluster
-func (o *Ops) Delete(tc *Recommendation) error {
-	if err := o.TidbOps.Delete(tc.TiDBCluster); err != nil {
-		return err
+func (o *Ops) Delete() error {
+	if err := o.cli.Delete(context.TODO(), o.tf.Service); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
-
-	if err := o.DeleteTiFlash(tc.TiFlash); err != nil {
-		return err
+	if err := o.cli.Delete(context.TODO(), o.tf.ConfigMap); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
-
-	return nil
-}
-
-// ApplyTiFlash ...
-func (o *Ops) ApplyTiFlash(t *TiFlash) error {
-	if err := o.applyObject(t.ConfigMap); err != nil {
-		return err
-	}
-	if err := o.applyObject(t.Service); err != nil {
-		return err
-	}
-	if err := o.applyObject(t.StatefulSet); err != nil {
-		return err
-	}
-
-	if err := o.waitTiFlashReady(t.StatefulSet, 5*time.Minute); err != nil {
-		return err
+	if err := o.cli.Delete(context.TODO(), o.tf.StatefulSet); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
 	return nil
 }
@@ -120,57 +120,16 @@ func (o *Ops) applyObject(object runtime.Object) error {
 	return nil
 }
 
-// DeleteTiFlash ...
-func (o *Ops) DeleteTiFlash(t *TiFlash) error {
-	if err := o.cli.Delete(context.TODO(), t.Service); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if err := o.cli.Delete(context.TODO(), t.ConfigMap); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if err := o.cli.Delete(context.TODO(), t.StatefulSet); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetClientNodes returns the client nodes
-func (o *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
-	clientNodes, err := o.TidbOps.GetClientNodes(tc.TiDBCluster)
-	if err != nil {
-		return clientNodes, err
-	}
-
-	return clientNodes, nil
+func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+	return nil, nil
 }
 
 // GetNodes returns all nodes
-func (o *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
-	var nodes []clusterTypes.Node
-
-	tidbClusterNodes, err := o.TidbOps.GetNodes(tc.TiDBCluster)
-	if err != nil {
-		return nodes, err
-	}
-	tiFlashNodes, err := o.GetTiFlashNode(tc)
-	if err != nil {
-		return nodes, err
-	}
-
-	return append(tidbClusterNodes, tiFlashNodes...), nil
-}
-
-// GetTiFlashNode returns the nodes of TiFlash
-func (o *Ops) GetTiFlashNode(tc *Recommendation) ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: tc.NS},
-		client.MatchingLabels{"app.kubernetes.io/instance": tc.Name + "-tiflash"}); err != nil {
+	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.tf.Namespace},
+		client.MatchingLabels{"app.kubernetes.io/instance": o.tf.Name + "-tiflash"}); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 

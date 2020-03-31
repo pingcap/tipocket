@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 )
 
 var (
@@ -45,6 +45,7 @@ func main() {
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.SyncTimeout.Duration = fixture.Context.BinlogConfig.SyncTimeout
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
+	c := fixture.Context
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -57,7 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      binlog.RecommendedBinlogCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs:      operation.NewBinlogCluster(c.Namespace, c.Namespace, c.ImageVersion, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

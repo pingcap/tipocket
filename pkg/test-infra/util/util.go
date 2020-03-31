@@ -15,14 +15,17 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/controller"
-
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // PDAddress ...
@@ -63,4 +66,13 @@ func RenderTemplateFunc(tpl *template.Template, model interface{}) (string, erro
 		return "", err
 	}
 	return buff.String(), nil
+}
+
+func ApplyObject(client client.Client, object runtime.Object) error {
+	if err := client.Create(context.TODO(), object); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+	return nil
 }

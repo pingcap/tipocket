@@ -34,23 +34,15 @@ const (
 	busyboxImage = "busybox"
 )
 
-// TiFlash defines the configuration for running on Kubernetes
-type TiFlash struct {
+// tiFlash defines the configuration for running on Kubernetes
+type tiFlash struct {
 	*appsv1.StatefulSet
 	*corev1.ConfigMap
 	*corev1.Service
 }
 
-// Recommendation defines TiFlash cluster
-type Recommendation struct {
-	*TiFlash
-	TiDBCluster *tidb.Recommendation
-	NS          string
-	Name        string
-}
-
 // RecommendedTiFlashCluster creates a cluster with TiFlash
-func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
+func newTiFlash(ns, name, version string) *tiFlash {
 	var (
 		tiFlashName = name + "-tiflash"
 		lbls        = map[string]string{
@@ -68,17 +60,12 @@ func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
 			EnablePlacementRules: pointer.BoolPtr(true),
 		},
 	}
-	return &Recommendation{
-		NS:          ns,
-		Name:        name,
-		TiDBCluster: tc,
-		TiFlash: &TiFlash{
-			StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
-			// we use name instead of tiFlashName here
-			// because we want to use it to do template rendering.
-			ConfigMap: tiFlashConfigMap(name, model),
-			Service:   tiFlashService(ns, tiFlashName, lbls),
-		},
+	return &tiFlash{
+		StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
+		// we use name instead of tiFlashName here
+		// because we want to use it to do template rendering.
+		ConfigMap: tiFlashConfigMap(name, model),
+		Service:   tiFlashService(ns, tiFlashName, lbls),
 	}
 }
 

@@ -31,6 +31,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
+	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
@@ -61,7 +62,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs interface{}
+	ClusterDefs operation.Cluster
 }
 
 // Run runs the suit.
@@ -69,7 +70,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	var (
 		err         error
 		clusterSpec = clusterTypes.ClusterSpecs{
-			Defs:        suit.ClusterDefs,
+			Cluster:     suit.ClusterDefs,
 			NemesisGens: nemesisGeneratorNames(suit.NemesisGens),
 		}
 	)

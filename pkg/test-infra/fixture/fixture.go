@@ -55,9 +55,7 @@ type fixtureContext struct {
 	HubAddress               string
 	DockerRepository         string
 	ImageVersion             string
-	TiDBConfigFile           string
-	TiKVConfigFile           string
-	PDConfigFile             string
+	TiDBClusterConfig        *ClusterConfig
 	TiKVReplicas             int
 	// Loki
 	LokiAddress  string
@@ -68,7 +66,16 @@ type fixtureContext struct {
 	EnableHint bool
 }
 
+<<<<<<< HEAD
 // Context ...
+=======
+type ClusterConfig struct {
+	TiDB string
+	TiKV string
+	PD   string
+}
+
+>>>>>>> 307de7e... refactore recommendation to an interface
 var Context fixtureContext
 
 const (
@@ -189,14 +196,21 @@ func init() {
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
-	flag.StringVar(&Context.TiDBConfigFile, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
-	flag.StringVar(&Context.TiKVConfigFile, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
-	flag.StringVar(&Context.PDConfigFile, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.TiDB, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKV, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.PD, "pd-config", "", "path of pd config file (cluster A in abtest case)")
 	flag.IntVar(&Context.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
+<<<<<<< HEAD
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "latest", "specify version for cluster B")
+=======
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDB, "abtest.tidb-config", "", "tidb config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKV, "abtest.tikv-config", "", "tikv config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PD, "abtest.pd-config", "", "pd config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "", "specify version for cluster B")
+>>>>>>> 307de7e... refactore recommendation to an interface
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")

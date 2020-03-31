@@ -18,9 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pingcap/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -31,7 +29,7 @@ import (
 // Ops knows how to operate TiDB with binlog on k8s
 type Ops struct {
 	cli     client.Client
-	TidbOps *tidb.Ops
+	drainer *Drainer
 }
 
 // New creates binlog ops
@@ -40,6 +38,7 @@ func New(cli client.Client, tidbClient *tidb.Ops) *Ops {
 }
 
 // Apply binlog cluster
+<<<<<<< HEAD
 func (o *Ops) Apply(tc *Recommendation) error {
 	if err := o.TidbOps.ApplyTiDBCluster(tc.Upstream); err != nil {
 		return err
@@ -75,18 +74,32 @@ func (o *Ops) ApplyDrainer(drainer *Drainer) error {
 	}
 	// apply service
 	if err := o.ApplyObject(drainer.Service); err != nil {
+=======
+func (t *Ops) Apply() error {
+	// apply configmap
+	if err := util.ApplyObject(t.cli, t.drainer.ConfigMap); err != nil {
+		return err
+	}
+	// apply service
+	if err := util.ApplyObject(t.cli, t.drainer.Service); err != nil {
+>>>>>>> 307de7e... refactore recommendation to an interface
 		return err
 	}
 
 	time.Sleep(5 * time.Second)
 
 	// apply statefulset
+<<<<<<< HEAD
 	if err := o.ApplyObject(drainer.StatefulSet); err != nil {
+=======
+	if err := util.ApplyObject(t.cli, t.drainer.StatefulSet); err != nil {
+>>>>>>> 307de7e... refactore recommendation to an interface
 		return err
 	}
 	return nil
 }
 
+<<<<<<< HEAD
 // ApplyObject applies object
 func (o *Ops) ApplyObject(object runtime.Object) error {
 	err := o.cli.Create(context.TODO(), object)
@@ -102,21 +115,34 @@ func (o *Ops) GetDrainerNode(d *Drainer) (clusterTypes.Node, error) {
 	err := o.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: d.StatefulSet.ObjectMeta.Namespace,
 		Name:      fmt.Sprintf("%s-0", d.StatefulSet.ObjectMeta.Name),
+=======
+// Delete binlog cluster
+func (t *Ops) Delete() error {
+	return nil
+}
+
+func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
+	pod := &corev1.Pod{}
+	err := t.cli.Get(context.Background(), client.ObjectKey{
+		Namespace: t.drainer.StatefulSet.ObjectMeta.Namespace,
+		Name:      fmt.Sprintf("%s-0", t.drainer.StatefulSet.ObjectMeta.Name),
+>>>>>>> 307de7e... refactore recommendation to an interface
 	}, pod)
 
 	if err != nil {
-		return clusterTypes.Node{}, err
+		return []clusterTypes.Node{}, err
 	}
 
-	return clusterTypes.Node{
+	return []clusterTypes.Node{clusterTypes.Node{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
 		Component: clusterTypes.Drainer,
 		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
-	}, nil
+	}}, nil
 }
 
+<<<<<<< HEAD
 // GetNodes ...
 func (o *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	var nodes []clusterTypes.Node
@@ -155,4 +181,8 @@ func (o *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, err
 	}
 
 	return clientNodes, nil
+=======
+func (t *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+	return nil, nil
+>>>>>>> 307de7e... refactore recommendation to an interface
 }
