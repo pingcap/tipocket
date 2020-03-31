@@ -15,7 +15,12 @@ package executor
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 )
+
+const setIsolationEngine = `SET @@session.tidb_isolation_read_engines = "tiflash"; `
 
 // Select offer unified method for single & abtest
 func (e *Executor) Select(stmt string) error {
@@ -143,5 +148,14 @@ func (e *Executor) WaitTiFlashTableSync(table string) error {
 		if res[0][0].ValString == "1" {
 			return nil
 		}
+		time.Sleep(2 * time.Second)
 	}
+}
+
+func hasReadOperation(sql *types.SQL) bool {
+	if sql.SQLType == types.SQLTypeDMLSelect || sql.SQLType == types.SQLTypeDMLSelectForUpdate ||
+		sql.SQLType == types.SQLTypeDMLUpdate || sql.SQLType == types.SQLTypeDMLDelete {
+		return true
+	}
+	return false
 }

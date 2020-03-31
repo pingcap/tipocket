@@ -50,12 +50,11 @@ func (c *Core) beforeGenerate() error {
 		log.Infof("table %s generate", sql.SQLTable)
 
 		if e.TiFlash {
-			for {
-				if err := e.WaitTiFlashTableSync(sql.SQLTable); err == nil {
-					log.Infof("table %s sync to tiflash completed", sql.SQLTable)
-					break
-				}
+			if err := e.WaitTiFlashTableSync(sql.SQLTable); err != nil {
+				log.Infof("table %s sync to tiflash failed %v", sql.SQLTable, err)
+				return err
 			}
+			log.Infof("table %s sync to tiflash completed", sql.SQLTable)
 		}
 	}
 	for _, e := range c.executors {

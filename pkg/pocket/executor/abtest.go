@@ -33,8 +33,14 @@ func (e *Executor) abTest() {
 
 func (e *Executor) execABTestSQL(sql *types.SQL) error {
 	var err error
-	e.logStmtTodo(sql.SQLStmt)
 
+	if e.TiFlash && hasReadOperation(sql) {
+		if err := e.WaitTiFlashTableSync(sql.SQLTable); err != nil {
+			return err
+		}
+	}
+
+	e.logStmtTodo(sql.SQLStmt)
 	switch sql.SQLType {
 	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:
 		err = e.abTestSelect(sql.SQLStmt)
@@ -155,6 +161,9 @@ func (e *Executor) abTestSelect(sql string) error {
 	)
 	wg.Add(2)
 	go func() {
+		if e.TiFlash {
+			sql = setIsolationEngine + sql
+		}
 		res1, err1 = e.conn1.Select(sql)
 		wg.Done()
 	}()
@@ -206,7 +215,10 @@ func (e *Executor) abTestUpdate(sql string) error {
 	)
 	wg.Add(2)
 	go func() {
-		affectedRows1, err1 = e.conn1.Update(sql)
+		if e.TiFlash {
+			sql = setIsolationEngine + sql
+		}
+		affectedRows1, err1 = e.conn1.Update(setIsolationEngine + sql)
 		wg.Done()
 	}()
 	go func() {
@@ -256,7 +268,10 @@ func (e *Executor) abTestDelete(sql string) error {
 	)
 	wg.Add(2)
 	go func() {
-		affectedRows1, err1 = e.conn1.Delete(sql)
+		if e.TiFlash {
+			sql = setIsolationEngine + sql
+		}
+		affectedRows1, err1 = e.conn1.Delete(setIsolationEngine + sql)
 		wg.Done()
 	}()
 	go func() {
