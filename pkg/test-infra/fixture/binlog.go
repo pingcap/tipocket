@@ -13,8 +13,11 @@
 
 package fixture
 
+import "time"
+
 // BinlogConfig for binlog component
 type BinlogConfig struct {
 	BinlogVersion  string
 	EnableRelayLog bool
+	SyncTimeout    time.Duration
 }
