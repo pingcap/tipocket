@@ -241,6 +241,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			// If Unknown, we need to use another process ID.
 			if isUnknown {
 				procID = atomic.AddInt64(proc, 1)
+				log.Printf("[%d] %s: procID add 1", procID, node.String())
 			}
 
 			select {

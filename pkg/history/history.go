@@ -209,7 +209,7 @@ func CompleteOperations(ops []core.Operation, p RecordParser) ([]core.Operation,
 			if _, ok := procID[op.Proc]; !ok {
 				return nil, fmt.Errorf("missing invoke, op: %v", op)
 			}
-			if op.Data == nil {
+			if v, ok := op.Data.(core.UnknownResponse); ok && v.IsUnknown() {
 				continue
 			}
 			delete(procID, op.Proc)
