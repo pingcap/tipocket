@@ -34,6 +34,8 @@ spec:
             default: ""
           - name: abtest_pd_config
             default: ""
+          - name: abtest_concurrency
+            default: "3"
           - name: abtest_general_log
             default: "true"
           - name: loki-addr
@@ -65,6 +67,7 @@ spec:
             -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
             -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
             -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
+            -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general={{inputs.parameters.abtest_general_log}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
