@@ -66,9 +66,9 @@ spec:
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
-            -cdc.upstream.pd-image={{inputs.parameters.cdc_upsteam_pd_image}} \
-            -cdc.upstream.tidb-image={{inputs.parameters.cdc_upsteam_tidb_image}} \
-            -cdc.upstream.tikv-image={{inputs.parameters.cdc_upsteam_tikv_image}} \
+            -cdc.upstream.pd-image={{inputs.parameters.cdc_upstream_pd_image}} \
+            -cdc.upstream.tidb-image={{inputs.parameters.cdc_upstream_tidb_image}} \
+            -cdc.upstream.tikv-image={{inputs.parameters.cdc_upstream_tikv_image}} \
             -cdc.downstream.pd-image={{inputs.parameters.cdc_downstream_pd_image}} \
             -cdc.downstream.tidb-image={{inputs.parameters.cdc_downstream_tidb_image}} \
             -cdc.downstream.tikv-image={{inputs.parameters.cdc_downstream_tikv_image}} \

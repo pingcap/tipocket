@@ -24,11 +24,11 @@ spec:
         value: "pingcap"
       - name: cdc_version
         value: "nightly"
-      - name: cdc_upsream_pd_image
+      - name: cdc_upstream_pd_image
         value: ""
-      - name: cdc_upsream_tidb_image
+      - name: cdc_upstream_tidb_image
         value: ""
-      - name: cdc_upsream_tikv_image
+      - name: cdc_upstream_tikv_image
         value: ""
       - name: cdc_downstream_pd_image
         value: ""
