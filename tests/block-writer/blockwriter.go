@@ -22,14 +22,14 @@ const blockWriterBatchSize = 20
 
 var gcInterval = 6 * time.Hour
 
-// CaseCreator creates BlockWriteClient
-type CaseCreator struct {
+// ClientCreator creates BlockWriteClient
+type ClientCreator struct {
 	TableNum    int
 	Concurrency int
 }
 
 // Create creates WriterClient
-func (c CaseCreator) Create(node types.ClientNode) core.Client {
+func (c ClientCreator) Create(node types.ClientNode) core.Client {
 	client := &WriterClient{
 		tableNum:    c.TableNum,
 		concurrency: c.Concurrency,

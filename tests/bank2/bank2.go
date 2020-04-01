@@ -64,12 +64,13 @@ var (
 	// PadLength returns a random padding length for `remark` field within user
 	// specified bound.
 	baseLen      = [3]int{36, 48, 16}
-	TiDBDatabase = true
+	tidbDatabase = true
 
 	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
 	ReplicaRead = "leader"
 )
 
+// Config ...
 type Config struct {
 	// NumAccounts is total accounts
 	NumAccounts   int           `toml:"num_accounts"`
@@ -85,7 +86,8 @@ type Config struct {
 	MaxLength     int           `toml:"max_length"`
 }
 
-type CaseCreator struct {
+// ClientCreator ...
+type ClientCreator struct {
 	Cfg *Config
 }
 
@@ -243,7 +245,7 @@ func (c *bank2Client) verify(db *sql.DB) {
 		_ = tx.Rollback()
 	}()
 
-	if TiDBDatabase {
+	if tidbDatabase {
 		var tso uint64
 		if err = tx.QueryRow("SELECT @@tidb_current_ts").Scan(&tso); err == nil {
 			log.Infof("[%s] SELECT SUM(balance) to verify use tso %d", c, tso)
@@ -427,12 +429,14 @@ func (c *bank2Client) execTransaction(db *sql.DB, from, to int, amount int) erro
 	return nil
 }
 
-func (c CaseCreator) Create(_ types.ClientNode) core.Client {
+// Create ...
+func (c ClientCreator) Create(_ types.ClientNode) core.Client {
 	return &bank2Client{
 		Config: c.Cfg,
 	}
 }
 
+// String ...
 func (c *bank2Client) String() string {
 	return "bank2"
 }

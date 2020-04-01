@@ -65,7 +65,7 @@ func main() {
 	suit := util.Suit{
 		Config:        &cfg,
 		Provisioner:   cluster.NewK8sProvisioner(),
-		ClientCreator: bank.CaseCreator{Cfg: &bankConfig},
+		ClientCreator: bank.ClientCreator{Cfg: &bankConfig},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}

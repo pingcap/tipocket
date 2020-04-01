@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
 )
 
+// StorageType ...
 type StorageType string
 
 type fixtureContext struct {
@@ -67,20 +68,27 @@ type fixtureContext struct {
 	EnableHint bool
 }
 
+// Context ...
 var Context fixtureContext
 
 const (
-	StorageTypeLocal  StorageType = "local"
+	// StorageTypeLocal ...
+	StorageTypeLocal StorageType = "local"
+	// StorageTypeRemote ...
 	StorageTypeRemote StorageType = "remote"
-	CPU                           = corev1.ResourceCPU
-	Memory                        = corev1.ResourceMemory
-	Storage                       = corev1.ResourceStorage
-	EphemeralStorage              = corev1.ResourceEphemeralStorage
+	// CPU ...
+	CPU = corev1.ResourceCPU
+	// Memory ...
+	Memory = corev1.ResourceMemory
+	// Storage ...
+	Storage = corev1.ResourceStorage
 )
 
 var (
+	// BestEffort ...
 	BestEffort = corev1.ResourceRequirements{}
-	Small      = corev1.ResourceRequirements{
+	// Small ...
+	Small = corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
 			CPU:    resource.MustParse("1000m"),
 			Memory: resource.MustParse("1Gi"),
@@ -90,6 +98,7 @@ var (
 			Memory: resource.MustParse("1Gi"),
 		},
 	}
+	// Medium ...
 	Medium = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("2000m"),
@@ -100,6 +109,7 @@ var (
 			Memory: resource.MustParse("4Gi"),
 		},
 	}
+	// Large ...
 	Large = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
@@ -110,6 +120,7 @@ var (
 			Memory: resource.MustParse("16Gi"),
 		},
 	}
+	// XLarge ...
 	XLarge = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("8000m"),
@@ -122,12 +133,14 @@ var (
 	}
 )
 
+// BuildGenericKubeClient builds kube client
 func BuildGenericKubeClient(conf *rest.Config) (client.Client, error) {
 	return client.New(conf, client.Options{
 		Scheme: scheme.Scheme,
 	})
 }
 
+// StorageClass ...
 func StorageClass(t StorageType) string {
 	switch t {
 	case StorageTypeLocal:
@@ -139,6 +152,7 @@ func StorageClass(t StorageType) string {
 	}
 }
 
+// WithStorage ...
 func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequirements {
 	if r.Requests == nil {
 		r.Requests = corev1.ResourceList{}

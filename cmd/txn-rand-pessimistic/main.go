@@ -77,8 +77,8 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: pessimistic.CaseCreator{Cfg: &pessimistic.Config{
-			PessimisticCaseConfig: pessimistic.PessimisticCaseConfig{
+		ClientCreator: pessimistic.ClientCreator{Cfg: &pessimistic.Config{
+			PessimisticClientConfig: pessimistic.ClientConfig{
 				DBName:         *randTxnDBName,
 				Concurrency:    *randTxnConcurrency,
 				TableNum:       *tableNum,
@@ -90,7 +90,7 @@ func main() {
 				IgnoreCodesP:   ignoreCodesP,
 				UsePrepareStmt: *prepareStmt,
 			},
-			HongbaoCaseConfig: hongbao.HongbaoCaseConfig{
+			HongbaoClientConfig: hongbao.ClientConfig{
 				DBName:         *hongbaoDBName,
 				Concurrency:    *hongbaoConcurrency,
 				UserNum:        *userNum,

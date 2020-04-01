@@ -27,6 +27,7 @@ import (
 	"k8s.io/utils/pointer"
 )
 
+// Recommendation ...
 type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
@@ -35,10 +36,12 @@ type Recommendation struct {
 	Name string
 }
 
+// Make ...
 func (t *Recommendation) Make() *v1alpha1.TidbCluster {
 	return t.TidbCluster
 }
 
+// EnablePump ...
 func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	if t.TidbCluster.Spec.Pump == nil {
 		t.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
@@ -50,16 +53,19 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	return t
 }
 
+// PDReplicas ...
 func (t *Recommendation) PDReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.PD.Replicas = replicas
 	return t
 }
 
+// TiKVReplicas ...
 func (t *Recommendation) TiKVReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiKV.Replicas = replicas
 	return t
 }
 
+// TiDBReplicas ...
 func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiDB.Replicas = replicas
 	return t

@@ -25,17 +25,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// PDAddress ...
 func PDAddress(tc *v1alpha1.TidbCluster) string {
 	pdSvcName := controller.PDMemberName(tc.Name)
 	return fmt.Sprintf("http://%s.%s.svc:2379", pdSvcName, tc.Namespace)
-}
-
-func GenTiDBServiceAddress(svc *corev1.Service) string {
-	return fmt.Sprintf("%s:4000", svc.Spec.ClusterIP)
-}
-
-func GenMysqlServiceAddress(svc *corev1.Service) string {
-	return fmt.Sprintf("%s:3306", svc.Spec.ClusterIP)
 }
 
 // FindPort get possible correct port when there are multiple ports
@@ -62,6 +55,7 @@ func FindPort(podName string, ports []corev1.ContainerPort) int32 {
 	return ports[0].ContainerPort
 }
 
+// RenderTemplateFunc ...
 func RenderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
 	buff := new(bytes.Buffer)
 	err := tpl.Execute(buff, model)

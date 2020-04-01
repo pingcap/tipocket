@@ -43,13 +43,13 @@ type sqllogicClient struct {
 	port int32
 }
 
-// CaseCreator creates sqllogicClient
-type CaseCreator struct {
+// ClientCreator creates sqllogicClient
+type ClientCreator struct {
 	*Config
 }
 
 // Create creates sqllogicClient
-func (l *CaseCreator) Create(node types.ClientNode) core.Client {
+func (l *ClientCreator) Create(node types.ClientNode) core.Client {
 	return &sqllogicClient{
 		Config: l.Config,
 	}
@@ -70,22 +70,22 @@ func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, id
 	defer db.Close()
 
 	for index := 0; index < c.TaskCount; index++ {
-		dropSql := fmt.Sprintf("drop database if exists sqllogic_test_%d;", index)
+		dropSQL := fmt.Sprintf("drop database if exists sqllogic_test_%d;", index)
 		err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
-			_, err := db.Exec(dropSql)
+			_, err := db.Exec(dropSQL)
 			return err
 		})
 		if err != nil {
-			return errors.Errorf("executing %s err %v", dropSql, err)
+			return errors.Errorf("executing %s err %v", dropSQL, err)
 		}
 
-		createSql := fmt.Sprintf("create database if not exists sqllogic_test_%d;", index)
+		createSQL := fmt.Sprintf("create database if not exists sqllogic_test_%d;", index)
 		err = util.RunWithRetry(ctx, dbTryNumber, 3*time.Second, func() error {
-			_, err := db.Exec(createSql)
+			_, err := db.Exec(createSQL)
 			return err
 		})
 		if err != nil {
-			return errors.Errorf("executing %s err %v", createSql, err)
+			return errors.Errorf("executing %s err %v", createSQL, err)
 		}
 	}
 

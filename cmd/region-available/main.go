@@ -32,7 +32,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ra.CaseCreator{Cfg: &ra.Config{
+		ClientCreator: ra.ClientCreator{Cfg: &ra.Config{
 			DBName:          *dbName,
 			TotalRows:       *totalRows,
 			Concurrency:     *concurrency,

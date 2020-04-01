@@ -98,7 +98,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewLokiClient(fixture.Context.LokiAddress,
+		loki.NewClient(fixture.Context.LokiAddress,
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 
@@ -149,10 +149,17 @@ func OnClientLoop(
 		if err := recorder.RecordRequest(procID, request); err != nil {
 			log.Fatalf("record request %v failed %v", request, err)
 		}
-
-		log.Printf("%s: call %+v", node, request)
+		if stringer, ok := request.(fmt.Stringer); ok {
+			log.Printf("%d %s: call %s", procID, node, stringer.String())
+		} else {
+			log.Printf("%d %s: call %+v", procID, node, request)
+		}
 		response := client.Invoke(ctx, node, request)
-		log.Printf("%s: return %+v", node, response)
+		if stringer, ok := response.(fmt.Stringer); ok {
+			log.Printf("%d %s: return %+v", procID, node, stringer.String())
+		} else {
+			log.Printf("%d %s: return %+v", procID, node, response)
+		}
 		isUnknown := true
 		if v, ok := response.(core.UnknownResponse); ok {
 			isUnknown = v.IsUnknown()

@@ -18,6 +18,7 @@ type schedulerGenerator struct {
 	name string
 }
 
+// NewSchedulerGenerator ...
 func NewSchedulerGenerator(name string) *schedulerGenerator {
 	return &schedulerGenerator{
 		name: name,

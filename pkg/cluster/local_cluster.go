@@ -24,6 +24,7 @@ func NewLocalClusterProvisioner(dbs, pds, kvs []string) types.Provisioner {
 	}
 }
 
+// LocalClusterProvisioner ...
 type LocalClusterProvisioner struct {
 	DBs []string
 	PDs []string

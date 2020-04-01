@@ -31,8 +31,8 @@ type Config struct {
 	// History file
 	History string
 
-	// CaseConfig can be anything, use type assertion in your case
-	CaseConfig interface{}
+	// ClientConfig can be anything, use type assertion in your case
+	ClientConfig interface{}
 }
 
 // Mode enums control modes

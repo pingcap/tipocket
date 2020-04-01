@@ -45,7 +45,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ondup.CaseCreator{Cfg: &ondup.Config{
+		ClientCreator: ondup.ClientCreator{Cfg: &ondup.Config{
 			DBName:     *dbName,
 			NumRows:    *numRows,
 			RetryLimit: *retryLimit,

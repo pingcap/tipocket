@@ -20,6 +20,7 @@ type leaderShuffleGenerator struct {
 	name string
 }
 
+// NewLeaderShuffleGenerator ...
 func NewLeaderShuffleGenerator(name string) *leaderShuffleGenerator {
 	return &leaderShuffleGenerator{name: name}
 }
