@@ -189,7 +189,7 @@ func InstallArchive(ctx context.Context, rawURL string, dest string) error {
 func getTiDBReplicaRead(job string, db *sql.DB) string {
 	var replicaRead string
 	if err := db.QueryRow("select @@tidb_replica_read").Scan(&replicaRead); err != nil {
-		log.Fatalf("[%s] get tidb_replica_read fail: %v", job, err)
+		log.Errorf("[%s] get tidb_replica_read fail: %v", job, err)
 	}
 	return replicaRead
 }
@@ -197,7 +197,7 @@ func getTiDBReplicaRead(job string, db *sql.DB) string {
 func setTiDBReplicaRead(job string, db *sql.DB, mode string) {
 	sql := fmt.Sprintf("set @@tidb_replica_read = '%s'", mode)
 	if _, err := db.Exec(sql); err != nil {
-		log.Fatalf("[%s] tidb_replica_read set fail: %v", job, err)
+		log.Errorf("[%s] tidb_replica_read set fail: %v", job, err)
 	}
 }
 
