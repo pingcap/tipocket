@@ -16,7 +16,7 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 default: tidy fmt lint build
 
 build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
-		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket
+		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -47,6 +47,9 @@ bank:
 
 bank2:
 	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
+
+vbank:
+	$(GOBUILD) $(GOMOD) -o bin/vbank cmd/vbank/*.go
 
 txn-rand-pessimistic:
 	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
