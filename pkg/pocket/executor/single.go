@@ -143,17 +143,17 @@ func (e *Executor) singleTestSelect(sql string) error {
 }
 
 func (e *Executor) singleTestUpdate(sql string) error {
-	err := e.conn1.Update(sql)
+	_, err := e.conn1.Update(sql)
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestInsert(sql string) error {
-	err := e.conn1.Insert(sql)
+	_, err := e.conn1.Insert(sql)
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestDelete(sql string) error {
-	err := e.conn1.Delete(sql)
+	_, err := e.conn1.Delete(sql)
 	return errors.Trace(err)
 }
 

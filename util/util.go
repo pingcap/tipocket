@@ -16,6 +16,7 @@ package util
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math/rand"
 	"net/url"
 	"os"
@@ -83,6 +84,7 @@ func ExecWithRollback(db *sql.DB, queries []QueryEntry) (res sql.Result, err err
 	return
 }
 
+// OpenDB opens a db
 func OpenDB(dsn string, maxIdleConns int) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -183,4 +185,31 @@ func InstallArchive(ctx context.Context, rawURL string, dest string) error {
 		return errors.Annotate(err, "decompression error")
 	}
 	return nil
+}
+
+func getTiDBReplicaRead(job string, db *sql.DB) string {
+	var replicaRead string
+	if err := db.QueryRow("select @@tidb_replica_read").Scan(&replicaRead); err != nil {
+		log.Errorf("[%s] get tidb_replica_read fail: %v", job, err)
+	}
+	return replicaRead
+}
+
+func setTiDBReplicaRead(job string, db *sql.DB, mode string) {
+	sql := fmt.Sprintf("set @@tidb_replica_read = '%s'", mode)
+	if _, err := db.Exec(sql); err != nil {
+		log.Errorf("[%s] tidb_replica_read set fail: %v", job, err)
+	}
+}
+
+// RandomlyChangeReplicaRead changes `tidb_replica_read` randomly in a session.
+func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
+	// Switch mode with probability 0.3.
+	if replicaRead != "leader" && rand.Float32() < 0.3 {
+		if getTiDBReplicaRead(job, db) == "leader" {
+			setTiDBReplicaRead(job, db, replicaRead)
+		} else {
+			setTiDBReplicaRead(job, db, "leader")
+		}
+	}
 }

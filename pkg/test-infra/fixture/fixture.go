@@ -28,6 +28,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
 )
 
+// StorageType ...
 type StorageType string
 
 type fixtureContext struct {
@@ -63,23 +64,31 @@ type fixtureContext struct {
 	LokiUsername string
 	LokiPassword string
 	// Other
-	pprofAddr string
+	pprofAddr  string
+	EnableHint bool
 }
 
+// Context ...
 var Context fixtureContext
 
 const (
-	StorageTypeLocal  StorageType = "local"
+	// StorageTypeLocal ...
+	StorageTypeLocal StorageType = "local"
+	// StorageTypeRemote ...
 	StorageTypeRemote StorageType = "remote"
-	CPU                           = corev1.ResourceCPU
-	Memory                        = corev1.ResourceMemory
-	Storage                       = corev1.ResourceStorage
-	EphemeralStorage              = corev1.ResourceEphemeralStorage
+	// CPU ...
+	CPU = corev1.ResourceCPU
+	// Memory ...
+	Memory = corev1.ResourceMemory
+	// Storage ...
+	Storage = corev1.ResourceStorage
 )
 
 var (
+	// BestEffort ...
 	BestEffort = corev1.ResourceRequirements{}
-	Small      = corev1.ResourceRequirements{
+	// Small ...
+	Small = corev1.ResourceRequirements{
 		Limits: corev1.ResourceList{
 			CPU:    resource.MustParse("1000m"),
 			Memory: resource.MustParse("1Gi"),
@@ -89,6 +98,7 @@ var (
 			Memory: resource.MustParse("1Gi"),
 		},
 	}
+	// Medium ...
 	Medium = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("2000m"),
@@ -99,6 +109,7 @@ var (
 			Memory: resource.MustParse("4Gi"),
 		},
 	}
+	// Large ...
 	Large = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("4000m"),
@@ -109,6 +120,7 @@ var (
 			Memory: resource.MustParse("16Gi"),
 		},
 	}
+	// XLarge ...
 	XLarge = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			CPU:    resource.MustParse("8000m"),
@@ -121,12 +133,14 @@ var (
 	}
 )
 
+// BuildGenericKubeClient builds kube client
 func BuildGenericKubeClient(conf *rest.Config) (client.Client, error) {
 	return client.New(conf, client.Options{
 		Scheme: scheme.Scheme,
 	})
 }
 
+// StorageClass ...
 func StorageClass(t StorageType) string {
 	switch t {
 	case StorageTypeLocal:
@@ -138,6 +152,7 @@ func StorageClass(t StorageType) string {
 	}
 }
 
+// WithStorage ...
 func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequirements {
 	if r.Requests == nil {
 		r.Requests = corev1.ResourceList{}
@@ -181,11 +196,12 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "", "specify version for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "latest", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
+	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
@@ -194,6 +210,8 @@ func init() {
 	flag.IntVar(&Context.TiFlashConfig.Replica, "tiflash.replica", 1, "how many TiFlash replicas to run")
 	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
+
+	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	log.SetHighlighting(false)
 

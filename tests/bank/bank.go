@@ -12,6 +12,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/rogpeppe/fastuuid"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -21,11 +22,14 @@ import (
 var (
 	defaultVerifyTimeout = 6 * time.Hour
 	remark               = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq"
+
+	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
+	ReplicaRead = "leader"
 )
 
 var (
 	// Note: This field is always true in tidb testing.
-	TiDBDatabase = true
+	tidbDatabase = true
 )
 
 type delayMode = int
@@ -78,14 +82,17 @@ type bankCase struct {
 	dbConn *sql.DB
 }
 
-type CaseCreator struct {
+// ClientCreator ...
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (c CaseCreator) Create(_ types.ClientNode) core.Client {
+// Create ...
+func (c ClientCreator) Create(_ types.ClientNode) core.Client {
 	return NewBankCase(c.Cfg)
 }
 
+// NewBankCase ...
 func NewBankCase(cfg *Config) core.Client {
 	if cfg.Tables < 1 {
 		cfg.Tables = 1
@@ -199,13 +206,15 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		}
 	}
 
-	query := fmt.Sprintf("select sum(balance) as total from accounts%s", index)
-	err = tx.QueryRow(query).Scan(&total)
-	if err != nil {
+	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
+
+	uuid := fastuuid.MustNewGenerator().Hex128()
+	query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)
+	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
 		log.Errorf("[%s] select sum error %v", c, err)
 		return errors.Trace(err)
 	}
-	if TiDBDatabase {
+	if tidbDatabase {
 		var tso uint64
 		if err = tx.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
 			return errors.Trace(err)
@@ -215,10 +224,10 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 	tx.Commit()
 	check := c.cfg.Accounts * 1000
 	if total != check {
-		log.Errorf("[%s] accouts%s total must %d, but got %d", c, index, check, total)
+		log.Errorf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
 		atomic.StoreInt32(&c.stopped, 1)
 		c.wg.Wait()
-		log.Fatalf("[%s] accouts%s total must %d, but got %d", c, index, check, total)
+		log.Fatalf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
 	}
 
 	return nil
@@ -498,7 +507,7 @@ UPDATE accounts%s
 		}
 
 		var tso uint64
-		if TiDBDatabase {
+		if tidbDatabase {
 			if err = tx.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
 				return err
 			}

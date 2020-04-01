@@ -1,41 +1,37 @@
 metadata:
-  generateName: plan-cache-abtest-
+  generateName: tipocket-scbank2-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-abtest
+  entrypoint: call-tipocket-scbank2
   onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
-        value: tipocket-ab-plan-cache
+        value: tipocket-scbank2
       - name: purge
         value: "true"
       - name: image_version
         value: release-4.0-nightly
       - name: storage_class
         value: pd-ssd
-      - name: abtest_version
-        value: release-4.0-nightly
       - name: nemesis
-        value: ""
-      - name: client
-        value: "2"
+        value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+      - name: loki-addr
+        value: http://gateway.loki.svc
+      - name: loki-username
+        value: loki
+      - name: loki-password
+        value: admin
       - name: tidb_config
-        value: "/config/tidb/prepared-plan-cache.toml"
+        value: ""
       - name: tikv_config
         value: ""
       - name: pd_config
         value: ""
-      - name: abtest_tidb_config
-        value: "/config/tidb/prepared-plan-cache-false.toml"
-      - name: abtest_tikv_config
-        value: ""
-      - name: abtest_pd_config
-        value: ""
-      - name: abtest_concurrency
-        value: "3"
-      - name: abtest_general_log
-        value: "true"
+      - name: tikv-replicas
+        value: "4"
+      - name: tidb-replica-read
+        value: "leader-and-follower"
   templates:
     - name: call-export-logs
       steps:
@@ -47,12 +43,12 @@ spec:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
-    - name: call-tipocket-abtest
+    - name: call-tipocket-scbank2
       steps:
-        - - name: call-tipocket-abtest
+        - - name: call-tipocket-scbank2
             templateRef:
-              name: tipocket-abtest
-              template: tipocket-abtest
+              name: tipocket-scbank2
+              template: tipocket-scbank2
             arguments:
               parameters:
                 - name: ns
@@ -63,25 +59,22 @@ spec:
                   value: "{{workflow.parameters.image_version}}"
                 - name: storage_class
                   value: "{{workflow.parameters.storage_class}}"
-                - name: abtest_version
-                  value: "{{workflow.parameters.abtest_version}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
-                - name: client
-                  value: "{{workflow.parameters.client}}"
                 - name: tidb_config
                   value: "{{workflow.parameters.tidb_config}}"
                 - name: tikv_config
                   value: "{{workflow.parameters.tikv_config}}"
                 - name: pd_config
                   value: "{{workflow.parameters.pd_config}}"
-                - name: abtest_tidb_config
-                  value: "{{workflow.parameters.abtest_tidb_config}}"
-                - name: abtest_tikv_config
-                  value: "{{workflow.parameters.abtest_tikv_config}}"
-                - name: abtest_pd_config
-                  value: "{{workflow.parameters.abtest_pd_config}}"
-                - name: abtest_concurrency
-                  value: "{{workflow.parameters.abtest_concurrency}}"
-                - name: abtest_general_log
-                  value: "{{workflow.parameters.abtest_general_log}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
+                - name: tikv-replicas
+                  value: "{{workflow.parameters.tikv-replicas}}"
+                - name: tidb-replica-read
+                  value: "{{workflow.parameters.tidb-replica-read}}"
+

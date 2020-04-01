@@ -106,9 +106,9 @@ func (c *Core) clearSchema() error {
 	if !c.cfg.Options.ClearDB {
 		return nil
 	}
-	if err := c.coreExecute(&types.SQL{
+	if err := c.coreInitDatabaseExecute(&types.SQL{
 		SQLStmt: fmt.Sprintf("DROP DATABASE %s", c.dbname),
-		SQLType: types.SQLTypeUnknown,
+		SQLType: types.SQLTypeDropDatabase,
 	}); err != nil {
 		return errors.Trace(err)
 	}
@@ -116,8 +116,8 @@ func (c *Core) clearSchema() error {
 }
 
 func (c *Core) createSchema() error {
-	return errors.Trace(c.coreExecute(&types.SQL{
+	return errors.Trace(c.coreInitDatabaseExecute(&types.SQL{
 		SQLStmt: fmt.Sprintf("CREATE DATABASE %s", c.dbname),
-		SQLType: types.SQLTypeUnknown,
+		SQLType: types.SQLTypeCreateDatabase,
 	}))
 }

@@ -13,13 +13,9 @@ GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
 DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
-default: build
+default: tidy fmt lint build
 
-all: build
-
-chaos: tidb
-
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
+build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank
 
 tidb:
@@ -92,6 +88,13 @@ tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.mod
+
+lint: revive
+	@echo "linting"
+	revive -formatter friendly -config revive.toml $$($(PACKAGES))
+
+revive:
+	$(GO) get github.com/mgechev/revive@v1.0.2
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))

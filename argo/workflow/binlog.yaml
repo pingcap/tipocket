@@ -9,7 +9,7 @@ spec:
       - name: ns
         value: tipocket-binlog
       - name: purge
-        value: "false"
+        value: "true"
       - name: image_version
         value: release-4.0-nightly
       - name: storage_class
@@ -20,6 +20,12 @@ spec:
         value: "60m"
       - name: relay_log
         value: "true"
+      - name: abtest_general_log
+        value: "true"
+      - name: binlog_sync_timeout
+        value: "1h"
+      - name: abtest_concurrency
+        value: "3"
   templates:
     - name: call-export-logs
       steps:
@@ -53,3 +59,9 @@ spec:
                   value: "{{workflow.parameters.run_time}}"
                 - name: relay_log
                   value: "{{workflow.parameters.relay_log}}"
+                - name: abtest_general_log
+                  value: "{{workflow.parameters.abtest_general_log}}"
+                - name: binlog_sync_timeout
+                  value: "{{workflow.parameters.binlog_sync_timeout}}"
+                - name: abtest_concurrency
+                  value: "{{workflow.parameters.abtest_concurrency}}"

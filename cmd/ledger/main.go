@@ -48,7 +48,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ledger.CaseCreator{Cfg: &ledger.Config{
+		ClientCreator: ledger.ClientCreator{Cfg: &ledger.Config{
 			NumAccounts: *accounts,
 			Concurrency: *concurrency,
 			Interval:    *interval,

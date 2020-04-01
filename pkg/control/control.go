@@ -46,7 +46,7 @@ type Controller struct {
 	requestCount int64
 
 	// TODO(yeya24): make log service an interface
-	lokiClient *loki.LokiClient
+	lokiClient *loki.Client
 
 	suit verify.Suit
 }
@@ -59,7 +59,7 @@ func NewController(
 	nemesisGenerators []core.NemesisGenerator,
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
-	lokiCli *loki.LokiClient,
+	lokiCli *loki.Client,
 ) *Controller {
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
@@ -256,7 +256,7 @@ func (c *Controller) RunSelfScheduled() {
 	// ctx, _ := context.WithTimeout(c.ctx, c.cfg.RunTime)
 	// No matter how many clients are created, we only use one here
 	// the real multi clients logic should handle by case itself
-	err := c.clients[0].Start(nctx, c.cfg.CaseConfig, c.cfg.ClientNodes)
+	err := c.clients[0].Start(nctx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 	if err != nil {
 		log.Panicf("start case error, %+v", errors.ErrorStack(err))
 	}

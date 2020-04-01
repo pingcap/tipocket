@@ -22,10 +22,12 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
+// Recommendation ...
 type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
@@ -34,10 +36,12 @@ type Recommendation struct {
 	Name string
 }
 
+// Make ...
 func (t *Recommendation) Make() *v1alpha1.TidbCluster {
 	return t.TidbCluster
 }
 
+// EnablePump ...
 func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	if t.TidbCluster.Spec.Pump == nil {
 		t.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
@@ -49,16 +53,19 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	return t
 }
 
+// PDReplicas ...
 func (t *Recommendation) PDReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.PD.Replicas = replicas
 	return t
 }
 
+// TiKVReplicas ...
 func (t *Recommendation) TiKVReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiKV.Replicas = replicas
 	return t
 }
 
+// TiDBReplicas ...
 func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiDB.Replicas = replicas
 	return t
@@ -94,7 +101,6 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Version:         version,
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
@@ -103,24 +109,40 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("pd", version),
+						Image: buildImage("pd", version),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             int32(fixture.Context.TiKVReplicas),
-					ResourceRequirements: fixture.WithStorage(fixture.Large, "200Gi"),
-					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
+					Replicas: int32(fixture.Context.TiKVReplicas),
+					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("4Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					}, "200Gi"),
+					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("tikv", version),
+						Image: buildImage("tikv", version),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
-					Replicas:             2,
-					ResourceRequirements: fixture.Large,
+					Replicas: 2,
+					ResourceRequirements: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("2Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					},
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
@@ -130,8 +152,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: &version,
-						Image:   buildImage("tidb", version),
+						Image: buildImage("tidb", version),
 					},
 				},
 			},

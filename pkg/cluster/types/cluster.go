@@ -36,6 +36,7 @@ type Client struct {
 	PDMemberFunc func(ns, name string) (string, []string, error)
 }
 
+// PDMember ...
 func (c *Client) PDMember() (string, []string, error) {
 	return c.PDMemberFunc(c.Namespace, c.ClusterName)
 }

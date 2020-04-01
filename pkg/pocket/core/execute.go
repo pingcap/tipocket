@@ -14,6 +14,7 @@
 package core
 
 import (
+	"context"
 	"time"
 
 	"github.com/juju/errors"
@@ -21,6 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/pocket/executor"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 )
+
+const syncTimeout = 10 * time.Minute
 
 func (c *Core) execute(e *executor.Executor, sql *types.SQL) {
 	c.execMutex.Lock()
@@ -53,10 +56,17 @@ func (c *Core) executeByID(id int, sql *types.SQL) {
 	}
 }
 
-func (c *Core) coreExecute(sql *types.SQL) error {
+// coreInitDatabaseExecute is used only for create and drop database
+// and the manipulated db should be c.dbname
+func (c *Core) coreInitDatabaseExecute(sql *types.SQL) error {
 	switch c.cfg.Mode {
-	case "single", "binlog", "tiflash":
+	case "single":
 		return errors.Trace(c.coreExec.GetConn().Exec(sql.SQLStmt))
+	case "binlog", "tiflash":
+		if err := c.coreExec.GetConn().Exec(sql.SQLStmt); err != nil {
+			return errors.Trace(err)
+		}
+		return errors.Trace(c.waitSyncDatabase(sql.SQLType))
 	case "abtest":
 		err1 := c.coreExec.GetConn1().Exec(sql.SQLStmt)
 		err2 := c.coreExec.GetConn2().Exec(sql.SQLStmt)
@@ -67,4 +77,48 @@ func (c *Core) coreExecute(sql *types.SQL) error {
 	default:
 		panic("unhandled switch")
 	}
+}
+
+func (c *Core) waitSyncDatabase(t types.SQLType) error {
+	ctx, cancel := context.WithTimeout(context.Background(), syncTimeout)
+	defer cancel()
+	ticker := time.NewTicker(5 * time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Errorf("sync database timeout in %s", syncTimeout)
+		case <-ticker.C:
+			ifSync, err := c.ifSyncDatabase(t)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			if ifSync {
+				return nil
+			}
+		}
+	}
+}
+
+func (c *Core) ifSyncDatabase(t types.SQLType) (bool, error) {
+	dbs, err := c.coreExec.GetConn2().ShowDatabases()
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+
+	hasDB := false
+	for _, db := range dbs {
+		if db == c.dbname {
+			hasDB = true
+		}
+	}
+
+	switch t {
+	case types.SQLTypeCreateDatabase:
+		return hasDB, nil
+	case types.SQLTypeDropDatabase:
+		return !hasDB, nil
+	}
+
+	panic("unreachable")
 }

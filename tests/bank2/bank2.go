@@ -12,6 +12,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/rogpeppe/fastuuid"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -63,9 +64,13 @@ var (
 	// PadLength returns a random padding length for `remark` field within user
 	// specified bound.
 	baseLen      = [3]int{36, 48, 16}
-	TiDBDatabase = true
+	tidbDatabase = true
+
+	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
+	ReplicaRead = "leader"
 )
 
+// Config ...
 type Config struct {
 	// NumAccounts is total accounts
 	NumAccounts   int           `toml:"num_accounts"`
@@ -81,7 +86,8 @@ type Config struct {
 	MaxLength     int           `toml:"max_length"`
 }
 
-type CaseCreator struct {
+// ClientCreator ...
+type ClientCreator struct {
 	Cfg *Config
 }
 
@@ -239,16 +245,19 @@ func (c *bank2Client) verify(db *sql.DB) {
 		_ = tx.Rollback()
 	}()
 
-	if TiDBDatabase {
+	if tidbDatabase {
 		var tso uint64
 		if err = tx.QueryRow("SELECT @@tidb_current_ts").Scan(&tso); err == nil {
 			log.Infof("[%s] SELECT SUM(balance) to verify use tso %d", c, tso)
 		}
 	}
 
+	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
+
 	var total int64
-	err = tx.QueryRow("SELECT SUM(balance) AS total FROM bank2_accounts").Scan(&total)
-	if err != nil {
+	uuid := fastuuid.MustNewGenerator().Hex128()
+	query := fmt.Sprintf("SELECT SUM(balance) AS total, '%s' as uuid FROM bank2_accounts", uuid)
+	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
 		// bank2VerifyFailedCounter.Inc()
 		_ = errors.Trace(err)
 		return
@@ -258,10 +267,10 @@ func (c *bank2Client) verify(db *sql.DB) {
 
 	expectTotal := (int64(c.Config.NumAccounts) * initialBalance) * 2
 	if total != expectTotal {
-		log.Errorf("[%s] bank2_accounts total should be %d, but got %d", c, expectTotal, total)
+		log.Errorf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 		atomic.StoreInt32(&c.stop, 1)
 		c.wg.Wait()
-		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d", c, expectTotal, total)
+		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 	}
 }
 
@@ -420,12 +429,14 @@ func (c *bank2Client) execTransaction(db *sql.DB, from, to int, amount int) erro
 	return nil
 }
 
-func (c CaseCreator) Create(_ types.ClientNode) core.Client {
+// Create ...
+func (c ClientCreator) Create(_ types.ClientNode) core.Client {
 	return &bank2Client{
 		Config: c.Cfg,
 	}
 }
 
+// String ...
 func (c *bank2Client) String() string {
 	return "bank2"
 }

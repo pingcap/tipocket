@@ -1,4 +1,4 @@
-// Copyright 2019 PingCAP, Inc.
+// Copyright 2020 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,13 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fixture
+// +build tools
 
-import "time"
+package tools
 
-// BinlogConfig for binlog component
-type BinlogConfig struct {
-	BinlogVersion  string
-	EnableRelayLog bool
-	SyncTimeout    time.Duration
-}
+import (
+	_ "github.com/mgechev/revive"
+)

@@ -47,17 +47,19 @@ type regionAvailableDetector struct {
 	db *sql.DB
 }
 
-// CaseCreator creates regionAvailableDetector
-type CaseCreator struct {
+// ClientCreator creates regionAvailableDetector
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &regionAvailableDetector{
 		Config: l.Cfg,
 	}
 }
 
+// SetUp ...
 func (d *regionAvailableDetector) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil

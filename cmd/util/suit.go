@@ -98,7 +98,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewLokiClient(fixture.Context.LokiAddress,
+		loki.NewClient(fixture.Context.LokiAddress,
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 
@@ -274,7 +274,7 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		"kill_tikv_1node_5min", "kill_tikv_2node_5min",
 		"kill_pd_leader_5min", "kill_pd_nonleader_5min":
 		g = nemesis.NewKillGenerator(name)
-	case "short_kill_tikv_1node", "short_kill_pd_leader":
+	case "short_kill_tikv_1node", "short_kill_pd_leader", "short_kill_tiflash_1node":
 		g = nemesis.NewContainerKillGenerator(name)
 	case "random_drop", "all_drop", "minor_drop", "major_drop":
 		log.Panic("Unimplemented")
@@ -293,8 +293,8 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	// TODO: Change that name
 	case "leader-shuffle":
 		g = nemesis.NewLeaderShuffleGenerator(name)
-	case "delay_tikv", "delay_pd", "errno_tikv", "errno_pd",
-		"mixed_tikv", "mixed_pd", "readerr_tikv":
+	case "delay_tikv", "delay_pd", "delay_tiflash", "errno_tikv", "errno_pd",
+		"errno_tiflash", "mixed_tikv", "mixed_pd", "mixed_tiflash", "readerr_tikv", "readerr_tiflash":
 		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)

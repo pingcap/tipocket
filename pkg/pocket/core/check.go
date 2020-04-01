@@ -14,6 +14,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -188,22 +189,32 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	for compareExecutor.SingleTestExecDDL(tableStmt) != nil {
 		time.Sleep(time.Second)
 	}
-	syncDone := false
-	for !syncDone {
-		time.Sleep(10 * time.Second)
-		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
-		if err != nil {
-			log.Error(err)
-			// return false, errors.Trace(err)
-		}
-		for _, t := range tables {
-			if t == table {
-				syncDone = true
+	var (
+		ctx, cancel = context.WithTimeout(context.Background(), c.cfg.Options.SyncTimeout.Duration)
+		ticker      = time.NewTicker(10 * time.Second)
+	)
+	defer cancel()
+
+SYNC:
+	for {
+		select {
+		case <-ctx.Done():
+			return false, errors.Errorf("sync timeout in %s", c.cfg.Options.SyncTimeout.Duration)
+		case <-ticker.C:
+			tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
+			if err != nil {
+				// not throw error here
+				// may be caused by chaos
+				// we should wait for sync timeout before throwing an error
+				log.Error(err)
+			}
+			for _, t := range tables {
+				if t == table {
+					break SYNC
+				}
 			}
 		}
-		log.Info("got sync status", syncDone)
 	}
-	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	for err != nil {

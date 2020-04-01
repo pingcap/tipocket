@@ -2,16 +2,16 @@ metadata:
   generateName: tipocket-bank-iochaos-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-bank-iochaos
+  entrypoint: call-tipocket-bank
   onExit: call-export-logs
-  inputs:
+  arguments:
     parameters:
       - name: ns
         value: tipocket-bank-iochaos
       - name: purge
-        value: "false"
+        value: "true"
       - name: image_version
-        value: nightly
+        value: release-4.0-nightly
       - name: storage_class
         value: local-scsi
       - name: nemesis
@@ -33,12 +33,12 @@ spec:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
-    - name: call-tipocket-bank-iochaos
+    - name: call-tipocket-bank
       steps:
-        - - name: call-tipocket-bank-iochaos
+        - - name: call-tipocket-bank
             templateRef:
-              name: tipocket-bank-iochaos
-              template: tipocket-bank-iochaos
+              name: tipocket-bank
+              template: tipocket-bank
             arguments:
               parameters:
                 - name: ns

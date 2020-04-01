@@ -22,6 +22,7 @@ const (
 	randomErrno = ""
 )
 
+// IOChaosGenerator ...
 type IOChaosGenerator struct {
 	name string
 }
@@ -52,6 +53,7 @@ func (g IOChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOpe
 	}}
 }
 
+// Name ...
 func (g IOChaosGenerator) Name() string {
 	return g.name
 }
@@ -274,13 +276,13 @@ func (n iochaos) extractChaos(args ...interface{}) chaosv1alpha1.IoChaos {
 	}
 }
 
-func (n iochaos) Invoke(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
+func (n iochaos) Invoke(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
 	log.Printf("Invoke io chaos %s at ns:%s\n", chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.ApplyIOChaos(&chaosSpec)
 }
 
-func (n iochaos) Recover(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
+func (n iochaos) Recover(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
 	log.Printf("Recover io chaos %s at ns:%s\n", chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.CancelIOChaos(&chaosSpec)
