@@ -10,6 +10,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
+	github.com/mgechev/revive v1.0.2-0.20200225072153-6219ca02fffb // indirect
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072

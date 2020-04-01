@@ -10,9 +10,11 @@ import (
 	"github.com/pingcap/errors"
 )
 
+// CaseName ...
 const CaseName = "HongBao"
 
-type HongbaoCaseConfig struct {
+// ClientConfig ...
+type ClientConfig struct {
 	DBName         string
 	Concurrency    int
 	UserNum        int
@@ -25,34 +27,37 @@ type HongbaoCaseConfig struct {
 	TxnMode        string
 }
 
-// HongbaoCase is for hongbao transaction test
-type HongbaoCase struct {
-	cfg *HongbaoCaseConfig
+// Client is for hongbao transaction test
+type Client struct {
+	cfg *ClientConfig
 
 	successNum int32
 	failNum    int32
 }
 
-func NewHongbaoCase(cfg *HongbaoCaseConfig) *HongbaoCase {
-	return &HongbaoCase{cfg: cfg}
+// NewHongbaoCase ...
+func NewHongbaoCase(cfg *ClientConfig) *Client {
+	return &Client{cfg: cfg}
 }
 
-func (h *HongbaoCase) Initialize(ctx context.Context, db *sql.DB) error {
+// Initialize ...
+func (h *Client) Initialize(ctx context.Context, db *sql.DB) error {
 	if err := InitSchema(ctx, db); err != nil {
 		return err
 	}
 	return h.DoUsersTask(ctx, db, h.cfg.UserNum, h.cfg.FriendNum, h.cfg.GroupNum, h.cfg.GroupMemberNum, 0)
 }
 
-// Execute implements Case Execute interface.
-func (h *HongbaoCase) Execute(ctx context.Context, db *sql.DB) error {
+// Execute implements Client Execute interface.
+func (h *Client) Execute(ctx context.Context, db *sql.DB) error {
 	if err := h.DoHongbaoTasks(ctx, db, h.cfg.HongbaoNum, 0); err != nil {
 		return err
 	}
 	return h.DoValidate(ctx, db)
 }
 
-func (h *HongbaoCase) DoUsersTask(ctx context.Context, db *sql.DB, userNum, friendNum, groupNum, groupMemberNum, sleep int) error {
+// DoUsersTask ...
+func (h *Client) DoUsersTask(ctx context.Context, db *sql.DB, userNum, friendNum, groupNum, groupMemberNum, sleep int) error {
 	log.Info("Start user tasks")
 	conn, err := db.Conn(ctx)
 	if err != nil {
@@ -66,7 +71,8 @@ func (h *HongbaoCase) DoUsersTask(ctx context.Context, db *sql.DB, userNum, frie
 	return se.CreateUsers(ctx, userNum, friendNum, groupNum, groupMemberNum, sleep)
 }
 
-func (h *HongbaoCase) DoHongbaoTasks(ctx context.Context, db *sql.DB, hongbaoNum, sleep int) error {
+// DoHongbaoTasks ...
+func (h *Client) DoHongbaoTasks(ctx context.Context, db *sql.DB, hongbaoNum, sleep int) error {
 	log.Infof("[%s] started", h)
 	wg := new(sync.WaitGroup)
 	wg.Add(h.cfg.Concurrency)
@@ -105,7 +111,8 @@ func (h *HongbaoCase) DoHongbaoTasks(ctx context.Context, db *sql.DB, hongbaoNum
 	return nil
 }
 
-func (h *HongbaoCase) DoValidate(ctx context.Context, db *sql.DB) error {
+// DoValidate ...
+func (h *Client) DoValidate(ctx context.Context, db *sql.DB) error {
 	sql := `
 	select
 		(select 100000 * (select count(*) from user)) as init_total_balance,
@@ -147,6 +154,6 @@ func (h *HongbaoCase) DoValidate(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (h *HongbaoCase) String() string {
+func (h *Client) String() string {
 	return CaseName
 }

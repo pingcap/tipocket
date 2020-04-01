@@ -47,9 +47,9 @@ var TestClient *TestCli
 type TestCli struct {
 	Config  *rest.Config
 	Cli     client.Client
-	CDC     *cdc.CDCOps
-	MySQL   *mysql.MySQLOps
-	TiDB    *tidb.TidbOps
+	CDC     *cdc.Ops
+	MySQL   *mysql.Ops
+	TiDB    *tidb.Ops
 	Binlog  *binlog.Ops
 	ABTest  *abtest.Ops
 	TiFlash *tiflash.Ops

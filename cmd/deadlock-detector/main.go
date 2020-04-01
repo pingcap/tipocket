@@ -47,7 +47,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: dlc.CaseCreator{Cfg: &dlc.Config{
+		ClientCreator: dlc.ClientCreator{Cfg: &dlc.Config{
 			DBName:           *dbName,
 			TableNum:         *tableNum,
 			DeadlockInterval: *deadlockInterval,

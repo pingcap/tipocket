@@ -8,7 +8,7 @@ import (
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
-// ChaosKind is Kind of applying chaos
+// ChaosKind is the kind of applying chaos
 type ChaosKind string
 
 const (
@@ -91,16 +91,19 @@ type NemesisGenerator interface {
 	Name() string
 }
 
+// DelayNemesisGenerator delays nemesis generation after `Delay`
 type DelayNemesisGenerator struct {
 	Gen   NemesisGenerator
 	Delay time.Duration
 }
 
+// Generate ...
 func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperation {
 	time.Sleep(d.Delay)
 	return d.Gen.Generate(nodes)
 }
 
+// Name ...
 func (d DelayNemesisGenerator) Name() string {
 	return d.Gen.Name()
 }

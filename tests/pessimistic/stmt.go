@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/cznic/mathutil"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // mysql
 )
 
 func (se *Session) plainSelect(ctx context.Context) error {
@@ -248,10 +248,9 @@ func (se *Session) insertIntoSelect(ctx context.Context) error {
 
 	if cntTo-cntFrom == 0 {
 		return nil
-	} else {
-		sql = fmt.Sprintf("update %s%d set c = c + ? where id=?", tableNamePrefix, toTableID)
-		return se.executeDML(ctx, sql, cntTo-cntFrom, rowID)
 	}
+	sql = fmt.Sprintf("update %s%d set c = c + ? where id=?", tableNamePrefix, toTableID)
+	return se.executeDML(ctx, sql, cntTo-cntFrom, rowID)
 }
 
 func (se *Session) randSizeExceededTransaciton(ctx context.Context) error {

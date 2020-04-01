@@ -60,7 +60,7 @@ func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (p PocketClient) Start(ctx context.Context, caseConfig interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []clusterTypes.ClientNode) error {
 	var cfgPath = p.Config.ConfigPath
 
 	cfg := p.Config.Config

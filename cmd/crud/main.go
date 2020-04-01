@@ -35,7 +35,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: crud.CaseCreator{Cfg: &crud.Config{
+		ClientCreator: crud.ClientCreator{Cfg: &crud.Config{
 			DBName:      *dbName,
 			UserCount:   *userCount,
 			PostCount:   *postCount,

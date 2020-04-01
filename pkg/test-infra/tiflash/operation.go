@@ -32,25 +32,23 @@ import (
 
 // Ops knows how to operate TiDB and TiFlash on k8s
 type Ops struct {
-	cli client.Client
-	*tidb.TidbOps
+	cli     client.Client
+	TidbOps *tidb.Ops
 }
 
 // New creates Ops
-func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
+func New(cli client.Client, tidbClient *tidb.Ops) *Ops {
 	return &Ops{cli, tidbClient}
 }
 
 // Apply TiFlash cluster
 func (o *Ops) Apply(tc *Recommendation) error {
-	if err := o.ApplyTiDBCluster(tc.TiDBCluster); err != nil {
+	if err := o.TidbOps.ApplyTiDBCluster(tc.TiDBCluster); err != nil {
 		return err
 	}
-
 	if err := o.ApplyTiFlash(tc.TiFlash); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -67,6 +65,7 @@ func (o *Ops) Delete(tc *Recommendation) error {
 	return nil
 }
 
+// ApplyTiFlash ...
 func (o *Ops) ApplyTiFlash(t *TiFlash) error {
 	if err := o.applyObject(t.ConfigMap); err != nil {
 		return err
@@ -81,7 +80,6 @@ func (o *Ops) ApplyTiFlash(t *TiFlash) error {
 	if err := o.waitTiFlashReady(t.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -122,7 +120,7 @@ func (o *Ops) applyObject(object runtime.Object) error {
 	return nil
 }
 
-// Delete TiFlash component
+// DeleteTiFlash ...
 func (o *Ops) DeleteTiFlash(t *TiFlash) error {
 	if err := o.cli.Delete(context.TODO(), t.Service); err != nil {
 		if !apierrors.IsNotFound(err) {

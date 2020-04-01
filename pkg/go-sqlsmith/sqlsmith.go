@@ -88,10 +88,12 @@ func (s *SQLSmith) SetStable(stable bool) {
 	s.stable = stable
 }
 
+// Hint ...
 func (s *SQLSmith) Hint() bool {
 	return s.hint
 }
 
+// SetHint ...
 func (s *SQLSmith) SetHint(hint bool) {
 	s.hint = hint
 }

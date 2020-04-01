@@ -84,6 +84,7 @@ func ExecWithRollback(db *sql.DB, queries []QueryEntry) (res sql.Result, err err
 	return
 }
 
+// OpenDB opens a db
 func OpenDB(dsn string, maxIdleConns int) (*sql.DB, error) {
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

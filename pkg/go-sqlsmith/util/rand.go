@@ -146,6 +146,7 @@ func RdCharset() string {
 	}
 }
 
+// RdBool ...
 func RdBool() bool {
 	return Rd(2) == 0
 }

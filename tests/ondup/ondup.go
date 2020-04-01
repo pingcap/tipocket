@@ -44,12 +44,13 @@ type ondupClient struct {
 	errCh chan error
 }
 
-// CaseCreator creates ondupClient
-type CaseCreator struct {
+// ClientCreator creates ondupClient
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &ondupClient{
 		Config: l.Cfg,
 		errCh:  make(chan error, 3),
