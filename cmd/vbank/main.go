@@ -70,7 +70,7 @@ func main() {
 	} else {
 		suit.Provisioner = cluster.NewK8sProvisioner()
 		suit.NemesisGens = util.ParseNemesisGenerators(fixture.Context.Nemesis)
-		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion)
+		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{})
 	}
 	suit.Run(context.Background())
 }
