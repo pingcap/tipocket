@@ -134,7 +134,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 						},
 						Limits: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("4000m"),
-							fixture.Memory: resource.MustParse("8Gi"),
+							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					},
 					Service: &v1alpha1.TiDBServiceSpec{
