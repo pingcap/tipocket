@@ -75,7 +75,7 @@ var initConfig = Config{
 		SyncTimeout: types.Duration{
 			Duration: 10 * time.Minute,
 		},
-		EnableHint: true,
+		EnableHint: false,
 	},
 	Generator: Generator{
 		SQLSmith: SQLSmith{

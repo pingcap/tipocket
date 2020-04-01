@@ -187,7 +187,7 @@ func init() {
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
-	flag.BoolVar(&Context.EnableHint, "enable-hint", true, "enable to generate sql hint")
+	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
