@@ -91,7 +91,7 @@ lint: revive
 	revive -formatter friendly -config revive.toml $$($(PACKAGES))
 
 revive:
-	$(GO) get github.com/mgechev/revive@v1.0.2-0.20200225072153-6219ca02fffb
+	$(GO) get github.com/mgechev/revive@v1.0.2
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
