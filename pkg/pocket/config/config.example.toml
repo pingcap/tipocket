@@ -41,6 +41,8 @@ online-ddl = false
 serialize = false
 # turn to true will enable TiDB's general log
 general-log = false
+# allow to generate sql hint
+enable-hint = true
 
 [generator]
 [generator.sqlsmith]

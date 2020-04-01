@@ -44,6 +44,7 @@ func main() {
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
+	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),

@@ -24,6 +24,7 @@ type Option struct {
 	Mute       bool
 	OnlineDDL  bool
 	GeneralLog bool
+	Hint       bool
 }
 
 // Clone option

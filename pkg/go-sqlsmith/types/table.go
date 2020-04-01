@@ -15,6 +15,7 @@ package types
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/pingcap/tipocket/pkg/go-sqlsmith/util"
 )
@@ -32,7 +33,8 @@ type Table struct {
 	Online bool
 	// OnlineOther is for other instances obtain,
 	// which means this table is being manipulated in other txns and should not be a DDL table
-	OnlineOther bool
+	OnlineOther    bool
+	InnerTableList []*Table
 }
 
 type byColumn []*Column
@@ -63,14 +65,15 @@ func min(a, b int) int {
 // Clone copy table struct
 func (t *Table) Clone() *Table {
 	newTable := Table{
-		DB:          t.DB,
-		Table:       t.Table,
-		OriginTable: t.OriginTable,
-		Type:        t.Type,
-		Columns:     make(map[string]*Column),
-		Indexes:     t.Indexes,
-		Online:      t.Online,
-		OnlineOther: t.OnlineOther,
+		DB:             t.DB,
+		Table:          t.Table,
+		OriginTable:    t.OriginTable,
+		Type:           t.Type,
+		Columns:        make(map[string]*Column),
+		Indexes:        t.Indexes,
+		Online:         t.Online,
+		OnlineOther:    t.OnlineOther,
+		InnerTableList: t.InnerTableList,
 	}
 	for k, column := range t.Columns {
 		newTable.Columns[k] = column.Clone()
@@ -111,4 +114,26 @@ func (t *Table) RandIndex() string {
 		return ""
 	}
 	return t.Indexes[util.Rd(len(t.Indexes))]
+}
+
+// Do NOT set InnerTableList directly
+func (t *Table) AddToInnerTables(tables ...*Table) {
+	t.InnerTableList = append(t.InnerTableList, tables...)
+
+	// for removing duplicated items
+	sort.Slice(t.InnerTableList, func(i, j int) bool {
+		return strings.Compare(t.InnerTableList[i].Table, t.InnerTableList[j].Table) >= 0
+	})
+	tableList := make([]*Table, 0)
+	for i := range t.InnerTableList {
+		if i == 0 {
+			tableList = append(tableList, t.InnerTableList[i])
+			continue
+		}
+		if t.InnerTableList[i-1].Table == t.InnerTableList[i].Table {
+			continue
+		}
+		tableList = append(tableList, t.InnerTableList[i])
+	}
+	t.InnerTableList = tableList
 }
