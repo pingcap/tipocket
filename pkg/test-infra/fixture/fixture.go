@@ -192,6 +192,12 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
+	flag.StringVar(&Context.CDCConfig.Upstream.PDImage, "cdc.upstream.pd-image", "", "pd image of upstream tidb cluster")
+	flag.StringVar(&Context.CDCConfig.Upstream.TiDBImage, "cdc.upstream.tidb-image", "", "tidb image of upstream tidb cluster")
+	flag.StringVar(&Context.CDCConfig.Upstream.TiKVImage, "cdc.upstream.tikv-image", "", "tikv image of upstream tidb cluster")
+	flag.StringVar(&Context.CDCConfig.Downstream.PDImage, "cdc.downstream.pd-image", "", "pd image of downstream tidb cluster")
+	flag.StringVar(&Context.CDCConfig.Downstream.TiDBImage, "cdc.downstream.tidb-image", "", "tidb image of downstream tidb cluster")
+	flag.StringVar(&Context.CDCConfig.Downstream.TiKVImage, "cdc.downstream.tikv-image", "", "tikv image of downstream tidb cluster")
 
 	flag.IntVar(&Context.TiFlashConfig.Replica, "tiflash.replica", 1, "how many TiFlash replicas to run")
 	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")

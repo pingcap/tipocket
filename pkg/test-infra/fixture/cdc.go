@@ -19,4 +19,12 @@ type CDCConfig struct {
 	DockerRepository string
 	HubAddress       string
 	LogPath          string
+	Upstream         TiDBImageConfig
+	Downstream       TiDBImageConfig
+}
+
+type TiDBImageConfig struct {
+	TiDBImage string
+	TiKVImage string
+	PDImage   string
 }

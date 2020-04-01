@@ -16,6 +16,8 @@ package abtest
 import (
 	"fmt"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
@@ -30,8 +32,8 @@ type Recommendation struct {
 // RecommendedCluster gives a recommend cluster
 func RecommendedCluster(ns, name, versionA, versionB string) *Recommendation {
 	return &Recommendation{
-		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name), versionA),
-		Cluster2: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-b", name), versionB),
+		Cluster1: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-a", name), versionA, fixture.TiDBImageConfig{}),
+		Cluster2: tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-b", name), versionB, fixture.TiDBImageConfig{}),
 		NS:       ns,
 		Name:     name,
 	}

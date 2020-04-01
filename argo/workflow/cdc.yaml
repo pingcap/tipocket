@@ -24,6 +24,18 @@ spec:
         value: "pingcap"
       - name: cdc_version
         value: "nightly"
+      - name: cdc_upsream_pd_image
+        value: ""
+      - name: cdc_upsream_tidb_image
+        value: ""
+      - name: cdc_upsream_tikv_image
+        value: ""
+      - name: cdc_downstream_pd_image
+        value: ""
+      - name: cdc_downstream_tidb_image
+        value: ""
+      - name: cdc_downstream_tikv_image
+        value: ""
       - name: abtest_general_log
         value: "true"
       - name: binlog_sync_timeout
@@ -67,6 +79,18 @@ spec:
                   value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
+                - name: cdc_upstream_pd_image
+                  value: "{{workflow.parameters.cdc_upstream_pd_image}}"
+                - name: cdc_upstream_tidb_image
+                  value: "{{workflow.parameters.cdc_upstream_tidb_image}}"
+                - name: cdc_upstream_tikv_image
+                  value: "{{workflow.parameters.cdc_upstream_tikv_image}}"
+                - name: cdc_downstream_pd_image
+                  value: "{{workflow.parameters.cdc_downstream_pd_image}}"
+                - name: cdc_downstream_tidb_image
+                  value: "{{workflow.parameters.cdc_downstream_tidb_image}}"
+                - name: cdc_downstream_tikv_image
+                  value: "{{workflow.parameters.cdc_downstream_tikv_image}}"
                 - name: abtest_general_log
                   value: "{{workflow.parameters.abtest_general_log}}"
                 - name: binlog_sync_timeout

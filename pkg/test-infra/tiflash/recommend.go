@@ -59,7 +59,7 @@ func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
 			"app.kubernetes.io/instance":  tiFlashName,
 		}
 		model = &tiFlashConfig{ClusterName: name, Namespace: ns}
-		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version)
+		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version, fixture.TiDBImageConfig{})
 	)
 
 	// To make TiFlash work, we need to enable placement rules in pd.
