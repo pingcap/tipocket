@@ -27,14 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
-	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
-	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,31 +38,16 @@ var TestClient *TestCli
 
 // TestCli contains clients
 type TestCli struct {
-	Config  *rest.Config
-	Cli     client.Client
-	CDC     *cdc.Ops
-	MySQL   *mysql.Ops
-	TiDB    *tidb.Ops
-	Binlog  *binlog.Ops
-	ABTest  *abtest.Ops
-	TiFlash *tiflash.Ops
+	Cli client.Client
 }
 
-func newTestCli(conf *rest.Config) *TestCli {
+func newCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		log.Errorf("error creating kube-client: %v", err)
 	}
-	tidbClient := tidb.New(kubeCli)
 	return &TestCli{
-		Config:  conf,
-		Cli:     kubeCli,
-		CDC:     cdc.New(kubeCli, tidbClient),
-		MySQL:   mysql.New(kubeCli),
-		TiDB:    tidbClient,
-		Binlog:  binlog.New(kubeCli, tidbClient),
-		ABTest:  abtest.New(kubeCli, tidbClient),
-		TiFlash: tiflash.New(kubeCli, tidbClient),
+		Cli: kubeCli,
 	}
 }
 
@@ -130,5 +108,5 @@ func init() {
 	if err != nil {
 		log.Errorf("build config failed: %+v", err)
 	}
-	TestClient = newTestCli(conf)
+	TestClient = newCli(conf)
 }

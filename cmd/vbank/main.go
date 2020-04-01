@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/vbank"
 )
@@ -70,7 +70,7 @@ func main() {
 	} else {
 		suit.Provisioner = cluster.NewK8sProvisioner()
 		suit.NemesisGens = util.ParseNemesisGenerators(fixture.Context.Nemesis)
-		suit.ClusterDefs = tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{})
+		suit.ClusterDefs = test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig)
 	}
 	suit.Run(context.Background())
 }

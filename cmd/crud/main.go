@@ -8,8 +8,8 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 	"github.com/pingcap/tipocket/tests/crud"
 )
 
@@ -21,7 +21,7 @@ var (
 	updatePosts = flag.Int("update-posts", 200, "the number of posts updated")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	retryLimit  = flag.Int("retry-limit", 10, "retry count")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
+	txnMode     = flag.String("txn-mode", "pessimistic", "TiDBConfig txn mode")
 )
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: operation.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

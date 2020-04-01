@@ -15,17 +15,14 @@ package binlog
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/util/config"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // Drainer components
@@ -36,11 +33,8 @@ type Drainer struct {
 }
 
 // RecommendedBinlogCluster creates cluster with binlog
-func newDrainer(ns, name, version string) *Drainer {
+func newDrainer(ns, name string) *Drainer {
 	var (
-		enableBinlog             = true
-		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version, fixture.TiDBImageConfig{})
-		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version, fixture.TiDBImageConfig{})
 		drainerName              = fmt.Sprintf("%s-drainer", name)
 		drainerReplicas    int32 = 1
 		drainerServiceName       = drainerName
@@ -60,19 +54,6 @@ func newDrainer(ns, name, version string) *Drainer {
 
 	drainerConfigmap, _ := RenderDrainerConfig(&drainerConfigModel)
 	drainerCommand, _ := RenderDrainerCommand(&drainerCommandModel)
-
-	upstream.TidbCluster.Spec.TiDB.BinlogEnabled = &enableBinlog
-	upstream.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
-		Replicas:             3,
-		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
-		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
-		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: buildBinlogImage("tidb-binlog"),
-		},
-		GenericConfig: config.GenericConfig{
-			Config: map[string]interface{}{},
-		},
-	}
 
 	return &Drainer{
 		&corev1.ConfigMap{
@@ -136,7 +117,7 @@ func newDrainer(ns, name, version string) *Drainer {
 						Containers: []corev1.Container{
 							{
 								Name:            "drainer",
-								Image:           buildBinlogImage("tidb-binlog"),
+								Image:           util.BuildBinlogImage("tidb-binlog"),
 								ImagePullPolicy: "IfNotPresent",
 								Command: []string{
 									"/bin/sh",
@@ -197,25 +178,4 @@ func newDrainer(ns, name, version string) *Drainer {
 			},
 		},
 	}
-}
-
-func buildBinlogImage(name string) string {
-	var (
-		b       strings.Builder
-		version = fixture.Context.ImageVersion
-	)
-
-	if fixture.Context.BinlogConfig.BinlogVersion != "" {
-		version = fixture.Context.BinlogConfig.BinlogVersion
-	}
-	if fixture.Context.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
-	}
-
-	b.WriteString(fixture.Context.DockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	b.WriteString(version)
-	return b.String()
 }

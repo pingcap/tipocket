@@ -32,13 +32,6 @@ type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
-	NS   string
-	Name string
-}
-
-// Make ...
-func (t *Recommendation) Make() *v1alpha1.TidbCluster {
-	return t.TidbCluster
 }
 
 // EnablePump ...
@@ -71,11 +64,7 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	return t
 }
 
-func buildImage(name, version string, image string) string {
-	if image != "" {
-		return image
-	}
-
+func buildImage(name, baseVersion, version string) string {
 	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
@@ -84,17 +73,18 @@ func buildImage(name, version string, image string) string {
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(version)
+	if len(version) > 0 {
+		b.WriteString(version)
+	} else {
+		b.WriteString(baseVersion)
+	}
 	return b.String()
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBImageConfig) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-
 	return &Recommendation{
-		NS:   ns,
-		Name: name,
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -113,11 +103,11 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd", version, imageConfig.PDImage),
+						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImageVersion),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas: int32(fixture.Context.TiKVReplicas),
+					Replicas: int32(clusterConfig.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
@@ -132,7 +122,7 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv", version, imageConfig.TiKVImage),
+						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImageVersion),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -156,7 +146,7 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb", version, imageConfig.TiDBImage),
+						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImageVersion),
 					},
 				},
 			},

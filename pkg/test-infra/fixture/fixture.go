@@ -44,19 +44,17 @@ type fixtureContext struct {
 	Namespace                string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
-	ABTestConfig             ABTestConfig
-	BinlogConfig             BinlogConfig
-	CDCConfig                CDCConfig
-	TiFlashConfig            TiFlashConfig
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
 	MySQLVersion             string
 	HubAddress               string
 	DockerRepository         string
-	ImageVersion             string
-	TiDBClusterConfig        *ClusterConfig
-	TiKVReplicas             int
+	TiDBClusterConfig        TiDBClusterConfig
+	BinlogConfig             BinlogConfig
+	CDCConfig                CDCConfig
+	TiFlashConfig            TiFlashConfig
+	ABTestConfig             ABTestConfig
 	// Loki
 	LokiAddress  string
 	LokiUsername string
@@ -66,16 +64,22 @@ type fixtureContext struct {
 	EnableHint bool
 }
 
-<<<<<<< HEAD
-// Context ...
-=======
-type ClusterConfig struct {
-	TiDB string
-	TiKV string
-	PD   string
+// TiDBClusterConfig ...
+type TiDBClusterConfig struct {
+	// image versions
+	ImageVersion     string
+	TiDBImageVersion string
+	TiKVImageVersion string
+	PDImageVersion   string
+	// configurations
+	TiDBConfig string
+	TiKVConfig string
+	PDConfig   string
+	// tikv replicas
+	TiKVReplicas int
 }
 
->>>>>>> 307de7e... refactore recommendation to an interface
+// Context ...
 var Context fixtureContext
 
 const (
@@ -184,7 +188,7 @@ func init() {
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
-	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
+	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDBConfig monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
@@ -195,37 +199,25 @@ func init() {
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
-	flag.StringVar(&Context.ImageVersion, "image-version", "latest", "image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiDB, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
-	flag.StringVar(&Context.TiDBClusterConfig.TiKV, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
-	flag.StringVar(&Context.TiDBClusterConfig.PD, "pd-config", "", "path of pd config file (cluster A in abtest case)")
-	flag.IntVar(&Context.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
-<<<<<<< HEAD
-	flag.StringVar(&Context.ABTestConfig.TiDBConfigFile, "abtest.tidb-config", "", "tidb config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.TiKVConfigFile, "abtest.tikv-config", "", "tikv config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.PDConfigFile, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "latest", "specify version for cluster B")
-=======
-	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDB, "abtest.tidb-config", "", "tidb config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKV, "abtest.tikv-config", "", "tikv config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PD, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.StringVar(&Context.ABTestConfig.ClusterBVersion, "abtest.image-version", "", "specify version for cluster B")
->>>>>>> 307de7e... refactore recommendation to an interface
+	flag.StringVar(&Context.TiDBClusterConfig.ImageVersion, "image-version", "latest", "image version")
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 4, "number of tikv replicas")
+
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKVConfig, "abtest.tikv-config", "", "tikv config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PDConfig, "abtest.pd-config", "", "pd config file for cluster B")
+	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "tikv-replicas", 4, "number of tikv replicas")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
-	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
+	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDBConfig")
 
-	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
-	flag.StringVar(&Context.CDCConfig.Upstream.PDImage, "cdc.upstream.pd-image", "", "pd image of upstream tidb cluster")
-	flag.StringVar(&Context.CDCConfig.Upstream.TiDBImage, "cdc.upstream.tidb-image", "", "tidb image of upstream tidb cluster")
-	flag.StringVar(&Context.CDCConfig.Upstream.TiKVImage, "cdc.upstream.tikv-image", "", "tikv image of upstream tidb cluster")
-	flag.StringVar(&Context.CDCConfig.Downstream.PDImage, "cdc.downstream.pd-image", "", "pd image of downstream tidb cluster")
-	flag.StringVar(&Context.CDCConfig.Downstream.TiDBImage, "cdc.downstream.tidb-image", "", "tidb image of downstream tidb cluster")
-	flag.StringVar(&Context.CDCConfig.Downstream.TiKVImage, "cdc.downstream.tikv-image", "", "tikv image of downstream tidb cluster")
 
 	flag.IntVar(&Context.TiFlashConfig.Replica, "tiflash.replica", 1, "how many TiFlash replicas to run")
 	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")
@@ -233,8 +225,9 @@ func init() {
 
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
-	log.SetHighlighting(false)
+	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 
+	log.SetHighlighting(false)
 	go func() {
 		http.ListenAndServe(Context.pprofAddr, nil)
 	}()

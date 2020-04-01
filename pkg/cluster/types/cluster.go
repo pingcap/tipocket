@@ -3,19 +3,17 @@ package types
 import (
 	"context"
 	"fmt"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 )
 
 // Component is the identifier of Cluster
 type Component string
 
 const (
-	// TiDB component identifier
+	// TiDBConfig component identifier
 	TiDB Component = "tidb"
-	// TiKV component identifier
+	// TiKVConfig component identifier
 	TiKV Component = "tikv"
-	// PD component identifier
+	// PDConfig component identifier
 	PD Component = "pd"
 	// Pump Component identifier
 	Pump Component = "pump"
@@ -47,7 +45,6 @@ func (c *Client) PDMember() (string, []string, error) {
 type Node struct {
 	Namespace string    // Cluster k8s' namespace
 	Component Component // Node component type
-	Version   string    // component version
 	PodName   string    // Pod's name
 	IP        string
 	Port      int32
@@ -62,7 +59,7 @@ func (node Node) String() string {
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
 type ClientNode struct {
 	Namespace   string // Cluster k8s' namespace
-	ClusterName string // Cluster name, use to differentiate different TiDB clusters running on same namespace
+	ClusterName string // Cluster name, use to differentiate different TiDBConfig clusters running on same namespace
 	Component   Component
 	IP          string
 	Port        int32
@@ -75,7 +72,7 @@ func (node ClientNode) String() string {
 
 // ClusterSpecs is a cluster specification
 type ClusterSpecs struct {
-	Cluster     operation.Cluster
+	Cluster     Cluster
 	NemesisGens []string
 }
 

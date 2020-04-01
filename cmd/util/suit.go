@@ -31,7 +31,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/nemesis"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
@@ -62,7 +61,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs operation.Cluster
+	ClusterDefs clusterTypes.Cluster
 }
 
 // Run runs the suit.

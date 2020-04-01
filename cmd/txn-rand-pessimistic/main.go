@@ -22,7 +22,8 @@ import (
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
+
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -104,7 +105,7 @@ func main() {
 			},
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: operation.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

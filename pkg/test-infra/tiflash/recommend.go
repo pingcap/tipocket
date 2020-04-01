@@ -14,16 +14,12 @@
 package tiflash
 
 import (
-	"fmt"
-
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
 const (
@@ -42,7 +38,7 @@ type tiFlash struct {
 }
 
 // RecommendedTiFlashCluster creates a cluster with TiFlash
-func newTiFlash(ns, name, version string) *tiFlash {
+func newTiFlash(ns, name string) *tiFlash {
 	var (
 		tiFlashName = name + "-tiflash"
 		lbls        = map[string]string{
@@ -54,12 +50,6 @@ func newTiFlash(ns, name, version string) *tiFlash {
 		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version, fixture.TiDBImageConfig{})
 	)
 
-	// To make TiFlash work, we need to enable placement rules in pd.
-	tc.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
-		Replication: &v1alpha1.PDReplicationConfig{
-			EnablePlacementRules: pointer.BoolPtr(true),
-		},
-	}
 	return &tiFlash{
 		StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
 		// we use name instead of tiFlashName here

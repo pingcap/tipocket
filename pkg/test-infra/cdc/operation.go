@@ -22,6 +22,8 @@ import (
 	"github.com/ngaut/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 
@@ -32,23 +34,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// CDCOps knows how to operate TiDB CDC on k8s
-type CDCOps struct {
+// Ops knows how to operate TiDBConfig CDC on k8s
+type Ops struct {
 	cli client.Client
 	cdc *CDC
+	ns  string
 }
 
 // New creates cdc ops
-func New(ns, name string) *CDCOps {
-	return &CDCOps{cdc: newCDC(ns, name)}
+func New(ns, name string) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name)}
 }
 
-func (c *CDCOps) Namespace() string {
-	return c.cdc.Namespace
+// Namespace ...
+func (c *Ops) Namespace() string {
+	return c.ns
 }
 
 // Apply CDC cluster
-func (c *CDCOps) Apply() error {
+func (c *Ops) Apply() error {
 	if err := c.applyCDC(); err != nil {
 		return err
 	}
@@ -60,7 +64,7 @@ func (c *CDCOps) Apply() error {
 }
 
 // Delete CDC cluster
-func (c *CDCOps) Delete() error {
+func (c *Ops) Delete() error {
 	if err := c.cli.Delete(context.TODO(), c.cdc.Service); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -74,7 +78,7 @@ func (c *CDCOps) Delete() error {
 	return nil
 }
 
-func (c *CDCOps) applyCDC() error {
+func (c *Ops) applyCDC() error {
 	if err := util.ApplyObject(c.cli, c.cdc.Service); err != nil {
 		return err
 	}
@@ -144,7 +148,7 @@ func (o *Ops) waitJobCompleted(job *batchv1.Job) error {
 	})
 }
 
-func (c *CDCOps) applyJob() error {
+func (c *Ops) applyJob() error {
 	if err := util.ApplyObject(c.cli, c.cdc.Job); err != nil {
 		return err
 	}
@@ -152,12 +156,12 @@ func (c *CDCOps) applyJob() error {
 }
 
 // GetClientNodes returns the client nodes
-func (c *CDCOps) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (c *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return nil, nil
 }
 
 // GetNodes returns cdc nodes
-func (c *CDCOps) GetNodes() ([]clusterTypes.Node, error) {
+func (c *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pod := &corev1.Pod{}
 	err := c.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: c.cdc.StatefulSet.ObjectMeta.Namespace,
@@ -168,7 +172,7 @@ func (c *CDCOps) GetNodes() ([]clusterTypes.Node, error) {
 		return []clusterTypes.Node{}, err
 	}
 
-	return []clusterTypes.Node{clusterTypes.Node{
+	return []clusterTypes.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,

@@ -20,12 +20,13 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -52,22 +53,32 @@ const (
 	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
 
-// TidbOps knows how to operate TiDB on k8s
-type TidbOps struct {
+// Ops knows how to operate TiDBConfig on k8s
+type Ops struct {
 	cli    client.Client
 	tc     *Recommendation
-	config *fixture.ClusterConfig
+	config fixture.TiDBClusterConfig
+	ns     string
+	name   string
 }
 
-func New(namespace, name, version string, config *fixture.ClusterConfig) operation.Cluster {
-	return &TidbOps{tc: RecommendedTiDBCluster(namespace, name, version), config: config}
+// New ...
+func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config),
+		ns: namespace, name: name, config: config}
 }
 
-func (t TidbOps) Namespace() string {
-	return t.tc.Namespace
+// Namespace ...
+func (o *Ops) Namespace() string {
+	return o.ns
 }
 
-func (t *TidbOps) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
+// GetTiDBCluster ...
+func (o *Ops) GetTiDBCluster() *v1alpha1.TidbCluster {
+	return o.tc.TidbCluster
+}
+
+func (o *Ops) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: *meta,
 	}
@@ -76,17 +87,18 @@ func (t *TidbOps) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service
 		return nil, err
 	}
 
-	if err := t.cli.Get(context.TODO(), key, svc); err != nil {
+	if err := o.cli.Get(context.TODO(), key, svc); err != nil {
 		return nil, err
 	}
 
 	return svc, nil
 }
 
-func (t *TidbOps) GetNodes() ([]clusterTypes.Node, error) {
+// GetNodes ...
+func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	if err := t.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: t.tc.NS},
-		client.MatchingLabels{"app.kubernetes.io/instance": t.tc.Name}); err != nil {
+	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.ns},
+		client.MatchingLabels{"app.kubernetes.io/instance": o.name}); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 
@@ -95,13 +107,14 @@ func (t *TidbOps) GetNodes() ([]clusterTypes.Node, error) {
 	for _, pod := range pods.Items {
 		r.Items = append(r.Items, pod)
 	}
-	return t.parseNodeFromPodList(r), nil
+	return o.parseNodeFromPodList(r), nil
 }
 
-func (t *TidbOps) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+// GetClientNodes ...
+func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
-	k8sNodes, err := t.getK8sNodes()
+	k8sNodes, err := o.getK8sNodes()
 	if err != nil {
 		return clientNodes, err
 	}
@@ -110,7 +123,7 @@ func (t *TidbOps) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 		return clientNodes, errors.New("k8s node not found")
 	}
 
-	svc, err := t.getTiDBServiceByMeta(&t.tc.Service.ObjectMeta)
+	svc, err := o.getTiDBServiceByMeta(&o.tc.Service.ObjectMeta)
 	if err != nil {
 		return clientNodes, err
 	}
@@ -124,63 +137,63 @@ func (t *TidbOps) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 }
 
 // getK8sNodes gets physical nodes
-func (t *TidbOps) getK8sNodes() (*corev1.NodeList, error) {
+func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
-	err := t.cli.List(context.TODO(), nodes)
+	err := o.cli.List(context.TODO(), nodes)
 	if err != nil {
 		return nil, err
 	}
 	return nodes, nil
 }
 
-func (t *TidbOps) Apply() error {
-	tc := t.tc.TidbCluster
-	tm := t.tc.TidbMonitor
+func (o *Ops) Apply() error {
+	tc := o.tc.TidbCluster
+	tm := o.tc.TidbMonitor
 	desired := tc.DeepCopy()
 
 	log.Info("Apply tidb discovery")
-	if err := t.applyDiscovery(tc); err != nil {
+	if err := o.applyDiscovery(tc); err != nil {
 		return err
 	}
 	log.Info("Apply tidb configmap")
-	if err := t.applyTiDBConfigMap(tc, t.config.TiDB); err != nil {
+	if err := o.applyTiDBConfigMap(tc, o.config.TiDBConfig); err != nil {
 		return err
 	}
 	log.Info("Apply pd configmap")
-	if err := t.applyPDConfigMap(tc, t.config.PD); err != nil {
+	if err := o.applyPDConfigMap(tc, o.config.PDConfig); err != nil {
 		return err
 	}
 	log.Info("Apply tikv configmap")
-	if err := t.applyTiKVConfigMap(tc, t.config.TiKV); err != nil {
+	if err := o.applyTiKVConfigMap(tc, o.config.TiKVConfig); err != nil {
 		return err
 	}
 	if tc.Spec.Pump != nil {
 		log.Info("Apply pump configmap")
-		if err := t.applyPumpConfigMap(tc); err != nil {
+		if err := o.applyPumpConfigMap(tc); err != nil {
 			return err
 		}
 	}
 	// apply tc
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tc, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
 		tc.Spec = desired.Spec
 		tc.Annotations = desired.Annotations
 		tc.Labels = desired.Labels
 		return nil
 	})
-	if err = t.waitTidbOpsReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
+	if err = o.waitTidbOpsReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
-	return t.applyTiDBMonitor(tm)
+	return o.applyTiDBMonitor(tm)
 }
 
-func (t *TidbOps) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+func (o *Ops) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
 		if err != nil {
 			return false, err
 		}
-		err = t.cli.Get(context.TODO(), key, local)
+		err = o.cli.Get(context.TODO(), key, local)
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -193,7 +206,7 @@ func (t *TidbOps) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Durati
 		}
 		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
 		if pdReady < pdDesired {
-			log.Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			log.Infof("PDConfig do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
 			return false, nil
 		}
 		if local.Status.TiKV.StatefulSet == nil {
@@ -201,7 +214,7 @@ func (t *TidbOps) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Durati
 		}
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
-			log.Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			log.Infof("TiKVConfig do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
 			return false, nil
 		}
 		if local.Status.TiDB.StatefulSet == nil {
@@ -209,16 +222,16 @@ func (t *TidbOps) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Durati
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
+			log.Infof("TiDBConfig do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
 			return false, nil
 		}
 		return true, nil
 	})
 }
 
-func (t *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	desired := tm.DeepCopy()
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tm, func() error {
+	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tm, func() error {
 		tm.Spec = desired.Spec
 		tm.Annotations = desired.Annotations
 		tm.Labels = desired.Labels
@@ -227,17 +240,17 @@ func (t *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	return err
 }
 
-func (t *TidbOps) Delete() error {
+func (o *Ops) Delete() error {
 	var g errgroup.Group
 	g.Go(func() error {
-		err := t.cli.Delete(context.TODO(), t.tc.TidbCluster)
+		err := o.cli.Delete(context.TODO(), o.tc.TidbCluster)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 		return nil
 	})
 	g.Go(func() error {
-		err := t.cli.Delete(context.TODO(), t.tc.TidbMonitor)
+		err := o.cli.Delete(context.TODO(), o.tc.TidbMonitor)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
@@ -246,7 +259,7 @@ func (t *TidbOps) Delete() error {
 	return g.Wait()
 }
 
-func (t *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
 		return err
@@ -255,7 +268,7 @@ func (t *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) er
 		return err
 	}
 	desired := configMap.DeepCopy()
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
 		return nil
 	}); err != nil {
@@ -264,7 +277,7 @@ func (t *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) er
 	return nil
 }
 
-func (t *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getPDConfigMap(tc)
 	if err != nil {
 		return err
@@ -273,7 +286,7 @@ func (t *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) erro
 		return err
 	}
 	desired := configMap.DeepCopy()
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
 		return nil
 	}); err != nil {
@@ -282,7 +295,7 @@ func (t *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) erro
 	return nil
 }
 
-func (t *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getTiKVConfigMap(tc)
 	if err != nil {
 		return err
@@ -291,7 +304,7 @@ func (t *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) er
 		return err
 	}
 	desired := configMap.DeepCopy()
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
 		return nil
 	}); err != nil {
@@ -300,7 +313,7 @@ func (t *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) er
 	return nil
 }
 
-func (t *Ops) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+func (o *Ops) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	if tc.Spec.Pump == nil {
 		return nil
 	}
@@ -309,7 +322,7 @@ func (t *Ops) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 		return err
 	}
 	desired := configMap.DeepCopy()
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, configMap, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
 		return nil
 	}); err != nil {
@@ -318,19 +331,19 @@ func (t *Ops) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *Ops) applyTiDBService(s *corev1.Service) error {
-	err := t.cli.Create(context.TODO(), s)
+func (o *Ops) applyTiDBService(s *corev1.Service) error {
+	err := o.cli.Create(context.TODO(), s)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func (t *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
+func (o *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 	meta, _ := getDiscoveryMeta(tc)
 
 	// Ensure RBAC
-	err := t.cli.Create(context.TODO(), &rbacv1.Role{
+	err := o.cli.Create(context.TODO(), &rbacv1.Role{
 		ObjectMeta: meta,
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -349,13 +362,13 @@ func (t *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), &corev1.ServiceAccount{
+	err = o.cli.Create(context.TODO(), &corev1.ServiceAccount{
 		ObjectMeta: meta,
 	})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), &rbacv1.RoleBinding{
+	err = o.cli.Create(context.TODO(), &rbacv1.RoleBinding{
 		ObjectMeta: meta,
 		Subjects: []rbacv1.Subject{{
 			Kind: "ServiceAccount",
@@ -372,11 +385,11 @@ func (t *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 	}
 
 	// RBAC ensured, reconcile
-	err = t.cli.Create(context.TODO(), getTidbDiscoveryService(tc))
+	err = o.cli.Create(context.TODO(), getTidbDiscoveryService(tc))
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
-	err = t.cli.Create(context.TODO(), getTidbDiscoveryDeployment(tc))
+	err = o.cli.Create(context.TODO(), getTidbDiscoveryDeployment(tc))
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
@@ -384,7 +397,7 @@ func (t *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 }
 
 // GetPDMember ...
-func (t *Ops) GetPDMember(namespace, name string) (string, []string, error) {
+func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 	var local v1alpha1.TidbCluster
 	var members []string
 	err := wait.PollImmediate(5*time.Second, time.Minute*time.Duration(5), func() (bool, error) {
@@ -392,7 +405,7 @@ func (t *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 			Namespace: namespace,
 			Name:      name,
 		}
-		err := t.cli.Get(context.TODO(), key, &local)
+		err := o.cli.Get(context.TODO(), key, &local)
 		if err != nil && errors.IsNotFound(err) {
 			return false, err
 		}
@@ -564,7 +577,7 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (t *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
+func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 	var nodes []clusterTypes.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
@@ -577,7 +590,6 @@ func (t *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 		nodes = append(nodes, clusterTypes.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			// TODO use better way to retrieve version?
-			Version:   fixture.Context.ImageVersion,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
 			Component: clusterTypes.Component(component),
@@ -586,7 +598,7 @@ func (t *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 				Namespace:   pod.ObjectMeta.Namespace,
 				ClusterName: pod.ObjectMeta.Labels["app.kubernetes.io/instance"],
 				PDMemberFunc: func(ns, name string) (string, []string, error) {
-					return t.GetPDMember(ns, name)
+					return o.GetPDMember(ns, name)
 				},
 			},
 		})

@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
 )
 
 var (
@@ -58,8 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: operation.NewABTestCluster(c.Namespace, c.Namespace, c.ImageVersion,
-			c.ABTestConfig.ClusterBVersion, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
+		ClusterDefs:      test_infra.NewABTestCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())
 }

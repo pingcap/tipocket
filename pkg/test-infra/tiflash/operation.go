@@ -25,23 +25,28 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// Ops knows how to operate TiDB and TiFlash on k8s
+// Ops knows how to operate TiDBConfig and TiFlash on k8s
 type Ops struct {
-	cli client.Client
-	tf  *tiFlash
+	cli  client.Client
+	tf   *tiFlash
+	ns   string
+	name string
 }
 
 // New creates Ops
-func New(namespace, name, version string) *Ops {
-	return &Ops{tf: newTiFlash(namespace, name, version)}
+func New(namespace, name string) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, ns: namespace, name: name, tf: newTiFlash(namespace, name)}
 }
 
+// Namespace ...
 func (o *Ops) Namespace() string {
-	return o.tf.Namespace
+	return o.ns
 }
 
 // Apply TiFlash cluster
@@ -128,8 +133,8 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 // GetNodes returns all nodes
 func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.tf.Namespace},
-		client.MatchingLabels{"app.kubernetes.io/instance": o.tf.Name + "-tiflash"}); err != nil {
+	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.ns},
+		client.MatchingLabels{"app.kubernetes.io/instance": o.name + "-tiflash"}); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 

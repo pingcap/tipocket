@@ -14,6 +14,12 @@ spec:
             default: pingcap
           - name: image_version
             default: nightly
+          - name: tidb_image
+            default: ""
+          - name: tikv_image
+            default: ""
+          - name: pd_image
+            default: ""
           - name: storage_class
             default: standard
           - name: nemesis
@@ -28,18 +34,6 @@ spec:
             default: pingcap
           - name: cdc_version
             default: nightly
-          - name: cdc_upstream_pd_image
-            default: ""
-          - name: cdc_upstream_tidb_image
-            default: ""
-          - name: cdc_upstream_tikv_image
-            default: ""
-          - name: cdc_downstream_pd_image
-            default: ""
-          - name: cdc_downstream_tidb_image
-            default: ""
-          - name: cdc_downstream_tikv_image
-            default: ""
           - name: abtest_general_log
             default: "true"
           - name: binlog_sync_timeout
@@ -65,6 +59,9 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -tidb-image={{inputs.parameters.tidb_image}} \
+            -tikv-image={{inputs.parameters.tikv_image}} \
+            -pd-image={{inputs.parameters.pd_image}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
@@ -72,12 +69,6 @@ spec:
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
-            -cdc.upstream.pd-image={{inputs.parameters.cdc_upstream_pd_image}} \
-            -cdc.upstream.tidb-image={{inputs.parameters.cdc_upstream_tidb_image}} \
-            -cdc.upstream.tikv-image={{inputs.parameters.cdc_upstream_tikv_image}} \
-            -cdc.downstream.pd-image={{inputs.parameters.cdc_downstream_pd_image}} \
-            -cdc.downstream.tidb-image={{inputs.parameters.cdc_downstream_tidb_image}} \
-            -cdc.downstream.tikv-image={{inputs.parameters.cdc_downstream_tikv_image}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general-log={{inputs.parameters.abtest_general_log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \

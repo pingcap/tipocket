@@ -26,6 +26,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // PDAddress ...
@@ -68,6 +70,7 @@ func RenderTemplateFunc(tpl *template.Template, model interface{}) (string, erro
 	return buff.String(), nil
 }
 
+// ApplyObject applies k8s object
 func ApplyObject(client client.Client, object runtime.Object) error {
 	if err := client.Create(context.TODO(), object); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
@@ -75,4 +78,25 @@ func ApplyObject(client client.Client, object runtime.Object) error {
 		}
 	}
 	return nil
+}
+
+func BuildBinlogImage(name string) string {
+	var (
+		b       strings.Builder
+		version = fixture.Context.TiDBClusterConfig.ImageVersion
+	)
+
+	if fixture.Context.BinlogConfig.BinlogVersion != "" {
+		version = fixture.Context.BinlogConfig.BinlogVersion
+	}
+	if fixture.Context.HubAddress != "" {
+		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
+	}
+
+	b.WriteString(fixture.Context.DockerRepository)
+	b.WriteString("/")
+	b.WriteString(name)
+	b.WriteString(":")
+	b.WriteString(version)
+	return b.String()
 }

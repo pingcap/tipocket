@@ -17,12 +17,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // CDC defines the configuration for running on Kubernetes
@@ -140,27 +141,20 @@ func newCDC(ns, name string) *CDC {
 func buildCDCImage(name string) string {
 	var (
 		b                strings.Builder
-		version          = fixture.Context.ImageVersion
 		dockerRepository = fixture.Context.CDCConfig.DockerRepository
 		hubAddress       = fixture.Context.CDCConfig.HubAddress
+		version          = fixture.Context.CDCConfig.CDCVersion
 	)
-
-	if fixture.Context.CDCConfig.CDCVersion != "" {
-		version = fixture.Context.CDCConfig.CDCVersion
-	}
 
 	if hubAddress == "" {
 		hubAddress = fixture.Context.HubAddress
 	}
-
 	if hubAddress != "" {
 		fmt.Fprintf(&b, "%s/", hubAddress)
 	}
-
 	if dockerRepository == "" {
 		dockerRepository = fixture.Context.DockerRepository
 	}
-
 	b.WriteString(dockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)

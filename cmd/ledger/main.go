@@ -20,7 +20,8 @@ import (
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/pingcap/tipocket/pkg/test-infra/operation"
+
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 
 	"github.com/pingcap/tipocket/tests/ledger"
 
@@ -34,7 +35,7 @@ var (
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
+	txnMode     = flag.String("txn-mode", "pessimistic", "TiDBConfig txn mode")
 )
 
 func main() {
@@ -55,7 +56,7 @@ func main() {
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: operation.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

@@ -15,9 +15,8 @@ package fixture
 
 // ABTestConfig for abtest component
 type ABTestConfig struct {
-	ClusterBConfig  *ClusterConfig
-	ClusterBVersion string
-	LogPath         string
-	Concurrency     int
-	GeneralLog      bool
+	ClusterBConfig TiDBClusterConfig
+	LogPath        string
+	Concurrency    int
+	GeneralLog     bool
 }
