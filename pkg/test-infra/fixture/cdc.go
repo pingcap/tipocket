@@ -23,6 +23,7 @@ type CDCConfig struct {
 	Downstream       TiDBImageConfig
 }
 
+// TiDBImageConfig defines the tidb cluster image
 type TiDBImageConfig struct {
 	TiDBImage string
 	TiKVImage string
