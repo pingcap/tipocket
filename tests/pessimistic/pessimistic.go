@@ -12,15 +12,15 @@ import (
 	"golang.org/x/net/context"
 )
 
-// PessimisticCase is for pessimistic transaction test
-type PessimisticCase struct {
-	cfg        PessimisticCaseConfig
+// Client is for pessimistic transaction test
+type Client struct {
+	cfg        ClientConfig
 	successTxn uint64
 	failTxn    uint64
 }
 
-// PessimisticCaseConfig is for pessimistic test case.
-type PessimisticCaseConfig struct {
+// ClientConfig is for pessimistic test case.
+type ClientConfig struct {
 	DBName         string `toml:"dbname"`
 	Concurrency    int    `toml:"concurrency"`
 	TableNum       int    `toml:"table_num"`
@@ -39,11 +39,13 @@ const (
 	caseName        = "pessimistic transaction"
 )
 
-func NewPessimisticCase(cfg PessimisticCaseConfig) *PessimisticCase {
-	return &PessimisticCase{cfg: cfg}
+// NewPessimisticCase ...
+func NewPessimisticCase(cfg ClientConfig) *Client {
+	return &Client{cfg: cfg}
 }
 
-func (c *PessimisticCase) Initialize(ctx context.Context, db *sql.DB) error {
+// Initialize ...
+func (c *Client) Initialize(ctx context.Context, db *sql.DB) error {
 	for i := 0; i < c.cfg.TableNum; i++ {
 		tableName := fmt.Sprintf("%s%d", tableNamePrefix, i)
 		log.Infof("preparing table: %s\n", tableName)
@@ -69,8 +71,8 @@ func (c *PessimisticCase) Initialize(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-// Execute implements Case Execute interface.
-func (c *PessimisticCase) Execute(ctx context.Context, db *sql.DB) error {
+// Execute implements Client Execute interface.
+func (c *Client) Execute(ctx context.Context, db *sql.DB) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {
 		log.Infof("[%s] test end...", c)
@@ -92,7 +94,7 @@ func (c *PessimisticCase) Execute(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (c *PessimisticCase) String() string {
+func (c *Client) String() string {
 	return caseName
 }
 
@@ -105,6 +107,7 @@ func insertSQL(tableName string, beginID uint64) string {
 	return fmt.Sprintf("insert %s values %s", tableName, strings.Join(values, ","))
 }
 
+// Session ...
 type Session struct {
 	seID           uint64
 	isPessimistic  bool
@@ -116,11 +119,12 @@ type Session struct {
 	txnStart       time.Time
 	commitStart    time.Time
 	stmtCache      map[string]*sql.Stmt
-	pCase          *PessimisticCase
+	pCase          *Client
 	scores         map[int]int
 }
 
-func (c *PessimisticCase) NewSession(db *sql.DB, seID, maxSize uint64) (*Session, error) {
+// NewSession ...
+func (c *Client) NewSession(db *sql.DB, seID, maxSize uint64) (*Session, error) {
 	ctx := context.Background()
 	con, err := db.Conn(ctx)
 	if err != nil {
@@ -280,6 +284,7 @@ func (se *Session) handleError(ctx context.Context, err error, isCommit bool) {
 	}
 }
 
+// Run ...
 func (se *Session) Run(wg *sync.WaitGroup) {
 	defer wg.Done()
 	ctx := context.Background()
@@ -365,7 +370,7 @@ func (se *Session) reset() {
 	se.txnStart = time.Now()
 }
 
-func (c *PessimisticCase) statsLoop() {
+func (c *Client) statsLoop() {
 	ticker := time.NewTicker(time.Second * 10)
 	lastSuccess := uint64(0)
 	lastFail := uint64(0)
@@ -379,7 +384,7 @@ func (c *PessimisticCase) statsLoop() {
 	}
 }
 
-func (c *PessimisticCase) checkLoop(db *sql.DB) {
+func (c *Client) checkLoop(db *sql.DB) {
 	ctx := context.Background()
 	conn, err := db.Conn(ctx)
 	if err != nil {

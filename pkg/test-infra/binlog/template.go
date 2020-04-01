@@ -108,12 +108,14 @@ port = 4000
 # you can uncomment this to change the database to save checkpoint when the downstream is mysql or tidb
 #schema = "tidb_binlog"`))
 
+// DrainerConfigModel ...
 type DrainerConfigModel struct {
 	PDAddress    string
 	DownStreamDB string
 	RelayPath    string
 }
 
+// RenderDrainerConfig ...
 func RenderDrainerConfig(model *DrainerConfigModel) (string, error) {
 	return util.RenderTemplateFunc(drainerConfigTpl, model)
 }
@@ -152,10 +154,12 @@ done
 -initial-commit-ts=0 \
 -log-file=/data/log/drainer.log`))
 
+// DrainerCommandModel ...
 type DrainerCommandModel struct {
 	Component string
 }
 
+// RenderDrainerCommand ...
 func RenderDrainerCommand(model *DrainerCommandModel) (string, error) {
 	return util.RenderTemplateFunc(drainerCommandTpl, model)
 }

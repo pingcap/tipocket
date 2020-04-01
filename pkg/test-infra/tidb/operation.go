@@ -51,8 +51,8 @@ const (
 	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
 
-// TidbOps knows how to operate TiDB on k8s
-type TidbOps struct {
+// Ops knows how to operate TiDB on k8s
+type Ops struct {
 	cli client.Client
 }
 
@@ -63,11 +63,13 @@ type Config struct {
 	Pd   string
 }
 
-func New(cli client.Client) *TidbOps {
-	return &TidbOps{cli}
+// New ...
+func New(cli client.Client) *Ops {
+	return &Ops{cli}
 }
 
-func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
+// GetTiDBService ...
+func (t *Ops) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-tidb", tc.Name),
@@ -86,7 +88,8 @@ func (t *TidbOps) GetTiDBService(tc *v1alpha1.TidbCluster) (*corev1.Service, err
 	return svc, nil
 }
 
-func (t *TidbOps) GetTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
+// GetTiDBServiceByMeta ...
+func (t *Ops) GetTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: *meta,
 	}
@@ -102,7 +105,8 @@ func (t *TidbOps) GetTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service
 	return svc, nil
 }
 
-func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
+// GetTiDBNodePort ...
+func (t *Ops) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-tidb", tc.Name),
@@ -121,7 +125,8 @@ func (t *TidbOps) GetTiDBNodePort(tc *v1alpha1.TidbCluster) (*corev1.Service, er
 	return svc, nil
 }
 
-func (t *TidbOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
+// GetNodes ...
+func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
 	if err := t.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: tc.NS},
 		client.MatchingLabels{"app.kubernetes.io/instance": tc.Name}); err != nil {
@@ -136,7 +141,8 @@ func (t *TidbOps) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 	return t.parseNodeFromPodList(r), nil
 }
 
-func (t *TidbOps) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
+// GetClientNodes ...
+func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
 	k8sNodes, err := t.GetK8sNodes()
@@ -162,7 +168,7 @@ func (t *TidbOps) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode,
 }
 
 // GetK8sNodes gets physical nodes
-func (t *TidbOps) GetK8sNodes() (*corev1.NodeList, error) {
+func (t *Ops) GetK8sNodes() (*corev1.NodeList, error) {
 	nodes := &corev1.NodeList{}
 	err := t.cli.List(context.TODO(), nodes)
 	if err != nil {
@@ -171,7 +177,8 @@ func (t *TidbOps) GetK8sNodes() (*corev1.NodeList, error) {
 	return nodes, nil
 }
 
-func (t *TidbOps) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error) {
+// GetTiDBCluster ...
+func (t *Ops) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error) {
 	tc := &v1alpha1.TidbCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -190,7 +197,8 @@ func (t *TidbOps) GetTiDBCluster(ns, name string) (*v1alpha1.TidbCluster, error)
 	return tc, nil
 }
 
-func (t *TidbOps) ApplyTiDBCluster(cluster *Recommendation, config ...Config) error {
+// ApplyTiDBCluster ...
+func (t *Ops) ApplyTiDBCluster(cluster *Recommendation, config ...Config) error {
 	if len(config) > 1 {
 		return errors.Errorf("too many config args: expected 1, but %d got", len(config))
 	}
@@ -242,7 +250,7 @@ func (t *TidbOps) ApplyTiDBCluster(cluster *Recommendation, config ...Config) er
 	return t.applyTiDBMonitor(tm)
 }
 
-func (t *TidbOps) waitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+func (t *Ops) waitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -285,7 +293,7 @@ func (t *TidbOps) waitTiDBClusterReady(tc *v1alpha1.TidbCluster, timeout time.Du
 	})
 }
 
-func (t *TidbOps) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+func (t *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	desired := tm.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), t.cli, tm, func() error {
 		tm.Spec = desired.Spec
@@ -296,7 +304,8 @@ func (t *TidbOps) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	return err
 }
 
-func (t *TidbOps) Delete(tc *Recommendation) error {
+// Delete ...
+func (t *Ops) Delete(tc *Recommendation) error {
 	var g errgroup.Group
 	g.Go(func() error {
 		err := t.cli.Delete(context.TODO(), tc.TidbCluster)
@@ -315,7 +324,7 @@ func (t *TidbOps) Delete(tc *Recommendation) error {
 	return g.Wait()
 }
 
-func (t *TidbOps) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (t *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
 		return err
@@ -333,7 +342,7 @@ func (t *TidbOps) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string
 	return nil
 }
 
-func (t *TidbOps) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (t *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getPDConfigMap(tc)
 	if err != nil {
 		return err
@@ -351,7 +360,7 @@ func (t *TidbOps) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) 
 	return nil
 }
 
-func (t *TidbOps) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (t *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
 	configMap, err := getTiKVConfigMap(tc)
 	if err != nil {
 		return err
@@ -369,7 +378,7 @@ func (t *TidbOps) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string
 	return nil
 }
 
-func (t *TidbOps) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
+func (t *Ops) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	if tc.Spec.Pump == nil {
 		return nil
 	}
@@ -387,7 +396,7 @@ func (t *TidbOps) applyPumpConfigMap(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) applyTiDBService(s *corev1.Service) error {
+func (t *Ops) applyTiDBService(s *corev1.Service) error {
 	err := t.cli.Create(context.TODO(), s)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return err
@@ -395,7 +404,7 @@ func (t *TidbOps) applyTiDBService(s *corev1.Service) error {
 	return nil
 }
 
-func (t *TidbOps) applyDiscovery(tc *v1alpha1.TidbCluster) error {
+func (t *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 	meta, _ := getDiscoveryMeta(tc)
 
 	// Ensure RBAC
@@ -452,7 +461,8 @@ func (t *TidbOps) applyDiscovery(tc *v1alpha1.TidbCluster) error {
 	return nil
 }
 
-func (t *TidbOps) GetPDMember(namespace, name string) (string, []string, error) {
+// GetPDMember ...
+func (t *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 	var local v1alpha1.TidbCluster
 	var members []string
 	err := wait.PollImmediate(5*time.Second, time.Minute*time.Duration(5), func() (bool, error) {
@@ -503,11 +513,11 @@ func readFileAsString(filename string) (string, error) {
 	if filename == "" {
 		return ``, nil
 	}
-	if bytes, err := ioutil.ReadFile(filename); err != nil {
+	bytes, err := ioutil.ReadFile(filename)
+	if err != nil {
 		return ``, err
-	} else {
-		return string(bytes), nil
 	}
+	return string(bytes), nil
 }
 
 func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
@@ -531,7 +541,7 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderTiDBStartScript(&TidbStartScriptModel{ClusterName: tc.Name})
+	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name})
 	if err != nil {
 		return nil, err
 	}
@@ -567,7 +577,7 @@ func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	c, err := RenderPumpConfig(&PumpConfigModel{})
+	c, err := RenderPumpConfig(&pumpConfigModel{})
 	if err != nil {
 		return nil, err
 	}
@@ -632,7 +642,7 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (t *TidbOps) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
+func (t *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 	var nodes []clusterTypes.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]

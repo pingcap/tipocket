@@ -69,11 +69,13 @@ echo "/tidb-server ${ARGS}"
 exec /tidb-server ${ARGS}
 `))
 
-type TidbStartScriptModel struct {
+// StartScriptModel ...
+type StartScriptModel struct {
 	ClusterName string
 }
 
-func RenderTiDBStartScript(model *TidbStartScriptModel) (string, error) {
+// RenderTiDBStartScript ...
+func RenderTiDBStartScript(model *StartScriptModel) (string, error) {
 	return util.RenderTemplateFunc(tidbStartScriptTpl, model)
 }
 
@@ -169,10 +171,12 @@ echo "/pd-server ${ARGS}"
 exec /pd-server ${ARGS}
 `))
 
+// PDStartScriptModel ...
 type PDStartScriptModel struct {
 	DataDir string
 }
 
+// RenderPDStartScript ...
 func RenderPDStartScript(model *PDStartScriptModel) (string, error) {
 	return util.RenderTemplateFunc(pdStartScriptTpl, model)
 }
@@ -221,10 +225,12 @@ echo "/tikv-server ${ARGS}"
 exec /tikv-server ${ARGS}
 `))
 
+// TiKVStartScriptModel ...
 type TiKVStartScriptModel struct {
 	DataDir string
 }
 
+// RenderTiKVStartScript ...
 func RenderTiKVStartScript(model *TiKVStartScriptModel) (string, error) {
 	return util.RenderTemplateFunc(tikvStartScriptTpl, model)
 }
@@ -241,9 +247,10 @@ db-type = "file"
 [syncer.to]
 dir = "/data/pb"`))
 
-type PumpConfigModel struct {
+type pumpConfigModel struct {
 }
 
-func RenderPumpConfig(model *PumpConfigModel) (string, error) {
+// RenderPumpConfig ...
+func RenderPumpConfig(model *pumpConfigModel) (string, error) {
 	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }

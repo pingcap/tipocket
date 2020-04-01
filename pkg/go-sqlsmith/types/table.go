@@ -116,7 +116,7 @@ func (t *Table) RandIndex() string {
 	return t.Indexes[util.Rd(len(t.Indexes))]
 }
 
-// Do NOT set InnerTableList directly
+// AddToInnerTables Do NOT set InnerTableList directly
 func (t *Table) AddToInnerTables(tables ...*Table) {
 	t.InnerTableList = append(t.InnerTableList, tables...)
 

@@ -16,17 +16,18 @@ const (
 	regexMatcher = "|~"
 )
 
-type LokiClient struct {
+// Client ...
+type Client struct {
 	cli       *client.Client
 	startTime time.Time
 }
 
-// NewLokiClient creates a client to query loki.
-func NewLokiClient(address, username, password string) *LokiClient {
+// NewClient creates a client to query loki.
+func NewClient(address, username, password string) *Client {
 	if address == "" {
 		return nil
 	}
-	return &LokiClient{
+	return &Client{
 		cli: &client.Client{
 			Address:  address,
 			Username: username,
@@ -40,7 +41,7 @@ func NewLokiClient(address, username, password string) *LokiClient {
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
 //  is a set of strings you don't want to match.
-func (c *LokiClient) FetchPodLogs(ns, podName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
+func (c *Client) FetchPodLogs(ns, podName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
 	if ns == "" {
 		return nil, errors.New("namespace must be set")
 	}

@@ -22,6 +22,7 @@ const (
 	randomErrno = ""
 )
 
+// IOChaosGenerator ...
 type IOChaosGenerator struct {
 	name string
 }
@@ -52,6 +53,7 @@ func (g IOChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOpe
 	}}
 }
 
+// Name ...
 func (g IOChaosGenerator) Name() string {
 	return g.name
 }

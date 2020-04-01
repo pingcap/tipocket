@@ -12,26 +12,28 @@ import (
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/mysql" // mysql
 )
 
 const pessimisticBegin = "begin /*!90000 pessimistic */"
 const optimisticBegin = "begin /*!90000 optimistic */"
 
+// Session ...
 type Session struct {
-	conn        *sql.Conn
-	hongbaoCase *HongbaoCase
-	beginUserID int64
-	endUserID   int64
-	hongbaoNum  int
-	sleep       int
+	conn          *sql.Conn
+	hongbaoClient *Client
+	beginUserID   int64
+	endUserID     int64
+	hongbaoNum    int
+	sleep         int
 
 	successNum int32
 	failNum    int32
 }
 
+// NewSession ...
 func NewSession(
-	hongbaoCase *HongbaoCase,
+	hongbaoClient *Client,
 	conn *sql.Conn,
 	beginUserID int64,
 	endUserID int64,
@@ -41,19 +43,20 @@ func NewSession(
 		return nil, errors.New(fmt.Sprintf("endUserID[%d] must be greater than beginUserID[%d]", endUserID, beginUserID))
 	}
 	se := &Session{
-		hongbaoCase: hongbaoCase,
-		conn:        conn,
-		beginUserID: beginUserID,
-		endUserID:   endUserID,
-		hongbaoNum:  hongbaoNum,
-		sleep:       sleep,
+		hongbaoClient: hongbaoClient,
+		conn:          conn,
+		beginUserID:   beginUserID,
+		endUserID:     endUserID,
+		hongbaoNum:    hongbaoNum,
+		sleep:         sleep,
 	}
 	return se, nil
 }
 
+// BeginTxn ...
 func (s *Session) BeginTxn(ctx context.Context) error {
 	var beginStmt string
-	switch s.hongbaoCase.cfg.TxnMode {
+	switch s.hongbaoClient.cfg.TxnMode {
 	case "pessimistic":
 		beginStmt = pessimisticBegin
 	case "optimistic":
@@ -65,12 +68,13 @@ func (s *Session) BeginTxn(ctx context.Context) error {
 			beginStmt = optimisticBegin
 		}
 	default:
-		panic(fmt.Sprintf("Invalid transaction mode: %s", s.hongbaoCase.cfg.TxnMode))
+		panic(fmt.Sprintf("Invalid transaction mode: %s", s.hongbaoClient.cfg.TxnMode))
 	}
 	_, err := s.conn.ExecContext(ctx, beginStmt)
 	return err
 }
 
+// CommitTxn ...
 func (s *Session) CommitTxn(ctx context.Context) error {
 	if _, err := s.conn.ExecContext(ctx, "commit"); err != nil {
 		if err2 := s.RollbackTxn(ctx); err2 != nil {
@@ -81,6 +85,7 @@ func (s *Session) CommitTxn(ctx context.Context) error {
 	return nil
 }
 
+// RollbackTxn ...
 func (s *Session) RollbackTxn(ctx context.Context) error {
 	if _, err := s.conn.ExecContext(ctx, "rollback"); err != nil {
 		return err
@@ -88,6 +93,7 @@ func (s *Session) RollbackTxn(ctx context.Context) error {
 	return nil
 }
 
+// CreateUser ...
 func (s *Session) CreateUser(ctx context.Context, balance int) (userID int64, err error) {
 	sqlInsertUser := "insert into `user` " +
 		"set uname = ?, birth_day = ?, addr_province = ?, addr_city = ?, friends = 0 "
@@ -109,6 +115,7 @@ func (s *Session) CreateUser(ctx context.Context, balance int) (userID int64, er
 	return rowID, err
 }
 
+// CreateFriends ...
 func (s *Session) CreateFriends(ctx context.Context, userID int64, count int) error {
 	sqlQueryExistingFriends := `select count(ufid) from user_friends a where uid = ?`
 	sqlQueryPickFriends := `
@@ -160,6 +167,7 @@ func (s *Session) CreateFriends(ctx context.Context, userID int64, count int) er
 	return nil
 }
 
+// CreateGroup ...
 func (s *Session) CreateGroup(ctx context.Context, userID int64, members int) (groupID int64, err error) {
 	// 获取用户好友,及好友的好友,并随机选择一部分后,去掉重复的id
 	sqlQueryUserFriendsByFriends := ` 
@@ -206,6 +214,7 @@ func (s *Session) CreateGroup(ctx context.Context, userID int64, members int) (g
 	return groupID, err
 }
 
+// UserAddBalance ...
 func (s *Session) UserAddBalance(ctx context.Context, userID int64, amount int64) error {
 	sqlUpdateUserBank := "update `user_bank` set balance=balance - ? where uid = ?"
 	sqlUpdateUser := "update `user` set balance=balance + ? where uid = ?"
@@ -218,6 +227,7 @@ func (s *Session) UserAddBalance(ctx context.Context, userID int64, amount int64
 	return err
 }
 
+// UserBankAddBalance ...
 func (s *Session) UserBankAddBalance(ctx context.Context, txn *sql.Tx, userID int64, amount int64) error {
 	sqlUpdateUserBank := "update `user_bank` set balance=balance + ? where uid = ?"
 	sqlUpdateUser := "update `user` set  balance=balance - ? where uid = ?"
@@ -229,6 +239,7 @@ func (s *Session) UserBankAddBalance(ctx context.Context, txn *sql.Tx, userID in
 	return err
 }
 
+// CreateUsers ...
 func (s *Session) CreateUsers(ctx context.Context, userNum, friendNum, groupNum, groupMemberNum, sleep int) error {
 	userIDs := make([]int64, userNum)
 	log.Infof("[%s] Creating %d users", CaseName, userNum)
@@ -291,6 +302,7 @@ func (s *Session) CreateUsers(ctx context.Context, userNum, friendNum, groupNum,
 	return nil
 }
 
+// DoHongbaoTask ...
 func (s *Session) DoHongbaoTask(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := 0; j < s.hongbaoNum; j++ {
@@ -305,10 +317,11 @@ func (s *Session) DoHongbaoTask(ctx context.Context, wg *sync.WaitGroup) {
 			time.Sleep(time.Duration(s.sleep) * time.Millisecond)
 		}
 	}
-	atomic.AddInt32(&s.hongbaoCase.successNum, s.successNum)
-	atomic.AddInt32(&s.hongbaoCase.failNum, s.failNum)
+	atomic.AddInt32(&s.hongbaoClient.successNum, s.successNum)
+	atomic.AddInt32(&s.hongbaoClient.failNum, s.failNum)
 }
 
+// CreateHongbao ...
 func (s *Session) CreateHongbao(ctx context.Context, userID int64, amount int64) error {
 	// 发红包
 	sqlQueryUser := "select balance from `user` where uid = ?"

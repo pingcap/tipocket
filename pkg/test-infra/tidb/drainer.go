@@ -18,12 +18,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func (t *TidbOps) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
+// DeployDrainer ...
+func (t *Ops) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
 	// TODO: implement
 	return nil, nil
 }
 
-func (t *TidbOps) DeleteDrainer(drainer appsv1.StatefulSet) error {
+// DeleteDrainer ...
+func (t *Ops) DeleteDrainer(drainer appsv1.StatefulSet) error {
 	// TODO: implement
 	return nil
 }

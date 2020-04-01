@@ -83,6 +83,7 @@ var disabledHintKeywords = []*hintClass{
 	{"inl_merge_join", 1, -1, false, false, false},
 }
 
+// GenerateHintExpr ...
 func GenerateHintExpr(table *types.Table) (h *ast.TableOptimizerHint) {
 	enabledKeywords := hintKeywords
 	if len(table.Indexes) > 0 {

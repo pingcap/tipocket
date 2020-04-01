@@ -98,7 +98,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewLokiClient(fixture.Context.LokiAddress,
+		loki.NewClient(fixture.Context.LokiAddress,
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 

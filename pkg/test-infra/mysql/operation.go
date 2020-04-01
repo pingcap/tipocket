@@ -32,16 +32,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// MySQLOps knows how to operate MySQL on k8s
-type MySQLOps struct {
+// Ops knows how to operate MySQL on k8s
+type Ops struct {
 	cli client.Client
 }
 
-func New(cli client.Client) *MySQLOps {
-	return &MySQLOps{cli}
+// New ...
+func New(cli client.Client) *Ops {
+	return &Ops{cli}
 }
 
-type MySQLSpec struct {
+// Spec ...
+type Spec struct {
 	Name      string
 	Namespace string
 	Version   string
@@ -49,16 +51,19 @@ type MySQLSpec struct {
 	Storage   fixture.StorageType
 }
 
+// MySQL ...
 type MySQL struct {
 	Sts *appsv1.StatefulSet
 	Svc *corev1.Service
 }
 
+// URI ...
 func (m *MySQL) URI() string {
 	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/test", m.Svc.Name, m.Svc.Namespace)
 }
 
-func (m *MySQLOps) ApplyMySQL(spec *MySQLSpec) (*MySQL, error) {
+// ApplyMySQL ...
+func (m *Ops) ApplyMySQL(spec *Spec) (*MySQL, error) {
 	toCreate, err := m.renderMySQL(spec)
 	if err != nil {
 		return nil, err
@@ -70,15 +75,16 @@ func (m *MySQLOps) ApplyMySQL(spec *MySQLSpec) (*MySQL, error) {
 	})
 	desiredSvc := toCreate.Svc.DeepCopy()
 	_, err = controllerutil.CreateOrUpdate(context.TODO(), m.cli, toCreate.Svc, func() error {
-		clusterIp := toCreate.Svc.Spec.ClusterIP
+		clusterIP := toCreate.Svc.Spec.ClusterIP
 		toCreate.Svc.Spec = desiredSvc.Spec
-		toCreate.Svc.Spec.ClusterIP = clusterIp
+		toCreate.Svc.Spec.ClusterIP = clusterIP
 		return nil
 	})
 	return toCreate, nil
 }
 
-func (m *MySQLOps) DeleteMySQL(ms *MySQL) error {
+// DeleteMySQL ...
+func (m *Ops) DeleteMySQL(ms *MySQL) error {
 	err := m.cli.Delete(context.TODO(), ms.Sts)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -90,7 +96,7 @@ func (m *MySQLOps) DeleteMySQL(ms *MySQL) error {
 	return nil
 }
 
-func (m *MySQLOps) renderMySQL(spec *MySQLSpec) (*MySQL, error) {
+func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 	name := fmt.Sprintf("tipocket-mysql-%s", spec.Name)
 	l := map[string]string{
 		"app":      "tipocket-mysql",
