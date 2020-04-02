@@ -18,12 +18,10 @@ require (
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 	github.com/pingcap/kvproto v0.0.0-20200228095611-2cf9a243b8d5
 	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
-
 	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
 	github.com/rogpeppe/fastuuid v1.2.0
-
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
