@@ -68,7 +68,7 @@ spec:
             -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
             -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
-            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
