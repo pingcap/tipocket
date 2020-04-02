@@ -249,6 +249,7 @@ func (c *Controller) RunSelfScheduled() {
 		g             errgroup.Group
 		nCtx, nCancel = context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	)
+	nemesisWg.Add(1)
 	go func() {
 		defer nemesisWg.Done()
 		c.dispatchNemesis(nCtx)
