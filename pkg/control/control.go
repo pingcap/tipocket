@@ -377,14 +377,14 @@ func (c *Controller) dispatchNemesis(ctx context.Context) {
 	}
 LOOP:
 	for {
-		for _, g := range c.nemesisGenerators {
+		for _, gen := range c.nemesisGenerators {
 			select {
 			case <-ctx.Done():
 				break LOOP
 			default:
 			}
 			var (
-				ops = g.Generate(c.cfg.Nodes)
+				ops = gen.Generate(c.cfg.Nodes)
 				g   errgroup.Group
 			)
 			for i := 0; i < len(ops); i++ {
