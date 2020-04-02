@@ -18,6 +18,8 @@ spec:
             default: ""
           - name: run_time
             default: "48h"
+          - name: tikv_config
+            default: ""
           - name: cdc_hub
             default: docker.io
           - name: cdc_repository
@@ -63,6 +65,7 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
