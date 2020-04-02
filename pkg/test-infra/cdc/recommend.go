@@ -46,8 +46,8 @@ type Recommendation struct {
 // RecommendedCDCCluster creates cluster with CDC
 func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 	var (
-		upstream       = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version)
-		downstream     = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version)
+		upstream       = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version, fixture.Context.CDCConfig.Upstream)
+		downstream     = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version, fixture.Context.CDCConfig.Downstream)
 		cdcName        = fmt.Sprintf("%s-cdc", name)
 		cdcJobName     = fmt.Sprintf("%s-job", cdcName)
 		upstreamPDAddr = fmt.Sprintf("%s-upstream-pd", name)

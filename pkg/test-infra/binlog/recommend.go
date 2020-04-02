@@ -48,8 +48,8 @@ type Recommendation struct {
 func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 	var (
 		enableBinlog             = true
-		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version)
-		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version)
+		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version, fixture.TiDBImageConfig{})
+		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version, fixture.TiDBImageConfig{})
 		drainerName              = fmt.Sprintf("%s-drainer", name)
 		drainerReplicas    int32 = 1
 		drainerServiceName       = drainerName

@@ -49,7 +49,7 @@ spec:
             -run-time={{inputs.parameters.run_time}} \
             -relay-log={{inputs.parameters.relay_log}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
-            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \

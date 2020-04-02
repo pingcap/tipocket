@@ -24,6 +24,18 @@ spec:
             default: pingcap
           - name: cdc_version
             default: nightly
+          - name: cdc_upstream_pd_image
+            default: ""
+          - name: cdc_upstream_tidb_image
+            default: ""
+          - name: cdc_upstream_tikv_image
+            default: ""
+          - name: cdc_downstream_pd_image
+            default: ""
+          - name: cdc_downstream_tidb_image
+            default: ""
+          - name: cdc_downstream_tikv_image
+            default: ""
           - name: abtest_general_log
             default: "true"
           - name: binlog_sync_timeout
@@ -54,8 +66,14 @@ spec:
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
+            -cdc.upstream.pd-image={{inputs.parameters.cdc_upstream_pd_image}} \
+            -cdc.upstream.tidb-image={{inputs.parameters.cdc_upstream_tidb_image}} \
+            -cdc.upstream.tikv-image={{inputs.parameters.cdc_upstream_tikv_image}} \
+            -cdc.downstream.pd-image={{inputs.parameters.cdc_downstream_pd_image}} \
+            -cdc.downstream.tidb-image={{inputs.parameters.cdc_downstream_tidb_image}} \
+            -cdc.downstream.tikv-image={{inputs.parameters.cdc_downstream_tikv_image}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
-            -abtest.general={{inputs.parameters.abtest_general_log}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
