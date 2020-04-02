@@ -3,11 +3,11 @@ package nemesis
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -278,13 +278,13 @@ func (n iochaos) extractChaos(args ...interface{}) chaosv1alpha1.IoChaos {
 
 func (n iochaos) Invoke(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
-	log.Printf("Invoke io chaos %s at ns:%s\n", chaosSpec.Name, chaosSpec.Namespace)
+	log.Infof("apply nemesis %s %s on ns:%s", core.IOChaos, chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.ApplyIOChaos(&chaosSpec)
 }
 
 func (n iochaos) Recover(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
-	log.Printf("Recover io chaos %s at ns:%s\n", chaosSpec.Name, chaosSpec.Namespace)
+	log.Infof("unapply nemesis %s %s on ns:%s", core.IOChaos, chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.CancelIOChaos(&chaosSpec)
 }
 

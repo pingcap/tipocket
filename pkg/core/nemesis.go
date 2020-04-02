@@ -13,25 +13,25 @@ type ChaosKind string
 
 const (
 	// PodFailure Applies pod failure
-	PodFailure ChaosKind = "Pod-Failure"
+	PodFailure ChaosKind = "pod-failure"
 	// PodKill will random kill a pod, this will make the Node be illegal
-	PodKill ChaosKind = "Pod-Kill"
+	PodKill ChaosKind = "pod-kill"
 	// ContainerKill will random kill the specified container of pod, but retain the pod
-	ContainerKill ChaosKind = "Container-Kill"
+	ContainerKill ChaosKind = "container-kill"
 	// NetworkPartition partitions network between nodes
-	NetworkPartition ChaosKind = "Network-Partition"
+	NetworkPartition ChaosKind = "network-partition"
 	// NetemChaos adds corrupt or other chaos.
-	NetemChaos ChaosKind = "Netem-Chaos"
+	NetemChaos ChaosKind = "netem-chaos"
 	// TimeChaos means
-	TimeChaos ChaosKind = "Time-Chaos"
+	TimeChaos ChaosKind = "time-chaos"
 	// PDScheduler adds scheduler
-	PDScheduler ChaosKind = "PD-Scheduler"
+	PDScheduler ChaosKind = "pd-scheduler"
 	// PDLeaderShuffler will randomly shuffle pds.
-	PDLeaderShuffler ChaosKind = "PD-Leader-Shuffler"
+	PDLeaderShuffler ChaosKind = "pd-leader-shuffler"
 	// Scaling scales cluster
-	Scaling ChaosKind = "Scaling"
+	Scaling ChaosKind = "scaling"
 	// IOChaos adds io chaos.
-	IOChaos ChaosKind = "IO-Chaos"
+	IOChaos ChaosKind = "io-chaos"
 )
 
 // Nemesis injects failure and disturbs the database.

@@ -218,13 +218,13 @@ func (n netem) extractChaos(node *clusterTypes.Node, args ...interface{}) chaosv
 }
 
 func (n netem) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Invoke netem chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("apply netem chaos with node %s(ns:%s)", node.PodName, node.Namespace)
 	chaosSpec := n.extractChaos(node, args...)
 	return n.cli.ApplyNetChaos(&chaosSpec)
 }
 
 func (n netem) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Recover netem chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("unapply netem chaos with node %s(ns:%s)", node.PodName, node.Namespace)
 	chaosSpec := n.extractChaos(node, args...)
 	return n.cli.CancelNetChaos(&chaosSpec)
 }

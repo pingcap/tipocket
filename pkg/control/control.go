@@ -492,9 +492,9 @@ func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterType
 				texts, err := c.lokiClient.FetchPodLogs(ns, podName,
 					"panic", nonMatch, from, to, false)
 				if err != nil {
-					log.Infof("failed to fetch logs from loki for pod %s in ns %s\n", podName, ns)
+					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
 				} else if len(texts) > 0 {
-					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v\n", len(texts), ns, podName, texts)
+					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
 				}
 			}(n.Namespace, n.PodName, nonMatch)
 		default:
