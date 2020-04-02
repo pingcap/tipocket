@@ -18,6 +18,8 @@ spec:
         value: ""
       - name: run_time
         value: "60m"
+      - name: tikv_config
+        value: ""
       - name: cdc_hub
         value: "docker.io"
       - name: cdc_repository
@@ -73,6 +75,8 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
                   value: "{{workflow.parameters.run_time}}"
+                - name: tikv_config
+                  value: "{{workflow.parameters.tikv_config}}"
                 - name: cdc_hub
                   value: "{{workflow.parameters.cdc_hub}}"
                 - name: cdc_repository
