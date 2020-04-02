@@ -178,7 +178,7 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Infof("unapply nemesis %s with node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
+	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }

@@ -50,7 +50,7 @@ func partitionNodes(nodes []clusterTypes.Node, n int, duration time.Duration) []
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
-	name := fmt.Sprintf("%s-%s-%s", core.NetworkPartition, onePartNodes[0].Namespace, randK8sObjectName())
+	name := fmt.Sprintf("%s-%s-%s", onePartNodes[0].Namespace, core.NetworkPartition, randK8sObjectName())
 	ops = append(ops, &core.NemesisOperation{
 		Type:        core.NetworkPartition,
 		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},

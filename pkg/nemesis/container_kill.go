@@ -86,7 +86,7 @@ func (k containerKill) Invoke(ctx context.Context, node *clusterTypes.Node, args
 }
 
 func (k containerKill) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Infof("unapply container-kill with node %s(ns:%s)", node.PodName, node.Namespace)
+	log.Infof("unapply container-kill on node %s(ns:%s)", node.PodName, node.Namespace)
 	containerChaos := buildContainerKillChaos(node.Namespace, node.Namespace, node.PodName, string(node.Component))
 	return k.cli.CancelPodChaos(ctx, &containerChaos)
 }
