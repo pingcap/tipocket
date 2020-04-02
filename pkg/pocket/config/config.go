@@ -35,6 +35,8 @@ type Options struct {
 	OnlineDDL     bool           `toml:"online-ddl"`
 	Serialize     bool           `toml:"serialize"`
 	GeneralLog    bool           `toml:"general-log"`
+	SyncTimeout   types.Duration `toml:"check-duration"`
+	EnableHint    bool           `toml:"enable-hint"`
 }
 
 // Generator Config
@@ -70,6 +72,10 @@ var initConfig = Config{
 		OnlineDDL:  true,
 		Serialize:  true,
 		GeneralLog: false,
+		SyncTimeout: types.Duration{
+			Duration: 10 * time.Minute,
+		},
+		EnableHint: false,
 	},
 	Generator: Generator{
 		SQLSmith: SQLSmith{

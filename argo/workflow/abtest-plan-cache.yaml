@@ -1,0 +1,87 @@
+metadata:
+  generateName: plan-cache-abtest-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-abtest
+  onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-ab-plan-cache
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: pd-ssd
+      - name: abtest_version
+        value: release-4.0-nightly
+      - name: nemesis
+        value: ""
+      - name: client
+        value: "2"
+      - name: tidb_config
+        value: "/config/tidb/prepared-plan-cache.toml"
+      - name: tikv_config
+        value: ""
+      - name: pd_config
+        value: ""
+      - name: abtest_tidb_config
+        value: "/config/tidb/prepared-plan-cache-false.toml"
+      - name: abtest_tikv_config
+        value: ""
+      - name: abtest_pd_config
+        value: ""
+      - name: abtest_concurrency
+        value: "3"
+      - name: abtest_general_log
+        value: "true"
+  templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+    - name: call-tipocket-abtest
+      steps:
+        - - name: call-tipocket-abtest
+            templateRef:
+              name: tipocket-abtest
+              template: tipocket-abtest
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: abtest_version
+                  value: "{{workflow.parameters.abtest_version}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: tidb_config
+                  value: "{{workflow.parameters.tidb_config}}"
+                - name: tikv_config
+                  value: "{{workflow.parameters.tikv_config}}"
+                - name: pd_config
+                  value: "{{workflow.parameters.pd_config}}"
+                - name: abtest_tidb_config
+                  value: "{{workflow.parameters.abtest_tidb_config}}"
+                - name: abtest_tikv_config
+                  value: "{{workflow.parameters.abtest_tikv_config}}"
+                - name: abtest_pd_config
+                  value: "{{workflow.parameters.abtest_pd_config}}"
+                - name: abtest_concurrency
+                  value: "{{workflow.parameters.abtest_concurrency}}"
+                - name: abtest_general_log
+                  value: "{{workflow.parameters.abtest_general_log}}"

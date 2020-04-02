@@ -3,12 +3,11 @@ package nemesis
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
-	uuid "github.com/satori/go.uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -36,7 +35,7 @@ func (g networkPartitionGenerator) Name() string {
 
 func partitionNodes(nodes []clusterTypes.Node, n int, duration time.Duration) []*core.NemesisOperation {
 	if n < 1 {
-		log.Panicf("the partition part size cannot be less than 1")
+		log.Fatalf("the partition part size cannot be less than 1")
 	}
 	var ops []*core.NemesisOperation
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
@@ -51,7 +50,7 @@ func partitionNodes(nodes []clusterTypes.Node, n int, duration time.Duration) []
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
-	name := fmt.Sprintf("%s-%s", onePartNodes[0].Namespace, uuid.NewV4().String())
+	name := fmt.Sprintf("%s-%s-%s", onePartNodes[0].Namespace, core.NetworkPartition, randK8sObjectName())
 	ops = append(ops, &core.NemesisOperation{
 		Type:        core.NetworkPartition,
 		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},
@@ -96,6 +95,7 @@ func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cl
 
 func (n networkPartition) Invoke(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
+	log.Infof("apply nemesis %s %s between %+v and %+v", core.NetworkPartition, name, onePart, anotherPart)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -108,6 +108,7 @@ func (n networkPartition) Invoke(ctx context.Context, _ *clusterTypes.Node, args
 
 func (n networkPartition) Recover(ctx context.Context, _ *clusterTypes.Node, args ...interface{}) error {
 	name, onePart, anotherPart := extractArgs(args...)
+	log.Infof("unapply nemesis %s %s between %+v and %+v", core.NetworkPartition, name, onePart, anotherPart)
 	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -134,12 +135,12 @@ func extractArgs(args ...interface{}) (string, []clusterTypes.Node, []clusterTyp
 	}
 
 	if len(networkParts) != 2 {
-		log.Panicf("expect two network parts, got %+v", networkParts)
+		log.Fatalf("expect two network parts, got %+v", networkParts)
 	}
 	onePart = networkParts[0]
 	anotherPart = networkParts[1]
 	if len(onePart) < 1 || len(anotherPart) < 1 {
-		log.Panicf("expect non-empty two parts, got %+v and %+v", onePart, anotherPart)
+		log.Fatalf("expect non-empty two parts, got %+v and %+v", onePart, anotherPart)
 	}
 	return name, onePart, anotherPart
 }

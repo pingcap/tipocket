@@ -2,11 +2,11 @@ package nemesis
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -32,6 +32,10 @@ func (g containerKillGenerator) Generate(nodes []clusterTypes.Node) []*core.Neme
 		n = 1
 		nodes = findPDMember(nodes, true)
 		cmp := clusterTypes.PD
+		component = &cmp
+	case "short_kill_tiflash_1node":
+		n = 1
+		cmp := clusterTypes.TiFlash
 		component = &cmp
 	}
 	return containerKillNodes(nodes, n, component, freq)
@@ -75,14 +79,14 @@ type containerKill struct {
 }
 
 func (k containerKill) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Creating container-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("apply nemesis container-kill on node %s(ns:%s)...", node.PodName, node.Namespace)
 	containerChaos := buildContainerKillChaos(node.Namespace, node.Namespace,
 		node.PodName, string(node.Component))
 	return k.cli.ApplyPodChaos(ctx, &containerChaos)
 }
 
 func (k containerKill) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Recover container-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("unapply container-kill on node %s(ns:%s)", node.PodName, node.Namespace)
 	containerChaos := buildContainerKillChaos(node.Namespace, node.Namespace, node.PodName, string(node.Component))
 	return k.cli.CancelPodChaos(ctx, &containerChaos)
 }

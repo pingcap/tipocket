@@ -38,12 +38,12 @@ var (
 	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
 	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
 	tables      = flag.Int("tables", 1, "the number of the tables")
+	replicaRead = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
 )
 
 func main() {
 	flag.Parse()
-
-	flag.Parse()
+	bank.ReplicaRead = *replicaRead
 
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
@@ -65,9 +65,9 @@ func main() {
 	suit := util.Suit{
 		Config:        &cfg,
 		Provisioner:   cluster.NewK8sProvisioner(),
-		ClientCreator: bank.CaseCreator{Cfg: &bankConfig},
+		ClientCreator: bank.ClientCreator{Cfg: &bankConfig},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:   tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

@@ -38,6 +38,7 @@ type SQLSmith struct {
 	currDB        string
 	debug         bool
 	stable        bool
+	hint          bool
 }
 
 // New create SQLSmith instance
@@ -85,6 +86,16 @@ func (s *SQLSmith) Stable() {
 // SetStable set stable to given value
 func (s *SQLSmith) SetStable(stable bool) {
 	s.stable = stable
+}
+
+// Hint ...
+func (s *SQLSmith) Hint() bool {
+	return s.hint
+}
+
+// SetHint ...
+func (s *SQLSmith) SetHint(hint bool) {
+	s.hint = hint
 }
 
 // Walk will walk the tree and fillin tables and columns data

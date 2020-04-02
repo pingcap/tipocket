@@ -44,12 +44,12 @@ type Recommendation struct {
 	Name       string
 }
 
-// RecommendedBinlogCluster create cluster with binlog
-func RecommendedBinlogCluster(ns, name string) *Recommendation {
+// RecommendedBinlogCluster creates cluster with binlog
+func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 	var (
 		enableBinlog             = true
-		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name))
-		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name))
+		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version, fixture.TiDBImageConfig{})
+		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version, fixture.TiDBImageConfig{})
 		drainerName              = fmt.Sprintf("%s-drainer", name)
 		drainerReplicas    int32 = 1
 		drainerServiceName       = drainerName
@@ -111,7 +111,7 @@ func RecommendedBinlogCluster(ns, name string) *Recommendation {
 							Port: 8249,
 						},
 					},
-					ClusterIP: "",
+					ClusterIP: corev1.ClusterIPNone,
 					Selector: map[string]string{
 						"app.kubernetes.io/name":      "tidb-cluster",
 						"app.kubernetes.io/component": "drainer",
@@ -125,7 +125,7 @@ func RecommendedBinlogCluster(ns, name string) *Recommendation {
 					Namespace: ns,
 					Labels: map[string]string{
 						"app":      "tipocket-tidbcluster",
-						"instance": "name",
+						"instance": name,
 					},
 				},
 				Spec: appsv1.StatefulSetSpec{

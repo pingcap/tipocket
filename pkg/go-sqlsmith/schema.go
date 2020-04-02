@@ -101,7 +101,7 @@ func (s *SQLSmith) EndTransaction() []string {
 	return res
 }
 
-// setOnlinetherTables is for avoiding online DDL
+// setOnlineOtherTables is for avoiding online DDL
 func (s *SQLSmith) setOnlineOtherTables(opt *generator.DDLOptions) {
 	if opt.OnlineDDL {
 		return
@@ -114,7 +114,7 @@ func (s *SQLSmith) setOnlineOtherTables(opt *generator.DDLOptions) {
 	}
 }
 
-// freeOnlinetherTables clear online tables obtain by other instances
+// freeOnlineOtherTables clear online tables obtain by other instances
 func (s *SQLSmith) freeOnlineOtherTables() {
 	db := s.GetDB(s.currDB)
 	for _, table := range db.Tables {

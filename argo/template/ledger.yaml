@@ -18,6 +18,12 @@ spec:
             default: ""
           - name: run_time
             default: "60m"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -33,9 +39,6 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
-            -loki-addr=http://gateway.loki.svc \
-            -loki-username=loki \
-            -loki-password=admin
-      retryStrategy:
-        limit: 0
-        retryPolicy: Always
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}

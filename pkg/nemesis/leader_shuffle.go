@@ -20,6 +20,7 @@ type leaderShuffleGenerator struct {
 	name string
 }
 
+// NewLeaderShuffleGenerator ...
 func NewLeaderShuffleGenerator(name string) *leaderShuffleGenerator {
 	return &leaderShuffleGenerator{name: name}
 }
@@ -59,16 +60,17 @@ func newLeaderShuffler() *leaderShuffler {
 }
 
 func (l *leaderShuffler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+	log.Infof("apply nemesis %s...", core.PDLeaderShuffler)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
 
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
 	l.Client = pdutil.NewPDClient(http.DefaultClient, pdAddr)
-	l.shuffleLeader()
-	return nil
+	return l.shuffleLeader()
 }
 
 func (l *leaderShuffler) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+	log.Infof("unapply nemesis %s...", core.PDLeaderShuffler)
 	return nil
 }
 
@@ -76,11 +78,9 @@ func (l leaderShuffler) Name() string {
 	return string(core.PDLeaderShuffler)
 }
 
-func (l *leaderShuffler) shuffleLeader() {
+func (l *leaderShuffler) shuffleLeader() error {
 	shuffleFunc := l.shuffleFuncs[rand.Intn(len(l.shuffleFuncs))]
-	if err := shuffleFunc(); err != nil {
-		log.Fatalf("[leader shuffler] Shuffle leader err: %+v", err)
-	}
+	return shuffleFunc()
 }
 
 func (l *leaderShuffler) transferLeader() error {

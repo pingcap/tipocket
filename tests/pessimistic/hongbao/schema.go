@@ -141,6 +141,7 @@ var stmts = []string{
 	createHongbaoDetail,
 }
 
+// InitSchema ...
 func InitSchema(ctx context.Context, db *sql.DB) error {
 	for _, stmt := range stmts {
 		if _, err := db.ExecContext(ctx, stmt); err != nil {

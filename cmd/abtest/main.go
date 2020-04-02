@@ -42,6 +42,9 @@ func main() {
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = true
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
+	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
+	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -54,7 +57,8 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: abtest.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.ImageVersion, fixture.Context.ABTestConfig.ClusterBVersion),
 	}
 	suit.Run(context.Background())
 }

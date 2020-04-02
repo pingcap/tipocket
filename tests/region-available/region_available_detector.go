@@ -47,17 +47,19 @@ type regionAvailableDetector struct {
 	db *sql.DB
 }
 
-// CaseCreator creates regionAvailableDetector
-type CaseCreator struct {
+// ClientCreator creates regionAvailableDetector
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &regionAvailableDetector{
 		Config: l.Cfg,
 	}
 }
 
+// SetUp ...
 func (d *regionAvailableDetector) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
@@ -80,6 +82,9 @@ func (d *regionAvailableDetector) SetUp(ctx context.Context, nodes []types.Clien
 	if _, err := d.db.Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s.region_available "+
 		"(id int(10) PRIMARY KEY, pad varchar(255))", d.DBName)); err != nil {
 		log.Fatalf("[regionAvailableDetector] create table fail %v", err)
+	}
+	if _, err := d.db.Exec(fmt.Sprintf("TRUNCATE TABLE %s.region_available", d.DBName)); err != nil {
+		log.Fatalf("[regionAvailableDetector] truncate table fail %v", err)
 	}
 
 	// Load data

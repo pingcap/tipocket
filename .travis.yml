@@ -11,5 +11,6 @@ jobs:
       script:
         - make tidy
         - make fmt
+        - make lint
         - make test
         - make build

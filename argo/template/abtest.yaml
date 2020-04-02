@@ -20,6 +20,30 @@ spec:
             default: ""
           - name: client
             default: "2"
+          - name: run_time
+            default: "48h"
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: abtest_tidb_config
+            default: ""
+          - name: abtest_tikv_config
+            default: ""
+          - name: abtest_pd_config
+            default: ""
+          - name: abtest_concurrency
+            default: "3"
+          - name: abtest_general_log
+            default: "true"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
@@ -35,10 +59,16 @@ spec:
             -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -client=2 \
-            -loki-addr=http://gateway.loki.svc \
-            -loki-username=loki \
-            -loki-password=admin
-      retryStrategy:
-        limit: 0
-        retryPolicy: Always
+            -client={{inputs.parameters.client}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
+            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
+            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
+            -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}

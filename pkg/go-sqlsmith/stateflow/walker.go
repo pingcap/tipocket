@@ -67,6 +67,7 @@ func (s *StateFlow) walkSelectStmt(node *ast.SelectStmt) *types.Table {
 	if node.From.TableRefs.Right == nil && node.From.TableRefs.Left != nil {
 		table = s.walkResultSetNode(node.From.TableRefs.Left)
 		s.walkSelectStmtColumns(node, table, false)
+		table.AddToInnerTables(table)
 	} else if node.From.TableRefs.Right != nil && node.From.TableRefs.Left != nil {
 		lTable := s.walkResultSetNode(node.From.TableRefs.Left)
 		rTable := s.walkResultSetNode(node.From.TableRefs.Right)
@@ -76,11 +77,17 @@ func (s *StateFlow) walkSelectStmt(node *ast.SelectStmt) *types.Table {
 			s.walkOnStmt(node.From.TableRefs.On, lTable, rTable)
 		}
 		table = mergeTable
+
 		s.walkSelectStmtColumns(node, table, true)
+		// No Alias Name Of Tables
+		table.AddToInnerTables(lTable.InnerTableList...)
+		table.AddToInnerTables(rTable.InnerTableList...)
+		table.AddToInnerTables(table, lTable, rTable)
 	}
 	s.walkOrderByClause(node.OrderBy, table)
 	// s.walkWhereClause(node.Where, table)
 	s.walkExprNode(node.Where, table, nil)
+	_, node.TableHints = s.walkHintList(len(node.TableHints), table)
 	return table
 }
 
@@ -91,6 +98,7 @@ func (s *StateFlow) walkUpdateStmt(node *ast.UpdateStmt) *types.Table {
 	}
 	s.walkAssignmentList(&node.List, table)
 	s.walkExprNode(node.Where, table, nil)
+	_, node.TableHints = s.walkHintList(len(node.TableHints), table)
 	// switch node := node.Where.(type) {
 	// case *ast.BinaryOperationExpr:
 	// 	s.walkBinaryOperationExpr(node, table)
@@ -108,6 +116,7 @@ func (s *StateFlow) walkInsertStmt(node *ast.InsertStmt) *types.Table {
 func (s *StateFlow) walkDeleteStmt(node *ast.DeleteStmt) *types.Table {
 	table := s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false, true)
 	s.walkExprNode(node.Where, table, nil)
+	_, node.TableHints = s.walkHintList(len(node.TableHints), table)
 	return nil
 }
 
@@ -212,6 +221,22 @@ func (s *StateFlow) walkExprNode(node ast.ExprNode, table *types.Table, column *
 	return nil
 }
 
+func (s *StateFlow) walkHintList(hintLength int, table *types.Table) (*types.Table, []*ast.TableOptimizerHint) {
+	hList := make([]*ast.TableOptimizerHint, 0)
+	hintNames := make(map[string]bool, 0)
+	for i := 0; i < hintLength; i++ {
+		if h := builtin.GenerateHintExpr(table); h != nil {
+			// remove duplicated hints
+			if _, ok := hintNames[h.HintName.String()]; !ok {
+				hList = append(hList, h)
+				hintNames[h.HintName.String()] = true
+			}
+		}
+	}
+	// TODO: remove conflict hints
+	return nil, hList
+}
+
 func (s *StateFlow) walkColumnNameExpr(node *ast.ColumnNameExpr, table *types.Table) *types.Column {
 	column := table.RandColumn()
 	node.Name = &ast.ColumnName{
@@ -225,7 +250,7 @@ func (s *StateFlow) walkValueExpr(node *driver.ValueExpr, table *types.Table, co
 	if column != nil {
 		switch column.DataType {
 		case "varchar", "text":
-			node.SetString(util.GenerateStringItem())
+			node.SetString(util.GenerateStringItem(), "")
 			node.TexprNode.Type.Charset = "utf8mb4"
 			node.TexprNode.Type.Collate = "utf8mb4_bin"
 		case "int":
@@ -254,7 +279,7 @@ func (s *StateFlow) walkAssignmentList(list *[]*ast.Assignment, table *types.Tab
 				Table: model.NewCIStr(column.Table),
 				Name:  model.NewCIStr(column.Column),
 			},
-			Expr: ast.NewValueExpr(util.GenerateDataItem(column.DataType)),
+			Expr: ast.NewValueExpr(util.GenerateDataItem(column.DataType), "", ""),
 		}
 		*list = append(*list, &assignment)
 	}
@@ -293,9 +318,9 @@ func (s *StateFlow) makeList(columns []*types.Column) []ast.ExprNode {
 			continue
 		}
 		if column.Column == "uuid" {
-			list = append(list, ast.NewValueExpr(util.GetUUID()))
+			list = append(list, ast.NewValueExpr(util.GetUUID(), "", ""))
 		} else {
-			list = append(list, ast.NewValueExpr(util.GenerateDataItem(column.DataType)))
+			list = append(list, ast.NewValueExpr(util.GenerateDataItem(column.DataType), "", ""))
 		}
 	}
 	return list

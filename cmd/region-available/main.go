@@ -32,7 +32,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ra.CaseCreator{Cfg: &ra.Config{
+		ClientCreator: ra.ClientCreator{Cfg: &ra.Config{
 			DBName:          *dbName,
 			TotalRows:       *totalRows,
 			Concurrency:     *concurrency,
@@ -40,7 +40,7 @@ func main() {
 			SleepDuration:   *sleepDuration,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

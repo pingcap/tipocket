@@ -47,14 +47,14 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: dlc.CaseCreator{Cfg: &dlc.Config{
+		ClientCreator: dlc.ClientCreator{Cfg: &dlc.Config{
 			DBName:           *dbName,
 			TableNum:         *tableNum,
 			DeadlockInterval: *deadlockInterval,
 			DeadlockTimeout:  *deadlockTimeout,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

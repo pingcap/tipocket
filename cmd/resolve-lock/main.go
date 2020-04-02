@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"flag"
+
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
@@ -47,13 +48,13 @@ func main() {
 		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: resolvelock.CaseCreator{Cfg: &resolvelock.Config{
 			Concurrency:             *concurrency,
-			EnableGreenGC:           * enableGreenGC,
+			EnableGreenGC:           *enableGreenGC,
 			TableSize:               *tableSize,
 			LocksPerRegion:          1,
 			GenerateLockConcurrency: 16,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

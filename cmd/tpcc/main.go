@@ -18,6 +18,8 @@ import (
 	"flag"
 	"time"
 
+	"github.com/pingcap/go-tpc/tpcc"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -32,6 +34,8 @@ var (
 	ticker      = flag.Duration("ticker", time.Second, "ticker control request emitting freq")
 	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
 	checkerName = flag.String("checker", "consistency", "consistency or qos")
+	warehouses  = flag.Int("warehouses", 10, "tpcc warehouses")
+	threads     = flag.Int("T", 10, "tpcc terminals")
 )
 
 func main() {
@@ -46,7 +50,13 @@ func main() {
 		RunTime:      fixture.Context.RunTime,
 		History:      fixture.Context.HistoryFile,
 	}
-	clientCreator := &tidb.TPCCClientCreator{}
+	clientCreator := &tidb.TPCCClientCreator{
+		Config: &tpcc.Config{
+			Threads:    *threads,
+			Warehouses: *warehouses,
+			Parts:      1,
+		},
+	}
 	creator := clientCreator
 	var checker core.Checker
 	switch *checkerName {
@@ -74,7 +84,7 @@ func main() {
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

@@ -18,16 +18,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/history"
 )
 
-var tpccConfig = tpcc.Config{
-	Threads:    1,
-	Parts:      1,
-	Warehouses: 1,
-	UseFK:      false,
-	Isolation:  0,
-	CheckAll:   false,
-}
-
 type tpccClient struct {
+	*tpcc.Config
 	db *sql.DB
 	workload.Workloader
 	workloadCtx context.Context
@@ -42,9 +34,12 @@ func (t *tpccClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode,
 	if err != nil {
 		return err
 	}
-	t.Workloader = tpcc.NewWorkloader(t.db, &tpccConfig)
+	t.Workloader = tpcc.NewWorkloader(t.db, t.Config)
 	t.workloadCtx = t.Workloader.InitThread(ctx, 0)
 	if idx == 0 {
+		if err := t.Workloader.Cleanup(t.workloadCtx, 0); err != nil {
+			log.Fatalf("cleanuping tpcc failed: %+v", err)
+		}
 		if err := t.Workloader.Prepare(t.workloadCtx, 0); err != nil {
 			log.Fatalf("preparing tpcc failed: %+v", err)
 		}
@@ -77,7 +72,7 @@ func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r
 		if strings.Contains(err.Error(), "connection is already closed") {
 			// reconnect
 			log.Printf("connecting...")
-			worker := tpcc.NewWorkloader(t.db, &tpccConfig)
+			worker := tpcc.NewWorkloader(t.db, t.Config)
 			nCtx := t.Workloader.InitThread(context.TODO(), 0)
 			log.Printf("reconnected")
 			t.Workloader = worker
@@ -106,12 +101,16 @@ func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []c
 
 // TPCCClientCreator creates tpccClient
 type TPCCClientCreator struct {
+	*tpcc.Config
 	tpccClient []*tpccClient
 }
 
-func (T *TPCCClientCreator) Create(node clusterTypes.ClientNode) core.Client {
-	client := &tpccClient{}
-	T.tpccClient = append(T.tpccClient, client)
+// Create ...
+func (t *TPCCClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
+	client := &tpccClient{
+		Config: t.Config,
+	}
+	t.tpccClient = append(t.tpccClient, client)
 	return client
 }
 
@@ -132,6 +131,7 @@ func (t tpccResponse) IsUnknown() bool {
 type tpccParser struct {
 }
 
+// TPCCParser ...
 func TPCCParser() history.RecordParser {
 	return tpccParser{}
 }
@@ -156,10 +156,12 @@ func (t tpccParser) OnState(state json.RawMessage) (interface{}, error) {
 	return nil, nil
 }
 
+// TPCCChecker ...
 type TPCCChecker struct {
 	CreatorRef *TPCCClientCreator
 }
 
+// Check ...
 func (t *TPCCChecker) Check(m core.Model, ops []core.Operation) (bool, error) {
 	for _, client := range t.CreatorRef.tpccClient {
 		if err := client.Check(); err != nil {
@@ -174,6 +176,7 @@ func (t *TPCCChecker) Check(m core.Model, ops []core.Operation) (bool, error) {
 	return false, nil
 }
 
+// Name ...
 func (t *TPCCChecker) Name() string {
 	return "tpcc"
 }

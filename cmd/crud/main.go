@@ -35,7 +35,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: crud.CaseCreator{Cfg: &crud.Config{
+		ClientCreator: crud.ClientCreator{Cfg: &crud.Config{
 			DBName:      *dbName,
 			UserCount:   *userCount,
 			PostCount:   *postCount,
@@ -46,7 +46,7 @@ func main() {
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

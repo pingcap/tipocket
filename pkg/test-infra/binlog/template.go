@@ -14,8 +14,9 @@
 package binlog
 
 import (
-	"bytes"
 	"html/template"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 var drainerConfigTpl = template.Must(template.New("drainer-config-script").Parse(`# drainer Configuration.
@@ -107,14 +108,16 @@ port = 4000
 # you can uncomment this to change the database to save checkpoint when the downstream is mysql or tidb
 #schema = "tidb_binlog"`))
 
+// DrainerConfigModel ...
 type DrainerConfigModel struct {
 	PDAddress    string
 	DownStreamDB string
 	RelayPath    string
 }
 
+// RenderDrainerConfig ...
 func RenderDrainerConfig(model *DrainerConfigModel) (string, error) {
-	return renderTemplateFunc(drainerConfigTpl, model)
+	return util.RenderTemplateFunc(drainerConfigTpl, model)
 }
 
 var drainerCommandTpl = template.Must(template.New("drainer-command").Parse(`set -euo pipefail
@@ -151,19 +154,12 @@ done
 -initial-commit-ts=0 \
 -log-file=/data/log/drainer.log`))
 
+// DrainerCommandModel ...
 type DrainerCommandModel struct {
 	Component string
 }
 
+// RenderDrainerCommand ...
 func RenderDrainerCommand(model *DrainerCommandModel) (string, error) {
-	return renderTemplateFunc(drainerCommandTpl, model)
-}
-
-func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
-	buff := new(bytes.Buffer)
-	err := tpl.Execute(buff, model)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
+	return util.RenderTemplateFunc(drainerCommandTpl, model)
 }

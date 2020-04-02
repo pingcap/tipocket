@@ -14,8 +14,9 @@
 package tidb
 
 import (
-	"bytes"
 	"html/template"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // tidbStartScriptTpl is the template string of tidb start script
@@ -68,12 +69,14 @@ echo "/tidb-server ${ARGS}"
 exec /tidb-server ${ARGS}
 `))
 
-type TidbStartScriptModel struct {
+// StartScriptModel ...
+type StartScriptModel struct {
 	ClusterName string
 }
 
-func RenderTiDBStartScript(model *TidbStartScriptModel) (string, error) {
-	return renderTemplateFunc(tidbStartScriptTpl, model)
+// RenderTiDBStartScript ...
+func RenderTiDBStartScript(model *StartScriptModel) (string, error) {
+	return util.RenderTemplateFunc(tidbStartScriptTpl, model)
 }
 
 var pdStartScriptTpl = template.Must(template.New("pd-start-script").Parse(`#!/bin/sh
@@ -168,12 +171,14 @@ echo "/pd-server ${ARGS}"
 exec /pd-server ${ARGS}
 `))
 
+// PDStartScriptModel ...
 type PDStartScriptModel struct {
 	DataDir string
 }
 
+// RenderPDStartScript ...
 func RenderPDStartScript(model *PDStartScriptModel) (string, error) {
-	return renderTemplateFunc(pdStartScriptTpl, model)
+	return util.RenderTemplateFunc(pdStartScriptTpl, model)
 }
 
 var tikvStartScriptTpl = template.Must(template.New("tikv-start-script").Parse(`#!/bin/sh
@@ -220,12 +225,14 @@ echo "/tikv-server ${ARGS}"
 exec /tikv-server ${ARGS}
 `))
 
+// TiKVStartScriptModel ...
 type TiKVStartScriptModel struct {
 	DataDir string
 }
 
+// RenderTiKVStartScript ...
 func RenderTiKVStartScript(model *TiKVStartScriptModel) (string, error) {
-	return renderTemplateFunc(tikvStartScriptTpl, model)
+	return util.RenderTemplateFunc(tikvStartScriptTpl, model)
 }
 
 var pumpConfigTpl = template.Must(template.New("pump-config-script").Parse(`detect-interval = 10
@@ -240,18 +247,10 @@ db-type = "file"
 [syncer.to]
 dir = "/data/pb"`))
 
-type PumpConfigModel struct {
+type pumpConfigModel struct {
 }
 
-func RenderPumpConfig(model *PumpConfigModel) (string, error) {
-	return renderTemplateFunc(pumpConfigTpl, model)
-}
-
-func renderTemplateFunc(tpl *template.Template, model interface{}) (string, error) {
-	buff := new(bytes.Buffer)
-	err := tpl.Execute(buff, model)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
+// RenderPumpConfig ...
+func RenderPumpConfig(model *pumpConfigModel) (string, error) {
+	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }

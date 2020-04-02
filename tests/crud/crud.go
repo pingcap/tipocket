@@ -30,12 +30,13 @@ type Config struct {
 	TxnMode     string
 }
 
-// CaseCreator creates crudClient
-type CaseCreator struct {
+// ClientCreator creates crudClient
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &crudClient{
 		Config:  l.Cfg,
 		userIDs: newIDList(),

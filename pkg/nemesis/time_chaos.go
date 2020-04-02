@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -17,37 +17,38 @@ import (
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
-// Note: TimeChaosLevels means the level of defined time chaos like jepsen.
+// timeChaosLevels means the level of defined time chaos like jepsen.
 // 	It's an integer start from 0.
-type TimeChaosLevels = int
+type timeChaosLevels = int
 
 const (
-	SmallSkews TimeChaosLevels = iota
-	SubCriticalSkews
-	CriticalSkews
-	BigSkews
-	HugeSkews
-	// Note: StrobeSkews currently should be at end of iota system,
-	//  because TimeChaosLevels will be used as slice index.
-	StrobeSkews
+	smallSkews timeChaosLevels = iota
+	subCriticalSkews
+	criticalSkews
+	bigSkews
+	hugeSkews
+	// Note: strobeSkews currently should be at end of iota system,
+	//  because timeChaosLevels will be used as slice index.
+	strobeSkews
+
+	strobeSkewsBios = 200
 )
 
-const StrobeSkewsBios = 200
-
-type ChaosDurationType int
+type chaosDurationType int
 
 const (
-	FromZero ChaosDurationType = iota
-	FromLast
+	fromZero chaosDurationType = iota
+	fromLast
 )
 
-const MsToNS uint = 1000000
-const SecToNS uint = 1e9
-const SecToMS uint = SecToNS / MsToNS
+const (
+	msToNS  uint = 1000000
+	secToNS uint = 1e9
+)
 
 // skewTimeMap stores the
 var skewTimeMap []uint
-var skewTimeStrMap map[string]TimeChaosLevels
+var skewTimeStrMap map[string]timeChaosLevels
 
 func init() {
 	skewTimeMap = []uint{
@@ -59,19 +60,19 @@ func init() {
 		5000,
 	}
 
-	skewTimeStrMap = map[string]TimeChaosLevels{
-		"small_skews":       SmallSkews,
-		"subcritical_skews": SubCriticalSkews,
-		"critical_skews":    CriticalSkews,
-		"big_skews":         BigSkews,
-		"huge_skews":        HugeSkews,
-		"strobe-skews":      StrobeSkews,
+	skewTimeStrMap = map[string]timeChaosLevels{
+		"small_skews":       smallSkews,
+		"subcritical_skews": subCriticalSkews,
+		"critical_skews":    criticalSkews,
+		"big_skews":         bigSkews,
+		"huge_skews":        hugeSkews,
+		"strobe-skews":      strobeSkews,
 	}
 }
 
 // Panic: if chaos not in skewTimeStrMap, then panic.
-func timeChaosLevel(chaos string) TimeChaosLevels {
-	var level TimeChaosLevels
+func timeChaosLevel(chaos string) timeChaosLevels {
+	var level timeChaosLevels
 	var ok bool
 	if level, ok = skewTimeStrMap[chaos]; !ok {
 		panic(fmt.Sprintf("timeChaosLevel receive chaos %s, which is not supported.", chaos))
@@ -80,16 +81,16 @@ func timeChaosLevel(chaos string) TimeChaosLevels {
 }
 
 // selectChaosDuration selects a random (seconds, nano seconds) form Level and duration type.
-// `TimeChaosLevels` is ported from Jepsen, which means different time bios.
-// `ChaosDurationType` means start from zero ([0, 200ms]) or start from last level [100ms, 200ms].
-func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType) (int, int) {
+// `timeChaosLevels` is ported from Jepsen, which means different time bios.
+// `chaosDurationType` means start from zero ([0, 200ms]) or start from last level [100ms, 200ms].
+func selectChaosDuration(levels timeChaosLevels, durationType chaosDurationType) (int, int) {
 	var secs, nanoSec int
-	if levels == StrobeSkews {
-		deltaMs := rand.Intn(StrobeSkewsBios)
-		nanoSec = deltaMs * int(MsToNS)
+	if levels == strobeSkews {
+		deltaMs := rand.Intn(strobeSkewsBios)
+		nanoSec = deltaMs * int(msToNS)
 	} else {
 		var lastVal uint
-		if durationType == FromLast {
+		if durationType == fromLast {
 			lastVal = skewTimeMap[levels]
 		} else {
 			lastVal = 0
@@ -98,11 +99,11 @@ func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType)
 		// [-skewTimeMap[levels+1], -lastVal] Union [lastVal, skewTimeMap[levels+1]]
 		deltaMs := uint(rand.Intn(int(skewTimeMap[levels+1]-lastVal))) + lastVal
 
-		if uint(math.Abs(float64(deltaMs))) > SecToNS {
-			secs = int(deltaMs) / int(SecToNS)
-			deltaMs = deltaMs % SecToNS
+		if uint(math.Abs(float64(deltaMs))) > secToNS {
+			secs = int(deltaMs) / int(secToNS)
+			deltaMs = deltaMs % secToNS
 		}
-		nanoSec = int(deltaMs * MsToNS)
+		nanoSec = int(deltaMs * msToNS)
 
 		if rand.Int()%2 == 1 {
 			nanoSec = -nanoSec
@@ -111,10 +112,6 @@ func selectChaosDuration(levels TimeChaosLevels, durationType ChaosDurationType)
 	}
 
 	return secs, nanoSec
-}
-
-func selectDefaultChaosDuration(levels TimeChaosLevels) (int, int) {
-	return selectChaosDuration(levels, FromLast)
 }
 
 type timeChaosGenerator struct {
@@ -126,7 +123,7 @@ func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperatio
 
 	for idx := range nodes {
 		node := nodes[idx]
-		secs, nanoSecs := selectChaosDuration(timeChaosLevel(t.name), FromLast)
+		secs, nanoSecs := selectChaosDuration(timeChaosLevel(t.name), fromLast)
 		ops = append(ops, &core.NemesisOperation{
 			Type:        core.TimeChaos,
 			Node:        &node,
@@ -164,7 +161,7 @@ func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interfa
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("apply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
 }
@@ -181,7 +178,7 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Recovering time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }

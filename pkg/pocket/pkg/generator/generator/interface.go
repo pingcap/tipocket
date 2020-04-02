@@ -17,6 +17,8 @@ type Generator interface {
 	// SetStable is a trigger for whether generate random or some database-basicinfo-dependent data
 	// eg. SetStable(true) will disable both rand() and user() functions since they both make unstable result in different database
 	SetStable(stable bool)
+	// SetHint can control if hints would be generated or not
+	SetHint(hint bool)
 	// BeginWithOnlineTables to get online tables and begin transaction
 	// if DMLOptions.OnlineTable is set to true
 	// this function will return a table slice
@@ -35,7 +37,7 @@ type Generator interface {
 	// DeleteStmt generate delete SQL
 	DeleteStmt() (string, string, error)
 	// CreateTableStmt generate create table SQL
-	CreateTableStmt() (string, error)
+	CreateTableStmt() (string, string, error)
 	// AlterTableStmt generate create table SQL, table slice for avoiding online DDL
 	AlterTableStmt(opt *DDLOptions) (string, error)
 	// CreateIndexStmt generate create index SQL, table slice for avoiding online DDL

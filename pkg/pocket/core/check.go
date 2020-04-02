@@ -14,6 +14,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -120,6 +121,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 
 	// commit or rollback all transactions
 	log.Info("before lock")
+	c.execMutex.Lock()
 	c.Lock()
 	log.Info("after lock")
 	// no async here to ensure all transactions are committed or rollbacked in order
@@ -128,10 +130,12 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	if err != nil {
 		c.Unlock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestSelect(makeCompareSQLs(schema)[0]); err != nil {
@@ -144,6 +148,7 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 	defer func() {
 		log.Info("free lock")
 		c.Unlock()
+		c.execMutex.Unlock()
 	}()
 
 	// delay will hold on this snapshot and check it later
@@ -173,6 +178,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 
 	// commit or rollback all transactions
 	// lock here before get snapshot
+	c.execMutex.Lock()
 	c.Lock()
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
@@ -183,22 +189,32 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	for compareExecutor.SingleTestExecDDL(tableStmt) != nil {
 		time.Sleep(time.Second)
 	}
-	syncDone := false
-	for !syncDone {
-		time.Sleep(10 * time.Second)
-		tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
-		if err != nil {
-			log.Error(err)
-			// return false, errors.Trace(err)
-		}
-		for _, t := range tables {
-			if t == table {
-				syncDone = true
+	var (
+		ctx, cancel = context.WithTimeout(context.Background(), c.cfg.Options.SyncTimeout.Duration)
+		ticker      = time.NewTicker(10 * time.Second)
+	)
+	defer cancel()
+
+SYNC:
+	for {
+		select {
+		case <-ctx.Done():
+			return false, errors.Errorf("sync timeout in %s", c.cfg.Options.SyncTimeout.Duration)
+		case <-ticker.C:
+			tables, err := compareExecutor.GetConn2().FetchTables(c.dbname)
+			if err != nil {
+				// not throw error here
+				// may be caused by chaos
+				// we should wait for sync timeout before throwing an error
+				log.Error(err)
+			}
+			for _, t := range tables {
+				if t == table {
+					break SYNC
+				}
 			}
 		}
-		log.Info("got sync status", syncDone)
 	}
-	time.Sleep(time.Second)
 
 	schema, err := compareExecutor.GetConn().FetchSchema(c.dbname)
 	for err != nil {
@@ -208,6 +224,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
 		c.Unlock()
+		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
@@ -215,7 +232,11 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	// go on other transactions
 	// defer can be removed
 	// but here we use it for protect environment
-	defer c.Unlock()
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+		c.execMutex.Unlock()
+	}()
 
 	// delay will hold on this snapshot and check it later
 	if delay {
@@ -225,12 +246,12 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	return c.compareData(compareExecutor, schema)
 }
 
-func (c *Core) compareData(beginnedConnect *executor.Executor, schema [][5]string) (bool, error) {
+func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {
 	sqls := makeCompareSQLs(schema)
 	for _, sql := range sqls {
-		if err := beginnedConnect.ABTestSelect(sql); err != nil {
+		if err := beganConnect.ABTestSelect(sql); err != nil {
 			log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
-				sql, err, util.FormatTimeStrAsLog(beginnedConnect.GetConn().GetBeginTime()))
+				sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
 		}
 	}
 	log.Info("consistency check pass")
@@ -265,5 +286,5 @@ func makeCompareSQLs(schema [][5]string) []string {
 func generateWaitTable() (string, string) {
 	sec := time.Now().Unix()
 	table := fmt.Sprintf("t%d", sec)
-	return table, fmt.Sprintf("CREATE TABLE %s(id int)", table)
+	return table, fmt.Sprintf("CREATE TABLE %s(id int PRIMARY KEY)", table)
 }

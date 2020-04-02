@@ -59,7 +59,7 @@ func (s *StateFlow) walkCreateTableStmt(node *ast.CreateTableStmt) *types.Table 
 			s.makeConstraintPrimaryKey(node, column)
 		}
 	}
-	return nil
+	return table
 }
 
 func (s *StateFlow) walkAlterTableStmt(node *ast.AlterTableStmt) *types.Table {

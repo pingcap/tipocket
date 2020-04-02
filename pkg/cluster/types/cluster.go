@@ -19,8 +19,12 @@ const (
 	Pump Component = "pump"
 	// Drainer Component identifier
 	Drainer Component = "drainer"
+	// CDC Component identifier
+	CDC Component = "cdc"
 	// Monitor Component identifier
 	Monitor Component = "monitor"
+	// TiFlash Component identifier
+	TiFlash Component = "tiflash"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )
@@ -32,6 +36,7 @@ type Client struct {
 	PDMemberFunc func(ns, name string) (string, []string, error)
 }
 
+// PDMember ...
 func (c *Client) PDMember() (string, []string, error) {
 	return c.PDMemberFunc(c.Namespace, c.ClusterName)
 }
@@ -47,6 +52,11 @@ type Node struct {
 	*Client   `json:"-"`
 }
 
+// String ...
+func (node Node) String() string {
+	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
+}
+
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
 type ClientNode struct {
 	Namespace   string // Cluster k8s' namespace
@@ -56,18 +66,21 @@ type ClientNode struct {
 	Port        int32
 }
 
+// String ...
+func (node ClientNode) String() string {
+	return fmt.Sprintf("%s %s:%d", node.Namespace, node.IP, node.Port)
+}
+
+// ClusterSpecs is a cluster specification
+type ClusterSpecs struct {
+	Defs        interface{}
+	NemesisGens []string
+}
+
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
 type Provisioner interface {
 	// SetUp sets up cluster, returns err or all nodes info
-	SetUp(ctx context.Context, spec interface{}) ([]Node, []ClientNode, error)
+	SetUp(ctx context.Context, spec ClusterSpecs) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
-	TearDown(ctx context.Context, spec interface{}) error
-}
-
-func (node Node) String() string {
-	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
-}
-
-func (node ClientNode) String() string {
-	return fmt.Sprintf("%s:%d", node.IP, node.Port)
+	TearDown(ctx context.Context, spec ClusterSpecs) error
 }

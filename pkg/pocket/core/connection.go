@@ -34,6 +34,7 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 		Mute:       c.cfg.Options.Reproduce,
 		OnlineDDL:  c.cfg.Options.OnlineDDL,
 		GeneralLog: c.cfg.Options.GeneralLog,
+		Hint:       c.cfg.Options.EnableHint,
 	}
 	return &opt
 }
@@ -44,7 +45,7 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		err error
 	)
 	switch c.cfg.Mode {
-	case "single":
+	case "single", "tiflash":
 		e, err = executor.New(removeDSNSchema(c.cfg.DSN1), c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
@@ -69,11 +70,12 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		mode string
 	)
 
-	if c.cfg.Mode == "single" {
+	switch c.cfg.Mode {
+	case "single", "tiflash":
 		mode = "single"
-	} else if c.cfg.Mode == "abtest" {
+	case "abtest":
 		mode = "abtest"
-	} else if c.cfg.Mode == "binlog" {
+	case "binlog":
 		if id == 0 {
 			mode = "abtest"
 		} else {
@@ -81,20 +83,18 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		}
 	}
 
-	switch mode {
-	case "single":
+	if mode == "single" {
 		e, err = executor.New(c.cfg.DSN1, c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case "abtest", "binlog":
+	} else if mode == "abtest" {
 		e, err = executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	default:
-		return nil, errors.Errorf("unhandled mode, %s", c.cfg.Mode)
 	}
+
 	return e, nil
 }
 

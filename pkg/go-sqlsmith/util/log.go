@@ -15,6 +15,7 @@ package util
 
 import "log"
 
+// Info ...
 func Info(a ...interface{}) {
 	log.Println(a...)
 }

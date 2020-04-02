@@ -59,12 +59,12 @@ type scaling struct {
 }
 
 func (s scaling) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Creating scaling with ns %s\n", node.Namespace)
+	log.Printf("apply nemesis scaling on ns %s", node.Namespace)
 	return s.scaleCluster(ctx, node.Namespace, node.Namespace, 2)
 }
 
 func (s scaling) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Recover scaling with ns %s\n", node.Namespace)
+	log.Printf("unapply nemesis scaling on ns %s", node.Namespace)
 	return s.scaleCluster(ctx, node.Namespace, node.Namespace, -2)
 }
 

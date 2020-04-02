@@ -33,6 +33,7 @@ var (
 		`SET @@GLOBAL.TIDB_TXN_MODE="pessimistic"`,
 		`SET @@GLOBAL.explicit_defaults_for_timestamp=1`,
 	}
+	setIsolationEngine = `SET @@GLOBAL.tidb_isolation_read_engines = "tiflash"`
 )
 
 func removeDSNSchema(dsn string) string {
@@ -71,6 +72,14 @@ func (c *Core) mustExec() error {
 			return errors.Trace(err)
 		}
 	}
+
+	// TODO: move to session level, not global level
+	// when we need to support HTAP.
+	if c.cfg.Mode == "tiflash" {
+		if err := c.coreExec.Exec(setIsolationEngine); err != nil {
+			return errors.Trace(err)
+		}
+	}
 	// sleep 10s waiting for global variable becoming effective
 	time.Sleep(10 * time.Second)
 	return nil
@@ -97,9 +106,9 @@ func (c *Core) clearSchema() error {
 	if !c.cfg.Options.ClearDB {
 		return nil
 	}
-	if err := c.coreExecute(&types.SQL{
+	if err := c.coreInitDatabaseExecute(&types.SQL{
 		SQLStmt: fmt.Sprintf("DROP DATABASE %s", c.dbname),
-		SQLType: types.SQLTypeUnknown,
+		SQLType: types.SQLTypeDropDatabase,
 	}); err != nil {
 		return errors.Trace(err)
 	}
@@ -107,8 +116,8 @@ func (c *Core) clearSchema() error {
 }
 
 func (c *Core) createSchema() error {
-	return errors.Trace(c.coreExecute(&types.SQL{
+	return errors.Trace(c.coreInitDatabaseExecute(&types.SQL{
 		SQLStmt: fmt.Sprintf("CREATE DATABASE %s", c.dbname),
-		SQLType: types.SQLTypeUnknown,
+		SQLType: types.SQLTypeCreateDatabase,
 	}))
 }

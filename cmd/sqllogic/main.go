@@ -46,16 +46,16 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: &sqllogictest.CaseCreator{
+		ClientCreator: &sqllogictest.ClientCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
-				TaskCount: 10,
+				TaskCount: *taskCount,
 				CaseURL:   *sqllogicCaseURL,
 				TestDir:   *testDir,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }

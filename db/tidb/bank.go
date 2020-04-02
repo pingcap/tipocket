@@ -50,6 +50,10 @@ func (c *bankClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode,
 	}
 
 	log.Printf("begin to create table accounts on node %+v", node)
+	if _, err = db.ExecContext(ctx, `drop table if exists accounts`); err != nil {
+		return err
+	}
+
 	sql := `create table if not exists accounts
 			(id     int not null primary key,
 			balance bigint not null)`

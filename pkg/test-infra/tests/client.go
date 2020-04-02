@@ -16,9 +16,9 @@ package tests
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/ngaut/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/abtest"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
@@ -43,29 +45,31 @@ var TestClient *TestCli
 
 // TestCli contains clients
 type TestCli struct {
-	Config *rest.Config
-	Cli    client.Client
-	CDC    *cdc.CdcOps
-	MySQL  *mysql.MySQLOps
-	TiDB   *tidb.TidbOps
-	Binlog *binlog.Ops
-	ABTest *abtest.Ops
+	Config  *rest.Config
+	Cli     client.Client
+	CDC     *cdc.Ops
+	MySQL   *mysql.Ops
+	TiDB    *tidb.Ops
+	Binlog  *binlog.Ops
+	ABTest  *abtest.Ops
+	TiFlash *tiflash.Ops
 }
 
 func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
-		log.Fatalf("error creating kube-client: %v", err)
+		log.Errorf("error creating kube-client: %v", err)
 	}
 	tidbClient := tidb.New(kubeCli)
 	return &TestCli{
-		Config: conf,
-		Cli:    kubeCli,
-		CDC:    cdc.New(kubeCli),
-		MySQL:  mysql.New(kubeCli),
-		TiDB:   tidbClient,
-		Binlog: binlog.New(kubeCli, tidbClient),
-		ABTest: abtest.New(kubeCli, tidbClient),
+		Config:  conf,
+		Cli:     kubeCli,
+		CDC:     cdc.New(kubeCli, tidbClient),
+		MySQL:   mysql.New(kubeCli),
+		TiDB:    tidbClient,
+		Binlog:  binlog.New(kubeCli, tidbClient),
+		ABTest:  abtest.New(kubeCli, tidbClient),
+		TiFlash: tiflash.New(kubeCli, tidbClient),
 	}
 }
 
@@ -124,7 +128,7 @@ func (e *TestCli) DeleteNamespace(name string) error {
 func init() {
 	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 	if err != nil {
-		log.Fatalf("build config failed: %+v", err)
+		log.Errorf("build config failed: %+v", err)
 	}
 	TestClient = newTestCli(conf)
 }

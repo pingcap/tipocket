@@ -1,0 +1,56 @@
+metadata:
+  name: tipocket-binlog
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-binlog
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-binlog
+          - name: purge
+            default: "false"
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: run_time
+            default: "48h"
+          - name: relay_log
+            default: "true"
+          - name: abtest_general_log
+            default: "true"
+          - name: abtest_concurrency
+            default: "3"
+          - name: binlog_sync_timeout
+            default: "1h"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/pocket \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -relay-log={{inputs.parameters.relay_log}} \
+            -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
+            -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}

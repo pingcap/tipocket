@@ -45,13 +45,13 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ondup.CaseCreator{Cfg: &ondup.Config{
+		ClientCreator: ondup.ClientCreator{Cfg: &ondup.Config{
 			DBName:     *dbName,
 			NumRows:    *numRows,
 			RetryLimit: *retryLimit,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace),
+		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
 }
