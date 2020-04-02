@@ -10,10 +10,9 @@ import (
 
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/util"
-
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/util"
 )
 
 // CaseCreator is a creator of a read-stress test
