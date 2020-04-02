@@ -57,6 +57,7 @@ func (s scheduler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...
 	schedulerName := extractSchedulerArgs(args...)
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
 	client := pdutil.NewPDClient(http.DefaultClient, pdAddr)
+	log.Infof("apply nemesis %s %s on ns %s", core.PDScheduler, schedulerName, node.Namespace)
 	if err := client.AddScheduler(schedulerName); err != nil {
 		log.Errorf("pd scheduling error: %+v", err)
 	} else {
@@ -72,6 +73,7 @@ func (s scheduler) Recover(ctx context.Context, node *clusterTypes.Node, args ..
 	schedulerName := extractSchedulerArgs(args...)
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
 	client := pdutil.NewPDClient(http.DefaultClient, pdAddr)
+	log.Infof("unapply nemesis %s %s on ns %s", core.PDScheduler, schedulerName, node.Namespace)
 	if err := client.RemoveScheduler(schedulerName); err != nil {
 		log.Errorf("pd scheduling error: %+v", err)
 	} else {

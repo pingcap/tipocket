@@ -2,11 +2,11 @@ package nemesis
 
 import (
 	"context"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -148,13 +148,13 @@ type kill struct {
 }
 
 func (k kill) Invoke(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
-	log.Printf("Creating pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("apply nemesis %s on node %s(ns:%s)", core.PodFailure, node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
 func (k kill) Recover(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
-	log.Printf("Recover pod-failure with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.PodFailure, node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
 }

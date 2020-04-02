@@ -125,6 +125,14 @@ func (suit *Suit) Run(ctx context.Context) {
 	}
 }
 
+// ClientLoopFunc defines ClientLoop func
+type ClientLoopFunc func(ctx context.Context,
+	client core.Client,
+	node clusterTypes.ClientNode,
+	proc *int64,
+	requestCount *int64,
+	recorder *history.Recorder)
+
 // OnClientLoop sends client requests in a loop,
 // client applies a proc id as it's identifier and if the response is some kinds of `Unknown` type,
 // it will change a proc id on the next loop.
@@ -181,14 +189,6 @@ func OnClientLoop(
 		}
 	}
 }
-
-// ClientLoopFunc defines ClientLoop func
-type ClientLoopFunc func(ctx context.Context,
-	client core.Client,
-	node clusterTypes.ClientNode,
-	proc *int64,
-	requestCount *int64,
-	recorder *history.Recorder)
 
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {

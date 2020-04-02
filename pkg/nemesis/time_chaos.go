@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"strings"
 	"time"
 
+	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -161,7 +161,7 @@ func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interfa
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Creating time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("apply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
 }
@@ -178,7 +178,7 @@ func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interf
 	if !ok {
 		return errors.New("the second argument of timeChaos.Invoke should be an integer")
 	}
-	log.Printf("Recovering time-chaos with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
 	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }

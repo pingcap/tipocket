@@ -2,10 +2,24 @@ package nemesis
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 )
+
+var (
+	r           = rand.New(rand.NewSource(time.Now().UnixNano()))
+	letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
+)
+
+func randK8sObjectName() string {
+	b := make([]rune, 7)
+	for i := range b {
+		b[i] = letterRunes[r.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
 
 type k8sNemesisClient struct {
 	cli *Chaos
