@@ -8,7 +8,6 @@ import (
 	"time"
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
-	uuid "github.com/satori/go.uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -51,7 +50,7 @@ func partitionNodes(nodes []clusterTypes.Node, n int, duration time.Duration) []
 		anotherPartNodes = append(anotherPartNodes, nodes[indices[i]])
 	}
 
-	name := fmt.Sprintf("%s-%s", onePartNodes[0].Namespace, uuid.NewV4().String())
+	name := fmt.Sprintf("%s-partition-%s", onePartNodes[0].Namespace, randK8sObjectName())
 	ops = append(ops, &core.NemesisOperation{
 		Type:        core.NetworkPartition,
 		InvokeArgs:  []interface{}{name, onePartNodes, anotherPartNodes},

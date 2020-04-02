@@ -52,6 +52,11 @@ type Node struct {
 	*Client   `json:"-"`
 }
 
+// String ...
+func (node Node) String() string {
+	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
+}
+
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
 type ClientNode struct {
 	Namespace   string // Cluster k8s' namespace
@@ -59,6 +64,11 @@ type ClientNode struct {
 	Component   Component
 	IP          string
 	Port        int32
+}
+
+// String ...
+func (node ClientNode) String() string {
+	return fmt.Sprintf("%s %s:%d", node.Namespace, node.IP, node.Port)
 }
 
 // ClusterSpecs is a cluster specification
@@ -73,12 +83,4 @@ type Provisioner interface {
 	SetUp(ctx context.Context, spec ClusterSpecs) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
 	TearDown(ctx context.Context, spec ClusterSpecs) error
-}
-
-func (node Node) String() string {
-	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
-}
-
-func (node ClientNode) String() string {
-	return fmt.Sprintf("%s:%d", node.IP, node.Port)
 }
