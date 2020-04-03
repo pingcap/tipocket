@@ -28,6 +28,13 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/scheme"
 )
 
+var (
+	// BuildTS ...
+	BuildTS = "None"
+	// BuildHash ...
+	BuildHash = "None"
+)
+
 // StorageType ...
 type StorageType string
 
@@ -163,7 +170,14 @@ func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequ
 	return r
 }
 
+func printVersion() {
+	log.Info("Git Commit Hash:", BuildHash)
+	log.Info("UTC Build Time:", BuildTS)
+}
+
 func init() {
+	printVersion()
+
 	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
 	flag.StringVar(&Context.Nemesis, "nemesis", "", "nemesis, separated by name, like random_kill,all_kill")

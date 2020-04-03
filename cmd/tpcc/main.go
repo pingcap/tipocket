@@ -35,11 +35,9 @@ var (
 	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
 	checkerName = flag.String("checker", "consistency", "consistency or qos")
 	warehouses  = flag.Int("warehouses", 10, "tpcc warehouses")
-	threads     = flag.Int("T", 10, "tpcc terminals")
 )
 
 func main() {
-	util.PrintInfo()
 	flag.Parse()
 
 	cfg := control.Config{
@@ -52,7 +50,8 @@ func main() {
 	}
 	clientCreator := &tidb.TPCCClientCreator{
 		Config: &tpcc.Config{
-			Threads:    *threads,
+			// Must 1 here, we use `fixture.Context.ClientCount` clients to launch  `ClientCount` terminals
+			Threads:    1,
 			Warehouses: *warehouses,
 			Parts:      1,
 		},
