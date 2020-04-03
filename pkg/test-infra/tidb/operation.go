@@ -145,15 +145,6 @@ func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
 func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
-	k8sNodes, err := t.GetK8sNodes()
-	if err != nil {
-		return clientNodes, err
-	}
-	ip := getNodeIP(k8sNodes)
-	if ip == "" {
-		return clientNodes, errors.New("k8s node not found")
-	}
-
 	svc, err := t.GetTiDBServiceByMeta(&tc.Service.ObjectMeta)
 	if err != nil {
 		return clientNodes, err
@@ -161,8 +152,8 @@ func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, err
 	clientNodes = append(clientNodes, clusterTypes.ClientNode{
 		Namespace:   svc.ObjectMeta.Namespace,
 		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
-		IP:          ip,
-		Port:        getTiDBNodePort(svc),
+		IP:          svc.Spec.ClusterIP,
+		Port:        4000,
 	})
 	return clientNodes, nil
 }
@@ -670,22 +661,6 @@ func (t *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 		})
 	}
 	return nodes
-}
-
-func getNodeIP(nodeList *corev1.NodeList) string {
-	if len(nodeList.Items) == 0 {
-		return ""
-	}
-	return nodeList.Items[0].Status.Addresses[0].Address
-}
-
-func getTiDBNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 4000 {
-			return port.NodePort
-		}
-	}
-	return 0
 }
 
 func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {

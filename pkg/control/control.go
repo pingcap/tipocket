@@ -257,8 +257,9 @@ func (c *Controller) RunSelfScheduled() {
 
 	for i := 0; i < len(c.clients); i++ {
 		client := c.clients[i]
+		index := i
 		g.Go(func() error {
-			log.Infof("run client %d...", i)
+			log.Infof("run client %d...", index)
 			return client.Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
