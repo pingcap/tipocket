@@ -12,6 +12,8 @@ spec:
             default: "false"
           - name: image_version
             default: nightly
+          - name: repository
+            default: pingcap
           - name: storage_class
             default: standard
           - name: nemesis
@@ -42,6 +44,7 @@ spec:
             /bin/bank \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \

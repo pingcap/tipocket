@@ -10,6 +10,8 @@ spec:
             default: tipocket-ledger
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -17,7 +19,9 @@ spec:
           - name: nemesis
             default: ""
           - name: run_time
-            default: "60m"
+            default: "5h"
+          - name: tikv-replicas
+            default: "4"
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -34,11 +38,13 @@ spec:
             /bin/ledger \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
+            -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
