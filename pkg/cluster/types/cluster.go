@@ -66,9 +66,14 @@ type ClientNode struct {
 	Port        int32
 }
 
+// Address returns the endpoint address of node
+func (clientNode ClientNode) Address() string {
+	return fmt.Sprintf("%s:%d", clientNode.IP, clientNode.Port)
+}
+
 // String ...
-func (node ClientNode) String() string {
-	return fmt.Sprintf("%s:%d", node.IP, node.Port)
+func (clientNode ClientNode) String() string {
+	return fmt.Sprintf("%s %s:%d", clientNode.Namespace, clientNode.IP, clientNode.Port)
 }
 
 // ClusterSpecs is a cluster specification
