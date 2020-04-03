@@ -26,7 +26,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/bank2"
 )
 
@@ -73,7 +72,6 @@ func main() {
 			Pessimistic:   *pessimistic,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:  verify.Suit{},
 		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
 	}
 	suit.Run(context.Background())
