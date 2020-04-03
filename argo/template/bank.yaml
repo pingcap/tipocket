@@ -10,6 +10,8 @@ spec:
             default: tipocket-bank
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -35,7 +37,7 @@ spec:
           - name: pd_config
             default: ""
           - name: tikv-replicas
-            default: "3"
+            default: "4"
       outputs:
         artifacts:
           - name: case-logs
@@ -63,6 +65,7 @@ spec:
             /bin/chaos-tidb \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \

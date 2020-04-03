@@ -10,6 +10,8 @@ spec:
             default: tipocket-abtest
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: abtest_version
@@ -55,6 +57,7 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
+            -repository={{inputs.parameters.repository}} \
             -image-version={{inputs.parameters.image_version}} \
             -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \

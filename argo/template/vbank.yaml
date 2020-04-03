@@ -10,6 +10,8 @@ spec:
             default: tipocket-vbank
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -48,6 +50,7 @@ spec:
             /bin/vbank \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -tidb-config={{inputs.parameters.tidb_config}} \
