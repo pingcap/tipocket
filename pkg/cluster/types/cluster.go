@@ -68,7 +68,7 @@ type ClientNode struct {
 
 // String ...
 func (node ClientNode) String() string {
-	return fmt.Sprintf("%s %s:%d", node.Namespace, node.IP, node.Port)
+	return fmt.Sprintf("%s:%d", node.IP, node.Port)
 }
 
 // ClusterSpecs is a cluster specification
