@@ -25,9 +25,9 @@ const (
 	// TimeChaos means
 	TimeChaos ChaosKind = "time-chaos"
 	// PDScheduler adds scheduler
-	PDScheduler ChaosKind = "PD-Scheduler"
+	PDScheduler ChaosKind = "pd-scheduler"
 	// PDLeaderShuffler will randomly shuffle pds.
-	PDLeaderShuffler ChaosKind = "PD-Leader-Shuffler"
+	PDLeaderShuffler ChaosKind = "pd-leader-shuffler"
 	// Scaling scales cluster
 	Scaling ChaosKind = "scaling"
 	// IOChaos adds io chaos.

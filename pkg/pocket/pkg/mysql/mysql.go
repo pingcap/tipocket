@@ -81,7 +81,7 @@ func (conn *DBConnect) IfTxn() bool {
 	return conn.txn != nil
 }
 
-// GetTiDBTS get the txn begin timestamp from TiD
+// GetTiDBTS get the txn begin timestamp from TiDB
 func (conn *DBConnect) GetTiDBTS() (uint64, error) {
 	conn.Lock()
 	defer conn.Unlock()
