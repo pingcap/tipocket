@@ -15,17 +15,18 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// GroupCluster creates clusters concurrently
-type GroupCluster struct {
+// groupCluster creates clusters concurrently
+type groupCluster struct {
 	ops []clusterTypes.Cluster
 }
 
-func NewGroupCluster(clusters ...clusterTypes.Cluster) *GroupCluster {
-	return &GroupCluster{ops: clusters}
+// NewGroupCluster creates a groupCluster
+func NewGroupCluster(clusters ...clusterTypes.Cluster) *groupCluster {
+	return &groupCluster{ops: clusters}
 }
 
 // Apply creates the cluster
-func (c *GroupCluster) Apply() error {
+func (c *groupCluster) Apply() error {
 	var g errgroup.Group
 	num := len(c.ops)
 	for i := 0; i < num; i++ {
@@ -41,7 +42,7 @@ func (c *GroupCluster) Apply() error {
 }
 
 // Delete the cluster
-func (c *GroupCluster) Delete() error {
+func (c *groupCluster) Delete() error {
 	var g errgroup.Group
 	num := len(c.ops)
 	for i := 0; i < num; i++ {
@@ -57,7 +58,7 @@ func (c *GroupCluster) Delete() error {
 }
 
 // GetNodes returns the cluster nodes
-func (c *GroupCluster) GetNodes() ([]clusterTypes.Node, error) {
+func (c *groupCluster) GetNodes() ([]clusterTypes.Node, error) {
 	var totalNodes []clusterTypes.Node
 	for _, op := range c.ops {
 		nodes, err := op.GetNodes()
@@ -70,7 +71,7 @@ func (c *GroupCluster) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes
-func (c *GroupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (c *groupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var totalNodes []clusterTypes.ClientNode
 	for _, op := range c.ops {
 		nodes, err := op.GetClientNodes()
@@ -82,17 +83,18 @@ func (c *GroupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return totalNodes, nil
 }
 
-// CompositeCluster creates clusters sequentially
-type CompositeCluster struct {
+// compositeCluster creates clusters sequentially
+type compositeCluster struct {
 	ops []clusterTypes.Cluster
 }
 
-func NewCompositeCluster(clusters ...clusterTypes.Cluster) *CompositeCluster {
-	return &CompositeCluster{ops: clusters}
+// NewCompositeCluster creates a compositeCluster
+func NewCompositeCluster(clusters ...clusterTypes.Cluster) *compositeCluster {
+	return &compositeCluster{ops: clusters}
 }
 
 // Apply creates the cluster
-func (c *CompositeCluster) Apply() error {
+func (c *compositeCluster) Apply() error {
 	for _, op := range c.ops {
 		if err := op.Apply(); err != nil {
 			return err
@@ -102,7 +104,7 @@ func (c *CompositeCluster) Apply() error {
 }
 
 // Delete the cluster
-func (c *CompositeCluster) Delete() error {
+func (c *compositeCluster) Delete() error {
 	for _, op := range c.ops {
 		if err := op.Delete(); err != nil {
 			return err
@@ -112,7 +114,7 @@ func (c *CompositeCluster) Delete() error {
 }
 
 // GetNodes returns the cluster nodes
-func (c *CompositeCluster) GetNodes() ([]clusterTypes.Node, error) {
+func (c *compositeCluster) GetNodes() ([]clusterTypes.Node, error) {
 	var totalNodes []clusterTypes.Node
 	for _, op := range c.ops {
 		nodes, err := op.GetNodes()
@@ -125,7 +127,7 @@ func (c *CompositeCluster) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes
-func (c *CompositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (c *compositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var totalNodes []clusterTypes.ClientNode
 	for _, op := range c.ops {
 		nodes, err := op.GetClientNodes()
