@@ -39,11 +39,11 @@ func TestRecordAndReadHistory(t *testing.T) {
 	for _, action := range actions {
 		switch v := action.op.(type) {
 		case NoopRequest:
-			if err = r.RecordRequest(0, action.proc, v); err != nil {
+			if err = r.RecordRequest(action.proc, v); err != nil {
 				t.Fatalf("record request failed %v", err)
 			}
 		case NoopResponse:
-			if err = r.RecordResponse(0, action.proc, v); err != nil {
+			if err = r.RecordResponse(action.proc, v); err != nil {
 				t.Fatalf("record response failed %v", err)
 			}
 		}

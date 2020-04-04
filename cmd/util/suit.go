@@ -131,7 +131,6 @@ func (suit *Suit) Run(ctx context.Context) {
 // Each request costs a requestCount, and loop finishes after requestCount is used up or the `ctx` has been done.
 func OnClientLoop(
 	ctx context.Context,
-	clientId int,
 	client core.Client,
 	node clusterTypes.ClientNode,
 	proc *int64,
@@ -147,7 +146,7 @@ func OnClientLoop(
 	for atomic.AddInt64(requestCount, -1) >= 0 {
 		request := client.NextRequest()
 
-		if err := recorder.RecordRequest(clientId, procID, request); err != nil {
+		if err := recorder.RecordRequest(procID, request); err != nil {
 			log.Fatalf("record request %v failed %v", request, err)
 		}
 
@@ -158,7 +157,7 @@ func OnClientLoop(
 		v := response.(core.UnknownResponse)
 		isUnknown := v.IsUnknown()
 
-		if err := recorder.RecordResponse(clientId, procID, response); err != nil {
+		if err := recorder.RecordResponse(procID, response); err != nil {
 			log.Fatalf("record response %v failed %v", response, err)
 		}
 
@@ -177,7 +176,6 @@ func OnClientLoop(
 
 // ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
-	clientId int,
 	client core.Client,
 	node clusterTypes.ClientNode,
 	proc *int64,
@@ -187,7 +185,6 @@ type ClientLoopFunc func(ctx context.Context,
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
-		clientId int,
 		client core.Client,
 		node clusterTypes.ClientNode,
 		proc *int64,
@@ -221,7 +218,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 				return
 			}
 			request := client.NextRequest()
-			if err := recorder.RecordRequest(clientId, procID, request); err != nil {
+			if err := recorder.RecordRequest(procID, request); err != nil {
 				log.Fatalf("record request %v failed %v", request, err)
 			}
 
@@ -232,7 +229,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			v := response.(core.UnknownResponse)
 			isUnknown := v.IsUnknown()
 
-			if err := recorder.RecordResponse(clientId, procID, response); err != nil {
+			if err := recorder.RecordResponse(procID, response); err != nil {
 				log.Fatalf("record response %v failed %v", response, err)
 			}
 

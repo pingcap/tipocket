@@ -33,7 +33,6 @@ type Controller struct {
 
 	nemesisGenerators      []core.NemesisGenerator
 	clientRequestGenerator func(ctx context.Context,
-		clientId int,
 		client core.Client,
 		node clusterTypes.ClientNode,
 		proc *int64,
@@ -58,7 +57,7 @@ func NewController(
 	cfg *Config,
 	clientCreator core.ClientCreator,
 	nemesisGenerators []core.NemesisGenerator,
-	clientRequestGenerator func(ctx context.Context, clientId int, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
+	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	lokiCli *loki.LokiClient,
 ) *Controller {
@@ -143,7 +142,7 @@ ROUND:
 		for i := 0; i < n; i++ {
 			go func(i int) {
 				defer clientWg.Done()
-				c.clientRequestGenerator(ctx, i, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
+				c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 			}(i)
 		}
 
@@ -205,7 +204,7 @@ ENTRY:
 			for i := 0; i < n; i++ {
 				go func(i int) {
 					defer clientWg.Done()
-					c.clientRequestGenerator(ctx, i, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
+					c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 				}(i)
 			}
 

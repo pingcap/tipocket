@@ -16,11 +16,10 @@ import (
 // opRecord is similar to core.Operation, but it stores data in json.RawMessage
 // instead of interface{} in order to marshal into bytes.
 type opRecord struct {
-	ClientId int             `json:"clientid"`
-	Action   string          `json:"action"`
-	Proc     int64           `json:"proc"`
-	Time     time.Time       `json:"time"`
-	Data     json.RawMessage `json:"data"`
+	Action string          `json:"action"`
+	Proc   int64           `json:"proc"`
+	Time   time.Time       `json:"time"`
+	Data   json.RawMessage `json:"data"`
 }
 
 // TODO: different operation for initial state and final state.
@@ -51,30 +50,30 @@ func (r *Recorder) Close() {
 
 // RecordState records the request.
 func (r *Recorder) RecordState(state interface{}) error {
-	return r.record(0, 0, dumpOperation, state)
+	return r.record(0, dumpOperation, state)
 }
 
 // RecordRequest records the request.
-func (r *Recorder) RecordRequest(clientId int, proc int64, op interface{}) error {
-	return r.record(clientId, proc, core.InvokeOperation, op)
+func (r *Recorder) RecordRequest(proc int64, op interface{}) error {
+	return r.record(proc, core.InvokeOperation, op)
 }
 
 // RecordResponse records the response.
-func (r *Recorder) RecordResponse(clientId int, proc int64, op interface{}) error {
-	return r.record(clientId, proc, core.ReturnOperation, op)
+func (r *Recorder) RecordResponse(proc int64, op interface{}) error {
+	return r.record(proc, core.ReturnOperation, op)
 }
 
 // RecordInvokeNemesis records nemesis invocation events on history file
 func (r *Recorder) RecordInvokeNemesis(nemesisRecord core.NemesisGeneratorRecord) error {
-	return r.record(-1, 1, core.InvokeNemesis, nemesisRecord)
+	return r.record(1, core.InvokeNemesis, nemesisRecord)
 }
 
 // RecordRecoverNemesis records nemesis recovery events on history file
 func (r *Recorder) RecordRecoverNemesis(op string) error {
-	return r.record(-1, -1, core.RecoverNemesis, op)
+	return r.record(-1, core.RecoverNemesis, op)
 }
 
-func (r *Recorder) record(clientId int, proc int64, action string, op interface{}) error {
+func (r *Recorder) record(proc int64, action string, op interface{}) error {
 	// Marshal the op to json in order to store it in a history file.
 	data, err := json.Marshal(op)
 	if err != nil {
@@ -82,11 +81,10 @@ func (r *Recorder) record(clientId int, proc int64, action string, op interface{
 	}
 
 	v := opRecord{
-		ClientId: clientId,
-		Action:   action,
-		Proc:     proc,
-		Time:     time.Now(),
-		Data:     json.RawMessage(data),
+		Action: action,
+		Proc:   proc,
+		Time:   time.Now(),
+		Data:   json.RawMessage(data),
 	}
 
 	data, err = json.Marshal(v)
@@ -133,6 +131,8 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 	var state interface{}
 	ops := make([]core.Operation, 0, 1024)
 	scanner := bufio.NewScanner(f)
+	var buffer []byte
+	scanner.Buffer(buffer, 50*1024*1024)
 	for scanner.Scan() {
 		var record opRecord
 		if err = json.Unmarshal(scanner.Bytes(), &record); err != nil {
@@ -169,11 +169,10 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 		}
 
 		op := core.Operation{
-			ClientId: record.ClientId,
-			Action:   record.Action,
-			Proc:     record.Proc,
-			Time:     record.Time,
-			Data:     data,
+			Action: record.Action,
+			Proc:   record.Proc,
+			Time:   record.Time,
+			Data:   data,
 		}
 		ops = append(ops, op)
 	}

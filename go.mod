@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20200229220004-848b8b5d43d9
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
+	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-sql-driver/mysql v1.4.1

@@ -322,6 +322,11 @@ github.com/frankban/quicktest v1.7.2/go.mod h1:jaStnuzAqU1AJdCO0l53JDCJrVDKcS03D
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsouza/fake-gcs-server v1.7.0/go.mod h1:5XIRs4YvwNbNoz+1JF8j6KLAyDh7RHGAyAK3EP2EsNk=
+github.com/gengliqi/persistent_treap v0.0.0-20200403103959-26d6a507a2d7 h1:azMtoUKXmgMkKwKeA/Thac3AhagihSK/ABxNejeK2Is=
+github.com/gengliqi/persistent_treap v0.0.0-20200403140054-6d17daae3447 h1:jT9sybvybsMIPu7BS1INmVyLf6N4if+FH5j9DnKaC+s=
+github.com/gengliqi/persistent_treap v0.0.0-20200403140054-6d17daae3447/go.mod h1:CYkCwhZbUyFaCkrI4KKc7tTdHAWsG3axhRVZ6/Ecixw=
+github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c h1:PRd0MuvibmU2NQxpJPZzj1aLxt/M5o6+LSZiDdjcvpM=
+github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c/go.mod h1:CYkCwhZbUyFaCkrI4KKc7tTdHAWsG3axhRVZ6/Ecixw=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/ghodss/yaml v0.0.0-20180820084758-c7ce16629ff4/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=

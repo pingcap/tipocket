@@ -34,9 +34,8 @@ const (
 
 // Operation of a data object.
 type Operation struct {
-	ClientId int         `json:"clientid"`
-	Action   string      `json:"action"`
-	Proc     int64       `json:"proc"`
-	Data     interface{} `json:"data"`
-	Time     time.Time   `json:"time"`
+	Action string      `json:"action"`
+	Proc   int64       `json:"proc"`
+	Data   interface{} `json:"data"`
+	Time   time.Time   `json:"time"`
 }

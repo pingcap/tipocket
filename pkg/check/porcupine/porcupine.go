@@ -59,7 +59,7 @@ func ConvertOperationsToEvents(ops []core.Operation) ([]porcupine.Event, error) 
 	for _, op := range ops {
 		if op.Action == core.InvokeOperation {
 			event := porcupine.Event{
-				ClientId: op.ClientId,
+				ClientId: int(op.Proc),
 				Kind:     porcupine.CallEvent,
 				Id:       id,
 				Value:    op.Data,
@@ -75,7 +75,7 @@ func ConvertOperationsToEvents(ops []core.Operation) ([]porcupine.Event, error) 
 			matchID := procID[op.Proc]
 			delete(procID, op.Proc)
 			event := porcupine.Event{
-				ClientId: op.ClientId,
+				ClientId: int(op.Proc),
 				Kind:     porcupine.ReturnEvent,
 				Id:       matchID,
 				Value:    op.Data,
