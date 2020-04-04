@@ -769,11 +769,11 @@ func (m *Model) Step(state interface{}, input interface{}, output interface{}) (
 	st := state.(*BankState)
 	reqType := input.(VBReqType)
 	resp := output.(*Response)
-	if reqType == reqTypeRead {
-		return resp.OK && st.equal(resp.ReadResult), st
-	}
 	if !resp.OK {
 		return true, st
+	}
+	if reqType == reqTypeRead {
+		return st.equal(resp.ReadResult), st
 	}
 	newState := st.Clone()
 	switch reqType {
