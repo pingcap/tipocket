@@ -35,7 +35,7 @@ var (
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDBConfig txn mode")
+	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
 )
 
 func main() {

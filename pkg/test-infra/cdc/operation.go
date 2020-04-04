@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Ops knows how to operate TiDBConfig CDC on k8s
+// Ops knows how to operate CDC cluster
 type Ops struct {
 	cli client.Client
 	cdc *CDC
@@ -46,31 +46,26 @@ func New(ns, name string) *Ops {
 	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name)}
 }
 
-// Namespace ...
-func (c *Ops) Namespace() string {
-	return c.ns
-}
-
 // Apply CDC cluster
-func (c *Ops) Apply() error {
-	if err := c.applyCDC(); err != nil {
+func (o *Ops) Apply() error {
+	if err := o.applyCDC(); err != nil {
 		return err
 	}
 
-	if err := c.applyJob(); err != nil {
+	if err := o.applyJob(); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Delete CDC cluster
-func (c *Ops) Delete() error {
-	if err := c.cli.Delete(context.TODO(), c.cdc.Service); err != nil {
+func (o *Ops) Delete() error {
+	if err := o.cli.Delete(context.TODO(), o.cdc.Service); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
 	}
-	if err := c.cli.Delete(context.TODO(), c.cdc.StatefulSet); err != nil {
+	if err := o.cli.Delete(context.TODO(), o.cdc.StatefulSet); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -78,15 +73,15 @@ func (c *Ops) Delete() error {
 	return nil
 }
 
-func (c *Ops) applyCDC() error {
-	if err := util.ApplyObject(c.cli, c.cdc.Service); err != nil {
+func (o *Ops) applyCDC() error {
+	if err := util.ApplyObject(o.cli, o.cdc.Service); err != nil {
 		return err
 	}
-	if err := util.ApplyObject(c.cli, c.cdc.StatefulSet); err != nil {
+	if err := util.ApplyObject(o.cli, o.cdc.StatefulSet); err != nil {
 		return err
 	}
 
-	if err := c.waitCDCReady(c.cdc.StatefulSet, 5*time.Minute); err != nil {
+	if err := o.waitCDCReady(o.cdc.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
 	return nil
@@ -148,24 +143,24 @@ func (o *Ops) waitJobCompleted(job *batchv1.Job) error {
 	})
 }
 
-func (c *Ops) applyJob() error {
-	if err := util.ApplyObject(c.cli, c.cdc.Job); err != nil {
+func (o *Ops) applyJob() error {
+	if err := util.ApplyObject(o.cli, o.cdc.Job); err != nil {
 		return err
 	}
-	return c.waitJobCompleted(c.cdc.Job)
+	return o.waitJobCompleted(o.cdc.Job)
 }
 
 // GetClientNodes returns the client nodes
-func (c *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return nil, nil
 }
 
 // GetNodes returns cdc nodes
-func (c *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pod := &corev1.Pod{}
-	err := c.cli.Get(context.Background(), client.ObjectKey{
-		Namespace: c.cdc.StatefulSet.ObjectMeta.Namespace,
-		Name:      fmt.Sprintf("%s-0", c.cdc.StatefulSet.ObjectMeta.Name),
+	err := o.cli.Get(context.Background(), client.ObjectKey{
+		Namespace: o.cdc.StatefulSet.ObjectMeta.Namespace,
+		Name:      fmt.Sprintf("%s-0", o.cdc.StatefulSet.ObjectMeta.Name),
 	}, pod)
 
 	if err != nil {

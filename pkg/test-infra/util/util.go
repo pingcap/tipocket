@@ -80,6 +80,7 @@ func ApplyObject(client client.Client, object runtime.Object) error {
 	return nil
 }
 
+// BuildBinlogImage returns the binlog image name
 func BuildBinlogImage(name string) string {
 	var (
 		b       strings.Builder

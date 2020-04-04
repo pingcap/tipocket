@@ -14,6 +14,8 @@
 package tiflash
 
 import (
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,16 +49,32 @@ func newTiFlash(ns, name string) *tiFlash {
 			"app.kubernetes.io/instance":  tiFlashName,
 		}
 		model = &tiFlashConfig{ClusterName: name, Namespace: ns}
-		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version, fixture.TiDBImageConfig{})
 	)
 
-	return &tiFlash{
+	tf := &tiFlash{
 		StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
 		// we use name instead of tiFlashName here
 		// because we want to use it to do template rendering.
 		ConfigMap: tiFlashConfigMap(name, model),
 		Service:   tiFlashService(ns, tiFlashName, lbls),
 	}
+
+	// (TODO: yeya24) Unfortunately we have to parse the nemesis
+	//  again to check if there is an IOChaos for TiFlash...
+	// We can improve it later
+	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		switch name {
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			tf.StatefulSet.Spec.Template.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
+			}
+		}
+	}
+	return tf
 }
 
 func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfig) *appsv1.StatefulSet {

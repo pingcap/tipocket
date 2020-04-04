@@ -41,7 +41,7 @@ type TestCli struct {
 	Cli client.Client
 }
 
-func newCli(conf *rest.Config) *TestCli {
+func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
 		log.Errorf("error creating kube-client: %v", err)
@@ -108,5 +108,5 @@ func init() {
 	if err != nil {
 		log.Errorf("build config failed: %+v", err)
 	}
-	TestClient = newCli(conf)
+	TestClient = newTestCli(conf)
 }

@@ -21,7 +21,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -31,7 +30,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// Ops knows how to operate TiDBConfig and TiFlash on k8s
+// Ops knows how to operate TiFlash
 type Ops struct {
 	cli  client.Client
 	tf   *tiFlash
@@ -44,20 +43,15 @@ func New(namespace, name string) *Ops {
 	return &Ops{cli: tests.TestClient.Cli, ns: namespace, name: name, tf: newTiFlash(namespace, name)}
 }
 
-// Namespace ...
-func (o *Ops) Namespace() string {
-	return o.ns
-}
-
 // Apply TiFlash cluster
 func (o *Ops) Apply() error {
-	if err := o.applyObject(o.tf.ConfigMap); err != nil {
+	if err := util.ApplyObject(o.cli, o.tf.ConfigMap); err != nil {
 		return err
 	}
-	if err := o.applyObject(o.tf.Service); err != nil {
+	if err := util.ApplyObject(o.cli, o.tf.Service); err != nil {
 		return err
 	}
-	if err := o.applyObject(o.tf.StatefulSet); err != nil {
+	if err := util.ApplyObject(o.cli, o.tf.StatefulSet); err != nil {
 		return err
 	}
 
@@ -116,15 +110,6 @@ func (o *Ops) waitTiFlashReady(st *appsv1.StatefulSet, timeout time.Duration) er
 	})
 }
 
-func (o *Ops) applyObject(object runtime.Object) error {
-	if err := o.cli.Create(context.TODO(), object); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetClientNodes returns the client nodes
 func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return nil, nil
@@ -150,4 +135,9 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	}
 
 	return nodes, nil
+}
+
+// GetTiFlash returns TiFlash
+func (o *Ops) GetTiFlash() *tiFlash {
+	return o.tf
 }

@@ -51,7 +51,7 @@ type DMLOptions struct {
 	// and the following DML statements before transaction closed
 	// should only affects these tables
 	// else there will be no limit for affected tables
-	// if you OnlineDDL field in DDLOptions is true, you may got the following error from TiDBConfig
+	// if you OnlineDDL field in DDLOptions is true, you may got the following error from TiDB
 	// "ERROR 1105 (HY000): Information schema is changed. [try again later]"
 	OnlineTable bool
 }

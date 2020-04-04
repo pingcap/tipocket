@@ -31,7 +31,7 @@ detect-interval = 10
 # drainer meta data directory path
 data-dir = "/data"
 
-# a comma separated list of PDConfig endpoints
+# a comma separated list of PD endpoints
 pd-urls = "http://{{.PDAddress}}:2379"
 
 # Use the specified compressor to compress payload between pump and drainer
@@ -80,7 +80,7 @@ ignore-schemas = "INFORMATION_SCHEMA,PERFORMANCE_SCHEMA,mysql,test"
 
 [syncer.relay]
 # directory of relay logs. Empty string indicates disabling relay log.
-# relay log works only if the downstream is TiDBConfig/MySQL.
+# relay log works only if the downstream is TiDB/MySQL.
 log-dir = "{{.RelayPath}}"
 # max file size of each relay log
 # max-file-size = 10485760

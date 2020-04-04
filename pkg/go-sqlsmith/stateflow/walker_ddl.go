@@ -66,7 +66,7 @@ func (s *StateFlow) walkAlterTableStmt(node *ast.AlterTableStmt) *types.Table {
 	table := s.randTable(false, false, false)
 	node.Table.Name = model.NewCIStr(table.Table)
 	// we support only one spec now
-	// unless TiDBConfig will print error
+	// unless TiDB will print error
 	// ERROR 8200 (HY000): Unsupported multi schema change
 	switch node.Specs[0].Tp {
 	case ast.AlterTableAddColumns:

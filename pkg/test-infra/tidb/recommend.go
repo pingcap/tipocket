@@ -84,7 +84,7 @@ func buildImage(name, baseVersion, version string) string {
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-	return &Recommendation{
+	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -224,4 +224,22 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 			},
 		},
 	}
+
+	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		switch name {
+		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
+			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+			}
+		case "delay_pd", "errno_pd", "mixed_pd":
+			r.TidbCluster.Spec.PD.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		}
+	}
+	return r
 }

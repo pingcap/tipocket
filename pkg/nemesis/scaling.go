@@ -87,7 +87,7 @@ func (s scaling) scaleCluster(ctx context.Context, ns, name string, n int32) err
 		tc.Spec.TiDB.Replicas += n
 		tc.Spec.PD.Replicas += n
 		tc.Spec.TiKV.Replicas += n
-		log.Printf("Scale TiDBConfig's nodes to %d PDConfig's nodes to %d TiKVConfig's nodes to %d", tc.Spec.TiDB.Replicas, tc.Spec.PD.Replicas, tc.Spec.TiKV.Replicas)
+		log.Printf("Scale TiDB's nodes to %d PD's nodes to %d TiKV's nodes to %d", tc.Spec.TiDB.Replicas, tc.Spec.PD.Replicas, tc.Spec.TiKV.Replicas)
 		return nil
 	})
 	return err

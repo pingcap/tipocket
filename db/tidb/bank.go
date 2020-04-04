@@ -325,7 +325,7 @@ func (*bank) Name() string {
 	return "tidb_bank"
 }
 
-// BankModel is the model of bank in TiDBConfig
+// BankModel is the model of bank in TiDB
 func BankModel() core.Model {
 	return &bank{
 		accountNum: accountNum,

@@ -27,7 +27,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// Ops knows how to operate TiDBConfig with binlog on k8s
+// Ops knows how to operate binlog
 type Ops struct {
 	cli     client.Client
 	drainer *Drainer
@@ -37,11 +37,6 @@ type Ops struct {
 // New creates binlog ops
 func New(ns, name string) *Ops {
 	return &Ops{cli: tests.TestClient.Cli, ns: ns, drainer: newDrainer(ns, name)}
-}
-
-// Namespace returns namespace of the cluster
-func (t *Ops) Namespace() string {
-	return t.ns
 }
 
 // Apply binlog cluster
@@ -90,6 +85,7 @@ func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	}}, nil
 }
 
+// GetClientNodes returns client nodes
 func (t *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return nil, nil
 }

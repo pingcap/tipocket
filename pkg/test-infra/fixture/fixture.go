@@ -177,6 +177,8 @@ func WithStorage(r corev1.ResourceRequirements, size string) corev1.ResourceRequ
 func init() {
 	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
+	// (TODO:yeya24) Now nemesis option is only for one TiDBCluster. If we want to add nemesis in AB Test,
+	// we can add another option for ClusterB.
 	flag.StringVar(&Context.Nemesis, "nemesis", "", "nemesis, separated by name, like random_kill,all_kill")
 	flag.IntVar(&Context.RunRound, "round", 1, "run round of client test")
 	flag.DurationVar(&Context.RunTime, "run-time", 100*time.Minute, "run time of client")
@@ -188,7 +190,7 @@ func init() {
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
-	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDBConfig monitor service type")
+	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.StringVar(&Context.BinlogConfig.BinlogVersion, "binlog-version", "", `overwrite "-image-version" flag for drainer`)
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
@@ -203,16 +205,16 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
-	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 4, "number of tikv replicas")
+	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
 
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKVConfig, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PDConfig, "abtest.pd-config", "", "pd config file for cluster B")
-	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "tikv-replicas", 4, "number of tikv replicas")
+	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "abtest.tikv-replicas", 3, "number of tikv replicas for cluster B")
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
-	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDBConfig")
+	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
 	flag.StringVar(&Context.CDCConfig.CDCVersion, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)

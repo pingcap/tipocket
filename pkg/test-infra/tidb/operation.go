@@ -53,7 +53,7 @@ const (
 	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
 
-// Ops knows how to operate TiDBConfig on k8s
+// Ops knows how to operate TiDB
 type Ops struct {
 	cli    client.Client
 	tc     *Recommendation
@@ -66,11 +66,6 @@ type Ops struct {
 func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
 	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config),
 		ns: namespace, name: name, config: config}
-}
-
-// Namespace ...
-func (o *Ops) Namespace() string {
-	return o.ns
 }
 
 // GetTiDBCluster ...
@@ -146,6 +141,7 @@ func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
 	return nodes, nil
 }
 
+// Apply ...
 func (o *Ops) Apply() error {
 	tc := o.tc.TidbCluster
 	tm := o.tc.TidbMonitor
@@ -174,19 +170,21 @@ func (o *Ops) Apply() error {
 		}
 	}
 	// apply tc
-	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
 		tc.Spec = desired.Spec
 		tc.Annotations = desired.Annotations
 		tc.Labels = desired.Labels
 		return nil
-	})
-	if err = o.waitTidbOpsReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
+	}); err != nil {
+		return err
+	}
+	if err := o.waitTiDBReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
 	return o.applyTiDBMonitor(tm)
 }
 
-func (o *Ops) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -206,7 +204,7 @@ func (o *Ops) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) 
 		}
 		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
 		if pdReady < pdDesired {
-			log.Infof("PDConfig do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			log.Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
 			return false, nil
 		}
 		if local.Status.TiKV.StatefulSet == nil {
@@ -214,7 +212,7 @@ func (o *Ops) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) 
 		}
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
-			log.Infof("TiKVConfig do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			log.Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
 			return false, nil
 		}
 		if local.Status.TiDB.StatefulSet == nil {
@@ -222,7 +220,7 @@ func (o *Ops) waitTidbOpsReady(tc *v1alpha1.TidbCluster, timeout time.Duration) 
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			log.Infof("TiDBConfig do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
+			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
 			return false, nil
 		}
 		return true, nil
@@ -240,6 +238,7 @@ func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	return err
 }
 
+// Delete ...
 func (o *Ops) Delete() error {
 	var g errgroup.Group
 	g.Go(func() error {

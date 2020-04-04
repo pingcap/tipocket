@@ -24,7 +24,7 @@ const (
 	contentJSON = "application/json"
 )
 
-// RegionInfo represents PDConfig region info.
+// RegionInfo represents PD region info.
 type RegionInfo struct {
 	ID       uint64         `json:"id"`
 	StartKey string         `json:"start_key"`
@@ -33,29 +33,29 @@ type RegionInfo struct {
 	Leader   *metapb.Peer   `json:"leader,omitempty"`
 }
 
-// Stores represents PDConfig store response.
+// Stores represents PD store response.
 type Stores struct {
 	Count  uint64       `json:"count"`
 	Stores []*StoreInfo `json:"stores"`
 }
 
-// StoreInfo represents PDConfig store info.
+// StoreInfo represents PD store info.
 type StoreInfo struct {
 	*metapb.Store `json:"store"`
 }
 
-// Client is a HTTP Client for PDConfig.
+// Client is a HTTP Client for PD.
 type Client struct {
 	c      *httputil.Client
 	pdAddr string
 }
 
-// NewPDClient creates a HTTP Client for PDConfig.
+// NewPDClient creates a HTTP Client for PD.
 func NewPDClient(c *http.Client, pdAddr string) *Client {
 	return &Client{c: httputil.NewHTTPClient(c), pdAddr: pdAddr}
 }
 
-// AddScheduler adds the specified scheduler to PDConfig.
+// AddScheduler adds the specified scheduler to PD.
 func (p *Client) AddScheduler(schedulerName string) error {
 	input := map[string]string{"name": schedulerName}
 	data, err := json.Marshal(input)
@@ -68,7 +68,7 @@ func (p *Client) AddScheduler(schedulerName string) error {
 	return nil
 }
 
-// RemoveScheduler removes the specified scheduler from PDConfig.
+// RemoveScheduler removes the specified scheduler from PD.
 func (p *Client) RemoveScheduler(schedulerName string) error {
 	return p.c.Delete(p.pdAddr + schedulersPrefix + "/" + schedulerName)
 }
@@ -89,7 +89,7 @@ func (p *Client) ListRegions() ([]*RegionInfo, error) {
 	return body.Regions, nil
 }
 
-// GetStores gets PDConfig stores information.
+// GetStores gets PD stores information.
 func (p *Client) GetStores() (*Stores, error) {
 	resp, err := p.c.Get(p.pdAddr + storesPrefix)
 	if err != nil {
@@ -117,7 +117,7 @@ func (p *Client) GetRegionByKey(key string) (*RegionInfo, error) {
 	return region, nil
 }
 
-// Operators sends PDConfig operators request.
+// Operators sends PD operators request.
 func (p *Client) Operators(input map[string]interface{}) error {
 	body, err := json.Marshal(input)
 	if err != nil {

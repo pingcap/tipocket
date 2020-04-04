@@ -15,19 +15,17 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// GroupClusterCluster ...
-type GroupClusterCluster struct {
+// GroupCluster creates clusters concurrently
+type GroupCluster struct {
 	ops []clusterTypes.Cluster
-	ns  string
 }
 
-// Namespace ...
-func (c GroupClusterCluster) Namespace() string {
-	return c.ns
+func NewGroupCluster(clusters ...clusterTypes.Cluster) *GroupCluster {
+	return &GroupCluster{ops: clusters}
 }
 
-// Apply ...
-func (c *GroupClusterCluster) Apply() error {
+// Apply creates the cluster
+func (c *GroupCluster) Apply() error {
 	var g errgroup.Group
 	num := len(c.ops)
 	for i := 0; i < num; i++ {
@@ -42,8 +40,8 @@ func (c *GroupClusterCluster) Apply() error {
 	return nil
 }
 
-// Delete ...
-func (c *GroupClusterCluster) Delete() error {
+// Delete the cluster
+func (c *GroupCluster) Delete() error {
 	var g errgroup.Group
 	num := len(c.ops)
 	for i := 0; i < num; i++ {
@@ -58,8 +56,8 @@ func (c *GroupClusterCluster) Delete() error {
 	return nil
 }
 
-// GetNodes ...
-func (c *GroupClusterCluster) GetNodes() ([]clusterTypes.Node, error) {
+// GetNodes returns the cluster nodes
+func (c *GroupCluster) GetNodes() ([]clusterTypes.Node, error) {
 	var totalNodes []clusterTypes.Node
 	for _, op := range c.ops {
 		nodes, err := op.GetNodes()
@@ -71,8 +69,8 @@ func (c *GroupClusterCluster) GetNodes() ([]clusterTypes.Node, error) {
 	return totalNodes, nil
 }
 
-// GetClientNodes ...
-func (c *GroupClusterCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+// GetClientNodes returns the client nodes
+func (c *GroupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var totalNodes []clusterTypes.ClientNode
 	for _, op := range c.ops {
 		nodes, err := op.GetClientNodes()
@@ -84,21 +82,16 @@ func (c *GroupClusterCluster) GetClientNodes() ([]clusterTypes.ClientNode, error
 	return totalNodes, nil
 }
 
-// WithCluster ...
-func (c *GroupClusterCluster) WithCluster(cluster clusterTypes.Cluster) {
-	c.ops = append(c.ops, cluster)
-}
-
-// CompositeCluster ...
+// CompositeCluster creates clusters sequentially
 type CompositeCluster struct {
 	ops []clusterTypes.Cluster
-	ns  string
 }
 
-func (c CompositeCluster) Namespace() string {
-	return c.ns
+func NewCompositeCluster(clusters ...clusterTypes.Cluster) *CompositeCluster {
+	return &CompositeCluster{ops: clusters}
 }
 
+// Apply creates the cluster
 func (c *CompositeCluster) Apply() error {
 	for _, op := range c.ops {
 		if err := op.Apply(); err != nil {
@@ -108,6 +101,7 @@ func (c *CompositeCluster) Apply() error {
 	return nil
 }
 
+// Delete the cluster
 func (c *CompositeCluster) Delete() error {
 	for _, op := range c.ops {
 		if err := op.Delete(); err != nil {
@@ -117,6 +111,7 @@ func (c *CompositeCluster) Delete() error {
 	return nil
 }
 
+// GetNodes returns the cluster nodes
 func (c *CompositeCluster) GetNodes() ([]clusterTypes.Node, error) {
 	var totalNodes []clusterTypes.Node
 	for _, op := range c.ops {
@@ -129,6 +124,7 @@ func (c *CompositeCluster) GetNodes() ([]clusterTypes.Node, error) {
 	return totalNodes, nil
 }
 
+// GetClientNodes returns the client nodes
 func (c *CompositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var totalNodes []clusterTypes.ClientNode
 	for _, op := range c.ops {
@@ -141,34 +137,26 @@ func (c *CompositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	return totalNodes, nil
 }
 
-func (c *CompositeCluster) AddCluster(cluster clusterTypes.Cluster) {
-	c.ops = append(c.ops, cluster)
-}
-
-// NewDefaultCluster creates a new tidb cluster
+// NewDefaultCluster creates a new TiDB cluster
 func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig) clusterTypes.Cluster {
 	return tidb.New(namespace, name, config)
 }
 
+// NewCDCCluster creates two TiDB clusters with CDC
 func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	cdcCluster := &CompositeCluster{ns: namespace}
-	cdcCluster.AddCluster(&GroupClusterCluster{
-		ops: []clusterTypes.Cluster{
+	return NewCompositeCluster(
+		NewGroupCluster(
 			tidb.New(namespace, name+"-upstream", conf),
 			tidb.New(namespace, name+"-downstream", conf),
-		},
-	})
-	cdcCluster.AddCluster(cdc.New(namespace, name))
-	return cdcCluster
+		),
+		cdc.New(namespace, name),
+	)
 }
 
+// NewBinlogCluster creates two TiDB clusters with Binlog
 func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	binlogCluster := &CompositeCluster{ns: namespace}
 	up := tidb.New(namespace, name+"-upstream", conf)
 	upstream := up.GetTiDBCluster()
-	binlogCluster.AddCluster(&GroupClusterCluster{
-		ops: []clusterTypes.Cluster{up, tidb.New(namespace, name+"-downstream", conf)},
-	})
 	upstream.Spec.TiDB.BinlogEnabled = pointer.BoolPtr(true)
 	upstream.Spec.Pump = &v1alpha1.PumpSpec{
 		Replicas:             3,
@@ -181,22 +169,23 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 			Config: map[string]interface{}{},
 		},
 	}
-	binlogCluster.AddCluster(binlog.New(namespace, name))
-	return binlogCluster
+
+	return NewCompositeCluster(
+		NewGroupCluster(up, tidb.New(namespace, name+"-downstream", conf)),
+		binlog.New(namespace, name),
+	)
 }
 
+// NewABTestCluster creates two TiDB clusters to do AB Test
 func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	return &GroupClusterCluster{
-		ops: []clusterTypes.Cluster{
-			tidb.New(namespace, name+"-a", confA),
-			tidb.New(namespace, name+"-b", confB),
-		},
-		ns: namespace,
-	}
+	return NewGroupCluster(
+		tidb.New(namespace, name+"-a", confA),
+		tidb.New(namespace, name+"-b", confB),
+	)
 }
 
+// NewTiFlashCluster creates a TiDB cluster with TiFlash
 func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	c := &CompositeCluster{ns: namespace}
 	t := tidb.New(namespace, name, conf)
 	tc := t.GetTiDBCluster()
 	// To make TiFlash work, we need to enable placement rules in pd.
@@ -205,28 +194,25 @@ func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) c
 			EnablePlacementRules: pointer.BoolPtr(true),
 		},
 	}
-	c.AddCluster(t)
-	c.AddCluster(tiflash.New(namespace, name))
-
-	return c
+	return NewCompositeCluster(t, tiflash.New(namespace, name))
 }
 
+// NewTiFlashABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash
 func NewTiFlashABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	c := &CompositeCluster{ns: namespace}
-	c.AddCluster(&GroupClusterCluster{ops: []clusterTypes.Cluster{
+	return NewGroupCluster(
 		NewTiFlashCluster(namespace, name+"-a", confA),
 		tidb.New(namespace, name+"-b", confB),
-	}, ns: namespace})
-
-	return c
+	)
 }
 
+// NewTiFlashCDCABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash
+// This also includes a CDC cluster between the two TiDB clusters.
 func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	c := &CompositeCluster{ns: namespace}
-	c.AddCluster(&GroupClusterCluster{ops: []clusterTypes.Cluster{
-		NewTiFlashCluster(namespace, name+"-upstream", confA),
-		tidb.New(namespace, name+"-downstream", confB),
-	}, ns: namespace})
-	c.AddCluster(cdc.New(namespace, name))
-	return c
+	return NewCompositeCluster(
+		NewGroupCluster(
+			NewTiFlashCluster(namespace, name+"-upstream", confA),
+			tidb.New(namespace, name+"-downstream", confB),
+		),
+		cdc.New(namespace, name),
+	)
 }

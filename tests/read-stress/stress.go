@@ -45,7 +45,7 @@ type stressClient struct {
 }
 
 func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
-	// only prepare data through the first TiDBConfig
+	// only prepare data through the first TiDB
 	if idx != 0 {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx 
 }
 
 func (c *stressClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
-	// only tear down through the first TiDBConfig
+	// only tear down through the first TiDB
 	if idx != 0 {
 		return nil
 	}

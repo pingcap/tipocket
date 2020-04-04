@@ -27,11 +27,9 @@ func NewK8sProvisioner() clusterTypes.Provisioner {
 }
 
 // SetUp sets up cluster, returns err or all nodes info
-func (k *K8sProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
-	// TODO: add iochaos to the new interface
-	//k.updateClusterDef(spec, k.hasIOChaos(spec.NemesisGens))
-	if err := k.CreateNamespace(spec.Cluster.Namespace()); err != nil {
-		return nil, nil, errors.New("failed to create namespace " + spec.Cluster.Namespace())
+func (k *K8sProvisioner) SetUp(_ context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+	if err := k.CreateNamespace(spec.Namespace); err != nil {
+		return nil, nil, errors.New("failed to create namespace " + spec.Namespace)
 	}
 	if err := spec.Cluster.Apply(); err != nil {
 		return nil, nil, err
@@ -48,53 +46,9 @@ func (k *K8sProvisioner) SetUp(ctx context.Context, spec clusterTypes.ClusterSpe
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown(ctx context.Context, spec clusterTypes.ClusterSpecs) error {
+func (k *K8sProvisioner) TearDown(_ context.Context, spec clusterTypes.ClusterSpecs) error {
 	if !fixture.Context.Purge {
 		return nil
 	}
 	return spec.Cluster.Delete()
 }
-
-// hasIOChaos checks if there is any io chaos nemesis
-func (k *K8sProvisioner) hasIOChaos(ngs []string) string {
-	for _, v := range ngs {
-		switch v {
-		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
-			return "tikv"
-		case "delay_pd", "errno_pd", "mixed_pd":
-			return "pd"
-		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
-			return "tiflash"
-		}
-	}
-	return ""
-}
-
-//// TODO(yeya24): support other cluster types
-//func (k *K8sProvisioner) updateClusterDef(spec clusterTypes.ClusterSpecs, ioChaosType string) {
-//	var tc *v1alpha1.TidbCluster
-//	switch s := spec.Defs.(type) {
-//	case *tidb.Recommendation:
-//		tc = s.TidbCluster
-//	case *tiflash.Recommendation:
-//		if ioChaosType == "tiflash" {
-//			s.TiFlash.StatefulSet.Spec.Template.Annotations = map[string]string{
-//				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
-//			}
-//			return
-//		}
-//		tc = s.TiDBCluster.TidbCluster
-//	default:
-//		return
-//	}
-//
-//	if ioChaosType == "tikv" {
-//		tc.Spec.TiKVConfig.Annotations = map[string]string{
-//			"admission-webhook.pingcap.com/request": "chaosfs-tikv",
-//		}
-//	} else if ioChaosType == "pd" {
-//		tc.Spec.PDConfig.Annotations = map[string]string{
-//			"admission-webhook.pingcap.com/request": "chaosfs-pd",
-//		}
-//	}
-//}

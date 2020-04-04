@@ -149,7 +149,7 @@ func (c *Connection) GetBeginTime() time.Time {
 	return c.db.GetBeginTime()
 }
 
-// GeneralLog turn on or turn off general_log in TiDBConfig
+// GeneralLog turn on or turn off general_log in TiDB
 func (c *Connection) GeneralLog(v int) error {
 	_, err := c.db.Exec(fmt.Sprintf("set @@tidb_general_log=\"%d\"", v))
 	return err

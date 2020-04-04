@@ -18,7 +18,7 @@ package txnkv
 //
 //func init() {
 //	core.RegisterDB(&db{
-//		// TxnKV does not use TiDBConfig.
+//		// TxnKV does not use TiDB.
 //		cluster.Cluster{IncludeTidb: false},
 //	})
 //}

@@ -206,5 +206,5 @@ func addTable(db *sql.DB) error {
 
 func getFilter(err error) bool {
 	return strings.Contains(err.Error(), "cancelled DDL job") || strings.Contains(err.Error(), "Information schema is changed") ||
-		strings.Contains(err.Error(), "TiKVConfig server timeout") || strings.Contains(err.Error(), "Error 9007: Write conflict")
+		strings.Contains(err.Error(), "TiKV server timeout") || strings.Contains(err.Error(), "Error 9007: Write conflict")
 }

@@ -21,7 +21,7 @@ var (
 	updatePosts = flag.Int("update-posts", 200, "the number of posts updated")
 	interval    = flag.Duration("interval", 2*time.Second, "check interval")
 	retryLimit  = flag.Int("retry-limit", 10, "retry count")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDBConfig txn mode")
+	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
 )
 
 func main() {
