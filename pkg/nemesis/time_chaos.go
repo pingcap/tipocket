@@ -3,18 +3,15 @@ package nemesis
 import (
 	"context"
 	"errors"
-	"fmt"
-	"math"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // timeChaosLevels means the level of defined time chaos like jepsen.
@@ -75,7 +72,7 @@ func timeChaosLevel(chaos string) timeChaosLevels {
 	var level timeChaosLevels
 	var ok bool
 	if level, ok = skewTimeStrMap[chaos]; !ok {
-		panic(fmt.Sprintf("timeChaosLevel receive chaos %s, which is not supported.", chaos))
+		log.Fatal("unsupported timeChaosLevel %s.", chaos)
 	}
 	return level
 }
@@ -83,11 +80,10 @@ func timeChaosLevel(chaos string) timeChaosLevels {
 // selectChaosDuration selects a random (seconds, nano seconds) form Level and duration type.
 // `timeChaosLevels` is ported from Jepsen, which means different time bios.
 // `chaosDurationType` means start from zero ([0, 200ms]) or start from last level [100ms, 200ms].
-func selectChaosDuration(levels timeChaosLevels, durationType chaosDurationType) (int, int) {
-	var secs, nanoSec int
+func selectChaosDuration(levels timeChaosLevels, durationType chaosDurationType) string {
+	var deltaMs uint
 	if levels == strobeSkews {
-		deltaMs := rand.Intn(strobeSkewsBios)
-		nanoSec = deltaMs * int(msToNS)
+		deltaMs = uint(rand.Intn(strobeSkewsBios))
 	} else {
 		var lastVal uint
 		if durationType == fromLast {
@@ -97,21 +93,14 @@ func selectChaosDuration(levels timeChaosLevels, durationType chaosDurationType)
 		}
 
 		// [-skewTimeMap[levels+1], -lastVal] Union [lastVal, skewTimeMap[levels+1]]
-		deltaMs := uint(rand.Intn(int(skewTimeMap[levels+1]-lastVal))) + lastVal
-
-		if uint(math.Abs(float64(deltaMs))) > secToNS {
-			secs = int(deltaMs) / int(secToNS)
-			deltaMs = deltaMs % secToNS
-		}
-		nanoSec = int(deltaMs * msToNS)
+		deltaMs = uint(rand.Intn(int(skewTimeMap[levels+1]-lastVal))) + lastVal
 
 		if rand.Int()%2 == 1 {
-			nanoSec = -nanoSec
-			secs = -secs
+			deltaMs = -deltaMs
 		}
 	}
 
-	return secs, nanoSec
+	return (time.Duration(deltaMs) * time.Millisecond).String()
 }
 
 type timeChaosGenerator struct {
@@ -123,12 +112,12 @@ func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperatio
 
 	for idx := range nodes {
 		node := nodes[idx]
-		secs, nanoSecs := selectChaosDuration(timeChaosLevel(t.name), fromLast)
+		timeOffset := selectChaosDuration(timeChaosLevel(t.name), fromLast)
 		ops = append(ops, &core.NemesisOperation{
 			Type:        core.TimeChaos,
 			Node:        &node,
-			InvokeArgs:  []interface{}{secs, nanoSecs},
-			RecoverArgs: []interface{}{secs, nanoSecs},
+			InvokeArgs:  []interface{}{timeOffset},
+			RecoverArgs: []interface{}{timeOffset},
 			RunTime:     time.Second * time.Duration(rand.Intn(120)+60),
 		})
 	}
@@ -150,36 +139,28 @@ type timeChaos struct {
 }
 
 func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interface{}) error {
-	if len(args) != 2 {
+	if len(args) != 1 {
 		panic("args number error")
 	}
-	secs, ok := args[0].(int)
+	offset, ok := args[0].(string)
 	if !ok {
-		return errors.New("the first argument of timeChaos.Invoke should be an integer")
-	}
-	nanoSecs, ok := args[1].(int)
-	if !ok {
-		return errors.New("the second argument of timeChaos.Invoke should be an integer")
+		return errors.New("the first argument of timeChaos.Invoke should be a string")
 	}
 	log.Infof("apply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
-	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
+	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, offset)
 	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
 }
 
 func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interface{}) error {
-	if len(args) != 2 {
+	if len(args) != 1 {
 		panic("args number error")
 	}
-	secs, ok := args[0].(int)
+	offset, ok := args[0].(string)
 	if !ok {
-		return errors.New("the first argument of timeChaos.Invoke should be an integer")
-	}
-	nanoSecs, ok := args[1].(int)
-	if !ok {
-		return errors.New("the second argument of timeChaos.Invoke should be an integer")
+		return errors.New("the first argument of timeChaos.Recover should be a string")
 	}
 	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.TimeChaos, node.PodName, node.Namespace)
-	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, int64(secs), int64(nanoSecs))
+	timeChaos := buildTimeChaos(node.Namespace, node.Namespace, node.PodName, offset)
 	return t.cli.CancelTimeChaos(ctx, &timeChaos)
 }
 
@@ -187,7 +168,7 @@ func (t timeChaos) Name() string {
 	return string(core.TimeChaos)
 }
 
-func buildTimeChaos(ns, chaosNs, podName string, secs, nanoSecs int64) chaosv1alpha1.TimeChaos {
+func buildTimeChaos(ns, chaosNs, podName string, offset string) chaosv1alpha1.TimeChaos {
 	pods := make(map[string][]string)
 	pods[ns] = []string{podName}
 	return chaosv1alpha1.TimeChaos{
@@ -202,10 +183,7 @@ func buildTimeChaos(ns, chaosNs, podName string, secs, nanoSecs int64) chaosv1al
 			Selector: chaosv1alpha1.SelectorSpec{
 				Pods: pods,
 			},
-			TimeOffset: chaosv1alpha1.TimeOffset{
-				Sec:  secs,
-				NSec: nanoSecs,
-			},
+			TimeOffset: offset,
 		},
 	}
 }
