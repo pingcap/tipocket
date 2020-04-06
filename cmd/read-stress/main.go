@@ -21,8 +21,8 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	readstress "github.com/pingcap/tipocket/tests/read-stress"
 
 	// use mysql
@@ -45,6 +45,7 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
+	c := fixture.Context
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
@@ -56,7 +57,7 @@ func main() {
 			LargeTimeout:     *largeTimeout,
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
+		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

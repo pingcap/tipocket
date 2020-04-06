@@ -45,7 +45,6 @@ func (c *Client) PDMember() (string, []string, error) {
 type Node struct {
 	Namespace string    // Cluster k8s' namespace
 	Component Component // Node component type
-	Version   string    // component version
 	PodName   string    // Pod's name
 	IP        string
 	Port      int32
@@ -73,8 +72,9 @@ func (node ClientNode) String() string {
 
 // ClusterSpecs is a cluster specification
 type ClusterSpecs struct {
-	Defs        interface{}
+	Cluster     Cluster
 	NemesisGens []string
+	Namespace   string
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
