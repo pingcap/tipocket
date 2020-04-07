@@ -49,7 +49,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs interface{}
+	ClusterDefs clusterTypes.Cluster
 }
 
 // Run runs the suit.
@@ -57,8 +57,8 @@ func (suit *Suit) Run(ctx context.Context) {
 	var (
 		err         error
 		clusterSpec = clusterTypes.ClusterSpecs{
-			Defs:        suit.ClusterDefs,
-			NemesisGens: nemesisGeneratorNames(suit.NemesisGens),
+			Cluster:   suit.ClusterDefs,
+			Namespace: fixture.Context.Namespace,
 		}
 	)
 	sctx, cancel := context.WithCancel(ctx)
@@ -286,13 +286,6 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
-	}
-	return
-}
-
-func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
-	for _, gen := range gens {
-		names = append(names, gen.Name())
 	}
 	return
 }

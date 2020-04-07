@@ -15,14 +15,19 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/controller"
-
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // PDAddress ...
@@ -63,4 +68,36 @@ func RenderTemplateFunc(tpl *template.Template, model interface{}) (string, erro
 		return "", err
 	}
 	return buff.String(), nil
+}
+
+// ApplyObject applies k8s object
+func ApplyObject(client client.Client, object runtime.Object) error {
+	if err := client.Create(context.TODO(), object); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// BuildBinlogImage returns the binlog image name
+func BuildBinlogImage(name string) string {
+	var (
+		b       strings.Builder
+		version = fixture.Context.TiDBClusterConfig.ImageVersion
+	)
+
+	if fixture.Context.BinlogConfig.BinlogVersion != "" {
+		version = fixture.Context.BinlogConfig.BinlogVersion
+	}
+	if fixture.Context.HubAddress != "" {
+		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
+	}
+
+	b.WriteString(fixture.Context.DockerRepository)
+	b.WriteString("/")
+	b.WriteString(name)
+	b.WriteString(":")
+	b.WriteString(version)
+	return b.String()
 }

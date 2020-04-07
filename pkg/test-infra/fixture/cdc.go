@@ -19,13 +19,4 @@ type CDCConfig struct {
 	DockerRepository string
 	HubAddress       string
 	LogPath          string
-	Upstream         TiDBImageConfig
-	Downstream       TiDBImageConfig
-}
-
-// TiDBImageConfig defines the tidb cluster image
-type TiDBImageConfig struct {
-	TiDBImage string
-	TiKVImage string
-	PDImage   string
 }

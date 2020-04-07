@@ -8,8 +8,8 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/tests/crud"
 )
 
@@ -46,7 +46,8 @@ func main() {
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }
