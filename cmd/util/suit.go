@@ -35,18 +35,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
-// Version information.
-var (
-	BuildTS   = "None"
-	BuildHash = "None"
-)
-
-// PrintInfo prints the octopus version information
-func PrintInfo() {
-	fmt.Println("Git Commit Hash:", BuildHash)
-	fmt.Println("UTC Build Time: ", BuildTS)
-}
-
 // Suit is a basic chaos testing suit with configurations to run chaos.
 type Suit struct {
 	*control.Config

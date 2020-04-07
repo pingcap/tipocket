@@ -71,11 +71,11 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	}
 
 	cfg.Mode = p.Config.Mode
-	cfg.DSN1 = makeDSN(clientNodes[0].String())
+	cfg.DSN1 = makeDSN(clientNodes[0].Address())
 
 	// In the tiflash case, there is only one client node.
 	if len(clientNodes) > 1 {
-		cfg.DSN2 = makeDSN(clientNodes[1].String())
+		cfg.DSN2 = makeDSN(clientNodes[1].Address())
 	}
 
 	return pocketCore.New(cfg).Start(ctx)
