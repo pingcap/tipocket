@@ -454,23 +454,31 @@ func (c *Controller) checkPanicLogs() {
 		return
 	}
 
-	dur := time.Minute * 10
-	ticker := time.NewTicker(dur)
+	longDur := time.Minute * 10
+	shortDur := time.Minute * 4
+	panicTicker := time.NewTicker(longDur)
+	// log ticker is a ticker for collecting pod logs, runs every 4 minute
+	logTicker := time.NewTicker(shortDur)
 
 	go func() {
 		for {
 			select {
 			case <-c.ctx.Done():
-				ticker.Stop()
+				log.Info("last logs collecting")
+				c.fetchTiDBClusterLogs(shortDur, c.cfg.Nodes)
+				logTicker.Stop()
+				panicTicker.Stop()
 				return
-			case <-ticker.C:
-				c.queryTiDBClusterLogs(dur, c.cfg.Nodes)
+			case <-panicTicker.C:
+				c.checkTiDBClusterPanic(longDur, c.cfg.Nodes)
+			case <-logTicker.C:
+				c.fetchTiDBClusterLogs(shortDur, c.cfg.Nodes)
 			}
 		}
 	}()
 }
 
-func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterTypes.Node) {
+func (c *Controller) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTypes.Node) {
 	wg := &sync.WaitGroup{}
 	to := time.Now()
 	from := to.Add(-dur)
@@ -478,7 +486,6 @@ func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterType
 	for _, n := range nodes {
 		switch n.Component {
 		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
-
 			wg.Add(1)
 			var nonMatch []string
 			if n.Component == clusterTypes.TiKV {
@@ -488,16 +495,45 @@ func (c *Controller) queryTiDBClusterLogs(dur time.Duration, nodes []clusterType
 				}
 			}
 
-			go func(ns, podName string, nonMatch []string) {
+			// containerName is added to be sure that we only fetch the logs of
+			// the container we want, not included sidecar containers.
+			go func(ns, podName, containerName string, nonMatch []string) {
 				defer wg.Done()
-				texts, err := c.lokiClient.FetchPodLogs(ns, podName,
-					"panic", nonMatch, from, to, false)
+				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
+					"panic", nonMatch, from, to, 1000, false)
 				if err != nil {
 					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
 				} else if len(texts) > 0 {
 					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
 				}
-			}(n.Namespace, n.PodName, nonMatch)
+			}(n.Namespace, n.PodName, string(n.Component), nonMatch)
+		default:
+		}
+	}
+	wg.Wait()
+}
+
+func (c *Controller) fetchTiDBClusterLogs(dur time.Duration, nodes []clusterTypes.Node) {
+	wg := &sync.WaitGroup{}
+	to := time.Now()
+	from := to.Add(-dur)
+
+	for _, n := range nodes {
+		switch n.Component {
+		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
+			wg.Add(1)
+
+			// containerName is added to be sure that we only fetch the logs of
+			// the container we want, not included sidecar containers.
+			go func(ns, podName, containerName string) {
+				defer wg.Done()
+				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
+					"", nil, from, to, 20000, false)
+				if err != nil {
+					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
+				}
+				log.Infof("collect total logs %d", len(texts))
+			}(n.Namespace, n.PodName, string(n.Component))
 		default:
 		}
 	}
