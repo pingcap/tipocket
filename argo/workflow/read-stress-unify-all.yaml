@@ -15,7 +15,7 @@ spec:
       - name: image_version
         value: nightly
       - name: storage_class
-        value: pd-ssd
+        value: gp2
       - name: nemesis
         value: ""
       - name: run_time

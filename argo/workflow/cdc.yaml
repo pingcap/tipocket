@@ -11,7 +11,7 @@ spec:
       - name: purge
         value: "true"
       - name: image_version
-        value: release-4.0-nightly
+        value: nightly
       - name: tidb_image
         value: ""
       - name: tikv_image
@@ -19,11 +19,11 @@ spec:
       - name: pd_image
         value: ""
       - name: storage_class
-        value: pd-ssd
+        value: gp2
       - name: nemesis
         value: ""
       - name: run_time
-        value: "60m"
+        value: "12h"
       - name: tikv_config
         value: ""
       - name: cdc_hub

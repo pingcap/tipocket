@@ -43,17 +43,6 @@ spec:
           - name: case-logs
             archiveLogs: true
             path: /logs
-            s3:
-              accessKeySecret:
-                key: accesskey
-                name: my-minio-cred
-              bucket: my-bucket
-              endpoint: minio:9000
-              key: "{{workflow.name}}/{{pod.name}}/case-logs.tar.gz"
-              insecure: true
-              secretKeySecret:
-                key: secretkey
-                name: my-minio-cred
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
