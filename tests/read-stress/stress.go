@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/codahale/hdrhistogram"
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/cluster/types"
@@ -155,43 +156,50 @@ func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes [
 			wg.Done()
 		}()
 	}
-	for i := 0; i < c.smallConcurrency; i++ {
-		wg.Add(1)
-		go func() {
-			finished := false
-			for !finished {
-				ch := make(chan struct{})
-				go func() {
-					txn, err := c.db.Begin()
-					if err != nil {
-						log.Fatal(err)
-					}
-					if _, err := txn.Exec("SELECT v FROM t WHERE id IN (?, ?, ?)", rand.Intn(c.numRows), rand.Intn(c.numRows), rand.Intn(c.numRows)); err != nil {
-						log.Fatal(err)
-					}
-					start := rand.Intn(c.numRows)
-					end := start + 50
-					if _, err := txn.Exec("SELECT k FROM t WHERE id BETWEEN ? AND ? AND v = 'b'", start, end); err != nil {
-						log.Fatal(err)
-					}
-					if err := txn.Commit(); err != nil {
-						log.Fatal(err)
-					}
-					ch <- struct{}{}
-				}()
-				select {
-				case <-ch:
-					continue
-				case <-time.After(c.smallTimeout):
-					log.Fatal("[stressClient] Small query timed out")
-				case <-ctx.Done():
-					finished = true
-				}
-			}
-			wg.Done()
-		}()
+	deadline, ok := ctx.Deadline()
+	for !ok || time.Now().Before(deadline) {
+		hist := c.runSmall(ctx, time.Minute)
+		mean, quantile99 := hist.Mean(), hist.ValueAtQuantile(99)
+		log.Infof("[stressClient] Small queries in the last minute, mean: %v, 99th: %v", mean, quantile99)
+		if mean > float64(c.smallTimeout.Microseconds()) {
+			log.Fatal("[stressClient] Small query timed out")
+		}
 	}
 	wg.Wait()
 	log.Info("[stressClient] Test finished.")
 	return nil
+}
+
+func (c *stressClient) runSmall(ctx context.Context, duration time.Duration) *hdrhistogram.Histogram {
+	durCh := make(chan time.Duration)
+	deadline := time.Now().Add(duration)
+	for i := 0; i < c.smallConcurrency; i++ {
+		go func() {
+			for time.Now().Before(deadline) {
+				beginInst := time.Now()
+				txn, err := c.db.Begin()
+				if err != nil {
+					log.Fatal(err)
+				}
+				if _, err := txn.Exec("SELECT v FROM t WHERE id IN (?, ?, ?)", rand.Intn(c.numRows), rand.Intn(c.numRows), rand.Intn(c.numRows)); err != nil {
+					log.Fatal(err)
+				}
+				start := rand.Intn(c.numRows)
+				end := start + 50
+				if _, err := txn.Exec("SELECT k FROM t WHERE id BETWEEN ? AND ? AND v = 'b'", start, end); err != nil {
+					log.Fatal(err)
+				}
+				if err := txn.Commit(); err != nil {
+					log.Fatal(err)
+				}
+				dur := time.Now().Sub(beginInst)
+				durCh <- dur
+			}
+		}()
+	}
+	hist := hdrhistogram.New(0, 60000000, 3)
+	for dur := range durCh {
+		hist.RecordValue(dur.Microseconds())
+	}
+	return hist
 }
