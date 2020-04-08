@@ -28,9 +28,10 @@ type Key int
 // Value type
 type Value uint32
 
-type keyValuePair struct {
-	key   Key
-	value Value
+// Key Value pair
+type KeyValuePair struct {
+	K Key
+	V Value
 }
 
 // Equals implements key's persistent_treap.Equitable interface
@@ -155,7 +156,7 @@ type rawkvClient struct {
 
 // SetUp implements the core.Client interface.
 func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
-	log.Printf("setup rawkv-linearizability start")
+	log.Printf("setup client %v start", idx)
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	clusterName := nodes[0].ClusterName
@@ -166,19 +167,24 @@ func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode
 		return errors.New("No pd node found")
 	}
 
-	conf := config.Default()
-	conf.Raw.MaxScanLimit = c.conf.KeyNum
 	var err error
-	c.cli, err = rawkv.NewClient(ctx, pdAddrs, conf)
+	c.cli, err = rawkv.NewClient(ctx, pdAddrs, config.Default())
 	if err != nil {
 		log.Fatalf("create tikv client error: %v", err)
 	}
-	err = c.cli.DeleteRange(ctx, []byte{}, nil)
-	if err != nil {
-		log.Fatalf("delete all range data error: %v", err)
+
+	if idx == 0 {
+		for i := c.conf.KeyStart; i < c.conf.KeyStart+c.conf.KeyNum; i++ {
+			key := []byte(strconv.Itoa(i))
+			err := c.cli.Delete(ctx, key)
+			if err != nil {
+				log.Fatalf("delete key %v error: %v", i, err)
+			}
+		}
+		log.Println("client 0 delete all related key value")
 	}
 
-	log.Printf("setup rawkv-linearizability end")
+	log.Printf("setup client %v end", idx)
 
 	return nil
 }
@@ -199,12 +205,12 @@ func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, 
 		if err != nil {
 			return rawkvResponse{Unknown: true, Error: err.Error()}
 		}
-		if len(val) == 0 {
+		if val == nil {
 			return rawkvResponse{Val: 0}
 		}
 		h64 := util.Hashfnv32a(val)
 		if _, ok := c.randomValues.hashValueMap[h64]; !ok {
-			log.Fatalf("value not valid! key %v, value %v", key, val)
+			log.Fatalf("value not valid! key %s, value hash %v", key, h64)
 		}
 		return rawkvResponse{Val: h64}
 	case 1:
@@ -246,18 +252,19 @@ func (c *rawkvClient) NextRequest() interface{} {
 
 // DumpState implements the core.Client interface.
 func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
-	var kvs []keyValuePair
+	var kvs []KeyValuePair
 	for i := c.conf.KeyStart; i < c.conf.KeyStart+c.conf.KeyNum; i++ {
 		key := []byte(strconv.Itoa(i))
 		val, err := c.cli.Get(ctx, key)
-		h32 := util.Hashfnv32a(val)
-		if err == nil {
-			kvs = append(kvs, keyValuePair{
-				key:   Key(i),
-				value: Value(h32),
+		if err == nil && val != nil {
+			h32 := util.Hashfnv32a(val)
+			kvs = append(kvs, KeyValuePair{
+				K: Key(i),
+				V: Value(h32),
 			})
 		}
 	}
+	log.Printf("dumpstate kv num %v", len(kvs))
 	return kvs, nil
 }
 
@@ -321,11 +328,11 @@ func (rawkvParser) OnNoopResponse() interface{} {
 
 // OnState implements the core.Parser interface.
 func (rawkvParser) OnState(state json.RawMessage) (interface{}, error) {
-	var dump []keyValuePair
+	var dump []KeyValuePair
 	err := json.Unmarshal(state, &dump)
 	st := newState()
 	for i := 0; i < len(dump); i++ {
-		st = st.Insert(dump[i].key, dump[i].value)
+		st = st.Insert(Key(dump[i].K), Value(dump[i].V))
 	}
 	return st, err
 }

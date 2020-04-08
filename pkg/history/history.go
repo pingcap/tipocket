@@ -132,6 +132,7 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 	ops := make([]core.Operation, 0, 1024)
 	scanner := bufio.NewScanner(f)
 	var buffer []byte
+	// buffer size 50mb
 	scanner.Buffer(buffer, 50*1024*1024)
 	for scanner.Scan() {
 		var record opRecord
