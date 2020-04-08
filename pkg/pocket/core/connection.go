@@ -15,6 +15,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/juju/errors"
 
@@ -46,7 +47,8 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		tiFlash bool
 	)
 
-	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+	// current supported tiflash mode includes tiflash, tiflash-abtest, tiflash-binlog
+	if strings.HasPrefix(c.cfg.Mode, "tiflash") {
 		tiFlash = true
 	}
 
@@ -56,7 +58,7 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	case "abtest", "binlog", "abtiflash":
+	case "abtest", "binlog", "tiflash-abtest", "tiflash-binlog":
 		e, err = executor.NewABTest(removeDSNSchema(c.cfg.DSN1),
 			removeDSNSchema(c.cfg.DSN2),
 			c.generateExecutorOption(id), tiFlash)
@@ -80,9 +82,9 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 	switch c.cfg.Mode {
 	case "single", "tiflash":
 		mode = "single"
-	case "abtest", "abtiflash":
+	case "abtest", "tiflash-abtest":
 		mode = "abtest"
-	case "binlog":
+	case "binlog", "tiflash-binlog":
 		if id == 0 {
 			mode = "abtest"
 		} else {
@@ -90,7 +92,7 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		}
 	}
 
-	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+	if strings.HasPrefix(c.cfg.Mode, "tiflash") {
 		tiFlash = true
 	}
 
@@ -146,7 +148,7 @@ func (c *Core) initSubConnection() error {
 
 func (c *Core) initCompareConnection() (*executor.Executor, error) {
 	var tiFlash bool
-	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+	if strings.HasPrefix(c.cfg.Mode, "tiflash") {
 		tiFlash = true
 	}
 	opt := c.generateExecutorOption(0)

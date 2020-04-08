@@ -1,13 +1,13 @@
 metadata:
-  name: tipocket-abtiflash
+  name: tipocket-tiflash-abtest
   namespace: argo
 spec:
   templates:
-    - name: tipocket-abtiflash
+    - name: tipocket-tiflash-abtest
       inputs:
         parameters:
           - name: ns
-            default: tipocket-abtiflash
+            default: tipocket-tiflash-abtest
           - name: purge
             default: "true"
           - name: image_version

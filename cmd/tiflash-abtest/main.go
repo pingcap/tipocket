@@ -52,7 +52,7 @@ func main() {
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,
-				Mode:       "abtiflash",
+				Mode:       "tiflash-abtest",
 				Config:     pocketConfig,
 			},
 		},

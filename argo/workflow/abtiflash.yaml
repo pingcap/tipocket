@@ -1,13 +1,13 @@
 metadata:
-  generateName: tipocket-abtiflash-
+  generateName: tipocket-tiflash-abtest-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-abtiflash
+  entrypoint: call-tipocket-tiflash-abtest
   onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
-        value: tipocket-abtiflash
+        value: tipocket-tiflash-abtest
       - name: purge
         value: "true"
       - name: image_version
@@ -49,12 +49,12 @@ spec:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
-    - name: call-tipocket-abtiflash
+    - name: call-tipocket-tiflash-abtest
       steps:
-        - - name: call-tipocket-abtiflash
+        - - name: call-tipocket-tiflash-abtest
             templateRef:
-              name: tipocket-abtiflash
-              template: tipocket-abtiflash
+              name: tipocket-tiflash-abtest
+              template: tipocket-tiflash-abtest
             arguments:
               parameters:
                 - name: ns

@@ -57,9 +57,9 @@ func (c *Core) checkConsistency(delay bool) (bool, error) {
 		err    error
 	)
 	switch c.cfg.Mode {
-	case "abtest":
+	case "abtest", "tiflash-abtest":
 		result, err = c.abTestCompareData(delay)
-	case "binlog":
+	case "binlog", "tiflash-binlog":
 		result, err = c.binlogTestCompareData(delay)
 	default:
 		result, err = true, nil
@@ -103,11 +103,6 @@ func (c *Core) abTestCompareDataWithoutCommit(ch chan struct{}) {
 }
 
 func (c *Core) abTestCompareData(delay bool) (bool, error) {
-	// only for abtest
-	if c.cfg.Mode != "abtest" {
-		return true, nil
-	}
-
 	// start a temp session for keep the snapshot of state
 	compareExecutor, err := c.initCompareConnection()
 	if err != nil {
