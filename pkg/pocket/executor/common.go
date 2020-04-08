@@ -22,8 +22,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 )
 
-const setIsolationEngine = `SET @@session.tidb_isolation_read_engines = "tiflash"; `
-
 // Select offer unified method for single & abtest
 func (e *Executor) Select(stmt string) error {
 	e.Lock()
