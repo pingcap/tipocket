@@ -16,12 +16,18 @@ import (
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/util"
 
 	persistent_treap "github.com/gengliqi/persistent_treap/persistent_treap"
 )
 
 type Key int
-type Value int
+type Value uint32
+
+type KeyValuePair struct {
+	key   Key
+	value Value
+}
 
 func (a Key) Equals(b persistent_treap.Equitable) bool {
 	return a == b.(Key)
@@ -77,16 +83,67 @@ type Config struct {
 	WriteProbaility int
 }
 
+type RandomValues struct {
+	hashs        []uint32
+	hashValueMap map[uint32][]byte
+}
+
+type RandomValueConfig struct {
+	ValueNum10KB  int
+	ValueNum100KB int
+	ValueNum1MB   int
+	ValueNum5MB   int
+}
+
+func GenerateRandomValueString(config RandomValueConfig) RandomValues {
+	rnd := rand.New(rand.NewSource(time.Now().Unix()))
+	r := RandomValues{
+		hashValueMap: make(map[uint32][]byte),
+	}
+	value1KB := 1000
+	type numToLen struct {
+		num int
+		len int
+	}
+	valueNum := []numToLen{
+		{config.ValueNum10KB, 10 * value1KB},
+		{config.ValueNum100KB, 100 * value1KB},
+		{config.ValueNum1MB, 1024 * value1KB},
+		{config.ValueNum5MB, 5120 * value1KB},
+	}
+	for i := 0; i < len(valueNum); i++ {
+		for j := 0; j < valueNum[i].num; j++ {
+			str := make([]byte, valueNum[i].len)
+			for {
+				util.RandString(str, rnd)
+				h32 := util.Hashfnv32a(str)
+				if _, ok := r.hashValueMap[h32]; !ok {
+					r.hashs = append(r.hashs, h32)
+					r.hashValueMap[h32] = str
+					break
+				}
+			}
+		}
+	}
+	return r
+}
+
+type RawkvClientCreator struct {
+	Cfg          Config
+	RandomValues *RandomValues
+}
+
 type rawkvClient struct {
-	r        *rand.Rand
-	cli      *rawkv.Client
-	pd       pd.Client
-	conf     Config
-	startKey []byte
-	endKey   []byte
+	r            *rand.Rand
+	cli          *rawkv.Client
+	pd           pd.Client
+	conf         Config
+	randomValues *RandomValues
 }
 
 func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+	log.Printf("setup rawkv-linearizability start")
+
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	//clusterName := nodes[0].ClusterName
 	//ns := nodes[0].Namespace
@@ -103,13 +160,13 @@ func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode
 	if err != nil {
 		log.Fatalf("create tikv client error: %v", err)
 	}
+	err = c.cli.DeleteRange(ctx, []byte{}, nil)
+	if err != nil {
+		log.Fatalf("delete all range data error: %v", err)
+	}
 
-	c.startKey = []byte(strconv.Itoa(c.conf.KeyStart))
-	c.endKey = []byte(strconv.Itoa(c.conf.KeyStart + c.conf.KeyNum))
+	log.Printf("setup rawkv-linearizability end")
 
-	log.Printf("startKey:%s endKey:%s", c.startKey, c.endKey)
-	// TODO: maybe we can insert some data before beginning test
-	log.Printf("setup rawkv-linearizability")
 	return nil
 }
 
@@ -127,12 +184,17 @@ func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, 
 		if err != nil {
 			return rawkvResponse{Unknown: true, Error: err.Error()}
 		}
-		valueInt, _ := strconv.Atoi(string(val))
-		return rawkvResponse{Val: valueInt}
+		if len(val) == 0 {
+			return rawkvResponse{Val: 0}
+		}
+		h64 := util.Hashfnv32a(val)
+		if _, ok := c.randomValues.hashValueMap[h64]; !ok {
+			log.Fatalf("value not valid! key %v, value %v", key, val)
+		}
+		return rawkvResponse{Val: h64}
 	case 1:
 		// put
-		value := []byte(strconv.Itoa(request.Val))
-		err := c.cli.Put(ctx, key, value)
+		err := c.cli.Put(ctx, key, c.randomValues.hashValueMap[request.Val])
 		if err != nil {
 			return rawkvResponse{Unknown: true, Error: err.Error()}
 		}
@@ -157,7 +219,7 @@ func (c *rawkvClient) NextRequest() interface{} {
 	if rNum >= c.conf.ReadProbability && rNum < c.conf.ReadProbability+c.conf.WriteProbaility {
 		// put
 		request.Op = 1
-		request.Val = int(c.r.Int31())
+		request.Val = c.randomValues.hashs[int(c.r.Int31())%len(c.randomValues.hashs)]
 	} else if rNum >= c.conf.ReadProbability+c.conf.WriteProbaility {
 		// delete
 		request.Op = 2
@@ -167,16 +229,18 @@ func (c *rawkvClient) NextRequest() interface{} {
 }
 
 func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
-	var kvs [][2]int
+	var kvs []KeyValuePair
 	for i := c.conf.KeyStart; i < c.conf.KeyStart+c.conf.KeyNum; i++ {
 		key := []byte(strconv.Itoa(i))
 		val, err := c.cli.Get(ctx, key)
-		valueInt, _ := strconv.Atoi(string(val))
+		h32 := util.Hashfnv32a(val)
 		if err == nil {
-			kvs = append(kvs, [2]int{i, valueInt})
+			kvs = append(kvs, KeyValuePair{
+				key:   Key(i),
+				value: Value(h32),
+			})
 		}
 	}
-	log.Printf("key num: %v between key %s and %s", len(kvs), c.startKey, c.endKey)
 	return kvs, nil
 }
 
@@ -184,23 +248,22 @@ func (c *rawkvClient) Start(ctx context.Context, cfg interface{}, clientNodes []
 	return nil
 }
 
-type RawkvClientCreator struct {
-	Cfg Config
-}
-
 func (r RawkvClientCreator) Create(node clusterTypes.ClientNode) core.Client {
-	return &rawkvClient{conf: r.Cfg}
+	return &rawkvClient{
+		conf:         r.Cfg,
+		randomValues: r.RandomValues,
+	}
 }
 
 // Request && Response
 type rawkvRequest struct {
 	Op  int
 	Key int
-	Val int
+	Val uint32
 }
 
 type rawkvResponse struct {
-	Val     int
+	Val     uint32
 	Unknown bool
 	Error   string `json:",omitempty"`
 }
@@ -232,11 +295,11 @@ func (rawkvParser) OnNoopResponse() interface{} {
 }
 
 func (rawkvParser) OnState(state json.RawMessage) (interface{}, error) {
-	var dump [][2]int
+	var dump []KeyValuePair
 	err := json.Unmarshal(state, &dump)
 	st := NewState()
 	for i := 0; i < len(dump); i++ {
-		st = st.Insert(Key(dump[i][0]), Value(dump[i][1]))
+		st = st.Insert(dump[i].key, dump[i].value)
 	}
 	return st, err
 }

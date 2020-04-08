@@ -17,6 +17,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"hash/fnv"
 	"math/rand"
 	"net/url"
 	"os"
@@ -129,6 +130,12 @@ func RandString(b []byte, r *rand.Rand) {
 		cache >>= letterIdxBits
 		remain--
 	}
+}
+
+func Hashfnv32a(b []byte) uint32 {
+	h := fnv.New32a()
+	h.Write(b)
+	return h.Sum32()
 }
 
 // IsFileExist returns true if the file exists.
