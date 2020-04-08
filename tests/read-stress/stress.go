@@ -83,13 +83,21 @@ func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx 
 		wg.Add(1)
 		go func(start, end int) {
 			defer wg.Done()
+			if err != nil {
+				log.Fatal(err)
+			}
+			stmt, err := c.db.Prepare("INSERT INTO t VALUES (?, ?, ?)")
+			if err != nil {
+				log.Fatal(err)
+			}
 			for ; start < end; start += 256 {
 				txn, err := c.db.Begin()
 				if err != nil {
 					log.Fatal(err)
 				}
+				txnStmt := txn.Stmt(stmt)
 				for id := start; id < start+256 && id < end; id++ {
-					if _, err := txn.Exec("INSERT INTO t VALUES (?, ?, ?)", id, rand.Intn(64), string(rand.Intn(26)+'a')); err != nil {
+					if _, err := txnStmt.Exec(id, rand.Intn(64), string(rand.Intn(26)+'a')); err != nil {
 						log.Fatal(err)
 					}
 				}
@@ -157,10 +165,11 @@ func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes [
 		}()
 	}
 	deadline, ok := ctx.Deadline()
+	log.Info(deadline, ok)
 	for !ok || time.Now().Before(deadline) {
-		hist := c.runSmall(ctx, time.Minute)
+		hist := c.runSmall(ctx, time.Second*10)
 		mean, quantile99 := hist.Mean(), hist.ValueAtQuantile(99)
-		log.Infof("[stressClient] Small queries in the last minute, mean: %v, 99th: %v", mean, quantile99)
+		log.Infof("[stressClient] Small queries in the last minute, mean: %d(us), 99th: %d(us)", int64(mean), quantile99)
 		if mean > float64(c.smallTimeout.Microseconds()) {
 			log.Fatal("[stressClient] Small query timed out")
 		}
@@ -171,9 +180,11 @@ func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes [
 }
 
 func (c *stressClient) runSmall(ctx context.Context, duration time.Duration) *hdrhistogram.Histogram {
+	var wg sync.WaitGroup
 	durCh := make(chan time.Duration)
 	deadline := time.Now().Add(duration)
 	for i := 0; i < c.smallConcurrency; i++ {
+		wg.Add(1)
 		go func() {
 			for time.Now().Before(deadline) {
 				beginInst := time.Now()
@@ -195,8 +206,13 @@ func (c *stressClient) runSmall(ctx context.Context, duration time.Duration) *hd
 				dur := time.Now().Sub(beginInst)
 				durCh <- dur
 			}
+			wg.Done()
 		}()
 	}
+	go func() {
+		wg.Wait()
+		close(durCh)
+	}()
 	hist := hdrhistogram.New(0, 60000000, 3)
 	for dur := range durCh {
 		hist.RecordValue(dur.Microseconds())
