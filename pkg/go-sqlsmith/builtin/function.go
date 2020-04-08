@@ -24,7 +24,7 @@ import (
 // GenerateFuncCallExpr generate random builtin chain
 func GenerateFuncCallExpr(table *types.Table, args int, stable bool) ast.ExprNode {
 	if args == 0 && util.Rd(2) == 0 {
-		return ast.NewValueExpr(util.GenerateRandDataItem())
+		return ast.NewValueExpr(util.GenerateRandDataItem(), "", "")
 	}
 
 	funcCallExpr := ast.FuncCallExpr{}

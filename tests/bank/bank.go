@@ -29,7 +29,7 @@ var (
 
 var (
 	// Note: This field is always true in tidb testing.
-	TiDBDatabase = true
+	tidbDatabase = true
 )
 
 type delayMode = int
@@ -82,14 +82,17 @@ type bankCase struct {
 	dbConn *sql.DB
 }
 
-type CaseCreator struct {
+// ClientCreator ...
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (c CaseCreator) Create(_ types.ClientNode) core.Client {
+// Create ...
+func (c ClientCreator) Create(_ types.ClientNode) core.Client {
 	return NewBankCase(c.Cfg)
 }
 
+// NewBankCase ...
 func NewBankCase(cfg *Config) core.Client {
 	if cfg.Tables < 1 {
 		cfg.Tables = 1
@@ -211,7 +214,7 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		log.Errorf("[%s] select sum error %v", c, err)
 		return errors.Trace(err)
 	}
-	if TiDBDatabase {
+	if tidbDatabase {
 		var tso uint64
 		if err = tx.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
 			return errors.Trace(err)
@@ -504,7 +507,7 @@ UPDATE accounts%s
 		}
 
 		var tso uint64
-		if TiDBDatabase {
+		if tidbDatabase {
 			if err = tx.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
 				return err
 			}

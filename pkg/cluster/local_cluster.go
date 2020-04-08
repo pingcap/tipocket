@@ -24,6 +24,7 @@ func NewLocalClusterProvisioner(dbs, pds, kvs []string) types.Provisioner {
 	}
 }
 
+// LocalClusterProvisioner ...
 type LocalClusterProvisioner struct {
 	DBs []string
 	PDs []string
@@ -42,7 +43,6 @@ func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ types.ClusterSpec
 		nodes = append(nodes, types.Node{
 			Namespace: "",
 			Component: node.component,
-			Version:   "",
 			PodName:   "",
 			IP:        node.ip,
 			Port:      node.port,

@@ -145,3 +145,8 @@ func RdCharset() string {
 		return "utf8"
 	}
 }
+
+// RdBool ...
+func RdBool() bool {
+	return Rd(2) == 0
+}

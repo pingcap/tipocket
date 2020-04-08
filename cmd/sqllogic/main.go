@@ -20,11 +20,12 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/tests/sqllogictest"
 )
 
@@ -46,7 +47,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: &sqllogictest.CaseCreator{
+		ClientCreator: &sqllogictest.ClientCreator{
 			Config: &sqllogictest.Config{
 				SkipError: *skipError,
 				TaskCount: *taskCount,
@@ -55,7 +56,8 @@ func main() {
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

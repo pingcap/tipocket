@@ -17,31 +17,31 @@ import (
 
 // Config is for pessimisticClient
 type Config struct {
-	PessimisticCaseConfig
-	hongbao.HongbaoCaseConfig
+	PessimisticClientConfig ClientConfig
+	HongbaoClientConfig     hongbao.ClientConfig
 }
 
-// CaseCreator creates pessimisticClient
-type CaseCreator struct {
+// ClientCreator creates pessimisticClient
+type ClientCreator struct {
 	Cfg *Config
 }
 
 // Create creates case client
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &pessimisticClient{
 		cfg: l.Cfg,
 	}
 }
 
 type pessimisticClient struct {
-	TxnMode     string
-	Concurrency int
-	cfg         *Config
-	db          *sql.DB
-	*hongbao.HongbaoCase
-	*PessimisticCase
-	randTxnDB *sql.DB
-	hongbaoDB *sql.DB
+	TxnMode           string
+	Concurrency       int
+	cfg               *Config
+	db                *sql.DB
+	HongbaoClient     *hongbao.Client
+	PessimisticClient *Client
+	randTxnDB         *sql.DB
+	hongbaoDB         *sql.DB
 }
 
 func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
@@ -49,8 +49,8 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 		err           error
 		node          = nodes[idx]
 		dsn           = fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
-		randTxnDBName = c.cfg.PessimisticCaseConfig.DBName
-		hongbaoDBName = c.cfg.HongbaoCaseConfig.DBName
+		randTxnDBName = c.cfg.PessimisticClientConfig.DBName
+		hongbaoDBName = c.cfg.HongbaoClientConfig.DBName
 	)
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
@@ -77,9 +77,9 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 
 	var (
 		randTxnDBDSN       = fmt.Sprintf("%s%s", dsn, randTxnDBName)
-		randTxnConcurrency = c.cfg.PessimisticCaseConfig.Concurrency
+		randTxnConcurrency = c.cfg.PessimisticClientConfig.Concurrency
 		hongbaoDBDSN       = fmt.Sprintf("%s%s", dsn, hongbaoDBName)
-		hongbaoConcurrency = c.cfg.HongbaoCaseConfig.Concurrency
+		hongbaoConcurrency = c.cfg.HongbaoClientConfig.Concurrency
 	)
 	if c.randTxnDB, err = util.OpenDB(randTxnDBDSN, randTxnConcurrency); err != nil {
 		return errors.Errorf("[%s] create db client error %v", caseName, err)
@@ -96,13 +96,13 @@ func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 
 	go func() {
 		defer wg.Done()
-		c.PessimisticCase = NewPessimisticCase(c.cfg.PessimisticCaseConfig)
-		initErrs = append(initErrs, c.PessimisticCase.Initialize(ctx, c.randTxnDB))
+		c.PessimisticClient = NewPessimisticCase(c.cfg.PessimisticClientConfig)
+		initErrs = append(initErrs, c.PessimisticClient.Initialize(ctx, c.randTxnDB))
 	}()
 	go func() {
 		defer wg.Done()
-		c.HongbaoCase = hongbao.NewHongbaoCase(&c.cfg.HongbaoCaseConfig)
-		initErrs = append(initErrs, c.HongbaoCase.Initialize(ctx, c.hongbaoDB))
+		c.HongbaoClient = hongbao.NewHongbaoCase(&c.cfg.HongbaoClientConfig)
+		initErrs = append(initErrs, c.HongbaoClient.Initialize(ctx, c.hongbaoDB))
 	}()
 
 	wg.Wait()
@@ -136,11 +136,11 @@ func (c *pessimisticClient) Start(ctx context.Context, cfg interface{}, clientNo
 	ch := make(chan error)
 
 	go func() {
-		ch <- c.PessimisticCase.Execute(ctx, c.randTxnDB)
+		ch <- c.PessimisticClient.Execute(ctx, c.randTxnDB)
 	}()
 
 	go func() {
-		ch <- c.HongbaoCase.Execute(ctx, c.hongbaoDB)
+		ch <- c.HongbaoClient.Execute(ctx, c.hongbaoDB)
 	}()
 
 	select {

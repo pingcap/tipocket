@@ -21,12 +21,13 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+	"github.com/pingcap/tipocket/pkg/verify"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/bank2"
 )
 
@@ -59,7 +60,7 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: bank2.CaseCreator{Cfg: &bank2.Config{
+		ClientCreator: bank2.ClientCreator{Cfg: &bank2.Config{
 			NumAccounts:   *accounts,
 			Interval:      *interval,
 			TableNum:      *tables,
@@ -74,7 +75,8 @@ func main() {
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

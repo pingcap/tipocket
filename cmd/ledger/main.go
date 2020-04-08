@@ -21,7 +21,8 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+
 	"github.com/pingcap/tipocket/tests/ledger"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -48,14 +49,15 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: ledger.CaseCreator{Cfg: &ledger.Config{
+		ClientCreator: ledger.ClientCreator{Cfg: &ledger.Config{
 			NumAccounts: *accounts,
 			Concurrency: *concurrency,
 			Interval:    *interval,
 			TxnMode:     *txnMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

@@ -18,138 +18,74 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pingcap/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// Ops knows how to operate TiDB with binlog on k8s
+// Ops knows how to operate binlog
 type Ops struct {
-	cli client.Client
-	*tidb.TidbOps
+	cli     client.Client
+	drainer *Drainer
+	ns      string
 }
 
 // New creates binlog ops
-func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
-	return &Ops{cli, tidbClient}
+func New(ns, name string) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, ns: ns, drainer: newDrainer(ns, name)}
 }
 
 // Apply binlog cluster
-func (t *Ops) Apply(tc *Recommendation) error {
-	if err := t.ApplyTiDBCluster(tc.Upstream); err != nil {
-		return err
-	}
-
-	if err := t.ApplyTiDBCluster(tc.Downstream); err != nil {
-		return err
-	}
-
-	if err := t.ApplyDrainer(tc.Drainer); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Delete binlog cluster
-func (t *Ops) Delete(tc *Recommendation) error {
-	if err := t.TidbOps.Delete(tc.Upstream); err != nil {
-		return err
-	}
-	// TODO: delete drainer
-	if err := t.TidbOps.Delete(tc.Downstream); err != nil {
-		return err
-	}
-	return nil
-}
-
-// ApplyDrainer applies drainer
-func (t *Ops) ApplyDrainer(drainer *Drainer) error {
+func (t *Ops) Apply() error {
 	// apply configmap
-	if err := t.ApplyObject(drainer.ConfigMap); err != nil {
+	if err := util.ApplyObject(t.cli, t.drainer.ConfigMap); err != nil {
 		return err
 	}
 	// apply service
-	if err := t.ApplyObject(drainer.Service); err != nil {
+	if err := util.ApplyObject(t.cli, t.drainer.Service); err != nil {
 		return err
 	}
 
 	time.Sleep(5 * time.Second)
 
 	// apply statefulset
-	if err := t.ApplyObject(drainer.StatefulSet); err != nil {
+	if err := util.ApplyObject(t.cli, t.drainer.StatefulSet); err != nil {
 		return err
 	}
 	return nil
 }
 
-// ApplyObject applies object
-func (t *Ops) ApplyObject(object runtime.Object) error {
-	err := t.cli.Create(context.TODO(), object)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
+// Delete binlog cluster
+func (t *Ops) Delete() error {
 	return nil
 }
 
-func (t *Ops) GetDrainerNode(d *Drainer) (clusterTypes.Node, error) {
+// GetNodes returns all nodes(eg. pods on k8s)
+func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pod := &corev1.Pod{}
 	err := t.cli.Get(context.Background(), client.ObjectKey{
-		Namespace: d.StatefulSet.ObjectMeta.Namespace,
-		Name:      fmt.Sprintf("%s-0", d.StatefulSet.ObjectMeta.Name),
+		Namespace: t.drainer.StatefulSet.ObjectMeta.Namespace,
+		Name:      fmt.Sprintf("%s-0", t.drainer.StatefulSet.ObjectMeta.Name),
 	}, pod)
 
 	if err != nil {
-		return clusterTypes.Node{}, err
+		return []clusterTypes.Node{}, err
 	}
 
-	return clusterTypes.Node{
+	return []clusterTypes.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
 		Component: clusterTypes.Drainer,
 		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
-	}, nil
+	}}, nil
 }
 
-func (t *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
-	var nodes []clusterTypes.Node
-
-	upstreamNodes, err := t.TidbOps.GetNodes(tc.Upstream)
-	if err != nil {
-		return nodes, err
-	}
-	downstreamNodes, err := t.TidbOps.GetNodes(tc.Downstream)
-	if err != nil {
-		return nodes, err
-	}
-	drainerNode, err := t.GetDrainerNode(tc.Drainer)
-	if err != nil {
-		return nodes, err
-	}
-
-	return append(append(upstreamNodes, downstreamNodes...), drainerNode), nil
-}
-
-func (t *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
-	var clientNodes []clusterTypes.ClientNode
-	upstreamClientNodes, err := t.TidbOps.GetClientNodes(tc.Upstream)
-	if err != nil {
-		return clientNodes, err
-	}
-	downstreamClientNodes, err := t.TidbOps.GetClientNodes(tc.Downstream)
-	if err != nil {
-		return clientNodes, err
-	}
-	clientNodes = append(upstreamClientNodes, downstreamClientNodes...)
-
-	if len(clientNodes) != 2 {
-		return clientNodes, errors.New("clientNodes count not 2")
-	}
-
-	return clientNodes, nil
+// GetClientNodes returns client nodes
+func (t *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+	return nil, nil
 }

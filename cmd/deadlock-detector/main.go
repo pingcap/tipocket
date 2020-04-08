@@ -21,8 +21,8 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	dlc "github.com/pingcap/tipocket/tests/pessimistic/deadlock"
 )
 
@@ -47,14 +47,15 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: dlc.CaseCreator{Cfg: &dlc.Config{
+		ClientCreator: dlc.ClientCreator{Cfg: &dlc.Config{
 			DBName:           *dbName,
 			TableNum:         *tableNum,
 			DeadlockInterval: *deadlockInterval,
 			DeadlockTimeout:  *deadlockTimeout,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

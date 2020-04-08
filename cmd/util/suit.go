@@ -35,18 +35,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
-// Version information.
-var (
-	BuildTS   = "None"
-	BuildHash = "None"
-)
-
-// PrintInfo prints the octopus version information
-func PrintInfo() {
-	fmt.Println("Git Commit Hash:", BuildHash)
-	fmt.Println("UTC Build Time: ", BuildTS)
-}
-
 // Suit is a basic chaos testing suit with configurations to run chaos.
 type Suit struct {
 	*control.Config
@@ -61,7 +49,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs interface{}
+	ClusterDefs clusterTypes.Cluster
 }
 
 // Run runs the suit.
@@ -69,8 +57,8 @@ func (suit *Suit) Run(ctx context.Context) {
 	var (
 		err         error
 		clusterSpec = clusterTypes.ClusterSpecs{
-			Defs:        suit.ClusterDefs,
-			NemesisGens: nemesisGeneratorNames(suit.NemesisGens),
+			Cluster:   suit.ClusterDefs,
+			Namespace: fixture.Context.Namespace,
 		}
 	)
 	sctx, cancel := context.WithCancel(ctx)
@@ -98,7 +86,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewLokiClient(fixture.Context.LokiAddress,
+		loki.NewClient(fixture.Context.LokiAddress,
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 	)
 
@@ -125,6 +113,14 @@ func (suit *Suit) Run(ctx context.Context) {
 	}
 }
 
+// ClientLoopFunc defines ClientLoop func
+type ClientLoopFunc func(ctx context.Context,
+	client core.Client,
+	node clusterTypes.ClientNode,
+	proc *int64,
+	requestCount *int64,
+	recorder *history.Recorder)
+
 // OnClientLoop sends client requests in a loop,
 // client applies a proc id as it's identifier and if the response is some kinds of `Unknown` type,
 // it will change a proc id on the next loop.
@@ -149,10 +145,18 @@ func OnClientLoop(
 		if err := recorder.RecordRequest(procID, request); err != nil {
 			log.Fatalf("record request %v failed %v", request, err)
 		}
-
-		log.Printf("%s: call %+v", node, request)
+		if stringer, ok := request.(fmt.Stringer); ok {
+			log.Printf("%d %s: call %s", procID, node, stringer.String())
+		} else {
+			log.Printf("%d %s: call %+v", procID, node, request)
+		}
 		response := client.Invoke(ctx, node, request)
-		log.Printf("%s: return %+v", node, response)
+
+		if stringer, ok := response.(fmt.Stringer); ok {
+			log.Printf("%d %s: return %+v", procID, node, stringer.String())
+		} else {
+			log.Printf("%d %s: return %+v", procID, node, response)
+		}
 
 		v := response.(core.UnknownResponse)
 		isUnknown := v.IsUnknown()
@@ -173,14 +177,6 @@ func OnClientLoop(
 		}
 	}
 }
-
-// ClientLoopFunc defines ClientLoop func
-type ClientLoopFunc func(ctx context.Context,
-	client core.Client,
-	node clusterTypes.ClientNode,
-	proc *int64,
-	requestCount *int64,
-	recorder *history.Recorder)
 
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
@@ -290,13 +286,6 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
-	}
-	return
-}
-
-func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
-	for _, gen := range gens {
-		names = append(names, gen.Name())
 	}
 	return
 }

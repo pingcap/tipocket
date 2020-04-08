@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
@@ -145,10 +146,10 @@ func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode
 	log.Printf("setup rawkv-linearizability start")
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	//clusterName := nodes[0].ClusterName
-	//ns := nodes[0].Namespace
-	//pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
-	pdAddrs := []string{"127.0.0.1:2379"}
+	clusterName := nodes[0].ClusterName
+	ns := nodes[0].Namespace
+	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
+	//pdAddrs := []string{"127.0.0.1:2379"}
 	if len(pdAddrs) == 0 {
 		return errors.New("No pd node found")
 	}

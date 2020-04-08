@@ -66,27 +66,36 @@ func (c *Connection) Select(stmt string, args ...interface{}) ([][]*QueryItem, e
 
 // Update run update statement and return error
 func (c *Connection) Update(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }
 
 // Insert run insert statement and return error
 func (c *Connection) Insert(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }
 
 // Delete run delete statement and return error
 func (c *Connection) Delete(stmt string) (int64, error) {
+	var affectedRows int64
 	start := time.Now()
 	result, err := c.db.Exec(stmt)
-	affectedRows, _ := result.RowsAffected()
+	if err == nil {
+		affectedRows, _ = result.RowsAffected()
+	}
 	c.logSQL(stmt, time.Now().Sub(start), err, affectedRows)
 	return affectedRows, err
 }
@@ -144,4 +153,19 @@ func (c *Connection) GetBeginTime() time.Time {
 func (c *Connection) GeneralLog(v int) error {
 	_, err := c.db.Exec(fmt.Sprintf("set @@tidb_general_log=\"%d\"", v))
 	return err
+}
+
+// ShowDatabases list databases
+func (c *Connection) ShowDatabases() ([]string, error) {
+	res, err := c.Select("SHOW DATABASES")
+	if err != nil {
+		return nil, err
+	}
+	var dbs []string
+	for _, db := range res {
+		if len(db) == 1 {
+			dbs = append(dbs, db[0].ValString)
+		}
+	}
+	return dbs, nil
 }

@@ -21,33 +21,41 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
-// Ops knows how to operate TiDB and TiFlash on k8s
+// Ops knows how to operate TiFlash
 type Ops struct {
-	cli client.Client
-	*tidb.TidbOps
+	cli  client.Client
+	tf   *tiFlash
+	ns   string
+	name string
 }
 
 // New creates Ops
-func New(cli client.Client, tidbClient *tidb.TidbOps) *Ops {
-	return &Ops{cli, tidbClient}
+func New(namespace, name string) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, ns: namespace, name: name, tf: newTiFlash(namespace, name)}
 }
 
 // Apply TiFlash cluster
-func (o *Ops) Apply(tc *Recommendation) error {
-	if err := o.ApplyTiDBCluster(tc.TiDBCluster); err != nil {
+func (o *Ops) Apply() error {
+	if err := util.ApplyObject(o.cli, o.tf.ConfigMap); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.tf.Service); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.tf.StatefulSet); err != nil {
 		return err
 	}
 
-	if err := o.ApplyTiFlash(tc.TiFlash); err != nil {
+	if err := o.waitTiFlashReady(o.tf.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
 
@@ -55,33 +63,22 @@ func (o *Ops) Apply(tc *Recommendation) error {
 }
 
 // Delete TiFlash cluster
-func (o *Ops) Delete(tc *Recommendation) error {
-	if err := o.TidbOps.Delete(tc.TiDBCluster); err != nil {
-		return err
+func (o *Ops) Delete() error {
+	if err := o.cli.Delete(context.TODO(), o.tf.Service); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
-
-	if err := o.DeleteTiFlash(tc.TiFlash); err != nil {
-		return err
+	if err := o.cli.Delete(context.TODO(), o.tf.ConfigMap); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
-
-	return nil
-}
-
-func (o *Ops) ApplyTiFlash(t *TiFlash) error {
-	if err := o.applyObject(t.ConfigMap); err != nil {
-		return err
+	if err := o.cli.Delete(context.TODO(), o.tf.StatefulSet); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 	}
-	if err := o.applyObject(t.Service); err != nil {
-		return err
-	}
-	if err := o.applyObject(t.StatefulSet); err != nil {
-		return err
-	}
-
-	if err := o.waitTiFlashReady(t.StatefulSet, 5*time.Minute); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -113,66 +110,16 @@ func (o *Ops) waitTiFlashReady(st *appsv1.StatefulSet, timeout time.Duration) er
 	})
 }
 
-func (o *Ops) applyObject(object runtime.Object) error {
-	if err := o.cli.Create(context.TODO(), object); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-	}
-	return nil
-}
-
-// Delete TiFlash component
-func (o *Ops) DeleteTiFlash(t *TiFlash) error {
-	if err := o.cli.Delete(context.TODO(), t.Service); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if err := o.cli.Delete(context.TODO(), t.ConfigMap); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if err := o.cli.Delete(context.TODO(), t.StatefulSet); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	return nil
-}
-
 // GetClientNodes returns the client nodes
-func (o *Ops) GetClientNodes(tc *Recommendation) ([]clusterTypes.ClientNode, error) {
-	clientNodes, err := o.TidbOps.GetClientNodes(tc.TiDBCluster)
-	if err != nil {
-		return clientNodes, err
-	}
-
-	return clientNodes, nil
+func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+	return nil, nil
 }
 
 // GetNodes returns all nodes
-func (o *Ops) GetNodes(tc *Recommendation) ([]clusterTypes.Node, error) {
-	var nodes []clusterTypes.Node
-
-	tidbClusterNodes, err := o.TidbOps.GetNodes(tc.TiDBCluster)
-	if err != nil {
-		return nodes, err
-	}
-	tiFlashNodes, err := o.GetTiFlashNode(tc)
-	if err != nil {
-		return nodes, err
-	}
-
-	return append(tidbClusterNodes, tiFlashNodes...), nil
-}
-
-// GetTiFlashNode returns the nodes of TiFlash
-func (o *Ops) GetTiFlashNode(tc *Recommendation) ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: tc.NS},
-		client.MatchingLabels{"app.kubernetes.io/instance": tc.Name + "-tiflash"}); err != nil {
+	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.ns},
+		client.MatchingLabels{"app.kubernetes.io/instance": o.name + "-tiflash"}); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 
@@ -188,4 +135,9 @@ func (o *Ops) GetTiFlashNode(tc *Recommendation) ([]clusterTypes.Node, error) {
 	}
 
 	return nodes, nil
+}
+
+// GetTiFlash returns TiFlash
+func (o *Ops) GetTiFlash() *tiFlash {
+	return o.tf
 }

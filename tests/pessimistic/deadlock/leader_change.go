@@ -27,12 +27,13 @@ type detectorClient struct {
 	db *sql.DB
 }
 
-// CaseCreator creates detectorClient
-type CaseCreator struct {
+// ClientCreator creates detectorClient
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &detectorClient{
 		Config: l.Cfg,
 	}

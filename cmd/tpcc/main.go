@@ -20,13 +20,14 @@ import (
 
 	"github.com/pingcap/go-tpc/tpcc"
 
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/db/tidb"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
@@ -35,11 +36,9 @@ var (
 	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
 	checkerName = flag.String("checker", "consistency", "consistency or qos")
 	warehouses  = flag.Int("warehouses", 10, "tpcc warehouses")
-	threads     = flag.Int("T", 10, "tpcc terminals")
 )
 
 func main() {
-	util.PrintInfo()
 	flag.Parse()
 
 	cfg := control.Config{
@@ -52,7 +51,8 @@ func main() {
 	}
 	clientCreator := &tidb.TPCCClientCreator{
 		Config: &tpcc.Config{
-			Threads:    *threads,
+			// Must 1 here, we use `fixture.Context.ClientCount` clients to launch  `ClientCount` terminals
+			Threads:    1,
 			Warehouses: *warehouses,
 			Parts:      1,
 		},
@@ -84,7 +84,8 @@ func main() {
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

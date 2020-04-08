@@ -22,22 +22,19 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 )
 
+// Recommendation ...
 type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
-	NS   string
-	Name string
 }
 
-func (t *Recommendation) Make() *v1alpha1.TidbCluster {
-	return t.TidbCluster
-}
-
+// EnablePump ...
 func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	if t.TidbCluster.Spec.Pump == nil {
 		t.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
@@ -49,22 +46,25 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	return t
 }
 
+// PDReplicas ...
 func (t *Recommendation) PDReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.PD.Replicas = replicas
 	return t
 }
 
+// TiKVReplicas ...
 func (t *Recommendation) TiKVReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiKV.Replicas = replicas
 	return t
 }
 
+// TiDBReplicas ...
 func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.TiDB.Replicas = replicas
 	return t
 }
 
-func buildImage(name, version string) string {
+func buildImage(name, baseVersion, version string) string {
 	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
@@ -73,17 +73,18 @@ func buildImage(name, version string) string {
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(version)
+	if len(version) > 0 {
+		b.WriteString(version)
+	} else {
+		b.WriteString(baseVersion)
+	}
 	return b.String()
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-
-	return &Recommendation{
-		NS:   ns,
-		Name: name,
+	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -102,22 +103,40 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd", version),
+						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImageVersion),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas:             int32(fixture.Context.TiKVReplicas),
-					ResourceRequirements: fixture.WithStorage(fixture.Large, "200Gi"),
-					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
+					Replicas: int32(clusterConfig.TiKVReplicas),
+					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("4Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					}, "200Gi"),
+					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv", version),
+						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImageVersion),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
-					Replicas:             2,
-					ResourceRequirements: fixture.Large,
+					Replicas: 2,
+					ResourceRequirements: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("2Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					},
 					Service: &v1alpha1.TiDBServiceSpec{
 						ServiceSpec: v1alpha1.ServiceSpec{
 							Type: corev1.ServiceTypeNodePort,
@@ -127,7 +146,7 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb", version),
+						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImageVersion),
 					},
 				},
 			},
@@ -205,4 +224,22 @@ func RecommendedTiDBCluster(ns, name, version string) *Recommendation {
 			},
 		},
 	}
+
+	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		switch name {
+		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
+			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+			}
+		case "delay_pd", "errno_pd", "mixed_pd":
+			r.TidbCluster.Spec.PD.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		}
+	}
+	return r
 }

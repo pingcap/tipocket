@@ -55,12 +55,13 @@ type Config struct {
 	TxnMode     string        `toml:"txn_mode"`
 }
 
-// CaseCreator creates ledgerClient
-type CaseCreator struct {
+// ClientCreator creates ledgerClient
+type ClientCreator struct {
 	Cfg *Config
 }
 
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+// Create ...
+func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	return &ledgerClient{
 		Config: l.Cfg,
 	}

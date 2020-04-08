@@ -14,16 +14,14 @@
 package tiflash
 
 import (
-	"fmt"
+	"strings"
 
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 )
 
 const (
@@ -34,23 +32,15 @@ const (
 	busyboxImage = "busybox"
 )
 
-// TiFlash defines the configuration for running on Kubernetes
-type TiFlash struct {
+// tiFlash defines the configuration for running on Kubernetes
+type tiFlash struct {
 	*appsv1.StatefulSet
 	*corev1.ConfigMap
 	*corev1.Service
 }
 
-// Recommendation defines TiFlash cluster
-type Recommendation struct {
-	*TiFlash
-	TiDBCluster *tidb.Recommendation
-	NS          string
-	Name        string
-}
-
 // RecommendedTiFlashCluster creates a cluster with TiFlash
-func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
+func newTiFlash(ns, name string) *tiFlash {
 	var (
 		tiFlashName = name + "-tiflash"
 		lbls        = map[string]string{
@@ -59,27 +49,32 @@ func RecommendedTiFlashCluster(ns, name, version string) *Recommendation {
 			"app.kubernetes.io/instance":  tiFlashName,
 		}
 		model = &tiFlashConfig{ClusterName: name, Namespace: ns}
-		tc    = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s", name), version)
 	)
 
-	// To make TiFlash work, we need to enable placement rules in pd.
-	tc.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
-		Replication: &v1alpha1.PDReplicationConfig{
-			EnablePlacementRules: pointer.BoolPtr(true),
-		},
+	tf := &tiFlash{
+		StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
+		// we use name instead of tiFlashName here
+		// because we want to use it to do template rendering.
+		ConfigMap: tiFlashConfigMap(name, model),
+		Service:   tiFlashService(ns, tiFlashName, lbls),
 	}
-	return &Recommendation{
-		NS:          ns,
-		Name:        name,
-		TiDBCluster: tc,
-		TiFlash: &TiFlash{
-			StatefulSet: tiFlashStatefulSet(tiFlashName, lbls, model),
-			// we use name instead of tiFlashName here
-			// because we want to use it to do template rendering.
-			ConfigMap: tiFlashConfigMap(name, model),
-			Service:   tiFlashService(ns, tiFlashName, lbls),
-		},
+
+	// (TODO: yeya24) Unfortunately we have to parse the nemesis
+	//  again to check if there is an IOChaos for TiFlash...
+	// We can improve it later
+	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		switch name {
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			tf.StatefulSet.Spec.Template.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
+			}
+		}
 	}
+	return tf
 }
 
 func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfig) *appsv1.StatefulSet {

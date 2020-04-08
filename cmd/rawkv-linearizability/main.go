@@ -10,8 +10,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	tidbInfra "github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/verify"
 	rawkvlinearizability "github.com/pingcap/tipocket/tests/rawkv-linearizability"
 )
@@ -54,11 +54,11 @@ func main() {
 		ValueNum1MB:   *ValueNum1MB,
 		ValueNum5MB:   *ValueNum5MB,
 	})
-	kvs := []string{"127.0.0.1:20160", "127.0.0.1:20162", "127.0.0.1:20161"}
+	//kvs := []string{"127.0.0.1:20160", "127.0.0.1:20162", "127.0.0.1:20161"}
 	suit := util.Suit{
-		Config: &cfg,
-		//Provisioner: cluster.NewK8sProvisioner(),
-		Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
+		Config:      &cfg,
+		Provisioner: cluster.NewK8sProvisioner(),
+		//Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
 		ClientCreator: rawkvlinearizability.RawkvClientCreator{
 			Cfg: rawkvlinearizability.Config{
 				KeyStart:        *KeyStart,
@@ -71,7 +71,7 @@ func main() {
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      tidbInfra.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

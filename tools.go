@@ -1,4 +1,4 @@
-// Copyright 2019 PingCAP, Inc.
+// Copyright 2020 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,19 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tidb
+// +build tools
+
+package tools
 
 import (
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
+	_ "github.com/mgechev/revive"
 )
-
-func (t *TidbOps) DeployDrainer(source *v1alpha1.TidbCluster, target string) (*appsv1.StatefulSet, error) {
-	// TODO: implement
-	return nil, nil
-}
-
-func (t *TidbOps) DeleteDrainer(drainer appsv1.StatefulSet) error {
-	// TODO: implement
-	return nil
-}

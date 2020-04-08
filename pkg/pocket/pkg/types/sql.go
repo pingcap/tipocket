@@ -34,6 +34,8 @@ const (
 	SQLTypeExec
 	SQLTypeExit
 	SQLTypeSleep
+	SQLTypeCreateDatabase
+	SQLTypeDropDatabase
 )
 
 // SQL struct
@@ -78,6 +80,10 @@ func (t SQLType) String() string {
 		return "SQLTypeExit"
 	case SQLTypeSleep:
 		return "SQLTypeSleep"
+	case SQLTypeCreateDatabase:
+		return "SQLTypeCreateDatabase"
+	case SQLTypeDropDatabase:
+		return "SQLTypeDropDatabase"
 	default:
 		return "SQLTypeUnknown"
 	}

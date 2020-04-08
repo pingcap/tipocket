@@ -15,17 +15,14 @@ package binlog
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/util/config"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // Drainer components
@@ -35,21 +32,9 @@ type Drainer struct {
 	*appsv1.StatefulSet
 }
 
-// Recommendation defines binlog cluster
-type Recommendation struct {
-	*Drainer
-	Upstream   *tidb.Recommendation
-	Downstream *tidb.Recommendation
-	NS         string
-	Name       string
-}
-
 // RecommendedBinlogCluster creates cluster with binlog
-func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
+func newDrainer(ns, name string) *Drainer {
 	var (
-		enableBinlog             = true
-		upstream                 = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version)
-		downstream               = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version)
 		drainerName              = fmt.Sprintf("%s-drainer", name)
 		drainerReplicas    int32 = 1
 		drainerServiceName       = drainerName
@@ -70,125 +55,106 @@ func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 	drainerConfigmap, _ := RenderDrainerConfig(&drainerConfigModel)
 	drainerCommand, _ := RenderDrainerCommand(&drainerCommandModel)
 
-	upstream.TidbCluster.Spec.TiDB.BinlogEnabled = &enableBinlog
-	upstream.TidbCluster.Spec.Pump = &v1alpha1.PumpSpec{
-		Replicas:             3,
-		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
-		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
-		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: buildBinlogImage("tidb-binlog"),
+	return &Drainer{
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns,
+				Name:      drainerName,
+			},
+			Data: map[string]string{
+				"drainer-config": drainerConfigmap,
+			},
 		},
-		GenericConfig: config.GenericConfig{
-			Config: map[string]interface{}{},
-		},
-	}
-
-	return &Recommendation{
-		NS:         ns,
-		Name:       name,
-		Upstream:   upstream,
-		Downstream: downstream,
-		Drainer: &Drainer{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: ns,
-					Name:      drainerName,
+		&corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-drainer", name),
+				Namespace: ns,
+			},
+			Spec: corev1.ServiceSpec{
+				Type: "ClusterIP",
+				Ports: []corev1.ServicePort{
+					{
+						Name: "drainer",
+						Port: 8249,
+					},
 				},
-				Data: map[string]string{
-					"drainer-config": drainerConfigmap,
+				ClusterIP: corev1.ClusterIPNone,
+				Selector: map[string]string{
+					"app.kubernetes.io/name":      "tidb-cluster",
+					"app.kubernetes.io/component": "drainer",
+					"app.kubernetes.io/instance":  drainerName,
 				},
 			},
-			&corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      fmt.Sprintf("%s-drainer", name),
-					Namespace: ns,
+		},
+		&appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      drainerName,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app":      "tipocket-tidbcluster",
+					"instance": name,
 				},
-				Spec: corev1.ServiceSpec{
-					Type: "ClusterIP",
-					Ports: []corev1.ServicePort{
-						{
-							Name: "drainer",
-							Port: 8249,
-						},
-					},
-					ClusterIP: corev1.ClusterIPNone,
-					Selector: map[string]string{
-						"app.kubernetes.io/name":      "tidb-cluster",
+			},
+			Spec: appsv1.StatefulSetSpec{
+				ServiceName: drainerServiceName,
+				Replicas:    &drainerReplicas,
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
 						"app.kubernetes.io/component": "drainer",
 						"app.kubernetes.io/instance":  drainerName,
+						"app.kubernetes.io/name":      "tidb-cluster",
 					},
 				},
-			},
-			&appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      drainerName,
-					Namespace: ns,
-					Labels: map[string]string{
-						"app":      "tipocket-tidbcluster",
-						"instance": name,
-					},
-				},
-				Spec: appsv1.StatefulSetSpec{
-					ServiceName: drainerServiceName,
-					Replicas:    &drainerReplicas,
-					Selector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
 							"app.kubernetes.io/component": "drainer",
 							"app.kubernetes.io/instance":  drainerName,
 							"app.kubernetes.io/name":      "tidb-cluster",
 						},
 					},
-					Template: corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Labels: map[string]string{
-								"app.kubernetes.io/component": "drainer",
-								"app.kubernetes.io/instance":  drainerName,
-								"app.kubernetes.io/name":      "tidb-cluster",
-							},
-						},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
-								{
-									Name:            "drainer",
-									Image:           buildBinlogImage("tidb-binlog"),
-									ImagePullPolicy: "IfNotPresent",
-									Command: []string{
-										"/bin/sh",
-										"-c",
-										drainerCommand,
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:            "drainer",
+								Image:           util.BuildBinlogImage("tidb-binlog"),
+								ImagePullPolicy: "IfNotPresent",
+								Command: []string{
+									"/bin/sh",
+									"-c",
+									drainerCommand,
+								},
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "drainer",
+										ContainerPort: 8249,
 									},
-									Ports: []corev1.ContainerPort{
-										{
-											Name:          "drainer",
-											ContainerPort: 8249,
-										},
+								},
+								VolumeMounts: []corev1.VolumeMount{
+									{
+										Name:      "data",
+										MountPath: "/data",
 									},
-									VolumeMounts: []corev1.VolumeMount{
-										{
-											Name:      "data",
-											MountPath: "/data",
-										},
-										{
-											Name:      "config",
-											MountPath: "/etc/drainer",
-										},
+									{
+										Name:      "config",
+										MountPath: "/etc/drainer",
 									},
 								},
 							},
-							Volumes: []corev1.Volume{
-								{
-									Name: "config",
-									VolumeSource: corev1.VolumeSource{
-										ConfigMap: &corev1.ConfigMapVolumeSource{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: drainerName,
-											},
-											DefaultMode: &configmapMountMode,
-											Items: []corev1.KeyToPath{
-												{
-													Key:  "drainer-config",
-													Path: "drainer.toml",
-												},
+						},
+						Volumes: []corev1.Volume{
+							{
+								Name: "config",
+								VolumeSource: corev1.VolumeSource{
+									ConfigMap: &corev1.ConfigMapVolumeSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: drainerName,
+										},
+										DefaultMode: &configmapMountMode,
+										Items: []corev1.KeyToPath{
+											{
+												Key:  "drainer-config",
+												Path: "drainer.toml",
 											},
 										},
 									},
@@ -196,41 +162,20 @@ func RecommendedBinlogCluster(ns, name, version string) *Recommendation {
 							},
 						},
 					},
-					VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "data",
-							},
-							Spec: corev1.PersistentVolumeClaimSpec{
-								AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								StorageClassName: &fixture.Context.LocalVolumeStorageClass,
-								Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
-							},
+				},
+				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "data",
+						},
+						Spec: corev1.PersistentVolumeClaimSpec{
+							AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+							Resources:        fixture.WithStorage(fixture.Medium, "10Gi"),
 						},
 					},
 				},
 			},
 		},
 	}
-}
-
-func buildBinlogImage(name string) string {
-	var (
-		b       strings.Builder
-		version = fixture.Context.ImageVersion
-	)
-
-	if fixture.Context.BinlogConfig.BinlogVersion != "" {
-		version = fixture.Context.BinlogConfig.BinlogVersion
-	}
-	if fixture.Context.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
-	}
-
-	b.WriteString(fixture.Context.DockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	b.WriteString(version)
-	return b.String()
 }

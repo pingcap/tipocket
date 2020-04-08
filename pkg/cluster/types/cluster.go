@@ -36,6 +36,7 @@ type Client struct {
 	PDMemberFunc func(ns, name string) (string, []string, error)
 }
 
+// PDMember ...
 func (c *Client) PDMember() (string, []string, error) {
 	return c.PDMemberFunc(c.Namespace, c.ClusterName)
 }
@@ -44,11 +45,15 @@ func (c *Client) PDMember() (string, []string, error) {
 type Node struct {
 	Namespace string    // Cluster k8s' namespace
 	Component Component // Node component type
-	Version   string    // component version
 	PodName   string    // Pod's name
 	IP        string
 	Port      int32
 	*Client   `json:"-"`
+}
+
+// String ...
+func (node Node) String() string {
+	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
@@ -60,10 +65,21 @@ type ClientNode struct {
 	Port        int32
 }
 
+// Address returns the endpoint address of node
+func (clientNode ClientNode) Address() string {
+	return fmt.Sprintf("%s:%d", clientNode.IP, clientNode.Port)
+}
+
+// String ...
+func (clientNode ClientNode) String() string {
+	return fmt.Sprintf("%s %s:%d", clientNode.Namespace, clientNode.IP, clientNode.Port)
+}
+
 // ClusterSpecs is a cluster specification
 type ClusterSpecs struct {
-	Defs        interface{}
+	Cluster     Cluster
 	NemesisGens []string
+	Namespace   string
 }
 
 // Provisioner provides a collection of APIs to deploy/destroy a cluster
@@ -72,12 +88,4 @@ type Provisioner interface {
 	SetUp(ctx context.Context, spec ClusterSpecs) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
 	TearDown(ctx context.Context, spec ClusterSpecs) error
-}
-
-func (node Node) String() string {
-	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
-}
-
-func (node ClientNode) String() string {
-	return fmt.Sprintf("%s:%d", node.IP, node.Port)
 }

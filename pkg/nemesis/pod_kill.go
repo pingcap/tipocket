@@ -57,14 +57,14 @@ type podKill struct {
 }
 
 func (k podKill) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Creating pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("apply nemesis %s on node %s(ns:%s)", core.PodKill, node.PodName, node.Namespace)
 	podChaos := buildPodKillChaos(node.Namespace, node.Namespace,
 		node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
 func (k podKill) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
-	log.Printf("Recover pod-kill with node %s(ns:%s)\n", node.PodName, node.Namespace)
+	log.Printf("unapply nemesis %s on node %s(ns:%s)", core.PodKill, node.PodName, node.Namespace)
 	podChaos := buildPodKillChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
 }

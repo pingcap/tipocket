@@ -34,6 +34,7 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 		Mute:       c.cfg.Options.Reproduce,
 		OnlineDDL:  c.cfg.Options.OnlineDDL,
 		GeneralLog: c.cfg.Options.GeneralLog,
+		Hint:       c.cfg.Options.EnableHint,
 	}
 	return &opt
 }

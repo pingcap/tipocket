@@ -23,11 +23,12 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/tests/pessimistic"
 	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
 )
@@ -77,8 +78,8 @@ func main() {
 	suit := util.Suit{
 		Config:      &cfg,
 		Provisioner: cluster.NewK8sProvisioner(),
-		ClientCreator: pessimistic.CaseCreator{Cfg: &pessimistic.Config{
-			PessimisticCaseConfig: pessimistic.PessimisticCaseConfig{
+		ClientCreator: pessimistic.ClientCreator{Cfg: &pessimistic.Config{
+			PessimisticClientConfig: pessimistic.ClientConfig{
 				DBName:         *randTxnDBName,
 				Concurrency:    *randTxnConcurrency,
 				TableNum:       *tableNum,
@@ -90,7 +91,7 @@ func main() {
 				IgnoreCodesP:   ignoreCodesP,
 				UsePrepareStmt: *prepareStmt,
 			},
-			HongbaoCaseConfig: hongbao.HongbaoCaseConfig{
+			HongbaoClientConfig: hongbao.ClientConfig{
 				DBName:         *hongbaoDBName,
 				Concurrency:    *hongbaoConcurrency,
 				UserNum:        *userNum,
@@ -104,7 +105,8 @@ func main() {
 			},
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

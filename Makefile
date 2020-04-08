@@ -6,22 +6,18 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|github.com/pingcap/tipocket/||'
 
-LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
-LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
+LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell git rev-parse HEAD)"
 
 GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
 DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
-default: build
+default: tidy fmt lint build
 
-all: build
-
-chaos: tidb
-
-build: fmt tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
-		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket \
-		rawkv-linearizability
+build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
+		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
+		read-stress rawkv-linearizability
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -52,6 +48,9 @@ bank:
 
 bank2:
 	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
+
+vbank:
+	$(GOBUILD) $(GOMOD) -o bin/vbank cmd/vbank/*.go
 
 txn-rand-pessimistic:
 	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
@@ -86,6 +85,9 @@ rawkv-linearizability:
 tiflash-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go
 
+read-stress:
+	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
+
 fmt: groupimports
 	go fmt ./...
 
@@ -93,6 +95,13 @@ tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.mod
+
+lint: revive
+	@echo "linting"
+	revive -formatter friendly -config revive.toml $$($(PACKAGES))
+
+revive:
+	$(GO) get github.com/mgechev/revive@v1.0.2
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))

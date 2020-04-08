@@ -105,6 +105,7 @@ type TPCCClientCreator struct {
 	tpccClient []*tpccClient
 }
 
+// Create ...
 func (t *TPCCClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 	client := &tpccClient{
 		Config: t.Config,
@@ -130,6 +131,7 @@ func (t tpccResponse) IsUnknown() bool {
 type tpccParser struct {
 }
 
+// TPCCParser ...
 func TPCCParser() history.RecordParser {
 	return tpccParser{}
 }
@@ -154,10 +156,12 @@ func (t tpccParser) OnState(state json.RawMessage) (interface{}, error) {
 	return nil, nil
 }
 
+// TPCCChecker ...
 type TPCCChecker struct {
 	CreatorRef *TPCCClientCreator
 }
 
+// Check ...
 func (t *TPCCChecker) Check(m core.Model, ops []core.Operation) (bool, error) {
 	for _, client := range t.CreatorRef.tpccClient {
 		if err := client.Check(); err != nil {
@@ -172,6 +176,7 @@ func (t *TPCCChecker) Check(m core.Model, ops []core.Operation) (bool, error) {
 	return false, nil
 }
 
+// Name ...
 func (t *TPCCChecker) Name() string {
 	return "tpcc"
 }

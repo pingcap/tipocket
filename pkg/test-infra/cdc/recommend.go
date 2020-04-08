@@ -17,14 +17,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // CDC defines the configuration for running on Kubernetes
@@ -34,20 +33,9 @@ type CDC struct {
 	*batchv1.Job
 }
 
-// Recommendation defines binlog cluster
-type Recommendation struct {
-	*CDC
-	Upstream   *tidb.Recommendation
-	Downstream *tidb.Recommendation
-	NS         string
-	Name       string
-}
-
 // RecommendedCDCCluster creates cluster with CDC
-func RecommendedCDCCluster(ns, name, version string) *Recommendation {
+func newCDC(ns, name string) *CDC {
 	var (
-		upstream       = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-upstream", name), version)
-		downstream     = tidb.RecommendedTiDBCluster(ns, fmt.Sprintf("%s-downstream", name), version)
 		cdcName        = fmt.Sprintf("%s-cdc", name)
 		cdcJobName     = fmt.Sprintf("%s-job", cdcName)
 		upstreamPDAddr = fmt.Sprintf("%s-upstream-pd", name)
@@ -59,96 +47,90 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 		}
 	)
 
-	return &Recommendation{
-		NS:         ns,
-		Name:       name,
-		Upstream:   upstream,
-		Downstream: downstream,
-		CDC: &CDC{
-			Service: &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      cdcName,
-					Namespace: ns,
-					Labels:    cdcLabels,
-				},
-				Spec: corev1.ServiceSpec{
-					Type: corev1.ServiceTypeClusterIP,
-					Ports: []corev1.ServicePort{
-						{
-							Name: "http",
-							Port: 8300,
-						},
-					},
-					ClusterIP: corev1.ClusterIPNone,
-					Selector:  cdcLabels,
-				},
+	return &CDC{
+		Service: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cdcName,
+				Namespace: ns,
+				Labels:    cdcLabels,
 			},
-			StatefulSet: &appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      cdcName,
-					Namespace: ns,
-					Labels:    cdcLabels,
-				},
-				Spec: appsv1.StatefulSetSpec{
-					ServiceName: cdcName,
-					Replicas:    pointer.Int32Ptr(3),
-					Selector:    &metav1.LabelSelector{MatchLabels: cdcLabels},
-					Template: corev1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{Labels: cdcLabels},
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{{
-								Name: "cdc",
-								Command: []string{
-									"/cdc",
-									"server",
-									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-									"--status-addr=0.0.0.0:8300",
-								},
-								Ports: []corev1.ContainerPort{
-									{
-										Name:          "http",
-										ContainerPort: 8300,
-									},
-								},
-								Image:           buildCDCImage("ticdc"),
-								ImagePullPolicy: corev1.PullAlways,
-							}},
-						},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeClusterIP,
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 8300,
 					},
 				},
+				ClusterIP: corev1.ClusterIPNone,
+				Selector:  cdcLabels,
 			},
-			Job: &batchv1.Job{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      cdcJobName,
-					Namespace: ns,
-					Labels: map[string]string{
-						"app.kubernetes.io/name":      "tidb-cluster",
-						"app.kubernetes.io/component": "cdc",
-						"app.kubernetes.io/instance":  cdcJobName,
-					},
-				},
-				Spec: batchv1.JobSpec{
-					TTLSecondsAfterFinished: pointer.Int32Ptr(10),
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{
-							Containers: []corev1.Container{
+		},
+		StatefulSet: &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cdcName,
+				Namespace: ns,
+				Labels:    cdcLabels,
+			},
+			Spec: appsv1.StatefulSetSpec{
+				ServiceName: cdcName,
+				Replicas:    pointer.Int32Ptr(3),
+				Selector:    &metav1.LabelSelector{MatchLabels: cdcLabels},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{Labels: cdcLabels},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Name: "cdc",
+							Command: []string{
+								"/cdc",
+								"server",
+								fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
+								"--status-addr=0.0.0.0:8300",
+							},
+							Ports: []corev1.ContainerPort{
 								{
-									Name:            "cdc-cli",
-									Image:           buildCDCImage("ticdc"),
-									ImagePullPolicy: corev1.PullAlways,
-									Command: []string{
-										"/cdc",
-										"cli",
-										"changefeed",
-										"create",
-										fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-										fmt.Sprintf("--sink-uri=mysql://root@%s:4000/", downstreamDB),
-										"--start-ts=0",
-									},
+									Name:          "http",
+									ContainerPort: 8300,
 								},
 							},
-							RestartPolicy: corev1.RestartPolicyNever,
+							Image:           buildCDCImage("ticdc"),
+							ImagePullPolicy: corev1.PullAlways,
+						}},
+					},
+				},
+			},
+		},
+		Job: &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cdcJobName,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app.kubernetes.io/name":      "tidb-cluster",
+					"app.kubernetes.io/component": "cdc",
+					"app.kubernetes.io/instance":  cdcJobName,
+				},
+			},
+			Spec: batchv1.JobSpec{
+				TTLSecondsAfterFinished: pointer.Int32Ptr(10),
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:            "cdc-cli",
+								Image:           buildCDCImage("ticdc"),
+								ImagePullPolicy: corev1.PullAlways,
+								Command: []string{
+									"/cdc",
+									"cli",
+									"changefeed",
+									"create",
+									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
+									fmt.Sprintf("--sink-uri=mysql://root@%s:4000/", downstreamDB),
+									"--start-ts=0",
+								},
+							},
 						},
+						RestartPolicy: corev1.RestartPolicyNever,
 					},
 				},
 			},
@@ -159,27 +141,20 @@ func RecommendedCDCCluster(ns, name, version string) *Recommendation {
 func buildCDCImage(name string) string {
 	var (
 		b                strings.Builder
-		version          = fixture.Context.ImageVersion
 		dockerRepository = fixture.Context.CDCConfig.DockerRepository
 		hubAddress       = fixture.Context.CDCConfig.HubAddress
+		version          = fixture.Context.CDCConfig.CDCVersion
 	)
-
-	if fixture.Context.CDCConfig.CDCVersion != "" {
-		version = fixture.Context.CDCConfig.CDCVersion
-	}
 
 	if hubAddress == "" {
 		hubAddress = fixture.Context.HubAddress
 	}
-
 	if hubAddress != "" {
 		fmt.Fprintf(&b, "%s/", hubAddress)
 	}
-
 	if dockerRepository == "" {
 		dockerRepository = fixture.Context.DockerRepository
 	}
-
 	b.WriteString(dockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)
