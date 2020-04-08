@@ -1,0 +1,103 @@
+metadata:
+  generateName: tipocket-tiflash-cdc-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-tiflash-cdc
+  onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-tiflash-cdc
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: gp2
+      - name: abtest_version
+        value: release-4.0-nightly
+      - name: nemesis
+        value: ""
+      - name: client
+        value: "2"
+      - name: tidb_config
+        value: ""
+      - name: tikv_config
+        value: ""
+      - name: pd_config
+        value: ""
+      - name: abtest_tidb_config
+        value: ""
+      - name: abtest_tikv_config
+        value: ""
+      - name: abtest_pd_config
+        value: ""
+      - name: abtest_general_log
+        value: "true"
+      - name: tiflash_image
+        value: "yeya24/tics:4.0"
+      - name: tiflash_replicas
+        value: 1
+      - name: cdc_hub
+        value: "docker.io"
+      - name: cdc_repository
+        value: "pingcap"
+      - name: cdc_version
+        value: "nightly"
+  templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+    - name: call-tipocket-tiflash-cdc
+      steps:
+        - - name: call-tipocket-tiflash-cdc
+            templateRef:
+              name: tipocket-tiflash-cdc
+              template: tipocket-tiflash-cdc
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: abtest_version
+                  value: "{{workflow.parameters.abtest_version}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: tidb_config
+                  value: "{{workflow.parameters.tidb_config}}"
+                - name: tikv_config
+                  value: "{{workflow.parameters.tikv_config}}"
+                - name: pd_config
+                  value: "{{workflow.parameters.pd_config}}"
+                - name: abtest_tidb_config
+                  value: "{{workflow.parameters.abtest_tidb_config}}"
+                - name: abtest_tikv_config
+                  value: "{{workflow.parameters.abtest_tikv_config}}"
+                - name: abtest_pd_config
+                  value: "{{workflow.parameters.abtest_pd_config}}"
+                - name: abtest_general_log
+                  value: "{{workflow.parameters.abtest_general_log}}"
+                - name: tiflash_image
+                  value: "{{workflow.parameters.tiflash_image}}"
+                - name: tiflash_replicas
+                  value: "{{workflow.parameters.tiflash_replicas}}"
+                - name: cdc_hub
+                  value: "{{workflow.parameters.cdc_hub}}"
+                - name: cdc_repository
+                  value: "{{workflow.parameters.cdc_repository}}"
+                - name: cdc_version
+                  value: "{{workflow.parameters.cdc_version}}"

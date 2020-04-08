@@ -155,11 +155,6 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 }
 
 func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
-	// only for binlog test
-	if c.cfg.Mode != "binlog" {
-		return true, nil
-	}
-
 	// start a temp session for keep the snapshot of state
 	compareExecutor, err := c.initCompareConnection()
 	if err != nil {
