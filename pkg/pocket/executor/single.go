@@ -151,17 +151,11 @@ func (e *Executor) SingleTestIfTxn() bool {
 
 // DML
 func (e *Executor) singleTestSelect(sql string) error {
-	if e.TiFlash {
-		sql = setIsolationEngine + sql
-	}
 	_, err := e.conn1.Select(sql)
 	return errors.Trace(err)
 }
 
 func (e *Executor) singleTestUpdate(sql string) error {
-	if e.TiFlash {
-		sql = setIsolationEngine + sql
-	}
 	_, err := e.conn1.Update(sql)
 	return errors.Trace(err)
 }
@@ -172,9 +166,6 @@ func (e *Executor) singleTestInsert(sql string) error {
 }
 
 func (e *Executor) singleTestDelete(sql string) error {
-	if e.TiFlash {
-		sql = setIsolationEngine + sql
-	}
 	_, err := e.conn1.Delete(sql)
 	return errors.Trace(err)
 }

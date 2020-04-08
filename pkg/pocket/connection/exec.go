@@ -155,6 +155,12 @@ func (c *Connection) GeneralLog(v int) error {
 	return err
 }
 
+// SetTiFlashEngine sets the isolation to TiFlash in TiDB
+func (c *Connection) SetTiFlashEngine() error {
+	_, err := c.db.Exec(`SET @@session.tidb_isolation_read_engines = "tiflash"`)
+	return err
+}
+
 // ShowDatabases list databases
 func (c *Connection) ShowDatabases() ([]string, error) {
 	res, err := c.Select("SHOW DATABASES")

@@ -48,15 +48,22 @@ func (c *Core) beforeGenerate() error {
 			c.execute(e, sql)
 		}
 		log.Infof("table %s generate", sql.SQLTable)
+	}
 
-		if e.TiFlash {
-			if err := e.WaitTiFlashTableSync(sql.SQLTable); err != nil {
-				log.Infof("table %s sync to tiflash failed %v", sql.SQLTable, err)
-				return err
+	if c.coreExec.TiFlash {
+		tables, err := c.coreConn.FetchTables("pocket")
+		if err != nil {
+			return errors.Trace(err)
+		}
+		for _, t := range tables {
+			if err := c.coreExec.WaitTiFlashTableSync(t); err != nil {
+				log.Infof("table %s sync to tiflash failed %v", t, err)
+				return errors.Trace(err)
 			}
-			log.Infof("table %s sync to tiflash completed", sql.SQLTable)
+			log.Infof("table %s sync to tiflash completed", t)
 		}
 	}
+
 	for _, e := range c.executors {
 		if err := e.ReloadSchema(); err != nil {
 			return errors.Trace(err)

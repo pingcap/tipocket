@@ -41,19 +41,25 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 
 func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 	var (
-		e   *executor.Executor
-		err error
+		e       *executor.Executor
+		err     error
+		tiFlash bool
 	)
+
+	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+		tiFlash = true
+	}
+
 	switch c.cfg.Mode {
 	case "single", "tiflash":
-		e, err = executor.New(removeDSNSchema(c.cfg.DSN1), c.generateExecutorOption(id))
+		e, err = executor.New(removeDSNSchema(c.cfg.DSN1), c.generateExecutorOption(id), tiFlash)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 	case "abtest", "binlog", "abtiflash":
 		e, err = executor.NewABTest(removeDSNSchema(c.cfg.DSN1),
 			removeDSNSchema(c.cfg.DSN2),
-			c.generateExecutorOption(id))
+			c.generateExecutorOption(id), tiFlash)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -65,9 +71,10 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 
 func (c *Core) initConnection(id int) (*executor.Executor, error) {
 	var (
-		e    *executor.Executor
-		err  error
-		mode string
+		e       *executor.Executor
+		err     error
+		mode    string
+		tiFlash bool
 	)
 
 	switch c.cfg.Mode {
@@ -83,20 +90,20 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		}
 	}
 
+	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+		tiFlash = true
+	}
+
 	if mode == "single" {
-		e, err = executor.New(c.cfg.DSN1, c.generateExecutorOption(id))
+		e, err = executor.New(c.cfg.DSN1, c.generateExecutorOption(id), tiFlash)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
 	} else if mode == "abtest" {
-		e, err = executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, c.generateExecutorOption(id))
+		e, err = executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, c.generateExecutorOption(id), tiFlash)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
-	}
-
-	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
-		e.TiFlash = true
 	}
 
 	return e, nil
@@ -138,7 +145,11 @@ func (c *Core) initSubConnection() error {
 }
 
 func (c *Core) initCompareConnection() (*executor.Executor, error) {
+	var tiFlash bool
+	if c.cfg.Mode == "abtiflash" || c.cfg.Mode == "tiflash" {
+		tiFlash = true
+	}
 	opt := c.generateExecutorOption(0)
 	opt.Mute = true
-	return executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, opt)
+	return executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, opt, tiFlash)
 }

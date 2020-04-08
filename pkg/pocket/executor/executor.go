@@ -65,7 +65,7 @@ type Executor struct {
 }
 
 // New create Executor
-func New(dsn string, opt *Option) (*Executor, error) {
+func New(dsn string, opt *Option, tiFlash bool) (*Executor, error) {
 	var connLogPath, executorLogPath string
 	if opt.Log != "" {
 		connLogPath = path.Join(opt.Log, fmt.Sprintf("single-conn%s.log", opt.LogSuffix))
@@ -73,10 +73,11 @@ func New(dsn string, opt *Option) (*Executor, error) {
 	}
 
 	conn, err := connection.New(dsn, &connection.Option{
-		Name:       fmt.Sprintf("conn-%d", opt.ID),
-		Log:        connLogPath,
-		Mute:       opt.Mute,
-		GeneralLog: opt.GeneralLog,
+		Name:          fmt.Sprintf("conn-%d", opt.ID),
+		Log:           connLogPath,
+		Mute:          opt.Mute,
+		GeneralLog:    opt.GeneralLog,
+		EnableTiFlash: tiFlash,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -97,13 +98,14 @@ func New(dsn string, opt *Option) (*Executor, error) {
 		dbname:     dbnameRegex.FindString(dsn),
 		opt:        opt,
 		logger:     l,
+		TiFlash:    tiFlash,
 	}
 	go e.Start()
 	return &e, nil
 }
 
 // NewABTest create abtest Executor
-func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
+func NewABTest(dsn1, dsn2 string, opt *Option, tiFlash bool) (*Executor, error) {
 	var conn1LogPath, conn2LogPath, executorLogPath string
 	if opt.Log != "" {
 		conn1LogPath = path.Join(opt.Log, fmt.Sprintf("ab-conn1%s.log", opt.LogSuffix))
@@ -112,10 +114,11 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 	}
 
 	conn1, err := connection.New(dsn1, &connection.Option{
-		Name:       fmt.Sprintf("conn-1-%d", opt.ID),
-		Log:        conn1LogPath,
-		Mute:       opt.Mute,
-		GeneralLog: opt.GeneralLog,
+		Name:          fmt.Sprintf("conn-1-%d", opt.ID),
+		Log:           conn1LogPath,
+		Mute:          opt.Mute,
+		GeneralLog:    opt.GeneralLog,
+		EnableTiFlash: tiFlash,
 	})
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -147,6 +150,7 @@ func NewABTest(dsn1, dsn2 string, opt *Option) (*Executor, error) {
 		dbname:     dbnameRegex.FindString(dsn1),
 		opt:        opt,
 		logger:     l,
+		TiFlash:    tiFlash,
 	}
 	go e.Start()
 	return &e, nil

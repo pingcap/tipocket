@@ -9,7 +9,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
-	"github.com/pingcap/tipocket/pkg/test-infra/abtiflash"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
-		ClientCount: 2,
+		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
@@ -42,6 +42,7 @@ func main() {
 		DMLInsert:          120,
 		Sleep:              10,
 	}}
+	c := fixture.Context
 	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
 	pocketConfig.Options.Concurrency = 1
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
@@ -55,10 +56,9 @@ func main() {
 				Config:     pocketConfig,
 			},
 		},
-		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		NemesisGens:      util.ParseNemesisGenerators(c.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: abtiflash.RecommendedCluster(fixture.Context.Namespace, fixture.Context.Namespace,
-			fixture.Context.ImageVersion, fixture.Context.ABTestConfig.ClusterBVersion),
+		ClusterDefs:      test_infra.NewTiFlashABTestCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())
 }

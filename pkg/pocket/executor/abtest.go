@@ -160,13 +160,10 @@ func (e *Executor) abTestSelect(sql string) error {
 		err2 error
 	)
 	wg.Add(2)
-	go func(sql string) {
-		if e.TiFlash {
-			sql = setIsolationEngine + sql
-		}
+	go func() {
 		res1, err1 = e.conn1.Select(sql)
 		wg.Done()
-	}(sql)
+	}()
 	go func() {
 		res2, err2 = e.conn2.Select(sql)
 		wg.Done()
@@ -214,13 +211,10 @@ func (e *Executor) abTestUpdate(sql string) error {
 		err2          error
 	)
 	wg.Add(2)
-	go func(sql string) {
-		if e.TiFlash {
-			sql = setIsolationEngine + sql
-		}
+	go func() {
 		affectedRows1, err1 = e.conn1.Update(sql)
 		wg.Done()
-	}(sql)
+	}()
 	go func() {
 		affectedRows2, err2 = e.conn2.Update(sql)
 		wg.Done()
@@ -267,13 +261,10 @@ func (e *Executor) abTestDelete(sql string) error {
 		err2          error
 	)
 	wg.Add(2)
-	go func(sql string) {
-		if e.TiFlash {
-			sql = setIsolationEngine + sql
-		}
+	go func() {
 		affectedRows1, err1 = e.conn1.Delete(sql)
 		wg.Done()
-	}(sql)
+	}()
 	go func() {
 		affectedRows2, err2 = e.conn2.Delete(sql)
 		wg.Done()

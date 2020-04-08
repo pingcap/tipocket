@@ -22,10 +22,11 @@ import (
 
 // Option struct
 type Option struct {
-	Name       string
-	Log        string
-	Mute       bool
-	GeneralLog bool
+	Name          string
+	Log           string
+	Mute          bool
+	GeneralLog    bool
+	EnableTiFlash bool
 }
 
 // Connection define connection struct
@@ -59,7 +60,12 @@ func New(dsn string, opt *Option) (*Connection, error) {
 // Prepare connection
 func (c *Connection) Prepare() error {
 	if c.opt.GeneralLog {
-		return errors.Trace(c.GeneralLog(1))
+		if err := errors.Trace(c.GeneralLog(1)); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	if c.opt.EnableTiFlash {
+		return errors.Trace(c.SetTiFlashEngine())
 	}
 	return nil
 }

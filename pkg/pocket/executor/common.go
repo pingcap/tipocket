@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 )
 
@@ -132,24 +134,25 @@ func (e *Executor) createTiFlashTableReplica(table string) error {
 	return e.SingleTestExecDDL(fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", table))
 }
 
+// WaitTiFlashTableSync waits table sync to TiFlash
 func (e *Executor) WaitTiFlashTableSync(table string) error {
 	sql := fmt.Sprintf("SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA = '%s' and TABLE_NAME = '%s'",
 		e.dbname, table)
-	for {
+	if err := wait.Poll(1*time.Second, 5*time.Second, func() (bool, error) {
 		res, err := e.GetConn().Select(sql)
 		if err != nil {
-			return err
+			return false, err
 		}
-		// table doesn't exist
-		if res == nil {
-			return nil
+		// res == nil is for handling the special case that the queried
+		// table doesn't exist.
+		if res == nil || res[0][0].ValString == "1" {
+			return true, nil
 		}
-		// table sync completed
-		if res[0][0].ValString == "1" {
-			return nil
-		}
-		time.Sleep(2 * time.Second)
+		return false, nil
+	}); err != nil {
+		return err
 	}
+	return nil
 }
 
 func hasReadOperation(sql *types.SQL) bool {

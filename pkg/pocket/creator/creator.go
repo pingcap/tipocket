@@ -73,7 +73,7 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	cfg.Mode = p.Config.Mode
 	cfg.DSN1 = makeDSN(clientNodes[0].Address())
 
-	// In the tiflash case, there is only one client node.
+	// In the TiFlash case, there is only one client node.
 	if len(clientNodes) > 1 {
 		cfg.DSN2 = makeDSN(clientNodes[1].Address())
 	}
