@@ -133,6 +133,7 @@ func RandString(b []byte, r *rand.Rand) {
 	}
 }
 
+// Hashfnv32a returns 32-bit FNV-1a hash for a byte slice
 func Hashfnv32a(b []byte) uint32 {
 	h := fnv.New32a()
 	h.Write(b)

@@ -22,40 +22,46 @@ import (
 	persistent_treap "github.com/gengliqi/persistent_treap/persistent_treap"
 )
 
+// Key type
 type Key int
+
+// Value type
 type Value uint32
 
-type KeyValuePair struct {
+type keyValuePair struct {
 	key   Key
 	value Value
 }
 
+// Equals implements key's persistent_treap.Equitable interface
 func (a Key) Equals(b persistent_treap.Equitable) bool {
 	return a == b.(Key)
 }
 
+// Less implements persistent_treap.Sortable interface
 func (a Key) Less(b persistent_treap.Sortable) bool {
 	return a < b.(Key)
 }
 
+// Equals implements persistent_treap.Equitable interface
 func (a Value) Equals(b persistent_treap.Equitable) bool {
 	return a == b.(Value)
 }
 
-type StateType struct {
+type stateType struct {
 	treap persistent_treap.PersistentTreap
 	hash  uint64
 }
 
-func NewState() StateType {
-	return StateType{persistent_treap.NewPersistentTreap(), 0}
+func newState() stateType {
+	return stateType{persistent_treap.NewPersistentTreap(), 0}
 }
 
 var magicNumberKey = uint64(6364136223846793005)
 var magicNumberValue = uint64(1103515245)
 
-func (s StateType) Insert(k Key, v Value) StateType {
-	newState := StateType{}
+func (s stateType) Insert(k Key, v Value) stateType {
+	newState := stateType{}
 	val, ok := s.treap.GetValue(k)
 	if ok {
 		newState.hash = s.hash + (uint64(v)-uint64(val.(Value)))*magicNumberValue
@@ -66,10 +72,10 @@ func (s StateType) Insert(k Key, v Value) StateType {
 	return newState
 }
 
-func (s StateType) Remove(k Key) StateType {
+func (s stateType) Remove(k Key) stateType {
 	val, ok := s.treap.GetValue(k)
 	if ok {
-		newState := StateType{}
+		newState := stateType{}
 		newState.hash = s.hash - (uint64(k)*magicNumberKey + uint64(val.(Value))*magicNumberValue + 12345)
 		newState.treap = s.treap.Remove(k)
 		return newState
@@ -77,6 +83,7 @@ func (s StateType) Remove(k Key) StateType {
 	return s
 }
 
+// Config is the config of the test case.
 type Config struct {
 	KeyStart        int
 	KeyNum          int
@@ -84,11 +91,13 @@ type Config struct {
 	WriteProbaility int
 }
 
+// RandomValues is some random byte slices which have different hash value.
 type RandomValues struct {
 	hashs        []uint32
 	hashValueMap map[uint32][]byte
 }
 
+// RandomValueConfig is the config of generating RandomValues
 type RandomValueConfig struct {
 	ValueNum10KB  int
 	ValueNum100KB int
@@ -96,6 +105,7 @@ type RandomValueConfig struct {
 	ValueNum5MB   int
 }
 
+// GenerateRandomValueString generates RandomValues
 func GenerateRandomValueString(config RandomValueConfig) RandomValues {
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 	r := RandomValues{
@@ -129,6 +139,7 @@ func GenerateRandomValueString(config RandomValueConfig) RandomValues {
 	return r
 }
 
+// RawkvClientCreator creates a test client.
 type RawkvClientCreator struct {
 	Cfg          Config
 	RandomValues *RandomValues
@@ -142,6 +153,7 @@ type rawkvClient struct {
 	randomValues *RandomValues
 }
 
+// SetUp implements the core.Client interface.
 func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	log.Printf("setup rawkv-linearizability start")
 
@@ -171,10 +183,12 @@ func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode
 	return nil
 }
 
+// TearDown implements the core.Client interface.
 func (c *rawkvClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 
+// Invoke implements the core.Client interface.
 func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(rawkvRequest)
 	key := []byte(strconv.Itoa(request.Key))
@@ -212,6 +226,7 @@ func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, 
 	}
 }
 
+// NextRequest implements the core.Client interface.
 func (c *rawkvClient) NextRequest() interface{} {
 	request := rawkvRequest{}
 	rNum := c.r.Int() % 100
@@ -229,14 +244,15 @@ func (c *rawkvClient) NextRequest() interface{} {
 	return request
 }
 
+// DumpState implements the core.Client interface.
 func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
-	var kvs []KeyValuePair
+	var kvs []keyValuePair
 	for i := c.conf.KeyStart; i < c.conf.KeyStart+c.conf.KeyNum; i++ {
 		key := []byte(strconv.Itoa(i))
 		val, err := c.cli.Get(ctx, key)
 		h32 := util.Hashfnv32a(val)
 		if err == nil {
-			kvs = append(kvs, KeyValuePair{
+			kvs = append(kvs, keyValuePair{
 				key:   Key(i),
 				value: Value(h32),
 			})
@@ -245,10 +261,12 @@ func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
 	return kvs, nil
 }
 
+// Start implements the core.Client interface.
 func (c *rawkvClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
 	return nil
 }
 
+// Create creates a RawkvClient.
 func (r RawkvClientCreator) Create(node clusterTypes.ClientNode) core.Client {
 	return &rawkvClient{
 		conf:         r.Cfg,
@@ -269,36 +287,43 @@ type rawkvResponse struct {
 	Error   string `json:",omitempty"`
 }
 
+// IsUnknown implements UnknownResponse interface
 func (r rawkvResponse) IsUnknown() bool {
 	return r.Unknown
 }
 
+// Parser implements the core.Parser interface.
 type rawkvParser struct{}
 
+// RawkvParser creates the history.RecordParser interface.
 func RawkvParser() history.RecordParser {
 	return rawkvParser{}
 }
 
+// OnRequest implements the core.Parser interface.
 func (rawkvParser) OnRequest(data json.RawMessage) (interface{}, error) {
 	request := rawkvRequest{}
 	err := json.Unmarshal(data, &request)
 	return request, err
 }
 
+// OnResponse implements the core.Parser interface.
 func (rawkvParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	response := rawkvResponse{}
 	err := json.Unmarshal(data, &response)
 	return response, err
 }
 
+// OnNoopResponse implements the core.Parser interface.
 func (rawkvParser) OnNoopResponse() interface{} {
 	return rawkvResponse{Unknown: true}
 }
 
+// OnState implements the core.Parser interface.
 func (rawkvParser) OnState(state json.RawMessage) (interface{}, error) {
-	var dump []KeyValuePair
+	var dump []keyValuePair
 	err := json.Unmarshal(state, &dump)
-	st := NewState()
+	st := newState()
 	for i := 0; i < len(dump); i++ {
 		st = st.Insert(dump[i].key, dump[i].value)
 	}
@@ -307,28 +332,31 @@ func (rawkvParser) OnState(state json.RawMessage) (interface{}, error) {
 
 // Model implementation
 type rawkvModel struct {
-	preparedState *StateType
+	preparedState *stateType
 }
 
+// RawkvModel creates the core.Model interface.
 func RawkvModel() core.Model {
 	return &rawkvModel{}
 }
 
+// Prepare implements the core.Model interface.
 func (m *rawkvModel) Prepare(state interface{}) {
-	s := state.(StateType)
+	s := state.(stateType)
 	m.preparedState = &s
 }
 
+// Init implements the core.Model interface.
 func (m *rawkvModel) Init() interface{} {
 	if m.preparedState != nil {
 		return *m.preparedState
 	}
-
-	return NewState()
+	return newState()
 }
 
+// Step implements the core.Model interface.
 func (m *rawkvModel) Step(state interface{}, input interface{}, output interface{}) (bool, interface{}) {
-	st := state.(StateType)
+	st := state.(stateType)
 	request := input.(rawkvRequest)
 	response := output.(rawkvResponse)
 	switch request.Op {
@@ -357,9 +385,10 @@ func (m *rawkvModel) Step(state interface{}, input interface{}, output interface
 	}
 }
 
+// Equal implements the core.Model interface.
 func (m *rawkvModel) Equal(state1, state2 interface{}) bool {
-	st1 := state1.(StateType)
-	st2 := state2.(StateType)
+	st1 := state1.(stateType)
+	st2 := state2.(stateType)
 
 	if st1 == st2 {
 		return true
@@ -371,6 +400,7 @@ func (m *rawkvModel) Equal(state1, state2 interface{}) bool {
 	return persistent_treap.IsSameTreap(st1.treap, st2.treap)
 }
 
+// Name implements the core.Model interface.
 func (*rawkvModel) Name() string {
 	return "rawkv-linearizability"
 }

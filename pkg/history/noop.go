@@ -18,6 +18,7 @@ type NoopResponse struct {
 	Unknown bool
 }
 
+// IsUnknown implements UnknownResponse interface
 func (n NoopResponse) IsUnknown() bool {
 	return n.Unknown
 }
