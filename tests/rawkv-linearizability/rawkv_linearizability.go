@@ -28,7 +28,7 @@ type Key int
 // Value type
 type Value uint32
 
-// Key Value pair
+// KeyValuePair type
 type KeyValuePair struct {
 	K Key
 	V Value
