@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20200229220004-848b8b5d43d9
+	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
 	github.com/go-sql-driver/mysql v1.4.1

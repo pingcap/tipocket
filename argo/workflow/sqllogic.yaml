@@ -13,7 +13,7 @@ spec:
       - name: image_version
         value: release-4.0-nightly
       - name: storage_class
-        value: pd-ssd
+        value: gp2
       - name: run_time
         value: "8h"
   templates:

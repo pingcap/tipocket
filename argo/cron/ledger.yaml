@@ -1,0 +1,55 @@
+metadata:
+  name: tipocket-ledger
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-ledger
+    onExit: call-export-logs
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-ledger
+        - name: purge
+          value: "true"
+        - name: image_version
+          value: release-4.0-nightly
+        - name: storage_class
+          value: gp2
+        - name: nemesis
+          value: ""
+        - name: run_time
+          value: "60m"
+    templates:
+      - name: call-export-logs
+        steps:
+          - - name: call-export-logs
+              templateRef:
+                name: export-logs
+                template: export-logs
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+      - name: call-tipocket-ledger
+        steps:
+          - - name: call-tipocket-ledger
+              templateRef:
+                name: tipocket-ledger
+                template: tipocket-ledger
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+                  - name: purge
+                    value: "{{workflow.parameters.purge}}"
+                  - name: image_version
+                    value: "{{workflow.parameters.image_version}}"
+                  - name: storage_class
+                    value: "{{workflow.parameters.storage_class}}"
+                  - name: nemesis
+                    value: "{{workflow.parameters.nemesis}}"
+                  - name: run_time
+                    value: "{{workflow.parameters.run_time}}"

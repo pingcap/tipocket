@@ -46,6 +46,10 @@ func newCDC(ns, name string) *CDC {
 			"app.kubernetes.io/instance":  cdcName,
 		}
 	)
+	logVol := corev1.VolumeMount{
+		Name:      "log",
+		MountPath: "/var/log/cdc",
+	}
 
 	return &CDC{
 		Service: &corev1.Service{
@@ -79,22 +83,43 @@ func newCDC(ns, name string) *CDC {
 				Template: corev1.PodTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{Labels: cdcLabels},
 					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{{
-							Name: "cdc",
-							Command: []string{
-								"/cdc",
-								"server",
-								fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-								"--status-addr=0.0.0.0:8300",
-							},
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "http",
-									ContainerPort: 8300,
+						Containers: []corev1.Container{
+							{
+								Name: "cdc",
+								Command: []string{
+									"/cdc",
+									"server",
+									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
+									"--status-addr=0.0.0.0:8300",
+									"--log-file", "/var/log/cdc/cdc.log",
 								},
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 8300,
+									},
+								},
+								Image:           buildCDCImage("ticdc"),
+								ImagePullPolicy: corev1.PullAlways,
+								VolumeMounts:    []corev1.VolumeMount{logVol},
 							},
-							Image:           buildCDCImage("ticdc"),
-							ImagePullPolicy: corev1.PullAlways,
+							{
+								Name: "cdc-log",
+								Command: []string{
+									"/bin/sh",
+									"-c",
+									`touch /var/log/cdc/cdc.log; tail -n0 -F /var/log/cdc/cdc.log`,
+								},
+								Image:           "busybox",
+								ImagePullPolicy: corev1.PullIfNotPresent,
+								VolumeMounts:    []corev1.VolumeMount{logVol},
+							},
+						},
+						Volumes: []corev1.Volume{{
+							Name: "log",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
 						}},
 					},
 				},
