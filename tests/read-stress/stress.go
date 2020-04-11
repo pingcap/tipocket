@@ -126,7 +126,7 @@ func (c *stressClient) TearDown(ctx context.Context, nodes []types.ClientNode, i
 	return err
 }
 
-func (c *stressClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *stressClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

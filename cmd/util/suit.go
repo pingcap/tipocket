@@ -151,15 +151,15 @@ func OnClientLoop(
 			log.Printf("%d %s: call %+v", procID, node, request)
 		}
 		response := client.Invoke(ctx, node, request)
+
 		if stringer, ok := response.(fmt.Stringer); ok {
 			log.Printf("%d %s: return %+v", procID, node, stringer.String())
 		} else {
 			log.Printf("%d %s: return %+v", procID, node, response)
 		}
-		isUnknown := true
-		if v, ok := response.(core.UnknownResponse); ok {
-			isUnknown = v.IsUnknown()
-		}
+
+		v := response.(core.UnknownResponse)
+		isUnknown := v.IsUnknown()
 
 		if err := recorder.RecordResponse(procID, response); err != nil {
 			log.Fatalf("record response %v failed %v", response, err)
@@ -221,10 +221,9 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			log.Printf("[%d] %s: call %+v", procID, node.String(), request)
 			response := client.Invoke(ctx, node, request)
 			log.Printf("[%d] %s: return %+v", procID, node.String(), response)
-			isUnknown := true
-			if v, ok := response.(core.UnknownResponse); ok {
-				isUnknown = v.IsUnknown()
-			}
+
+			v := response.(core.UnknownResponse)
+			isUnknown := v.IsUnknown()
 
 			if err := recorder.RecordResponse(procID, response); err != nil {
 				log.Fatalf("record response %v failed %v", response, err)
@@ -233,6 +232,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			// If Unknown, we need to use another process ID.
 			if isUnknown {
 				procID = atomic.AddInt64(proc, 1)
+				log.Printf("[%d] %s: procID add 1", procID, node.String())
 			}
 
 			select {

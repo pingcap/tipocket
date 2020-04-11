@@ -94,10 +94,7 @@ func (p registerParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p registerParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := RegisterResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
-	return r, nil
+	return r, err
 }
 
 func (p registerParser) OnNoopResponse() interface{} {

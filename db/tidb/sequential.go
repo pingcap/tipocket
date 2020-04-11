@@ -272,9 +272,6 @@ package tidb
 //func (p parser) OnResponse(data json.RawMessage) (interface{}, error) {
 //	r := seqResponse{}
 //	err := json.Unmarshal(data, &r)
-//	if r.Unknown {
-//		return nil, err
-//	}
 //	return r, err
 //}
 //

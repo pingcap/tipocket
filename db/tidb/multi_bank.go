@@ -85,7 +85,7 @@ func (c *multiBankClient) invokeRead(ctx context.Context, r bankRequest) bankRes
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *multiBankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (c *multiBankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)

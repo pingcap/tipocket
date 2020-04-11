@@ -13,9 +13,9 @@ func TestRegisterModel(t *testing.T) {
 	// section VII
 
 	ops := []porcupine.Operation{
-		{RegisterRequest{RegisterWrite, 100}, 0, RegisterResponse{false, 0}, 100},
-		{RegisterRequest{RegisterRead, 0}, 25, RegisterResponse{false, 100}, 75},
-		{RegisterRequest{RegisterRead, 0}, 30, RegisterResponse{false, 0}, 60},
+		{0, RegisterRequest{RegisterWrite, 100}, 0, RegisterResponse{false, 0}, 100},
+		{0, RegisterRequest{RegisterRead, 0}, 25, RegisterResponse{false, 100}, 75},
+		{0, RegisterRequest{RegisterRead, 0}, 30, RegisterResponse{false, 0}, 60},
 	}
 	res := porcupine.CheckOperations(convertModel(RegisterModel()), ops)
 	if res != true {
@@ -24,12 +24,12 @@ func TestRegisterModel(t *testing.T) {
 
 	// same example as above, but with Event
 	events := []porcupine.Event{
-		{porcupine.CallEvent, RegisterRequest{RegisterWrite, 100}, 0},
-		{porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 1},
-		{porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 2},
-		{porcupine.ReturnEvent, RegisterResponse{false, 0}, 2},
-		{porcupine.ReturnEvent, RegisterResponse{false, 100}, 1},
-		{porcupine.ReturnEvent, RegisterResponse{false, 0}, 0},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterWrite, 100}, 0},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 1},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 2},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 0}, 2},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 100}, 1},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 0}, 0},
 	}
 	res = porcupine.CheckEvents(convertModel(RegisterModel()), events)
 	if res != true {
@@ -37,9 +37,9 @@ func TestRegisterModel(t *testing.T) {
 	}
 
 	ops = []porcupine.Operation{
-		{RegisterRequest{RegisterWrite, 200}, 0, RegisterResponse{false, 0}, 100},
-		{RegisterRequest{RegisterRead, 0}, 10, RegisterResponse{false, 200}, 30},
-		{RegisterRequest{RegisterRead, 0}, 40, RegisterResponse{false, 0}, 90},
+		{0, RegisterRequest{RegisterWrite, 200}, 0, RegisterResponse{false, 0}, 100},
+		{0, RegisterRequest{RegisterRead, 0}, 10, RegisterResponse{false, 200}, 30},
+		{0, RegisterRequest{RegisterRead, 0}, 40, RegisterResponse{false, 0}, 90},
 	}
 	res = porcupine.CheckOperations(convertModel(RegisterModel()), ops)
 	if res != false {
@@ -48,12 +48,12 @@ func TestRegisterModel(t *testing.T) {
 
 	// same example as above, but with Event
 	events = []porcupine.Event{
-		{porcupine.CallEvent, RegisterRequest{RegisterWrite, 200}, 0},
-		{porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 1},
-		{porcupine.ReturnEvent, RegisterResponse{false, 200}, 1},
-		{porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 2},
-		{porcupine.ReturnEvent, RegisterResponse{false, 0}, 2},
-		{porcupine.ReturnEvent, RegisterResponse{false, 0}, 0},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterWrite, 200}, 0},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 1},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 200}, 1},
+		{0, porcupine.CallEvent, RegisterRequest{RegisterRead, 0}, 2},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 0}, 2},
+		{0, porcupine.ReturnEvent, RegisterResponse{false, 0}, 0},
 	}
 	res = porcupine.CheckEvents(convertModel(RegisterModel()), events)
 	if res != false {

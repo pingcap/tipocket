@@ -217,7 +217,7 @@ const (
 )
 
 // Invoke implements the core.Client interface.
-func (c *Client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (c *Client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	rt := r.(VBReqType)
 	resp := &Response{}
 	resp.ReqType = r.(VBReqType)

@@ -22,7 +22,7 @@ type Client interface {
 	TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
-	Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{}
+	Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) UnknownResponse
 	// NextRequest generates a request for latter Invoke.
 	NextRequest() interface{}
 	// DumpState the database state(also the model's state)
@@ -63,9 +63,15 @@ func (noopClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode,
 	return nil
 }
 
+type noopResponse struct{}
+
+func (noopResponse) IsUnknown() bool {
+	return false
+}
+
 // Invoke invokes a request to the database.
-func (noopClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
-	return nil
+func (noopClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) UnknownResponse {
+	return noopResponse{}
 }
 
 // NextRequest generates a request for latter Invoke.

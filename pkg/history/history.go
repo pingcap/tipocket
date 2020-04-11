@@ -112,8 +112,6 @@ type RecordParser interface {
 	// OnRequest parses an operation data to model's input.
 	OnRequest(data json.RawMessage) (interface{}, error)
 	// OnResponse parses an operation data to model's output.
-	// Return nil means the operation has an infinite end time.
-	// E.g, we meet timeout for a operation.
 	OnResponse(data json.RawMessage) (interface{}, error)
 	// If we have some infinite operations, we should return a
 	// noop response to complete the operation.
@@ -133,6 +131,9 @@ func ReadHistory(historyFile string, p RecordParser) ([]core.Operation, interfac
 	var state interface{}
 	ops := make([]core.Operation, 0, 1024)
 	scanner := bufio.NewScanner(f)
+	var buffer []byte
+	// buffer size 50mb
+	scanner.Buffer(buffer, 50*1024*1024)
 	for scanner.Scan() {
 		var record opRecord
 		if err = json.Unmarshal(scanner.Bytes(), &record); err != nil {
@@ -206,7 +207,7 @@ func CompleteOperations(ops []core.Operation, p RecordParser) ([]core.Operation,
 			if _, ok := procID[op.Proc]; !ok {
 				return nil, fmt.Errorf("missing invoke, op: %v", op)
 			}
-			if op.Data == nil {
+			if v, ok := op.Data.(core.UnknownResponse); ok && v.IsUnknown() {
 				continue
 			}
 			delete(procID, op.Proc)

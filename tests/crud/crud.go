@@ -91,7 +91,7 @@ func (c *crudClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx
 	return nil
 }
 
-func (c *crudClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *crudClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
