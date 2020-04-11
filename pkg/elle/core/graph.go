@@ -12,7 +12,6 @@ type Vertex struct {
 	Value interface{}
 }
 
-// TODO: or we can wrapper yourbasic/graph
 type DirectedGraph struct {
 	Outs map[Vertex]map[Vertex]Rel
 	Ins  map[Vertex][]Vertex

@@ -19,21 +19,6 @@ func MergeAnomalies(anomalies ...Anomalies) Anomalies {
 	panic("implement me")
 }
 
-//  The TransactionGrapher takes a history and produces a TransactionGraph,
-//  optionally augmented with Anomalies discovered during the graph inference
-//  process.
-type TransactionGrapher interface {
-	BuildTxnGraph(history History) TransactionGraph
-}
-
-// A TransactionGraph represents a graph of dependencies between transactions
-//  (really, operations), where edges are sets of tagged relationships, like :ww
-//  or :realtime.
-type TransactionGraph interface {
-	// Returns a Bifurcan IDirectedGraph of dependencies between transactions (represented as completion operations)
-	TxnGraph() DirectedGraph
-}
-
 // DataExplainer ...
 type DataExplainer interface {
 	// Given a pair of operations a and b, explains why b depends on a, in the
