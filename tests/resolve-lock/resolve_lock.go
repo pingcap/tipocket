@@ -1,36 +1,51 @@
 package resolvelock
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"github.com/pingcap/tidb/store/tikv/gcworker"
-	"math/rand"
-	"strings"
+	"net/http"
+	"strconv"
+	"sync"
 	"time"
 
-	"github.com/juju/errors"
+	"github.com/pingcap/tidb/store/tikv/gcworker"
+
 	"github.com/ngaut/log"
+	"github.com/pingcap/errors"
 	"github.com/pingcap/kvproto/pkg/kvrpcpb"
-	"github.com/pingcap/kvproto/pkg/metapb"
 	pd "github.com/pingcap/pd/v4/client"
 	"github.com/pingcap/tidb/store/tikv"
 	"github.com/pingcap/tidb/store/tikv/oracle"
 	"github.com/pingcap/tidb/store/tikv/tikvrpc"
-	"github.com/pingcap/tidb/util/codec"
+	"github.com/pingcap/tidb/tablecodec"
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
+	httputil "github.com/pingcap/tipocket/pkg/util/http"
 	"github.com/pingcap/tipocket/util"
 )
 
 // Config is for resolveLockClient
 type Config struct {
-	Concurrency             int
-	EnableGreenGC           bool
-	TableSize               int
-	LocksPerRegion          int
-	GenerateLockConcurrency int
+	EnableGreenGC bool
+	RegionCount   int
+	LockPerRegion int
+	Worker        int
+}
+
+// Normalize normalizes unexpected config
+func (c *Config) Normalize() *Config {
+	if c.RegionCount == 0 {
+		c.RegionCount = 1000
+	}
+	if c.LockPerRegion == 0 {
+		c.LockPerRegion = 10
+	}
+	if c.Worker == 0 {
+		c.Worker = 10
+	}
+	return c
 }
 
 // CaseCreator creates resolveLockClient
@@ -41,107 +56,120 @@ type CaseCreator struct {
 // Create creates the resolveLockClient from the CaseCreator
 func (l CaseCreator) Create(node types.ClientNode) core.Client {
 	return &resolveLockClient{
-		Config: l.Cfg,
+		Config: l.Cfg.Normalize(),
+		dbName: "resolve_lock",
 	}
 }
 
 type resolveLockClient struct {
 	*Config
-	db *sql.DB
 
-	pd pd.Client
-	kv tikv.Storage
+	dbName   string
+	tableIDs []int64
+	handleID int64
+
+	safePoint  uint64
+	safeLockTs uint64
+	mockLockTs uint64
+
+	dbAddr string
+	db     *sql.DB
+	pd     pd.Client
+	kv     tikv.Storage
+}
+
+func (c *resolveLockClient) openDB(ctx context.Context, ip string, port int32) error {
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/", ip, port)
+	db, err := util.OpenDB(dsn, 1)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", c.dbName))
+	if err != nil {
+		return errors.Trace(err)
+	}
+	db.Close()
+	c.db, err = util.OpenDB(dsn+c.dbName, 100)
+	return errors.Trace(err)
+}
+
+func (c *resolveLockClient) CreateTable(ctx context.Context, i int) (int64, error) {
+	table := "t" + strconv.Itoa(i)
+	_, err := c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(id int primary key, v varchar(128))", table))
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	url := fmt.Sprintf("http://%s:%d/schema/%s/%s", c.dbAddr, 10080, c.dbName, table)
+	resp, err := httputil.NewHTTPClient(http.DefaultClient).Get(url)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	var body struct {
+		ID int64 `json:"id"`
+	}
+	err = json.Unmarshal(resp, &body)
+	if err != nil {
+		return 0, errors.Trace(err)
+	}
+	return body.ID, nil
 }
 
 func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
-
-	var err error
 	node := nodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
 
-	log.Infof("start to init...")
-
-	c.db, err = util.OpenDB(dsn, c.Concurrency)
-	if err != nil {
-		return err
-	}
+	log.Info("start to init")
 	defer func() {
-		log.Infof("init end...")
+		log.Infof("init end")
 	}()
 
+	err := c.openDB(ctx, node.IP, node.Port)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	c.dbAddr = node.IP
+
 	// Disable GC
-	_, err = c.db.Exec(`update mysql.tidb set VARIABLE_VALUE = "10000h" where VARIABLE_NAME in ("tikv_gc_run_interval", "tikv_gc_life_time")`)
+	_, err = c.db.ExecContext(ctx, `update mysql.tidb set VARIABLE_VALUE = "10000h" where VARIABLE_NAME in ("tikv_gc_run_interval", "tikv_gc_life_time")`)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
-	// We are not going to let TiDB manage the GC process. So this config is actually useless.
-	//scanLockMode := "legacy"
-	//if c.EnableGreenGC {
-	//	scanLockMode = "physical"
-	//}
-	//_, err = c.db.Exec(`insert into mysql.tidb values ('tikv_gc_scan_lock_mode', ?, '')
-	//		       on duplicate key
-	//		       update variable_value = ?, comment = ''`, scanLockMode, scanLockMode)
-	//if err != nil {
-	//	return errors.Trace(err)
-	//}
-
-	if c.TableSize == 0 {
-		log.Infof("table size is set to 0. Do not load data.")
-		return nil
-	}
-	_, err = c.db.Exec("create table t1(id integer, v varchar(128), primary key (id))")
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	const loadDataConcurrency = 100
-
-	errCh := make(chan error, loadDataConcurrency)
-	for threadNum := 0; threadNum < loadDataConcurrency; threadNum++ {
-		threadNum1 := threadNum
-		go func() {
-			for i := threadNum1; i < c.TableSize; i += loadDataConcurrency {
-				_, err := c.db.Exec("insert into t1 values(?, ?)", i, randStr())
-				if err != nil {
-					errCh <- errors.Trace(err)
-					return
-				}
-			}
-			errCh <- nil
-		}()
-	}
-
-	for i := 0; i < loadDataConcurrency; i++ {
-		err = <-errCh
+	log.Infof("create %d tables", c.RegionCount)
+	// Can't create tables concurrently because there are too many WriteConflicts.
+	for i := 0; i < c.RegionCount; i++ {
+		id, err := c.CreateTable(ctx, i)
 		if err != nil {
 			return errors.Trace(err)
 		}
+		c.tableIDs = append(c.tableIDs, id)
 	}
 
-	clusterName := nodes[0].ClusterName
-	ns := nodes[0].Namespace
-	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
-
-	if len(pdAddrs) == 0 {
-		return errors.New("No pd node found")
-	}
-
+	// clusterName := nodes[0].ClusterName
+	// ns := nodes[0].Namespace
+	// pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)
+	pdAddr := "127.0.0.1:2379"
 	// TODO: Is SecurityOption needed?
-	c.pd, err = pd.NewClient(pdAddrs, pd.SecurityOption{})
+	c.pd, err = pd.NewClient([]string{pdAddr}, pd.SecurityOption{})
+	if err != nil {
+		return errors.Trace(err)
+	}
 	driver := tikv.Driver{}
-	store, err := driver.Open(fmt.Sprintf("tikv://%s?disableGC=true", strings.Join(pdAddrs, ",")))
+	store, err := driver.Open(fmt.Sprintf("tikv://%s?disableGC=true", pdAddr))
+	if err != nil {
+		return errors.Trace(err)
+	}
 	c.kv = store.(tikv.Storage)
 
 	return nil
 }
 
 func (c *resolveLockClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
-	return nil
+	c.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", c.dbName))
+	return c.db.Close()
 }
 
 func (c *resolveLockClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
@@ -157,13 +185,12 @@ func (c *resolveLockClient) DumpState(ctx context.Context) (interface{}, error) 
 }
 
 func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
-	log.Infof("start to test...")
+	log.Info("start to test")
 	defer func() {
-		log.Infof("test end...")
+		log.Info("test end")
 	}()
 
 	lastGreenGC := -1
-
 	for loopNum := 0; ; loopNum++ {
 		select {
 		case <-ctx.Done():
@@ -171,150 +198,137 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		default:
 		}
 
-		err := c.generateLocks(ctx)
+		ts, err := c.getTs(ctx)
+		if err != nil {
+			return err
+		}
+		log.Infof("[round-%d] start to generate locks at ts(%v)", loopNum, ts)
+		err = c.generateLocks(ctx, time.Microsecond)
 		if err != nil {
 			return errors.Trace(err)
 		}
+
+		log.Infof("[round-%d] start to async generate locks during GC", loopNum)
+		// Generate locks before ts to let lock observer do it job. ts is the safeLockTs which means
+		// locks with ts before it are safe locks. These locks can be left after GC and won't break data consistency.
+		cancel, wg := c.asyncGenerateLocksDuringGC(ctx, ts, 200*time.Millisecond, 5*time.Second)
 
 		// Get a ts as the safe point so it's greater than any locks written by `generateLocks`
-		safePoint, err := c.getTs(ctx)
+		c.safePoint, err = c.getTs(ctx)
 		if err != nil {
 			return errors.Trace(err)
 		}
-
+		log.Infof("[round-%d] start to GC at safePoint(%v)", loopNum, c.safePoint)
 		// Invoke GC with the safe point
 		id := fmt.Sprintf("gc-worker-%v", loopNum)
-		greenGCUsed, err := gcworker.RunDistributedGCJob(ctx, c.kv, c.pd, safePoint, id, 3, c.EnableGreenGC)
+		greenGCUsed, err := gcworker.RunDistributedGCJob(ctx, c.kv, c.pd, c.safePoint, id, 3, c.EnableGreenGC)
 		if err != nil {
-			log.Errorf("failed to run GC at safe point %v. This may be caused by nemesis or there is really something wrong.")
+			log.Errorf("[round-%d] %s failed to run GC at safe point %v", loopNum, id, c.safePoint)
 		}
+		log.Infof("[round-%d] GC done at safePoint(%v)", loopNum, c.safePoint)
 
 		if greenGCUsed {
 			lastGreenGC = loopNum
+		} else {
+			log.Warnf("[round-%d] %s failed to resolve lock physically at safe point %v", loopNum, id, c.safePoint)
 		}
-
 		if c.EnableGreenGC && loopNum-lastGreenGC > 10 {
 			return errors.New("green gc failed to run for over 10 times")
 		}
 
-		// Check there is no lock before safePoint
-		err = c.CheckData(ctx, safePoint)
+		log.Infof("[round-%d] start to check data at safePoint(%v)", loopNum, c.safePoint)
+		// Cancel all goroutines that are generating locks asynchronously.
+		cancel()
+		wg.Wait()
+		// Check there is no lock between safeLockTs and safePoint
+		unsafeLocks, err := c.CheckData(ctx)
+		if len(unsafeLocks) != 0 {
+			log.Errorf("[round-%d] find %d unsafe locks after GC at safepoint(%v): %v", loopNum, len(unsafeLocks), c.safePoint, unsafeLocks)
+			return errors.New("green GC check data failed")
+		}
 		if err != nil {
 			return errors.Trace(err)
 		}
+		log.Infof("[round-%d] check data done at safePoint(%v)", loopNum, c.safePoint)
+		c.reset(ctx)
 	}
 }
 
-// generateLocks sends Prewrite requests to TiKV to generate locks, without committing and rolling back.
-func (c *resolveLockClient) generateLocks(ctx context.Context) error {
-	log.Infof("Start generating lock")
-	errCh := make(chan error, c.GenerateLockConcurrency)
-	key := make([]byte, 0)
-	lastEndKey := make([]byte, 0)
-	currentRunningRegions := 0
+func (c *resolveLockClient) asyncGenerateLocksDuringGC(ctx context.Context, safeLockTs uint64, interval time.Duration, timeout time.Duration) (context.CancelFunc, *sync.WaitGroup) {
+	// Don't conflict with existing locks.
+	c.handleID = int64(c.LockPerRegion)
+	c.safeLockTs = safeLockTs
+	c.mockLockTs = safeLockTs
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.generateLocks(ctx, interval)
+	}()
+	return cancel, &wg
+}
 
-	for {
-		regions, _, err := c.pd.ScanRegions(ctx, key, []byte{}, 256)
-		if err != nil {
-			return errors.Trace(err)
-		}
-
-		nextScanKey := regions[len(regions)-1].EndKey
-		nextScanKeyCopy := make([]byte, len(nextScanKey))
-		copy(nextScanKeyCopy, nextScanKey)
-
-		for _, region := range regions {
-			err = decodeRegionMetaKey(region)
-			if err != nil {
-				return errors.Trace(err)
-			}
-
-			if len(region.EndKey) > 0 && bytes.Compare(region.EndKey, lastEndKey) <= 0 {
-				continue
-			}
-			if bytes.Compare(region.StartKey, lastEndKey) < 0 {
-				region.StartKey = lastEndKey
-			}
-			lastEndKey = region.EndKey
-
-			for currentRunningRegions >= c.GenerateLockConcurrency {
-				select {
-				case <-ctx.Done():
-					return nil
-				case err = <-errCh:
-					if err != nil {
-						return errors.Trace(err)
-					}
-					currentRunningRegions--
-				}
-			}
-			currentRunningRegions++
-			go func() {
-				// Retry for several times to reduce the possibility of failing when the cluster is unstable
-				var err error
-				for retry := 0; retry < 10; retry++ {
-					err = c.singleLockRegion(ctx, region.StartKey, region.EndKey)
-					if err == nil {
-						errCh <- nil
-						return
-					}
-				}
-				errCh <- err
-			}()
-		}
-
-		key = nextScanKeyCopy
-		if len(key) == 0 {
-			break
-		}
+func (c *resolveLockClient) generateLocks(ctx context.Context, interval time.Duration) error {
+	type task struct {
+		tableID  int64
+		handleID int64
+		limit    int
 	}
 
-	for currentRunningRegions >= c.GenerateLockConcurrency {
+	workers := c.Worker
+	taskCh := make(chan task, len(c.tableIDs))
+	errCh := make(chan error, workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			for task := range taskCh {
+				err := c.lock(ctx, task.tableID, task.handleID, task.limit)
+				if err != nil {
+					errCh <- err
+					return
+				}
+			}
+			errCh <- nil
+		}()
+	}
+
+	var err error
+	ticker := time.NewTicker(interval)
+	for _, tableID := range c.tableIDs {
 		select {
 		case <-ctx.Done():
-			return nil
-		case err := <-errCh:
+			break
+		case err = <-errCh:
+			workers--
+			break
+		case <-ticker.C:
+			taskCh <- task{tableID: tableID, handleID: c.handleID, limit: c.LockPerRegion}
+		}
+	}
+
+	close(taskCh)
+	for i := 0; i < workers; i++ {
+		e := <-errCh
+		if err != nil {
+			err = e
+		}
+	}
+	return err
+}
+
+func (c *resolveLockClient) lock(ctx context.Context, tableID int64, handleID int64, limit int) error {
+	const txnSize = 5
+
+	keys := make([][]byte, 0, txnSize)
+	for i := 0; i < limit; i++ {
+		keys = append(keys, tablecodec.EncodeRowKeyWithHandle(tableID, handleID+int64(i)))
+		if len(keys) >= txnSize || i == limit-1 {
+			_, err := c.lockBatch(ctx, keys, keys[0])
 			if err != nil {
 				return errors.Trace(err)
 			}
-			currentRunningRegions--
+			keys = keys[:0]
 		}
-	}
-
-	return nil
-}
-
-func (c *resolveLockClient) singleLockRegion(ctx context.Context, startKey, endKey []byte) error {
-	ts, err := c.kv.CurrentVersion()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	snap, err := c.kv.GetSnapshot(ts)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	iter, err := snap.Iter(startKey, endKey)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	if !iter.Valid() {
-		return nil
-	}
-
-	err = c.lockKeys(ctx, [][]byte{iter.Key()})
-	return errors.Trace(err)
-}
-
-func (c *resolveLockClient) lockKeys(ctx context.Context, keys [][]byte) error {
-	primary := keys[0]
-
-	for len(keys) > 0 {
-		lockedKeys, err := c.lockBatch(ctx, keys, primary)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		keys = keys[lockedKeys:]
 	}
 	return nil
 }
@@ -324,7 +338,6 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 
 	// TiKV client doesn't expose Prewrite interface directly. We need to manually locate the region and send the
 	// Prewrite requests.
-
 	for {
 		bo := tikv.NewBackoffer(ctx, 60000)
 		loc, err := c.kv.GetRegionCache().LocateKey(bo, keys[0])
@@ -333,31 +346,26 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 		}
 
 		// Get a timestamp to use as the startTs
-		startTs, err := c.getTs(ctx)
+		startTs, err := c.getLockTs(ctx)
 		if err != nil {
 			return 0, errors.Trace(err)
 		}
 
 		// Pick a batch of keys and make up the mutations
-		var mutations []*kvrpcpb.Mutation
 		batchSize := 0
-
+		var mutations []*kvrpcpb.Mutation
 		for _, key := range keys {
-			if len(loc.EndKey) > 0 && bytes.Compare(key, loc.EndKey) >= 0 {
+			if !loc.Contains(key) {
 				break
 			}
-			if bytes.Compare(key, loc.StartKey) < 0 {
-				break
-			}
-
-			value := randStr()
+			value := []byte{'v'}
 			mutations = append(mutations, &kvrpcpb.Mutation{
 				Op:    kvrpcpb.Op_Put,
 				Key:   key,
-				Value: []byte(value),
+				Value: value,
 			})
-			batchSize += len(key) + len(value)
 
+			batchSize += len(key) + len(value)
 			if batchSize >= maxBatchSize {
 				break
 			}
@@ -374,7 +382,7 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 				Mutations:    mutations,
 				PrimaryLock:  primary,
 				StartVersion: startTs,
-				LockTtl:      1000 * 60,
+				LockTtl:      3000,
 			},
 		)
 
@@ -394,66 +402,101 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 			}
 			continue
 		}
-
-		prewriteResp := resp.Resp.(*kvrpcpb.PrewriteResponse)
-		if prewriteResp == nil {
+		if resp.Resp == nil {
 			return 0, errors.Errorf("response body missing")
 		}
+		prewriteResp := resp.Resp.(*kvrpcpb.PrewriteResponse)
+		keyErrors := prewriteResp.GetErrors()
+		if len(keyErrors) != 0 {
+			return 0, errors.New(fmt.Sprintf("fail to prewrite locks: %v", keyErrors))
+		}
 
-		// Ignore key errors since we never commit the transaction and we don't need to keep consistency here.
 		return lockedKeys, nil
 	}
 }
 
-func (c *resolveLockClient) CheckData(ctx context.Context, safePoint uint64) error {
-	nextKey := make([]byte, 0)
+func (c *resolveLockClient) CheckData(ctx context.Context) ([]*tikv.Lock, error) {
+	const scanLockLimit = 100
 
+	req := tikvrpc.NewRequest(tikvrpc.CmdScanLock, &kvrpcpb.ScanLockRequest{
+		Limit:      10,
+		MaxVersion: c.safePoint,
+	})
+
+	var unsafeLocks []*tikv.Lock
+	key := make([]byte, 0)
 	for {
-		req := tikvrpc.NewRequest(
-			tikvrpc.CmdScanLock,
-			&kvrpcpb.ScanLockRequest{
-				StartKey:   nextKey,
-				Limit:      10,
-				MaxVersion: safePoint,
-			},
-		)
 		bo := tikv.NewBackoffer(ctx, 60000)
-		loc, err := c.kv.GetRegionCache().LocateKey(bo, nextKey)
-		if err != nil {
-			return errors.Trace(err)
-		}
 
+		req.ScanLock().StartKey = key
+		loc, err := c.kv.GetRegionCache().LocateKey(bo, key)
+		if err != nil {
+			return unsafeLocks, errors.Trace(err)
+		}
 		resp, err := c.kv.SendReq(bo, req, loc.Region, 60*time.Second)
 		if err != nil {
-			return errors.Trace(err)
+			return unsafeLocks, errors.Trace(err)
 		}
 		regionErr, err := resp.GetRegionError()
 		if err != nil {
-			return errors.Trace(err)
+			return unsafeLocks, errors.Trace(err)
 		}
 		if regionErr != nil {
 			err = bo.Backoff(tikv.BoRegionMiss, errors.New(regionErr.String()))
 			if err != nil {
-				return errors.Trace(err)
+				return unsafeLocks, errors.Trace(err)
 			}
 			continue
 		}
+		if resp.Resp == nil {
+			return unsafeLocks, errors.New("missing response body")
+		}
 		scanLockResp := resp.Resp.(*kvrpcpb.ScanLockResponse)
-		if scanLockResp == nil {
-			return errors.New("missing response body")
+		if scanLockResp.GetError() != nil {
+			return unsafeLocks, errors.Errorf("unexpected scanlock error: %s", scanLockResp)
 		}
 
-		if len(scanLockResp.Locks) > 0 {
-			return errors.Errorf("check data failed: lock before safePoint is not empty. locks: %+q", scanLockResp.Locks)
+		locksInfo := scanLockResp.GetLocks()
+		locks := make([]*tikv.Lock, 0, len(locksInfo))
+		for _, info := range locksInfo {
+			lock := tikv.NewLock(info)
+			locks = append(locks, lock)
+			if lock.TxnID >= c.safeLockTs {
+				unsafeLocks = append(unsafeLocks, lock)
+			}
+		}
+		if len(locks) != 0 {
+			log.Infof("found %d locks after GC at safePoint(%v)", len(locks), c.safePoint)
 		}
 
-		nextKey = loc.EndKey
-		if len(nextKey) == 0 {
-			// Finished scanning the whole store.
-			log.Infof("Check data success on safePoint %v.", safePoint)
-			return nil
+		ok, err := c.kv.GetLockResolver().BatchResolveLocks(bo, locks, loc.Region)
+		if err != nil {
+			return unsafeLocks, errors.Trace(err)
+		}
+		if !ok {
+			err = bo.Backoff(tikv.BoTxnLock, errors.Errorf("remain locks: %d", len(locks)))
+			if err != nil {
+				return unsafeLocks, errors.Trace(err)
+			}
+			continue
+		}
+		if len(locks) < scanLockLimit {
+			key = loc.EndKey
+		} else {
+			key = locks[len(locks)-1].Key
+		}
+		if len(key) == 0 {
+			break
 		}
 	}
+	return unsafeLocks, nil
+}
+
+func (c *resolveLockClient) reset(ctx context.Context) {
+	c.handleID = 0
+	c.safePoint = 0
+	c.safeLockTs = 0
+	c.mockLockTs = 0
 }
 
 func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
@@ -465,29 +508,10 @@ func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 	return ts, nil
 }
 
-func randStr() string {
-	length := rand.Intn(128)
-	res := ""
-	for i := 0; i < length; i++ {
-		res += string('a' + (rand.Int() % 26))
+func (c *resolveLockClient) getLockTs(ctx context.Context) (uint64, error) {
+	if c.mockLockTs == 0 {
+		return c.getTs(ctx)
 	}
-	return res
-}
-
-func decodeRegionMetaKey(r *metapb.Region) error {
-	if len(r.StartKey) != 0 {
-		_, decoded, err := codec.DecodeBytes(r.StartKey, nil)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		r.StartKey = decoded
-	}
-	if len(r.EndKey) != 0 {
-		_, decoded, err := codec.DecodeBytes(r.EndKey, nil)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		r.EndKey = decoded
-	}
-	return nil
+	c.mockLockTs--
+	return c.mockLockTs, nil
 }

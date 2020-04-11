@@ -30,9 +30,10 @@ import (
 )
 
 var (
-	concurrency   = flag.Int("concurrency", 200, "concurrency of worker")
 	enableGreenGC = flag.Bool("enable-green-gc", true, "whether to enable green gc")
-	tableSize     = flag.Int("table-size", 1000000, "the size of the table")
+	regionCount   = flag.Int("region-count", 200, "count of regions")
+	lockPerRegion = flag.Int("lock-per-region", 20, "count of locks in each region")
+	workers       = flag.Int("worker", 10, "count of workers to generate locks")
 )
 
 func main() {
@@ -44,14 +45,14 @@ func main() {
 		RunRound:    1,
 	}
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config: &cfg,
+		// Provisioner: cluster.NewK8sProvisioner(),
+		Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, []string{"127.0.0.1:20171", "127.0.0.1:20172", "127.0.0.1:20173", "127.0.0.1:20174"}),
 		ClientCreator: resolvelock.CaseCreator{Cfg: &resolvelock.Config{
-			Concurrency:             *concurrency,
-			EnableGreenGC:           *enableGreenGC,
-			TableSize:               *tableSize,
-			LocksPerRegion:          1,
-			GenerateLockConcurrency: 16,
+			EnableGreenGC: *enableGreenGC,
+			RegionCount:   *regionCount,
+			LockPerRegion: *lockPerRegion,
+			Worker:        *workers,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
