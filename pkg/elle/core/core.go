@@ -1,5 +1,15 @@
 package core
 
+type Rel string
+
+const (
+	WW       Rel = "ww"
+	WR       Rel = "wr"
+	RW       Rel = "rw"
+	Process  Rel = "process"
+	Realtime Rel = "realtime"
+)
+
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface{}
 type Anomalies map[string]Anomaly

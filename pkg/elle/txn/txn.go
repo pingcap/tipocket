@@ -12,20 +12,10 @@ type CheckResult struct {
 	ImpossibleModels []interface{}
 }
 
-type Rel string
-
-const (
-	WW       Rel = "ww"
-	WR       Rel = "wr"
-	RW       Rel = "rw"
-	Process  Rel = "process"
-	Realtime Rel = "realtime"
-)
-
 type CycleAnomalySpec struct {
-	Rels      []Rel
-	FirstRels []Rel
-	RestRels  []Rel
+	Rels      []core.Rel
+	FirstRels []core.Rel
+	RestRels  []core.Rel
 	With      interface{} // seems only G-nonadjacent is used, it's a little complicated
 	FilterEx  func(cycleCase CycleCase) bool
 }
