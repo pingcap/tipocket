@@ -65,7 +65,7 @@ func (r *Recorder) RecordResponse(proc int64, op interface{}) error {
 
 // RecordInvokeNemesis records nemesis invocation events on history file
 func (r *Recorder) RecordInvokeNemesis(nemesisRecord core.NemesisGeneratorRecord) error {
-	return r.record(1, core.InvokeNemesis, nemesisRecord)
+	return r.record(-1, core.InvokeNemesis, nemesisRecord)
 }
 
 // RecordRecoverNemesis records nemesis recovery events on history file
