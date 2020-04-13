@@ -84,7 +84,9 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 }
 
 // Bfs searches from a vertices set, returns all vertices searchable
-func (g *DirectedGraph) Bfs(initV []Vertex) []Vertex {
+// out = true means search to downstream vertices from `out` edges
+// out = false means search to upstream vertices from `in` edges
+func (g *DirectedGraph) Bfs(initV []Vertex, out bool) []Vertex {
 	panic("impl me")
 }
 
