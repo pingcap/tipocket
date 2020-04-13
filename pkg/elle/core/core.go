@@ -3,6 +3,7 @@ package core
 type Rel string
 
 const (
+	Empty    Rel = ""
 	WW       Rel = "ww"
 	WR       Rel = "wr"
 	RW       Rel = "rw"

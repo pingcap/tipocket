@@ -13,11 +13,11 @@ type Vertex struct {
 }
 
 type DirectedGraph struct {
-	Outs map[Vertex]map[Vertex]Rel
+	Outs map[Vertex]map[Vertex][]Rel
 	Ins  map[Vertex][]Vertex
 }
 
-// Vertices returns the set of all vertices in the node
+// Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
 	panic("impl me")
 }
@@ -83,9 +83,42 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 	panic("impl me")
 }
 
+// Bfs searches from a vertices set, returns all vertices searchable
+func (g *DirectedGraph) Bfs(initV []Vertex) []Vertex {
+	panic("impl me")
+}
+
 // SCC indexes all vertices of a strongly connected component
 type SCC struct {
 	Vertices []Vertex
+}
+
+// StronglyConnectedComponents finds all strongly connected components
+func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
+	panic("impl me")
+}
+
+// MapVertices takes a function of vertices, returns graph with all
+//  vertices mapped via f
+func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGraph {
+	panic("impl me")
+}
+
+// RenumberGraph takes a Graph and rewrites each vertex to a unique integer, returning the
+//  rewritten Graph, and a vector of the original vertexes for reconstruction.
+// That means if we apply MapVertices to dg with remap, it can recover to g again
+func (g *DirectedGraph) RenumberGraph() (dg *DirectedGraph, remap func(interface{}) interface{}) {
+	panic("impl me")
+}
+
+// MapToDirectedGraph turns a sequence of [node, successors] map into a directed graph
+func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
+	panic("impl me")
+}
+
+// DigraphUion takes the union of n graphs, merging edges with union
+func DigraphUion(graphs ...DirectedGraph) *DirectedGraph {
+	panic("impl me")
 }
 
 // TODO
@@ -93,11 +126,6 @@ type Transition struct{}
 
 // TODO
 type Predicate struct{}
-
-// SCCs receives a direct graph and finds all strongly connected components
-func SCCs(graph DirectedGraph) []SCC {
-	panic("impl me")
-}
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
 func FindCycle(graph DirectedGraph, scc SCC) Circle {
