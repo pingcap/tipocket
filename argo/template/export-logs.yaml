@@ -8,7 +8,7 @@ spec:
         parameters:
           - name: ns
           - name: limit
-            default: 2000000
+            default: 1000000
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username

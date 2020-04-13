@@ -12,6 +12,12 @@ spec:
         value: "true"
       - name: image_version
         value: release-4.0-nightly
+      - name: tidb_image
+        value: ""
+      - name: tikv_image
+        value: ""
+      - name: pd_image
+        value: ""
       - name: storage_class
         value: gp2
       - name: abtest_version
@@ -69,6 +75,12 @@ spec:
                   value: "{{workflow.parameters.purge}}"
                 - name: image_version
                   value: "{{workflow.parameters.image_version}}"
+                - name: tidb_image
+                  value: "{{workflow.parameters.tidb_image}}"
+                - name: tikv_image
+                  value: "{{workflow.parameters.tikv_image}}"
+                - name: pd_image
+                  value: "{{workflow.parameters.pd_image}}"
                 - name: storage_class
                   value: "{{workflow.parameters.storage_class}}"
                 - name: abtest_version

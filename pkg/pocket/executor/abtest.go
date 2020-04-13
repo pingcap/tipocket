@@ -34,12 +34,6 @@ func (e *Executor) abTest() {
 func (e *Executor) execABTestSQL(sql *types.SQL) error {
 	var err error
 
-	if e.TiFlash && hasReadOperation(sql) {
-		if err := e.WaitTiFlashTableSync(sql.SQLTable); err != nil {
-			return err
-		}
-	}
-
 	e.logStmtTodo(sql.SQLStmt)
 	switch sql.SQLType {
 	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:

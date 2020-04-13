@@ -12,6 +12,12 @@ spec:
             default: "true"
           - name: image_version
             default: nightly
+          - name: tidb_image
+            default: ""
+          - name: tikv_image
+            default: ""
+          - name: pd_image
+            default: ""
           - name: abtest_version
             value: latest
           - name: storage_class
@@ -54,7 +60,7 @@ spec:
             default: admin
       container:
         name: tipocket
-        image: 'pingcap/tipocket:latest'
+        image: 'yeya24/tipocket:tiflash-cdc'
         imagePullPolicy: Always
         command:
           - sh
@@ -65,6 +71,9 @@ spec:
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
+            -tidb-image={{inputs.parameters.tidb_image}} \
+            -tikv-image={{inputs.parameters.tikv_image}} \
+            -pd-image={{inputs.parameters.pd_image}} \
             -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \

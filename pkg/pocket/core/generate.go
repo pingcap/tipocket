@@ -57,7 +57,7 @@ func (c *Core) beforeGenerate() error {
 		}
 		for _, t := range tables {
 			if err := c.coreExec.WaitTiFlashTableSync(t); err != nil {
-				log.Infof("table %s sync to tiflash failed %v", t, err)
+				log.Infof("table %s sync to tiflash failed, error is %v", t, err)
 				return errors.Trace(err)
 			}
 			log.Infof("table %s sync to tiflash completed", t)
