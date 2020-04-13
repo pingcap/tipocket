@@ -43,6 +43,9 @@ spec:
           - name: case-logs
             archiveLogs: true
             path: /logs
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
