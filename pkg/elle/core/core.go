@@ -30,8 +30,24 @@ type DataExplainer interface {
 	RenderExplanation() string
 }
 
-func CombineExplainer([]DataExplainer) DataExplainer {
-	panic("implement me")
+// CombinedExplainer struct
+type CombinedExplainer struct {
+	Explainers []DataExplainer
+}
+
+// ExplainPairData find dependencies in a and b
+func (c *CombinedExplainer) ExplainPairData() interface{} {
+	return nil
+}
+
+// RenderExplanation render explanation result
+func (c *CombinedExplainer) RenderExplanation() string {
+	return ""
+}
+
+// CombineExplainer combines explainers into one
+func CombineExplainer(explainers []DataExplainer) DataExplainer {
+	return &CombinedExplainer{explainers}
 }
 
 type Circle struct {
