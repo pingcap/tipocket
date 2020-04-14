@@ -30,6 +30,9 @@ spec:
             default: admin
           - name: tikv-replicas
             default: "4"
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
