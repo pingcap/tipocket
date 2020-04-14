@@ -1,6 +1,9 @@
 package txn
 
-import "github.com/pingcap/tipocket/pkg/elle/core"
+import (
+	"github.com/pingcap/tipocket/pkg/elle/core"
+	"strconv"
+)
 
 type OpMopIterator struct {
 	history      core.History
@@ -48,4 +51,53 @@ func Gen(mop []core.Mop) core.Op {
 		Type:  core.Invoke,
 		Value: mop,
 	}
+}
+
+// IntermediateWrites return a map likes map[key](map[old-version]overwrite-op).
+// Note: This function is very very strange, please pay attention to it carefully.
+func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
+	final := map[int]core.MopValueType{}
+	im := map[int]map[core.MopValueType]*core.Op{}
+
+	for _, op := range history {
+		for _, mop := range op.Value {
+			if mop.IsAppend() {
+				a := mop.(core.Append)
+				realKey := mustAtoi(a.Key)
+				lastOp, exists := final[realKey]
+				if !exists {
+					final[realKey] = a.Value
+				} else {
+					im[realKey][lastOp] = &op
+				}
+			}
+		}
+	}
+
+	return im
+}
+
+func FailedWrites(history core.History)  {
+	panic("implement me")
+}
+
+func mustAtoi(s string) int {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+// helper function for CyclesWithWrite.
+func cycles()  {
+	panic("implement me")
+}
+
+func CyclesWithWrite()  {
+	panic("implement me")
+}
+
+func ResultMap()  {
+	panic("implement me")
 }
