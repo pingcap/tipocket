@@ -14,16 +14,6 @@ type CheckResult struct {
 	ImpossibleModels []interface{}
 }
 
-type CycleAnomalySpec struct {
-	Rels      []core.Rel
-	FirstRels []core.Rel
-	RestRels  []core.Rel
-	With      interface{} // seems only G-nonadjacent is used, it's a little complicated
-	FilterEx  func(cycleCase CycleCase) bool
-}
-
-var CycleAnomalySpecs []CycleAnomalySpec
-
 // Takes an options map, including a collection of expected consistency models
 //  :consistency-models, a set of additional :anomalies, an analyzer function,
 //  and a history. Analyzes the history and yields the analysis, plus an anomaly

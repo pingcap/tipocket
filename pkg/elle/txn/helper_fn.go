@@ -1,8 +1,9 @@
 package txn
 
 import (
-	"github.com/pingcap/tipocket/pkg/elle/core"
 	"strconv"
+
+	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
 type OpMopIterator struct {
@@ -77,7 +78,7 @@ func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*cor
 	return im
 }
 
-func FailedWrites(history core.History)  {
+func FailedWrites(history core.History) {
 	panic("implement me")
 }
 
@@ -89,15 +90,6 @@ func mustAtoi(s string) int {
 	return n
 }
 
-// helper function for CyclesWithWrite.
-func cycles()  {
-	panic("implement me")
-}
-
-func CyclesWithWrite()  {
-	panic("implement me")
-}
-
-func ResultMap()  {
+func ResultMap() {
 	panic("implement me")
 }
