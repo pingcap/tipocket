@@ -72,7 +72,7 @@ func timeChaosLevel(chaos string) timeChaosLevels {
 	var level timeChaosLevels
 	var ok bool
 	if level, ok = skewTimeStrMap[chaos]; !ok {
-		log.Fatal("unsupported timeChaosLevel %s.", chaos)
+		log.Fatalf("unsupported timeChaosLevel %s.", chaos)
 	}
 	return level
 }
