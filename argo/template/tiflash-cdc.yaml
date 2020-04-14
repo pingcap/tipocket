@@ -58,6 +58,9 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'yeya24/tipocket:tiflash-cdc'
