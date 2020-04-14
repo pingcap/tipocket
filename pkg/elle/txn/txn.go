@@ -1,6 +1,8 @@
 package txn
 
-import "github.com/pingcap/tipocket/pkg/elle/core"
+import (
+	"github.com/pingcap/tipocket/pkg/elle/core"
+)
 
 type Opts struct {
 }
@@ -61,5 +63,5 @@ func CycleCasesInScc(graph core.DirectedGraph, explainer core.DataExplainer, scc
 }
 
 func init() {
-	// CycleAnomalySpecs =
+	//CycleAnomalySpecs =
 }
