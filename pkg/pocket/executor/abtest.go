@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/pocket/connection"
@@ -163,7 +162,7 @@ func (e *Executor) abTestSelect(sql string) error {
 	}
 
 	if len(res1) != len(res2) {
-		return errors.Errorf("row number not match res1: %d, res2: %d", len(res1), len(res2))
+		return util.WrapErrExactlyNotSame("row number not match res1: %d, res2: %d", len(res1), len(res2))
 	}
 	for index := range res1 {
 		var (
@@ -172,7 +171,7 @@ func (e *Executor) abTestSelect(sql string) error {
 		)
 
 		if len(row1) != len(row1) {
-			return errors.Errorf("column number not match res1: %d, res2: %d", len(res1), len(res2))
+			return util.WrapErrExactlyNotSame("column number not match res1: %d, res2: %d", len(res1), len(res2))
 		}
 
 		for rIndex := range row1 {
@@ -181,7 +180,7 @@ func (e *Executor) abTestSelect(sql string) error {
 				item2 = row2[rIndex]
 			)
 			if err := item1.MustSame(item2); err != nil {
-				return errors.Errorf("%s, row index %d, column index %d", err.Error(), index, rIndex)
+				return util.WrapErrExactlyNotSame("%s, row index %d, column index %d", err.Error(), index, rIndex)
 			}
 		}
 	}
