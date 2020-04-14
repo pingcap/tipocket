@@ -1,7 +1,9 @@
 package core
 
+// Rel stands for relation in dependencies
 type Rel string
 
+// Rel enums
 const (
 	Empty    Rel = ""
 	WW       Rel = "ww"
@@ -70,16 +72,16 @@ func (c *CycleExplainer) renderCycleExplanation(explainer DataExplainer, circle 
 	panic("impl me")
 }
 
-//  A function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
-type Analyzer func(history History) (Anomalies, DirectedGraph, DataExplainer)
+// Analyzer is a function which takes a history and returns a {:graph, :explainer} map; e.g. realtime-graph.
+type Analyzer func(history History) (DirectedGraph, DataExplainer)
 
 // RealtimeGraph analyzes real-time
-func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
+func RealtimeGraph(history History) (DirectedGraph, DataExplainer) {
 	panic("implement me")
 }
 
 // ProcessGraph analyzes process
-func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
+func ProcessGraph(history History) (DirectedGraph, DataExplainer) {
 	panic("implement me")
 }
 
