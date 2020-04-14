@@ -15,7 +15,7 @@ require (
 	github.com/mgechev/revive v1.0.2
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
-	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
+	github.com/pingcap/chaos-mesh v0.0.0-20200405033024-7a8795a92c55
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36
@@ -31,9 +31,8 @@ require (
 	github.com/uber-go/atomic v1.5.0 // indirect
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
-	k8s.io/api v0.0.0
-	k8s.io/apimachinery v0.0.0
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20191114200735-6ca3b61696b6
 	sigs.k8s.io/controller-runtime v0.4.0
@@ -48,25 +47,21 @@ replace github.com/pingcap/tidb => github.com/pingcap/tidb v0.0.0-20200317142013
 
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v1.8.2-0.20200213233353-b90be6f32a33
 
-replace github.com/renstrom/dedent => github.com/lithammer/dedent v1.1.0
-
 replace github.com/uber-go/atomic => go.uber.org/atomic v1.5.0
 
-replace k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
+replace k8s.io/api => k8s.io/api v0.17.0
 
-replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
+replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.0
 
-replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.17.0
 
-replace k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
+replace k8s.io/apiserver => k8s.io/apiserver v0.17.0
 
 replace k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20190918162238-f783a3654da8
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190918160344-1fbdaa4c8d90
 
 replace k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
-
-replace k8s.io/csi-api => k8s.io/csi-api v0.0.0-20190118125032-c4557c74373f
 
 replace k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.0.0-20190918161219-8c8f079fddc3
 
@@ -82,10 +77,6 @@ replace k8s.io/metrics => k8s.io/metrics v0.0.0-20190918162108-227c654b2546
 
 replace k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918161442-d4c9c65c82af
 
-replace k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.0.0-20190918162410-e45c26d066f2
-
-replace k8s.io/sample-controller => k8s.io/sample-controller v0.0.0-20190918161628-92eb3cb7496c
-
 replace k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20190918163234-a9c1f33e9fb9
 
 replace k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.0.0-20190918163108-da9fdfce26bb
@@ -99,8 +90,6 @@ replace k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.0.0-20190918
 replace k8s.io/kubectl => k8s.io/kubectl v0.0.0-20190918164019-21692a0861df
 
 replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20190918163543-cfa506e53441
-
-replace k8s.io/node-api => k8s.io/node-api v0.0.0-20190918163711-2299658ad911
 
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
 
