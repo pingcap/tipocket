@@ -19,41 +19,130 @@ type DirectedGraph struct {
 
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
-	panic("impl me")
+	vertices := []Vertex{}
+	have_in := make(map[Vertex]bool)
+
+	for key := range g.Ins {
+		vertices = append(vertices, key)
+		have_in[key] = true
+	}
+
+	for key := range g.Outs {
+		_, ok := have_in[key]
+		if !ok {
+			vertices = append(vertices, key)
+		}
+	}
+	return vertices
 }
 
-// In returns inbound edges to v in graph g
+// In returns inbound vertices to v in graph g
 func (g *DirectedGraph) In(v Vertex) []Vertex {
-	panic("impl me")
+	_, ok := g.Ins[v]
+	if !ok {
+		return nil
+	} else {
+		return g.Ins[v]
+	}
 }
 
-// Out returns outbound edges from v in graph g
+// Out returns outbound vertices from v in graph g
 func (g *DirectedGraph) Out(v Vertex) []Vertex {
-	panic("impl me")
+	_, ok := g.Outs[v]
+	if !ok {
+		return nil
+	}
+
+	vertices := []Vertex{}
+
+	for key := range g.Outs[v] {
+		vertices = append(vertices, key)
+	}
+	return vertices
 }
 
 // Edges returns the edge between two vertices
 func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
-	panic("impl me")
+	_, oka := g.Outs[a]
+	_, okb := g.Ins[b]
+	if !oka || !okb {
+		return nil
+	}
+
+	_, ok := g.Outs[a][b]
+	if !ok {
+		return nil
+	}
+
+	edges := []Edge{}
+	for _, rel := range g.Outs[a][b] {
+		edges = append(edges, Edge{
+			From:  a,
+			To:    b,
+			Value: rel,
+		})
+	}
+	return edges
 }
 
 // Link links two vertices relationship
 func (g *DirectedGraph) Link(v Vertex, succ []Vertex, rel Rel) {
-	panic("impl me")
+	for _, suc := range succ {
+
+		_, ok := g.Outs[v]
+		if !ok {
+			g.Outs[v] = make(map[Vertex][]Rel)
+		}
+
+		g.Outs[v][suc] = append(g.Outs[v][suc], rel)
+		g.Ins[suc] = append(g.Ins[suc], v)
+	}
 }
 
 // LinkToAll links x to all ys
 func (g *DirectedGraph) LinkToAll(x Vertex, ys []Vertex, rel Rel) {
-	panic("impl me")
+	for _, y := range ys {
+
+		_, ok := g.Outs[x]
+		if !ok {
+			g.Outs[x] = make(map[Vertex][]Rel)
+		}
+
+		g.Outs[x][y] = append(g.Outs[x][y], rel)
+		g.Ins[y] = append(g.Ins[y], x)
+	}
 }
 
 // LinkAllTo links all xs to y
-func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex) {
-	panic("impl me")
+func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
+	for _, x := range xs {
+
+		_, ok := g.Outs[x]
+		if !ok {
+			g.Outs[x] = make(map[Vertex][]Rel)
+		}
+
+		g.Outs[x][y] = append(g.Outs[x][y], rel)
+		g.Ins[y] = append(g.Ins[y], x)
+	}
 }
 
 func (g *DirectedGraph) UnLink(a, b Vertex) {
-	panic("impl me")
+	delete(g.Outs[a], b)
+
+	have_a := false
+	for {
+		for id , vertex := range g.Ins[b] {
+			if vertex == a{
+				have_a = true
+				g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
+				break
+			}
+		}
+		if have_a == false {
+			break
+		}
+	}
 }
 
 // Fork implements `forked` semantics on DirectedGraph
@@ -84,7 +173,9 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 }
 
 // Bfs searches from a vertices set, returns all vertices searchable
-func (g *DirectedGraph) Bfs(initV []Vertex) []Vertex {
+// out = true means search to downstream vertices from `out` edges
+// out = false means search to upstream vertices from `in` edges
+func (g *DirectedGraph) Bfs(initV []Vertex, out bool) []Vertex {
 	panic("impl me")
 }
 
