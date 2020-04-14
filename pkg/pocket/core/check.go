@@ -52,9 +52,8 @@ func (c *Core) startCheckConsistency() {
 					// TODO: pass error by channel, stop process from outside
 					log.Errorf("compare data error %+v", errors.ErrorStack(err))
 					return false, nil
-				} else {
-					return true, nil
 				}
+				return true, nil
 			})
 			if err != nil {
 				log.Fatalf("compare data failed %v", err)
@@ -263,9 +262,19 @@ SYNC:
 func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {
 	sqls := makeCompareSQLs(schema)
 	for _, sql := range sqls {
-		if err := beganConnect.ABTestSelect(sql); err != nil {
-			log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
-				sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
+		err := wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (done bool, err error) {
+			if err := beganConnect.ABTestSelect(sql); err != nil {
+				if errors.Cause(err) == util.ErrExactlyNotSame {
+					log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
+						sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
+				}
+				log.Errorf("a/b testing occurred an error and will retry later, %+v", err)
+				return false, nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			return false, errors.Trace(err)
 		}
 	}
 	log.Info("consistency check pass")

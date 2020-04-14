@@ -24,6 +24,7 @@ require (
 	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
+	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
