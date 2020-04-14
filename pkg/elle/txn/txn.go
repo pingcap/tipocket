@@ -61,5 +61,47 @@ func CycleCasesInScc(graph core.DirectedGraph, explainer core.DataExplainer, scc
 }
 
 func init() {
-	// CycleAnomalySpecs =
+	//CycleAnomalySpecs =
+}
+
+type DistMode = int
+
+const (
+	// Optional string field for Uniform. means every key has an equal probability of appearing.
+	Uniform DistMode = iota
+	// Exponential means that key i in the current key pool chosen.
+	Exponential
+)
+
+// KeyDist means the distribution of the keys. Defaults to :exponential.
+type KeyDist struct {
+	DistMode DistMode
+	// The base for an exponential distribution.
+	// Defaults to 2, so the first key is twice as likely as the second,
+	//  which is twice as likely as the third, etc.
+	KeyDistBase int
+}
+
+type WrTxnOpts struct {
+	KeyDist         KeyDist
+	KeyCount        int
+	MinKeyLength    int
+	MaxKeyLength    int
+	MaxWritesPerKey int
+}
+
+type MopIterator struct {
+	opts WrTxnOpts
+}
+
+func (record *MopIterator) Next() []core.Mop {
+	panic("not implemented")
+}
+
+func WrTxn(opts WrTxnOpts) MopIterator {
+	panic("implement me")
+}
+
+func WrTxnWithDefaultOpts() MopIterator {
+	panic("implement me")
 }
