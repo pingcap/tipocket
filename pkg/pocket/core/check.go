@@ -23,6 +23,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pingcap/tipocket/pkg/pocket/executor"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
@@ -39,11 +40,24 @@ func (c *Core) startCheckConsistency() {
 		waitingForCheck = true
 		t++
 		go func(t int) {
+			var (
+				result bool
+				err    error
+			)
 			log.Info("ready to compare data")
-			result, err := c.checkConsistency(false)
+
+			err = wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (bool, error) {
+				result, err = c.checkConsistency(false)
+				if err != nil {
+					// TODO: pass error by channel, stop process from outside
+					log.Errorf("compare data error %+v", errors.ErrorStack(err))
+					return false, nil
+				} else {
+					return true, nil
+				}
+			})
 			if err != nil {
-				// TODO: pass error by channel, stop process from outside
-				log.Fatalf("compare data error %+v", errors.ErrorStack(err))
+				log.Fatalf("compare data failed %v", err)
 			}
 			log.Infof("test %d compare data result %t\n", t, result)
 			waitingForCheck = false
