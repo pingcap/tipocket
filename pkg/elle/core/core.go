@@ -19,7 +19,7 @@ const (
 type Anomaly interface{}
 type Anomalies map[string]Anomaly
 
-// Analyzer is a function which takes a history and returns a {:graph, :explainer} map; e.g. realtime-graph.
+// Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
 type Analyzer func(history History) (Anomalies, DirectedGraph, DataExplainer)
 
 // MergeAnomalies merges n Anomaly together.
