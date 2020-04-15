@@ -272,7 +272,91 @@ type SCC struct {
 
 // StronglyConnectedComponents finds all strongly connected components
 func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
-	panic("impl me")
+	dfn := make(map[Vertex]int)
+	low := make(map[Vertex]int)
+	cnt := 0
+	belong := make(map[Vertex]int)
+	in := make(map[Vertex]bool)
+	tag := make(map[Vertex]map[Vertex]bool)
+	s2 := []Vertex{}
+	scc := []SCC{}
+	vertices := g.Vertices()
+
+	for _, v := range vertices {
+		if dfn[v] == 0 {
+			s1 := []Vertex{v}
+			index := 0
+			for len(s1) > 0 {
+				x := s1[len(s1)-1]
+				s1 = s1[:len(s1)-1]
+				if dfn[x] == 0 {
+					index = index + 1
+					dfn[x] = index
+					low[x] = index
+					s2 = append(s2, x)
+					in[x] = true;
+				}
+				finish := true
+				for next, _ := range g.Outs[x] {
+					if dfn[next] == 0 {
+						s1 = append(s1, x)
+						s1 = append(s1, next)
+						_, ok := tag[x]
+						if !ok {
+							tag[x] = make(map[Vertex]bool)
+						}
+						tag[x][next] = true
+						finish = false
+						break
+					} else {
+						if in[next] == true {
+							if low[x] > dfn[next] {
+								low[x] = dfn[next]
+							}
+						}
+					}
+				}
+				if finish == true {
+					for next, _ := range g.Outs[x] {
+						_, ok := tag[x]
+						if !ok {
+							tag[x] = make(map[Vertex]bool)
+						}
+						if tag[x][next] == true {
+							if low[x] > low[next] {
+								low[x] = low[next]
+							}
+						}
+					}
+					if low[x] == dfn[x] {
+						var t Vertex
+						cnt = cnt + 1
+						for {
+							t = s2[len(s2)-1]
+							s2 = s2[:len(s2)-1]
+							in[t] = false
+							belong[t] = cnt;
+							if t == x {
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	for i := 1; i <= cnt; i++ {
+		ts := SCC{
+			Vertices: []Vertex{},
+		}
+		for _, v := range vertices {
+			if belong[v] == i {
+				ts.Vertices = append(ts.Vertices, v)
+			}
+		}
+		scc = append(scc, ts)
+	}
+	return scc
 }
 
 // MapVertices takes a function of vertices, returns graph with all
