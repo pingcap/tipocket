@@ -19,6 +19,9 @@ const (
 type Anomaly interface{}
 type Anomalies map[string]Anomaly
 
+// Analyzer is a function which takes a history and returns a {:graph, :explainer} map; e.g. realtime-graph.
+type Analyzer func(history History) (Anomalies, DirectedGraph, DataExplainer)
+
 // MergeAnomalies merges n Anomaly together.
 func MergeAnomalies(anomalies ...Anomalies) Anomalies {
 	panic("implement me")
@@ -79,11 +82,8 @@ func (c *CycleExplainer) renderCycleExplanation(explainer DataExplainer, circle 
 	panic("impl me")
 }
 
-// Analyzer is a function which takes a history and returns a {:graph, :explainer} map; e.g. realtime-graph.
-type Analyzer func(history History) (DirectedGraph, DataExplainer)
-
 // RealtimeGraph analyzes real-time
-func RealtimeGraph(history History) (DirectedGraph, DataExplainer) {
+func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	panic("implement me")
 }
 
@@ -121,7 +121,7 @@ func ProcessOrder(history History, process int) DirectedGraph {
 }
 
 // ProcessGraph analyzes process
-func ProcessGraph(history History) (DirectedGraph, DataExplainer) {
+func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
 		okHistory = history.FilterType(OpTypeOk)
 		processes map[int]struct{}
@@ -137,7 +137,7 @@ func ProcessGraph(history History) (DirectedGraph, DataExplainer) {
 		}
 	}
 
-	return *DigraphUion(graphs...), ProcessExplainer{}
+	return nil, *DigraphUion(graphs...), ProcessExplainer{}
 }
 
 // MonotonicKeyExplainer ...
@@ -199,7 +199,7 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 }
 
 // MonotonicKeyGraph analyzes monotonic key
-func MonotonicKeyGraph(history History) (DirectedGraph, DataExplainer) {
+func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
 		okHistory = history.FilterType(OpTypeOk)
 		keys      map[string]struct{}
@@ -214,7 +214,7 @@ func MonotonicKeyGraph(history History) (DirectedGraph, DataExplainer) {
 		}
 	}
 
-	return *DigraphUion(graphs...), MonotonicKeyExplainer{}
+	return nil, *DigraphUion(graphs...), MonotonicKeyExplainer{}
 }
 
 type CheckResult struct {
