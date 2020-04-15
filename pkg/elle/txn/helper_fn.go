@@ -57,10 +57,10 @@ func Gen(mop []core.Mop) core.Op {
 // IntermediateWrites return a map likes map[key](map[old-version]overwrite-op).
 // Note: This function is very very strange, please pay attention to it carefully.
 func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
-	final := map[int]core.MopValueType{}
 	im := map[int]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
+		final := map[int]core.MopValueType{}
 		for _, mop := range op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
