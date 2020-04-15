@@ -78,7 +78,6 @@ func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
 
 // Link links two vertices relationship
 func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
-
 	_, ok := g.Outs[v]
 	if !ok {
 		g.Outs[v] = make(map[Vertex][]Rel)
@@ -94,7 +93,17 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	if have_rel == false {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
-	g.Ins[succ] = append(g.Ins[succ], v)
+
+	have_v := false
+	for _, item := range g.Ins[succ] {
+		if item == v {
+			have_v = true
+			break
+		}
+	}
+	if have_v == false {
+		g.Ins[succ] = append(g.Ins[succ], v)
+	}
 }
 
 // LinkToAll links x to all ys
@@ -114,16 +123,9 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
 
-	have_a := false
-	for {
-		for id , vertex := range g.Ins[b] {
-			if vertex == a{
-				have_a = true
-				g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
-				break
-			}
-		}
-		if have_a == false {
+	for id , vertex := range g.Ins[b] {
+		if vertex == a {
+			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
 		}
 	}
@@ -133,27 +135,65 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 func (g *DirectedGraph) Fork() *DirectedGraph {
 	return deepcopy.Copy(g).(*DirectedGraph)
 }
-
-// keepEdgeValues transforms a graph by applying a function (f edge-value) to each edge in the
-//  graph. Where the function returns `nil`, removes that edge altogether
-func (g *DirectedGraph) keepEdgeValues(f func(interface{}) interface{}) *DirectedGraph {
-	panic("impl me")
-}
-
-// RemoveRelationship removes the given relationship from it
-func (g *DirectedGraph) RemoveRelationship(rel Rel) *DirectedGraph {
-	panic("impl me")
+// IntersectionRel returns the union of res1 and res2
+func IntersectionRel(rels1 []Rel,rels2 []Rel) []Rel{
+	rel := []Rel{}
+	for _, rel1 := range rels1 {
+		both := false
+		for _, rel2 := range rels2{
+			if rel1 == rel2 {
+				both = true
+				break
+			}
+		}
+		if both == true {
+			rel = append(rel, rel1)
+		}
+	}
+	return rel
 }
 
 // ProjectRelationship filters a graph to just those edges with the given relationship
 func (g *DirectedGraph) ProjectRelationship(rel Rel) *DirectedGraph {
-	panic("impl me")
+	fg := g.Fork()
+
+	vertices := fg.Vertices()
+	for _, x := range vertices {
+		_, ok := g.Outs[x]
+		if ok == true {
+			for y, _:= range g.Outs[x] {
+				rels := IntersectionRel(g.Outs[x][y], []Rel{rel})
+				fg.UnLink(x, y)
+				for _, item := range rels {
+					fg.Link(x, y, item)
+				}
+			}
+		}
+	}
+
+	return fg
 }
 
 // FilterRelationships filters a graph g to just those edges which intersect with the given set of
 //  relationships
 func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
-	panic("impl me")
+	fg := g.Fork()
+
+	vertices := fg.Vertices()
+	for _, x := range vertices {
+		_, ok := g.Outs[x]
+		if ok == true {
+			for y, _:= range g.Outs[x] {
+				rels := IntersectionRel(g.Outs[x][y], rels)
+				fg.UnLink(x, y)
+				for _, item := range rels {
+					fg.Link(x, y, item)
+				}
+			}
+		}
+	}
+
+	return fg
 }
 
 // Bfs searches from a vertices set, returns all vertices searchable
