@@ -29,7 +29,7 @@ func TestProcessGraph(t *testing.T) {
 		},
 	}
 
-	g, _ := ProcessGraph(history)
+	_, g, _ := ProcessGraph(history)
 	assert.Equal(t, err, nil, "test process graph, parse history")
 	assert.Equal(t, g, processGraph)
 }

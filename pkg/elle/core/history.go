@@ -68,7 +68,7 @@ type Read struct {
 // Op is operation
 type Op struct {
 	Index   int       `json:"index"`
-	Process int       `json:"process"`
+	Process *int      `json:"process"`
 	Time    time.Time `json:"time"`
 	Type    OpType    `json:"type"`
 	Value   []Mop     `json:"value"`
@@ -167,7 +167,7 @@ func ParseOp(opString string) (Op, error) {
 		if err != nil {
 			return empty, err
 		}
-		op.Process = opProcess
+		op.Process = &opProcess
 	}
 
 	opTypeMatch := opTypePattern.FindStringSubmatch(operationMatch[1])
@@ -259,7 +259,7 @@ func (h History) FilterType(t OpType) History {
 func (h History) FilterProcess(p int) History {
 	var filterHistory History
 	for _, op := range h {
-		if op.Process == p {
+		if op.Process != nil && *op.Process == p {
 			filterHistory = append(filterHistory, op)
 		}
 	}

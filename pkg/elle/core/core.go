@@ -108,7 +108,7 @@ func ProcessOrder(history History, process int) DirectedGraph {
 	)
 
 	for _, op := range history {
-		if op.Process == process {
+		if op.Process != nil && *op.Process == process {
 			processHistory = append(processHistory, op)
 		}
 	}
@@ -129,10 +129,10 @@ func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	)
 
 	for _, op := range okHistory {
-		if op.Process != 0 {
-			if _, ok := processes[op.Process]; !ok {
-				processes[op.Process] = struct{}{}
-				graphs = append(graphs, ProcessOrder(okHistory, op.Process))
+		if op.Process != nil {
+			if _, ok := processes[*op.Process]; !ok {
+				processes[*op.Process] = struct{}{}
+				graphs = append(graphs, ProcessOrder(okHistory, *op.Process))
 			}
 		}
 	}

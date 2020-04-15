@@ -15,6 +15,11 @@ const PaparExample = `{:index 0 :type :invoke  :value [[:append 253 1] [:append 
 {:index 6 :type :invoke, :value [[:append 250 10] [:r 253 nil] [:r 255 nil] [:append 256 3]]}
 {:index 7 :type :ok      :value [[:append 250 10] [:r 253 [1 3 4]] [:r 255 [2 3 4 5]] [:append 256 3]]}`
 
+// copy i and return its pointer
+func int2pointer(i int) *int {
+	return &i
+}
+
 func TestParseHistory(t *testing.T) {
 	txn1Mops := []Mop{
 		Append{Key: "253", Value: 1},
@@ -55,12 +60,12 @@ func TestParseHistory(t *testing.T) {
 	history, err := ParseHistory(PaparExample)
 	assert.Equal(t, err, nil, "parse history, no error")
 	assert.Equal(t, len(history), 8, "parse history, length")
-	assert.Equal(t, history[0], Op{Index: 0, Type: Invoke, Value: txn1Mops}, "parse history, history[0]")
-	assert.Equal(t, history[1], Op{Index: 1, Process: 1, Type: Ok, Value: txn1Mops}, "parse history, history[1]")
-	assert.Equal(t, history[2], Op{Index: 2, Process: 1, Type: Invoke, Value: []Mop{Append{Key: "255", Value: 8}, Read{Key: "253", Value: nil}}}, "parse history, history[2]")
-	assert.Equal(t, history[3], Op{Index: 3, Type: Ok, Value: []Mop{Append{Key: "255", Value: 8}, Read{Key: "253", Value: []int{1, 3, 4}}}}, "parse history, history[3]")
-	assert.Equal(t, history[4], Op{Index: 4, Process: 2, Type: Invoke, Value: txn3MopsInvoke}, "parse history, history[4]")
-	assert.Equal(t, history[5], Op{Index: 5, Type: Ok, Value: txn3MopsOk}, "parse history, history[5]")
-	assert.Equal(t, history[6], Op{Index: 6, Type: Invoke, Value: txn5MopsInvoke}, "parse history, history[6]")
-	assert.Equal(t, history[7], Op{Index: 7, Type: Ok, Value: txn5MopsOk}, "parse history, history[7]")
+	assert.Equal(t, history[0], Op{Index: 0, Type: OpTypeInvoke, Value: txn1Mops}, "parse history, history[0]")
+	assert.Equal(t, history[1], Op{Index: 1, Process: int2pointer(1), Type: OpTypeOk, Value: txn1Mops}, "parse history, history[1]")
+	assert.Equal(t, history[2], Op{Index: 2, Process: int2pointer(1), Type: OpTypeInvoke, Value: []Mop{Append{Key: "255", Value: 8}, Read{Key: "253", Value: nil}}}, "parse history, history[2]")
+	assert.Equal(t, history[3], Op{Index: 3, Type: OpTypeOk, Value: []Mop{Append{Key: "255", Value: 8}, Read{Key: "253", Value: []int{1, 3, 4}}}}, "parse history, history[3]")
+	assert.Equal(t, history[4], Op{Index: 4, Process: int2pointer(2), Type: OpTypeInvoke, Value: txn3MopsInvoke}, "parse history, history[4]")
+	assert.Equal(t, history[5], Op{Index: 5, Type: OpTypeOk, Value: txn3MopsOk}, "parse history, history[5]")
+	assert.Equal(t, history[6], Op{Index: 6, Type: OpTypeInvoke, Value: txn5MopsInvoke}, "parse history, history[6]")
+	assert.Equal(t, history[7], Op{Index: 7, Type: OpTypeOk, Value: txn5MopsOk}, "parse history, history[7]")
 }
