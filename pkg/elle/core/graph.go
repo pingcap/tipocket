@@ -83,25 +83,25 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Outs[v] = make(map[Vertex][]Rel)
 	}
 
-	have_rel := false
+	haveRel := false
 	for _, item := range g.Outs[v][succ] {
 		if item == rel {
-			have_rel = true
+			haveRel = true
 			break
 		}
 	}
-	if have_rel == false {
+	if haveRel == false {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
 
-	have_v := false
+	haveV := false
 	for _, item := range g.Ins[succ] {
 		if item == v {
-			have_v = true
+			haveV = true
 			break
 		}
 	}
-	if have_v == false {
+	if haveV == false {
 		g.Ins[succ] = append(g.Ins[succ], v)
 	}
 }
@@ -201,22 +201,22 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 	queue := initV
 	V := []Vertex{}
-	have_visited := make(map[Vertex]bool)
+	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
-		have_visited[vertex] = true
+		haveVisited[vertex] = true
 		V = append(V, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
-		if have_visited[cur] == false {
-			have_visited[cur] = true
+		if haveVisited[cur] == false {
+			haveVisited[cur] = true
 			V = append(V, cur)
 		}
 		queue = queue[1:]
 
 		for next, _ := range g.Outs[cur] {
-			if have_visited[next] == true {
+			if haveVisited[next] == true {
 				continue
 			}
 			queue = append(queue, next)
@@ -230,22 +230,22 @@ func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 	queue := initV
 	V := []Vertex{}
-	have_visited := make(map[Vertex]bool)
+	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
-		have_visited[vertex] = true
+		haveVisited[vertex] = true
 		V = append(V, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
-		if have_visited[cur] == false {
-			have_visited[cur] = true
+		if haveVisited[cur] == false {
+			haveVisited[cur] = true
 			V = append(V, cur)
 		}
 		queue = queue[1:]
-		
+
 		for _, next := range g.Ins[cur] {
-			if have_visited[next] == true {
+			if haveVisited[next] == true {
 				continue
 			}
 			queue = append(queue, next)
