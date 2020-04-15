@@ -52,6 +52,11 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex) {
 	panic("impl me")
 }
 
+// LinkAllToAll links all xs to ys
+func (g *DirectedGraph) LinkAllToAll(xs []Vertex, ys []Vertex) {
+	panic("impl me")
+}
+
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	panic("impl me")
 }

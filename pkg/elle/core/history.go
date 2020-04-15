@@ -9,10 +9,6 @@ import (
 	"github.com/juju/errors"
 )
 
-// {:index 0 :type :invoke  :value [[:append 253 1] [:append 253 3] [:append 253 4] [:append 255 2] [:append 255 3] [:append 255 4] [:append 255 5] [:append 256 1] [:append 256 2]]}
-// {:index 1 :type :ok      :value [[:append 253 1] [:append 253 3] [:append 253 4] [:append 255 2] [:append 255 3] [:append 255 4] [:append 255 5] [:append 256 1] [:append 256 2]]}
-// {:index 7 :type :ok      :value [[:append 250 10] [:r 253 [1 3 4]] [:r 255 [2 3 4 5]] [:append 256 3]]}
-
 var (
 	operationPattern = regexp.MustCompile(`\{(.*)\}`)
 	opIndexPattern   = regexp.MustCompile(`:index\s+(.*?)\s?:`)
@@ -23,22 +19,38 @@ var (
 	mopValuePattern  = regexp.MustCompile(`\[(.*)\]`)
 )
 
+// MopValueType ...
 type MopValueType interface{}
+
+// OpType ...
 type OpType string
+
+// MopType ...
+type MopType string
 
 // OpType enums
 const (
-	Invoke  OpType = "invoke"
-	Ok      OpType = "ok"
-	Fail    OpType = "fail"
-	Info    OpType = "info"
-	Nemesis OpType = "nemesis"
+	OpTypeInvoke  OpType = "invoke"
+	OpTypeOk      OpType = "ok"
+	OpTypeFail    OpType = "fail"
+	OpTypeInfo    OpType = "info"
+	OpTypeNemesis OpType = "nemesis"
+)
+
+// MopType enums
+const (
+	MopTypeAll    MopType = "all"
+	MopTypeAppend MopType = "append"
+	MopTypeRead   MopType = "read"
 )
 
 // Mop interface
 type Mop interface {
 	IsAppend() bool
 	IsRead() bool
+	GetMopType() MopType
+	GetKey() string
+	GetValue() MopValueType
 }
 
 // Append implements Mop
@@ -66,23 +78,53 @@ type Op struct {
 type History []Op
 
 // IsAppend ...
-func (a Append) IsAppend() bool {
+func (Append) IsAppend() bool {
 	return true
 }
 
 // IsRead ...
-func (a Append) IsRead() bool {
+func (Append) IsRead() bool {
 	return false
+}
+
+// GetMopType ...
+func (Append) GetMopType() MopType {
+	return MopTypeAppend
+}
+
+// GetKey get append key
+func (a Append) GetKey() string {
+	return a.Key
+}
+
+// GetValue get append value
+func (a Append) GetValue() MopValueType {
+	return a.Value
 }
 
 // IsAppend ...
-func (r Read) IsAppend() bool {
+func (Read) IsAppend() bool {
 	return false
 }
 
 // IsRead ...
-func (r Read) IsRead() bool {
+func (Read) IsRead() bool {
 	return true
+}
+
+// GetMopType ...
+func (Read) GetMopType() MopType {
+	return MopTypeRead
+}
+
+// GetKey get read key
+func (r Read) GetKey() string {
+	return r.Key
+}
+
+// GetValue get read value
+func (r Read) GetValue() MopValueType {
+	return r.Value
 }
 
 // ParseHistory parse history from elle's row text
@@ -134,15 +176,15 @@ func ParseOp(opString string) (Op, error) {
 	}
 	switch opTypeMatch[1] {
 	case ":invoke":
-		op.Type = Invoke
+		op.Type = OpTypeInvoke
 	case ":ok":
-		op.Type = Ok
+		op.Type = OpTypeOk
 	case ":fail":
-		op.Type = Fail
+		op.Type = OpTypeFail
 	case ":info":
-		op.Type = Info
+		op.Type = OpTypeInfo
 	case ":nemesis":
-		op.Type = Nemesis
+		op.Type = OpTypeNemesis
 	default:
 		return empty, errors.Errorf("invalid type, %s", opTypeMatch[1])
 	}
@@ -200,4 +242,42 @@ func ParseOp(opString string) (Op, error) {
 	}
 
 	return op, nil
+}
+
+// FilterType filter by type
+func (h History) FilterType(t OpType) History {
+	var filterHistory History
+	for _, op := range h {
+		if op.Type == t {
+			filterHistory = append(filterHistory, op)
+		}
+	}
+	return filterHistory
+}
+
+// FilterProcess filter by process
+func (h History) FilterProcess(p int) History {
+	var filterHistory History
+	for _, op := range h {
+		if op.Process == p {
+			filterHistory = append(filterHistory, op)
+		}
+	}
+	return filterHistory
+}
+
+// GetKeys get keys by a given type
+// MopTypeAll to get keys of all types
+func (h History) GetKeys(t MopType) []string {
+	var keys []string
+
+	for _, op := range h {
+		for _, mop := range op.Value {
+			if t == MopTypeAll || mop.GetMopType() == t {
+				keys = append(keys, mop.GetKey())
+			}
+		}
+	}
+
+	return keys
 }

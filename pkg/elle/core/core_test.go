@@ -6,14 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// (deftest process-graph-test
-//   (let [o1 {:index 0 :process 1 :type :ok}
-//         o2 {:index 1 :process 2 :type :ok}
-//         o3 {:index 2 :process 2 :type :ok}
-//         o4 {:index 3 :process 1 :type :ok}
-//         history [o1 o2 o3 o4]]
-//     (is (= {o1 #{o4}, o2 #{o3}, o3 #{}, o4 #{}}
-//            (g/->clj (:graph (process-graph history)))))))
 func TestProcessGraph(t *testing.T) {
 	history, err := ParseHistory(`{:index 0 :process 1 :type :ok}
 {:index 1 :process 2 :type :ok}
