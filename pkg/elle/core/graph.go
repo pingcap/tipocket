@@ -20,18 +20,9 @@ type DirectedGraph struct {
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
 	vertices := []Vertex{}
-	have_in := make(map[Vertex]bool)
-
-	for key := range g.Ins {
-		vertices = append(vertices, key)
-		have_in[key] = true
-	}
 
 	for key := range g.Outs {
-		_, ok := have_in[key]
-		if !ok {
-			vertices = append(vertices, key)
-		}
+		vertices = append(vertices, key)
 	}
 	return vertices
 }
@@ -40,7 +31,7 @@ func (g *DirectedGraph) Vertices() []Vertex {
 func (g *DirectedGraph) In(v Vertex) []Vertex {
 	_, ok := g.Ins[v]
 	if !ok {
-		return nil
+		return []Vertex{}
 	} else {
 		return g.Ins[v]
 	}
@@ -50,7 +41,7 @@ func (g *DirectedGraph) In(v Vertex) []Vertex {
 func (g *DirectedGraph) Out(v Vertex) []Vertex {
 	_, ok := g.Outs[v]
 	if !ok {
-		return nil
+		return []Vertex{}
 	}
 
 	vertices := []Vertex{}
@@ -93,35 +84,30 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Outs[v] = make(map[Vertex][]Rel)
 	}
 
-	g.Outs[v][succ] = append(g.Outs[v][succ], rel)
+	have_rel := false
+	for _, item := range g.Outs[v][succ] {
+		if item == rel {
+			have_rel = true
+			break
+		}
+	}
+	if have_rel == false {
+		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
+	}
 	g.Ins[succ] = append(g.Ins[succ], v)
 }
 
 // LinkToAll links x to all ys
 func (g *DirectedGraph) LinkToAll(x Vertex, ys []Vertex, rel Rel) {
 	for _, y := range ys {
-
-		_, ok := g.Outs[x]
-		if !ok {
-			g.Outs[x] = make(map[Vertex][]Rel)
-		}
-
-		g.Outs[x][y] = append(g.Outs[x][y], rel)
-		g.Ins[y] = append(g.Ins[y], x)
+		g.Link(x, y, rel)
 	}
 }
 
 // LinkAllTo links all xs to y
 func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 	for _, x := range xs {
-
-		_, ok := g.Outs[x]
-		if !ok {
-			g.Outs[x] = make(map[Vertex][]Rel)
-		}
-
-		g.Outs[x][y] = append(g.Outs[x][y], rel)
-		g.Ins[y] = append(g.Ins[y], x)
+		g.Link(x, y, rel)
 	}
 }
 
