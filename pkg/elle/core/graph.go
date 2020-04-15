@@ -196,11 +196,73 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 	return fg
 }
 
+// BfsOut searches from a vertices set, returns all vertices searchable
+// search to downstream vertices from `out` edges
+func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
+	queue := initV
+	V := []Vertex{}
+	have_visited := make(map[Vertex]bool)
+	for _, vertex := range initV {
+		have_visited[vertex] = true
+		V = append(V, vertex)
+	}
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		if have_visited[cur] == false {
+			have_visited[cur] = true
+			V = append(V, cur)
+		}
+		queue = queue[1:]
+
+		for next, _ := range g.Outs[cur] {
+			if have_visited[next] == true {
+				continue
+			}
+			queue = append(queue, next)
+		}
+	}
+	return V
+}
+
+// BfsIn searches from a vertices set, returns all vertices searchable
+// search to upstream vertices from `in` edges
+func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
+	queue := initV
+	V := []Vertex{}
+	have_visited := make(map[Vertex]bool)
+	for _, vertex := range initV {
+		have_visited[vertex] = true
+		V = append(V, vertex)
+	}
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		if have_visited[cur] == false {
+			have_visited[cur] = true
+			V = append(V, cur)
+		}
+		queue = queue[1:]
+		
+		for _, next := range g.Ins[cur] {
+			if have_visited[next] == true {
+				continue
+			}
+			queue = append(queue, next)
+		}
+	}
+	return V
+}
+
 // Bfs searches from a vertices set, returns all vertices searchable
 // out = true means search to downstream vertices from `out` edges
 // out = false means search to upstream vertices from `in` edges
 func (g *DirectedGraph) Bfs(initV []Vertex, out bool) []Vertex {
-	panic("impl me")
+	if out == true {
+		return g.BfsOut(initV)
+	} else {
+		return g.BfsIn(initV)
+	}
 }
 
 // SCC indexes all vertices of a strongly connected component
