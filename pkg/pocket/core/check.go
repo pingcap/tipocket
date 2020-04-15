@@ -185,7 +185,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	defer func(compareExecutor *executor.Executor) {
 		if err := compareExecutor.Close(); err != nil {
-			log.Fatal("close compare executor error %+v\n", errors.ErrorStack(err))
+			log.Errorf("close compare executor error %+v\n", errors.ErrorStack(err))
 		}
 	}(compareExecutor)
 
