@@ -396,10 +396,32 @@ func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGr
 }
 
 // RenumberGraph takes a Graph and rewrites each vertex to a unique integer, returning the
-//  rewritten Graph, and a vector of the original vertexes for reconstruction.
+//  rewritten Graph, and a vector of the original vertices for reconstruction.
 // That means if we apply MapVertices to dg with remap, it can recover to g again
-func (g *DirectedGraph) RenumberGraph() (dg *DirectedGraph, remap func(interface{}) interface{}) {
-	panic("impl me")
+func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) interface{}) {
+	var dg DirectedGraph
+	dg.Ins = make(map[Vertex][]Vertex)
+	dg.Outs = make(map[Vertex]map[Vertex][]Rel)
+	ref := make(map[Vertex]int)
+	numberToVertices := make(map[interface{}]interface{})
+	vertices := g.Vertices()
+
+	for id, v := range vertices {
+		ref[v] = id
+		numberToVertices[id] = v.Value
+	}
+
+	for _, x := range vertices {
+		for y, rels := range g.Outs[x] {
+			for _, rel := range rels{
+				dg.Link(Vertex{ref[x]}, Vertex{ref[y]}, rel)
+			}
+		}
+	}
+
+	return &dg, func(number interface{}) interface{} {
+		return numberToVertices[number]
+	}
 }
 
 // MapToDirectedGraph turns a sequence of [node, successors] map into a directed graph
