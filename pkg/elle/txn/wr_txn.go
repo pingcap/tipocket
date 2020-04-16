@@ -83,7 +83,8 @@ func (mIter *MopIterator) Next() []core.Mop {
 	for uint(len(mops)) < length {
 		// It's supporting for Exponential
 		//ki := uint64(math.Floor(math.Log(float64(uint(rand.Intn(int(keyDistScale)))+mIter.opts.KeyDistBase)) - 1))
-		var k, writeVersion uint
+		var writeVersion uint
+		var k string
 		switch mIter.opts.KeyDist.DistMode {
 		case Exponential:
 			panic("not implemented")
@@ -98,13 +99,13 @@ func (mIter *MopIterator) Next() []core.Mop {
 		switch rand.Intn(2) {
 		case 0:
 			mop = core.Append{
-				Key:   fmt.Sprintf("%d", k),
+				Key:   k,
 				Value: core.MopValueType(writeVersion),
 			}
 			mIter.activeKeys.keyRecord[k] = mIter.activeKeys.keyRecord[k] + 1
 		case 1:
 			mop = core.Read{
-				Key: fmt.Sprintf("%d", k),
+				Key: k,
 			}
 		}
 		mops = append(mops, mop)
@@ -114,10 +115,10 @@ func (mIter *MopIterator) Next() []core.Mop {
 
 type WrTxnState struct {
 	// map for [TxnID, WriteCnt]
-	keyRecord map[uint]uint
+	keyRecord map[string]uint
 }
 
-func (s WrTxnState) randomGet() (uint, uint) {
+func (s WrTxnState) randomGet() (string, uint) {
 	i := rand.Intn(len(s.keyRecord))
 	for k, v := range s.keyRecord {
 		if i == 0 {
@@ -137,13 +138,25 @@ func WrTxnWithDefaultOpts(state WrTxnState) *MopIterator {
 }
 
 func WrTxnWithoutState(opts WrTxnOpts) *MopIterator {
-	state := WrTxnState{keyRecord: map[uint]uint{}}
+	state := WrTxnState{keyRecord: map[string]uint{}}
 	for i := 0; uint(i) < opts.KeyCount; i++ {
-		state.keyRecord[uint(i)] = 0
+		state.keyRecord[mustItoa(i)] = 0
 	}
 	return WrTxn(opts, state)
 }
 
 func WrTxnWithDefaultOptsWithoutState() *MopIterator {
 	return WrTxnWithoutState(DefaultWrTxnOpts())
+}
+
+func mustAtou(s string) uint {
+	return uint(mustAtoi(s))
+}
+
+func mustItoa(i int) string {
+	return fmt.Sprintf("%d", i)
+}
+
+func mustUtoa(u uint) string {
+	return fmt.Sprintf("%d", u)
 }

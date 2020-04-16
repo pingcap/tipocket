@@ -8,10 +8,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
-func mustAtou(s string) uint {
-	return uint(mustAtoi(s))
-}
-
 func TestWrTxn(t *testing.T) {
 	iter := WrTxnWithDefaultOptsWithoutState()
 	keyRecord := map[uint]uint{}
