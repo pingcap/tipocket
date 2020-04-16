@@ -20,6 +20,7 @@ import (
 	"html/template"
 	"strings"
 
+	"github.com/ngaut/log"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/controller"
 	corev1 "k8s.io/api/core/v1"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
@@ -37,17 +39,26 @@ func PDAddress(tc *v1alpha1.TidbCluster) string {
 }
 
 // FindPort get possible correct port when there are multiple ports
-func FindPort(podName string, ports []corev1.ContainerPort) int32 {
-	if len(ports) == 0 {
-		return 0
+func FindPort(podName, component string, containers []corev1.Container) int32 {
+	var container *corev1.Container
+	for idx, c := range containers {
+		if c.Name == component {
+			container = &containers[idx]
+			break
+		}
 	}
-
+	// if we cannot find the target container according to component name, fallback to the first container
+	if container == nil {
+		log.Errorf("failed to find the main container %s in %s", component, podName)
+		container = &containers[0]
+	}
+	ports := container.Ports
 	var priorityPort int32 = 0
-	if strings.Contains(podName, "pd") {
+	if component == string(clusterTypes.PD) {
 		priorityPort = 2379
-	} else if strings.Contains(podName, "tikv") {
+	} else if component == string(clusterTypes.TiKV) {
 		priorityPort = 20160
-	} else if strings.Contains(podName, "tidb") {
+	} else if component == string(clusterTypes.TiDB) {
 		priorityPort = 4000
 	}
 

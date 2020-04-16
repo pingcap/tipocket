@@ -19,10 +19,18 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-
+	pkgerr "github.com/pkg/errors"
 	// "github.com/ngaut/log"
 	"github.com/go-sql-driver/mysql"
 )
+
+// ErrExactlyNotSame is used when we can ensure that the result of a/b tests aren't same
+var ErrExactlyNotSame = errors.New("exactly not same")
+
+// WrapErrExactlyNotSame wraps with ErrExactlyNotSame
+func WrapErrExactlyNotSame(format string, args ...interface{}) error {
+	return pkgerr.Wrapf(ErrExactlyNotSame, format, args...)
+}
 
 // AffectedRowsMustSame return error if both affected rows are not same
 func AffectedRowsMustSame(rows1, rows2 int64) error {
@@ -54,7 +62,7 @@ func ErrorMustSame(err1, err2 error) error {
 	}
 
 	if myerr1.Number != myerr2.Number {
-		return errors.Errorf("error number not same, got err1: %v and err2 %v", err1, err2)
+		return WrapErrExactlyNotSame("error number not same, got err1: %v and err2 %v", err1, err2)
 	}
 
 	return nil

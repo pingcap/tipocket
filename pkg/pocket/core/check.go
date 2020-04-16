@@ -23,6 +23,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pingcap/tipocket/pkg/pocket/executor"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
@@ -39,11 +40,23 @@ func (c *Core) startCheckConsistency() {
 		waitingForCheck = true
 		t++
 		go func(t int) {
+			var (
+				result bool
+				err    error
+			)
 			log.Info("ready to compare data")
-			result, err := c.checkConsistency(false)
+
+			err = wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (bool, error) {
+				result, err = c.checkConsistency(false)
+				if err != nil {
+					// TODO: pass error by channel, stop process from outside
+					log.Errorf("compare data error %+v", errors.ErrorStack(err))
+					return false, nil
+				}
+				return true, nil
+			})
 			if err != nil {
-				// TODO: pass error by channel, stop process from outside
-				log.Fatalf("compare data error %+v", errors.ErrorStack(err))
+				log.Fatalf("compare data failed %v", err)
 			}
 			log.Infof("test %d compare data result %t\n", t, result)
 			waitingForCheck = false
@@ -162,7 +175,7 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	}
 	defer func(compareExecutor *executor.Executor) {
 		if err := compareExecutor.Close(); err != nil {
-			log.Fatal("close compare executor error %+v\n", errors.ErrorStack(err))
+			log.Errorf("close compare executor error %+v\n", errors.ErrorStack(err))
 		}
 	}(compareExecutor)
 
@@ -170,6 +183,16 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	// lock here before get snapshot
 	c.execMutex.Lock()
 	c.Lock()
+	// free the lock since the compare has already got the same snapshot in both side
+	// go on other transactions
+	// defer can be removed
+	// but here we use it for protect environment
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+		c.execMutex.Unlock()
+	}()
+
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
 	c.resolveDeadLock(true)
@@ -218,16 +241,6 @@ SYNC:
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
-	// free the lock since the compare has already got the same snapshot in both side
-	// go on other transactions
-	// defer can be removed
-	// but here we use it for protect environment
-	defer func() {
-		log.Info("free lock")
-		c.Unlock()
-		c.execMutex.Unlock()
-	}()
-
 	// delay will hold on this snapshot and check it later
 	if delay {
 		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
@@ -239,9 +252,19 @@ SYNC:
 func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {
 	sqls := makeCompareSQLs(schema)
 	for _, sql := range sqls {
-		if err := beganConnect.ABTestSelect(sql); err != nil {
-			log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
-				sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
+		err := wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (done bool, err error) {
+			if err := beganConnect.ABTestSelect(sql); err != nil {
+				if errors.Cause(err) == util.ErrExactlyNotSame {
+					log.Fatalf("inconsistency when exec %s compare data %+v, begin: %s\n",
+						sql, err, util.FormatTimeStrAsLog(beganConnect.GetConn().GetBeginTime()))
+				}
+				log.Errorf("a/b testing occurred an error and will retry later, %+v", err)
+				return false, nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			return false, errors.Trace(err)
 		}
 	}
 	log.Info("consistency check pass")
