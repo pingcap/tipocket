@@ -81,7 +81,7 @@ func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
 		Component: clusterTypes.Drainer,
-		Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+		Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.Drainer), pod.Spec.Containers),
 	}}, nil
 }
 

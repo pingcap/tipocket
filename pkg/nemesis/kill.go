@@ -121,7 +121,7 @@ func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node 
 			if leader == "" && node.Client != nil {
 				leader, _, err = node.PDMember()
 				if err != nil {
-					log.Fatalf("find pd members occured an error: %+v", err)
+					log.Fatalf("find pd members occurred an error: %+v", err)
 				}
 			}
 			if ifLeader && node.PodName == leader {
