@@ -249,7 +249,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					"app.kubernetes.io/component": "tidb",
 					"app.kubernetes.io/name":      "tidb-cluster",
 				},
-				ClusterIP: "",
 			},
 		},
 	}

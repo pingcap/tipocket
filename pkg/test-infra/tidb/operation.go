@@ -526,26 +526,6 @@ func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
-func getTiFlashConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	scriptModel := &PDStartScriptModel{DataDir: pdDir}
-	if getIOChaosAnnotation(tc, "tiflash") == "chaosfs-tiflash" {
-		scriptModel.DataDir = pdDataDir
-	}
-	s, err := RenderPDStartScript(scriptModel)
-	if err != nil {
-		return nil, err
-	}
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: tc.Namespace,
-			Name:      fmt.Sprintf("%s-tiflash", tc.Name),
-		},
-		Data: map[string]string{
-			"startup-script": s,
-		},
-	}, nil
-}
-
 func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
 	meta, l := getDiscoveryMeta(tc)
 	return &appsv1.Deployment{
