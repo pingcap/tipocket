@@ -139,11 +139,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					Replicas: int32(clusterConfig.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.CPU:    resource.MustParse("500m"),
 							fixture.Memory: resource.MustParse("4Gi"),
 						},
 						Limits: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.CPU:    resource.MustParse("1000m"),
 							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					}, "200Gi"),
@@ -159,10 +159,10 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
-							fixture.Memory: resource.MustParse("2Gi"),
+							fixture.Memory: resource.MustParse("1Gi"),
 						},
 						Limits: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.CPU:    resource.MustParse("1000m"),
 							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					},
