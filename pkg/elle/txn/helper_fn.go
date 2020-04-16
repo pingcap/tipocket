@@ -31,7 +31,7 @@ func (omi *OpMopIterator) HasNext() bool {
 
 // OpMops return an iterator for history.
 func OpMops(history core.History) *OpMopIterator {
-	return &OpMopIterator{history: history, historyIndex: 0, mopIndex: 0, op: nil}
+	return &OpMopIterator{history: history, historyIndex: 0, mopIndex: 0}
 }
 
 // keeps or ok records and the records satisfied the validate fn.

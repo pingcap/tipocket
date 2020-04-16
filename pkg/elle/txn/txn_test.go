@@ -1,22 +1,12 @@
 package txn
 
 import (
-	"strconv"
 	"testing"
 
 	"github.com/mohae/deepcopy"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
-
-func mustAtoi(s string) int {
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		panic(err)
-
-	}
-	return n
-}
 
 func mustAtou(s string) uint {
 	return uint(mustAtoi(s))

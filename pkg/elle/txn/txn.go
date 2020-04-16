@@ -48,14 +48,21 @@ func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs
 	return cases
 }
 
+type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
+
 // FilteredGraphs receives a graph and a collection of relations, return a new Graph filtered to just those relationships
-func FilteredGraphs(graph core.DirectedGraph) core.DirectedGraph {
-	panic("impl me")
+// Note: currently it use fork here, we can considering remove it.
+func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
+	return func(rels []core.Rel) *core.DirectedGraph {
+		return graph.Fork().FilterRelationships(rels)
+	}
 }
 
 // CycleCasesInScc searches a single SCC for cycle anomalies
-func CycleCasesInScc(graph core.DirectedGraph, filterGraph core.DirectedGraph, explainer core.DataExplainer, scc core.SCC) []CycleCase {
-	panic("impl me")
+func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []CycleCase {
+	for _ := range CycleAnomalySpecs {
+		panic("implement me")
+	}
 }
 
 // CyclesWithDraw means "cycles!" in clojure.

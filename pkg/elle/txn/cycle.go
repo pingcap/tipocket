@@ -70,7 +70,7 @@ func filterClosure(required string) FilterExType {
 
 func init() {
 	CycleAnomalySpecs = map[string]CycleAnomalySpecType{
-		"G0":       fromRelsWithFilter(core.WW),
+		"G0":       fromRels(core.WW),
 		"G1c":      fromFirstRelAndRest(core.WR, core.WW, core.WR),
 		"G-single": fromFirstRelAndRest(core.RW, core.WW, core.WR),
 		// TODO: G-nonadjacent is not implemented
@@ -123,7 +123,8 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 }
 
 func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, circle core.Circle) string {
-	return CycleExplainer{}.RenderCycleExplanation(explainer, circle)
+	exp := core.CycleExplainer{}
+	return exp.RenderCycleExplanation(explainer, circle)
 }
 
 // NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).
@@ -174,12 +175,12 @@ func reportableAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) 
 func prohibitAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) map[string]struct{} {
 	a1 := core.AllAnomaliesImplying(cm)
 	a2 := core.AnomaliesProhibitedBy(anomalies)
-	dest := compactAnomalies(a1)
-	union(dest, compactAnomalies(a2))
+	dest := compactAnomalies(a1...)
+	union(dest, compactAnomalies(a2...))
 	return dest
 }
 
-func compactAnomalies(anomalies ...core.Anomaly) map[string]struct{} {
+func compactAnomalies(anomalies ...string) map[string]struct{} {
 	ret := map[string]struct{}{}
 	for _, v := range anomalies {
 		ret[v] = struct{}{}
