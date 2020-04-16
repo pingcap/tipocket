@@ -63,8 +63,8 @@ type Ops struct {
 }
 
 // New ...
-func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
-	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config),
+func New(namespace, name string, config fixture.TiDBClusterConfig, enableTiFlash bool) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config, enableTiFlash),
 		ns: namespace, name: name, config: config}
 }
 
@@ -526,6 +526,26 @@ func getPumpConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
+func getTiFlashConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
+	scriptModel := &PDStartScriptModel{DataDir: pdDir}
+	if getIOChaosAnnotation(tc, "tiflash") == "chaosfs-tiflash" {
+		scriptModel.DataDir = pdDataDir
+	}
+	s, err := RenderPDStartScript(scriptModel)
+	if err != nil {
+		return nil, err
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: tc.Namespace,
+			Name:      fmt.Sprintf("%s-tiflash", tc.Name),
+		},
+		Data: map[string]string{
+			"startup-script": s,
+		},
+	}, nil
+}
+
 func getTidbDiscoveryDeployment(tc *v1alpha1.TidbCluster) *appsv1.Deployment {
 	meta, l := getDiscoveryMeta(tc)
 	return &appsv1.Deployment{
@@ -632,6 +652,12 @@ func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {
 	case "pd":
 		if tc.Spec.PD.Annotations != nil {
 			if s, ok := tc.Spec.PD.Annotations[ioChaosAnnotation]; ok {
+				return s
+			}
+		}
+	case "tiflash":
+		if tc.Spec.TiFlash.Annotations != nil {
+			if s, ok := tc.Spec.TiFlash.Annotations[ioChaosAnnotation]; ok {
 				return s
 			}
 		}

@@ -16,12 +16,10 @@ package tiflash
 import (
 	"strings"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 const (
@@ -68,10 +66,7 @@ func newTiFlash(ns, name string) *tiFlash {
 			continue
 		}
 		switch name {
-		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
-			tf.StatefulSet.Spec.Template.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
-			}
+
 		}
 	}
 	return tf
@@ -95,7 +90,6 @@ func tiFlashStatefulSet(name string, lbls map[string]string, model *tiFlashConfi
 		},
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: name,
-			Replicas:    pointer.Int32Ptr(int32(fixture.Context.TiFlashConfig.Replica)),
 			Selector:    &metav1.LabelSelector{MatchLabels: lbls},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: lbls},

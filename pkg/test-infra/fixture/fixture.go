@@ -78,12 +78,16 @@ type TiDBClusterConfig struct {
 	TiDBImageVersion string
 	TiKVImageVersion string
 	PDImageVersion   string
+	TiFlashImageVersion   string
+
 	// configurations
 	TiDBConfig string
 	TiKVConfig string
 	PDConfig   string
-	// tikv replicas
-	TiKVReplicas int
+
+	// replicas
+	TiKVReplicas    int
+	TiFlashReplicas    int
 }
 
 // Context ...
@@ -219,17 +223,21 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBImageVersion, "tidb-image", "", "tidb image version")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVImageVersion, "tikv-image", "", "tikv image version")
 	flag.StringVar(&Context.TiDBClusterConfig.PDImageVersion, "pd-image", "", "pd image version")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImageVersion, "tiflash-image", "v4.0.0-rc", "tiflash image version")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
 	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
+	flag.IntVar(&Context.TiDBClusterConfig.TiFlashReplicas, "tiflash-replicas", 2, "number of tiflash replicas")
 
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKVConfig, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PDConfig, "abtest.pd-config", "", "pd config file for cluster B")
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "abtest.tikv-replicas", 3, "number of tikv replicas for cluster B")
+	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiFlashReplicas, "abtest.tiflash-replicas", 2, "number of tiflash replicas for cluster B")
+
 	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
@@ -239,8 +247,6 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 
-	flag.IntVar(&Context.TiFlashConfig.Replica, "tiflash.replica", 1, "how many TiFlash replicas to run")
-	flag.StringVar(&Context.TiFlashConfig.Image, "tiflash.image", "pingcap/tiflash:release-4.0", "tiflash image to use")
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")

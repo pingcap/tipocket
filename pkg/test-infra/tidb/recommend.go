@@ -46,6 +46,34 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 	return t
 }
 
+// EnableTiFlash add TiFlash spec in TiDB cluster
+func (t *Recommendation) EnableTiFlash(version string, replicas int) {
+	if t.TidbCluster.Spec.TiFlash == nil {
+		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
+			Replicas:         int32(replicas),
+			MaxFailoverCount: pointer.Int32Ptr(0),
+			ComponentSpec: v1alpha1.ComponentSpec{
+				Image: buildImage("tiflash", "", version),
+			},
+			StorageClaims: []v1alpha1.StorageClaim{
+				{
+					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+					Resources: fixture.WithStorage(corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("2Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					}, "50Gi"),
+				},
+			},
+		}
+	}
+}
+
 // PDReplicas ...
 func (t *Recommendation) PDReplicas(replicas int32) *Recommendation {
 	t.TidbCluster.Spec.PD.Replicas = replicas
@@ -82,7 +110,7 @@ func buildImage(name, baseVersion, version string) string {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig, enableTiFlash bool) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
@@ -95,6 +123,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
+				Timezone:        "Asia/Shanghai",
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
@@ -225,6 +254,19 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 		},
 	}
 
+	if enableTiFlash {
+		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
+
+		// TODO(yeya24): There is a bug in the operator side so we can only set it
+		// manually https://github.com/pingcap/tidb-operator/issues/2219.
+		// Remove this after it fixes the bug.
+		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
+			Replication: &v1alpha1.PDReplicationConfig{
+				EnablePlacementRules: pointer.BoolPtr(true),
+			},
+		}
+	}
+
 	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
 		name := strings.TrimSpace(name)
 		if len(name) == 0 {
@@ -238,6 +280,10 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 		case "delay_pd", "errno_pd", "mixed_pd":
 			r.TidbCluster.Spec.PD.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			r.TidbCluster.Spec.TiFlash.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
 		}
 	}
