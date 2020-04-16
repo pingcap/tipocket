@@ -15,7 +15,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -49,11 +48,22 @@ func (c *Core) beforeGenerate() error {
 			c.execute(e, sql)
 		}
 		log.Infof("table %s generate", sql.SQLTable)
+	}
 
-		if c.cfg.Mode == "tiflash" {
-			c.createTiFlashTableReplica(sql, e)
+	if c.coreExec.TiFlash {
+		tables, err := c.coreConn.FetchTables("pocket")
+		if err != nil {
+			return errors.Trace(err)
+		}
+		for _, t := range tables {
+			if err := c.coreExec.WaitTiFlashTableSync(t); err != nil {
+				log.Infof("table %s sync to tiflash failed, error is %v", t, err)
+				return errors.Trace(err)
+			}
+			log.Infof("table %s sync to tiflash completed", t)
 		}
 	}
+
 	for _, e := range c.executors {
 		if err := e.ReloadSchema(); err != nil {
 			return errors.Trace(err)
@@ -224,11 +234,6 @@ func (c *Core) generateSQLWithExecutor(e *executor.Executor) {
 	}
 	if sql != nil {
 		c.execute(e, sql)
-
-		if c.cfg.Mode == "tiflash" &&
-			sql.SQLType == types.SQLTypeDDLCreateTable {
-			c.createTiFlashTableReplica(sql, e)
-		}
 	}
 }
 
@@ -277,11 +282,6 @@ func (c *Core) serializeGenerateSQL() {
 	c.nowExec = e
 	if e != nil && sql != nil {
 		c.execute(e, sql)
-
-		if c.cfg.Mode == "tiflash" &&
-			sql.SQLType == types.SQLTypeDDLCreateTable {
-			c.createTiFlashTableReplica(sql, e)
-		}
 	}
 }
 
@@ -484,12 +484,4 @@ func (c *Core) getDDLOptions(exec *executor.Executor) *generator.DDLOptions {
 		OnlineDDL: false,
 		Tables:    tables,
 	}
-}
-
-// createTiFlashTableReplica creates a replica for TiFlash
-func (c *Core) createTiFlashTableReplica(sql *types.SQL, e *executor.Executor) {
-	c.execute(e, &types.SQL{
-		SQLType: types.SQLTypeDDLAlterTable,
-		SQLStmt: fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", sql.SQLTable),
-	})
 }

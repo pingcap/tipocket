@@ -33,7 +33,6 @@ var (
 		`SET @@GLOBAL.TIDB_TXN_MODE="pessimistic"`,
 		`SET @@GLOBAL.explicit_defaults_for_timestamp=1`,
 	}
-	setIsolationEngine = `SET @@GLOBAL.tidb_isolation_read_engines = "tiflash"`
 )
 
 func removeDSNSchema(dsn string) string {
@@ -73,13 +72,6 @@ func (c *Core) mustExec() error {
 		}
 	}
 
-	// TODO: move to session level, not global level
-	// when we need to support HTAP.
-	if c.cfg.Mode == "tiflash" {
-		if err := c.coreExec.Exec(setIsolationEngine); err != nil {
-			return errors.Trace(err)
-		}
-	}
 	// sleep 10s waiting for global variable becoming effective
 	time.Sleep(10 * time.Second)
 	return nil

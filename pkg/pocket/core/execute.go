@@ -60,14 +60,14 @@ func (c *Core) executeByID(id int, sql *types.SQL) {
 // and the manipulated db should be c.dbname
 func (c *Core) coreInitDatabaseExecute(sql *types.SQL) error {
 	switch c.cfg.Mode {
-	case "single":
+	case "single", "tiflash":
 		return errors.Trace(c.coreExec.GetConn().Exec(sql.SQLStmt))
-	case "binlog", "tiflash":
+	case "binlog", "tiflash-binlog":
 		if err := c.coreExec.GetConn().Exec(sql.SQLStmt); err != nil {
 			return errors.Trace(err)
 		}
 		return errors.Trace(c.waitSyncDatabase(sql.SQLType))
-	case "abtest":
+	case "abtest", "tiflash-abtest":
 		err1 := c.coreExec.GetConn1().Exec(sql.SQLStmt)
 		err2 := c.coreExec.GetConn2().Exec(sql.SQLStmt)
 		if err1 != nil {

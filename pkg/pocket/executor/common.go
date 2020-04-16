@@ -13,6 +13,15 @@
 
 package executor
 
+import (
+	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
+)
+
 // Select offer unified method for single & abtest
 func (e *Executor) Select(stmt string) error {
 	e.Lock()
@@ -115,4 +124,39 @@ func (e *Executor) TxnRollback() error {
 		return e.SingleTestTxnRollback()
 	}
 	panic("unhandled txn rollback switch")
+}
+
+// since the tiflash cluster is always conn1 in TiFlash abtest, so it is
+// okay to just use single test ddl here.
+func (e *Executor) createTiFlashTableReplica(table string) error {
+	return e.SingleTestExecDDL(fmt.Sprintf("ALTER TABLE %s SET TIFLASH REPLICA 1", table))
+}
+
+// WaitTiFlashTableSync waits table sync to TiFlash
+func (e *Executor) WaitTiFlashTableSync(table string) error {
+	sql := fmt.Sprintf("SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA = '%s' and TABLE_NAME = '%s'",
+		e.dbname, table)
+	if err := wait.Poll(1*time.Second, 10*time.Second, func() (bool, error) {
+		res, err := e.GetConn().Select(sql)
+		if err != nil {
+			return false, err
+		}
+		// res == nil is for handling the special case that the queried
+		// table doesn't exist.
+		if res == nil || res[0][0].ValString == "1" {
+			return true, nil
+		}
+		return false, nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func hasReadOperation(sql *types.SQL) bool {
+	if sql.SQLType == types.SQLTypeDMLSelect || sql.SQLType == types.SQLTypeDMLSelectForUpdate ||
+		sql.SQLType == types.SQLTypeDMLUpdate || sql.SQLType == types.SQLTypeDMLDelete {
+		return true
+	}
+	return false
 }

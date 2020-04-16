@@ -25,6 +25,7 @@ type Option struct {
 	OnlineDDL  bool
 	GeneralLog bool
 	Hint       bool
+	TiFlash    bool
 }
 
 // Clone option
