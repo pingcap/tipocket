@@ -20,18 +20,9 @@ type DirectedGraph struct {
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
 	vertices := []Vertex{}
-	haveIn := make(map[Vertex]bool)
-
-	for key := range g.Ins {
-		vertices = append(vertices, key)
-		haveIn[key] = true
-	}
 
 	for key := range g.Outs {
-		_, ok := haveIn[key]
-		if !ok {
-			vertices = append(vertices, key)
-		}
+		vertices = append(vertices, key)
 	}
 	return vertices
 }
@@ -91,6 +82,19 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	if !ok {
 		g.Outs[v] = make(map[Vertex][]Rel)
 	}
+	_, ok = g.Outs[succ]
+	if !ok {
+		g.Outs[succ] = make(map[Vertex][]Rel)
+	}
+
+	_, ok = g.Ins[v]
+	if !ok {
+		g.Ins[v] = []Vertex{}
+	}
+	_, ok = g.Ins[succ]
+	if !ok {
+		g.Ins[succ] = []Vertex{}
+	}
 
 	haveRel := false
 	for _, item := range g.Outs[v][succ] {
@@ -131,18 +135,12 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
-	if len(g.Outs[a]) == 0 {
-		delete(g.Outs, a)
-	}
 
 	for id , vertex := range g.Ins[b] {
 		if vertex == a {
 			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
 		}
-	}
-	if len(g.Ins[b]) == 0 {
-		delete(g.Ins, b)
 	}
 }
 
@@ -377,21 +375,24 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 // MapVertices takes a function of vertices, returns graph with all
 //  vertices mapped via f
 func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGraph {
-	fg := g.Fork()
-	vertices := fg.Vertices()
+	var fg DirectedGraph
+	fg.Ins = make(map[Vertex][]Vertex)
+	fg.Outs = make(map[Vertex]map[Vertex][]Rel)
+
+	vertices := g.Vertices()
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
 		if ok == true {
 			for y, _:= range g.Outs[x] {
 				rels := g.Outs[x][y]
-				fg.UnLink(x, y)
 				for _, item := range rels {
 					fg.Link(Vertex{f(x.Value)}, Vertex{f(y.Value)}, item)
 				}
 			}
 		}
 	}
-	return fg
+
+	return &fg
 }
 
 // RenumberGraph takes a Graph and rewrites each vertex to a unique integer, returning the
