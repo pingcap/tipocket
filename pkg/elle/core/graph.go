@@ -20,9 +20,18 @@ type DirectedGraph struct {
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
 	vertices := []Vertex{}
+	haveIn := make(map[Vertex]bool)
+
+	for key := range g.Ins {
+		vertices = append(vertices, key)
+		haveIn[key] = true
+	}
 
 	for key := range g.Outs {
-		vertices = append(vertices, key)
+		_, ok := haveIn[key]
+		if !ok {
+			vertices = append(vertices, key)
+		}
 	}
 	return vertices
 }
@@ -122,12 +131,18 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
+	if len(g.Outs[a]) == 0 {
+		delete(g.Outs, a)
+	}
 
 	for id , vertex := range g.Ins[b] {
 		if vertex == a {
 			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
 		}
+	}
+	if len(g.Ins[b]) == 0 {
+		delete(g.Ins, b)
 	}
 }
 
@@ -136,7 +151,7 @@ func (g *DirectedGraph) Fork() *DirectedGraph {
 	return deepcopy.Copy(g).(*DirectedGraph)
 }
 // IntersectionRel returns the union of res1 and res2
-func IntersectionRel(rels1 []Rel,rels2 []Rel) []Rel{
+func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel{
 	rel := []Rel{}
 	for _, rel1 := range rels1 {
 		both := false
@@ -362,7 +377,21 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 // MapVertices takes a function of vertices, returns graph with all
 //  vertices mapped via f
 func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGraph {
-	panic("impl me")
+	fg := g.Fork()
+	vertices := fg.Vertices()
+	for _, x := range vertices {
+		_, ok := g.Outs[x]
+		if ok == true {
+			for y, _:= range g.Outs[x] {
+				rels := g.Outs[x][y]
+				fg.UnLink(x, y)
+				for _, item := range rels {
+					fg.Link(Vertex{f(x.Value)}, Vertex{f(y.Value)}, item)
+				}
+			}
+		}
+	}
+	return fg
 }
 
 // RenumberGraph takes a Graph and rewrites each vertex to a unique integer, returning the
