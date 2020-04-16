@@ -193,6 +193,16 @@ func (c *Core) binlogTestCompareData(delay bool) (bool, error) {
 	// lock here before get snapshot
 	c.execMutex.Lock()
 	c.Lock()
+	// free the lock since the compare has already got the same snapshot in both side
+	// go on other transactions
+	// defer can be removed
+	// but here we use it for protect environment
+	defer func() {
+		log.Info("free lock")
+		c.Unlock()
+		c.execMutex.Unlock()
+	}()
+
 	// no async here to ensure all transactions are committed or rollbacked in order
 	// use resolveDeadLock func to avoid deadlock
 	c.resolveDeadLock(true)
@@ -241,16 +251,6 @@ SYNC:
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
-	// free the lock since the compare has already got the same snapshot in both side
-	// go on other transactions
-	// defer can be removed
-	// but here we use it for protect environment
-	defer func() {
-		log.Info("free lock")
-		c.Unlock()
-		c.execMutex.Unlock()
-	}()
-
 	// delay will hold on this snapshot and check it later
 	if delay {
 		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
