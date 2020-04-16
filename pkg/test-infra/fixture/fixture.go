@@ -123,7 +123,7 @@ var (
 	// Medium ...
 	Medium = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
-			CPU:    resource.MustParse("500m"),
+			CPU:    resource.MustParse("2000m"),
 			Memory: resource.MustParse("4Gi"),
 		},
 		Limits: corev1.ResourceList{
