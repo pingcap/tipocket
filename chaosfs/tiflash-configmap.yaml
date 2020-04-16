@@ -32,11 +32,11 @@ data:
         - -original=/data0/fuse-data
         - -mountpoint=/data0/db
       volumeMounts:
-        - name: data
+        - name: data0
           mountPath: /data0
           mountPropagation: Bidirectional
     volumeMounts:
-    - name: data
+    - name: data0
       mountPath: /data0
       mountPropagation: HostToContainer
     - name: scripts
