@@ -592,7 +592,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
 			Component: clusterTypes.Component(component),
-			Port:      util.FindPort(pod.ObjectMeta.Name, pod.Spec.Containers[0].Ports),
+			Port:      util.FindPort(pod.ObjectMeta.Name, component, pod.Spec.Containers),
 			Client: &clusterTypes.Client{
 				Namespace:   pod.ObjectMeta.Namespace,
 				ClusterName: pod.ObjectMeta.Labels["app.kubernetes.io/instance"],
