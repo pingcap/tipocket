@@ -46,7 +46,7 @@ func OkKeep(validateFunc func(op core.Op) bool, history core.History) core.Histo
 }
 
 // Gen Takes a sequence of transactions and returns a sequence of invocation operations.
-// TODO: make clear if we need `:f`.
+// Note: Currently we don't need :f.
 func Gen(mop []core.Mop) core.Op {
 	return core.Op{
 		Type:  core.Invoke,

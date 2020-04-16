@@ -46,7 +46,6 @@ func CombineExplainer([]DataExplainer) DataExplainer {
 	panic("implement me")
 }
 
-// TODO: we may refine it later
 type PathType = Op
 
 type Circle struct {
