@@ -18,7 +18,7 @@ type CheckResult struct {
 //  :consistency-models, a set of additional :anomalies, an analyzer function,
 //  and a history. Analyzes the history and yields the analysis, plus an anomaly
 //  map like {:G1c [...]}.
-func cycles(analyzer core.Analyzer, history core.History) core.Anomalies {
+func Cycles(analyzer core.Analyzer, history core.History) core.Anomalies {
 	checkedResult := core.Check(analyzer, history)
 	cases := CycleCases(checkedResult.Graph, checkedResult.Explainer, checkedResult.Sccs)
 	for k, v := range cases {
@@ -58,14 +58,55 @@ func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
 	}
 }
 
-// CycleCasesInScc searches a single SCC for cycle anomalies
+// CycleCasesInScc searches a single SCC for cycle anomalies.
+// TODO: add timeout logic.
 func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []CycleCase {
-	for _ := range CycleAnomalySpecs {
-		panic("implement me")
+	var cases []CycleCase
+	for _, v := range CycleAnomalySpecs {
+		var runtimeGraph *core.DirectedGraph
+		if v.Rels != nil {
+			runtimeGraph = filterGraph(setKeys(v.Rels))
+		} else {
+			runtimeGraph = &graph
+		}
+		var cycle *core.Circle
+		cycle = nil
+		if v.With != nil {
+			panic("implement me")
+		} else if v.Rels != nil {
+			c := core.FindCycle(*runtimeGraph, scc)
+			cycle = &c
+		} else {
+			// Note: this requires find-cycle-starting-with
+			s1 := filterGraph([]core.Rel{v.FirstRel})
+			s2 := filterGraph(setKeys(v.RestRels))
+			c := core.FindCycleStartingWith(*s1, *s2, scc)
+			cycle = &c
+		}
+
+		if cycle != nil {
+			explainerWrapper := CycleExplainerWrapper{}
+			cycleCase := explainerWrapper.ExplainCycle(explainer, *cycle)
+			if v.FilterEx != nil && !v.FilterEx(&cycleCase) {
+				continue
+			}
+			cases = append(cases, cycleCase)
+		}
 	}
+	return cases
 }
 
 // CyclesWithDraw means "cycles!" in clojure.
+// TODO: This function contains some logic like draw, so I leave it unimplemented.
 func CyclesWithDraw() {
 	panic("implement me")
+}
+
+// Note: maybe cache this function is better?
+func setKeys(m map[core.Rel]struct{}) []core.Rel {
+	var rels []core.Rel
+	for k, _ := range m {
+		rels = append(rels, k)
+	}
+	return rels
 }

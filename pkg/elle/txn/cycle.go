@@ -6,7 +6,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
-type FilterExType = func(cycleCase CycleCase) bool
+type FilterExType = func(cycleCase *CycleCase) bool
 
 type CycleAnomalySpecType struct {
 	// A set of relationships which must intersect with every edge in the cycle.
@@ -118,7 +118,7 @@ func init() {
 // CycleExplainWrapper is a ICycleExplainer, it's also a wrapper for core.
 type CycleExplainerWrapper struct{}
 
-func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, circle core.Circle) (core.Circle, []core.Step) {
+func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, circle core.Circle) CycleCase {
 	panic("implement me")
 }
 
