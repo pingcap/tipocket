@@ -57,12 +57,12 @@ func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
 	_, oka := g.Outs[a]
 	_, okb := g.Ins[b]
 	if !oka || !okb {
-		return nil
+		return []Edge{}
 	}
 
 	_, ok := g.Outs[a][b]
 	if !ok {
-		return nil
+		return []Edge{}
 	}
 
 	edges := []Edge{}
