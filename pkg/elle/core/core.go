@@ -11,12 +11,12 @@ const (
 	Realtime Rel = "realtime"
 )
 
-type DependType int
+type DependType string
 
 const (
-	RealtimeDepend DependType = iota
-	MonotonicDepend
-	ProcessDepend
+	RealtimeDepend  DependType = "realtime"
+	MonotonicDepend DependType = "monotonic"
+	ProcessDepend   DependType = "process"
 )
 
 type ExplainResult interface {
@@ -46,7 +46,8 @@ func CombineExplainer([]DataExplainer) DataExplainer {
 	panic("implement me")
 }
 
-type PathType = interface{}
+// TODO: we may refine it later
+type PathType = Op
 
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
