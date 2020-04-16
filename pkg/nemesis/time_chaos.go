@@ -108,7 +108,7 @@ type timeChaosGenerator struct {
 }
 
 func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperation {
-	ops := make([]*core.NemesisOperation, len(nodes))
+	var ops []*core.NemesisOperation
 
 	for idx := range nodes {
 		node := nodes[idx]
