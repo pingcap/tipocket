@@ -20,7 +20,8 @@ type CycleAnomalySpecType struct {
 	// A predicate over a cycle explanation. We use this to restrict cycles to e.g. *just* G2 instead of G-single.
 	FilterEx FilterExType
 
-	With interface{} // seems only G-nonadjacent is used, it's a little complicated
+	With            func(n int, lastIsRw bool, rel core.Rel) (bool, int, bool) // seems only G-nonadjacent is used, it's a little complicated
+	FilterPathState func(interface{}) bool
 }
 
 var CycleAnomalySpecs map[string]CycleAnomalySpecType
@@ -63,17 +64,18 @@ func fromFirstRelAndRestWithFilter(filter FilterExType, first core.Rel, rests ..
 	}
 }
 
-// TODO: implement this function.
 func filterClosure(required string) FilterExType {
-	return nil
+	return func(cycleCase *CycleCase) bool {
+		return cycleCase.Type == required
+	}
 }
 
 func init() {
 	CycleAnomalySpecs = map[string]CycleAnomalySpecType{
-		"G0":       fromRels(core.WW),
-		"G1c":      fromFirstRelAndRest(core.WR, core.WW, core.WR),
-		"G-single": fromFirstRelAndRest(core.RW, core.WW, core.WR),
-		// TODO: G-nonadjacent is not implemented
+		"G0":            fromRels(core.WW),
+		"G1c":           fromFirstRelAndRest(core.WR, core.WW, core.WR),
+		"G-single":      fromFirstRelAndRest(core.RW, core.WW, core.WR),
+		"G-nonadjacent": fromRels(core.WW, core.WR, core.RW),
 
 		"G2-item":          fromFirstRelAndRestWithFilter(filterClosure("G2-item"), core.RW, core.WR, core.RW, core.WW),
 		"G0-process":       fromRelsWithFilter(filterClosure("G0-process"), core.WW, core.Process),
@@ -87,6 +89,13 @@ func init() {
 		"G1c-realtime":      fromFirstRelAndRestWithFilter(filterClosure("G1c-realtime"), core.WR, core.WW, core.WR, core.Realtime),
 		"G-single-realtime": fromFirstRelAndRestWithFilter(filterClosure("G-single-realtime"), core.RW, core.WW, core.WR, core.Realtime),
 		"G2-item-realtime":  fromFirstRelAndRestWithFilter(filterClosure("G2-item-realtime"), core.RW, core.WW, core.WR, core.Realtime, core.RW),
+	}
+
+	v := CycleAnomalySpecs["G-nonadjacent"]
+	v.With = NonadjacentRW
+	v.FilterPathState = func(p interface{}) bool {
+		// TODO: we need more than one rw edge for this to count; otherwise it's G-single.
+		return true
 	}
 
 	CycleTypeNames = map[string]struct{}{
