@@ -11,12 +11,12 @@ data:
     name: chaosfs-tiflash
     selector:
       labelSelectors:
-        "app": "tiflash"
+        "app.kubernetes.io/component": "tiflash"
     initContainers:
     - name: inject-scripts
       image: pingcap/chaos-scripts:latest
       imagePullpolicy: Always
-      command: ["sh", "-c", "/scripts/init.sh -d /data/db -f /data/fuse-data"]
+      command: ["sh", "-c", "/scripts/init.sh -d /data0/db -f /data0/fuse-data"]
     containers:
     - name: chaosfs
       image: pingcap/chaos-fs:latest
@@ -29,15 +29,15 @@ data:
         - /usr/local/bin/chaosfs
         - -addr=:65534
         - -pidfile=/tmp/fuse/pid
-        - -original=/data/fuse-data
-        - -mountpoint=/data/db
+        - -original=/data0/fuse-data
+        - -mountpoint=/data0/db
       volumeMounts:
         - name: data
-          mountPath: /data
+          mountPath: /data0
           mountPropagation: Bidirectional
     volumeMounts:
     - name: data
-      mountPath: /data
+      mountPath: /data0
       mountPropagation: HostToContainer
     - name: scripts
       mountPath: /tmp/scripts
