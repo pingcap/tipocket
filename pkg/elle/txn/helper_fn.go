@@ -78,8 +78,24 @@ func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*cor
 	return im
 }
 
-func FailedWrites(history core.History) {
-	panic("implement me")
+// FailedWrites is like IntermediateWrites, it returns map[key](map[aborted-value]abort-op).
+func FailedWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
+	im := map[int]map[core.MopValueType]*core.Op{}
+
+	for _, op := range history {
+		if op.Type != core.Fail {
+			continue
+		}
+		for _, mop := range op.Value {
+			if mop.IsAppend() {
+				a := mop.(core.Append)
+				realKey := mustAtoi(a.Key)
+				im[realKey][a.Value] = &op
+			}
+		}
+	}
+
+	return im
 }
 
 func mustAtoi(s string) int {
