@@ -140,8 +140,9 @@ func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplain
 }
 
 // NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).
-//  when initialize, please provide [0, false], if you provide [0, true], please ensure that the first
+//  when initialize, please provide [0, true]. if you provide [0, true], please ensure that the first
 //  edge must not rw edge.
+// And if you provide [0, false], please finally call the first Rel again to check the tail-end rw adjacent.
 // This fn ensures that no :rw is next to another by testing successive edge
 //  types. In addition, we ensure that the first edge in the cycle is not an rw.
 //  Cycles must have at least two edges, and in order for no two rw edges to be
