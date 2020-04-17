@@ -132,7 +132,7 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
 
-	for id , vertex := range g.Ins[b] {
+	for id, vertex := range g.Ins[b] {
 		if vertex == a {
 			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
@@ -146,10 +146,10 @@ func (g *DirectedGraph) Fork() *DirectedGraph {
 }
 
 // IntersectionRel returns the intersection of res1 and res2
-func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel{
+func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel {
 	rel := []Rel{}
 	for _, rel1 := range rels1 {
-		for _, rel2 := range rels2{
+		for _, rel2 := range rels2 {
 			if rel1 == rel2 {
 				rel = append(rel, rel1)
 			}
@@ -172,7 +172,7 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
 		if ok == true {
-			for y, _:= range g.Outs[x] {
+			for y, _ := range g.Outs[x] {
 				rels := IntersectionRel(g.Outs[x][y], rels)
 				fg.UnLink(x, y)
 				for _, item := range rels {
@@ -283,7 +283,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					dfn[x] = index
 					low[x] = index
 					s2 = append(s2, x)
-					in[x] = true;
+					in[x] = true
 				}
 				finish := true
 				for next, _ := range g.Outs[x] {
@@ -324,7 +324,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 							t = s2[len(s2)-1]
 							s2 = s2[:len(s2)-1]
 							in[t] = false
-							belong[t] = cnt;
+							belong[t] = cnt
 							if t == x {
 								break
 							}
@@ -364,7 +364,7 @@ func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGr
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
 		if ok == true {
-			for y, _:= range g.Outs[x] {
+			for y, _ := range g.Outs[x] {
 				rels := g.Outs[x][y]
 				for _, item := range rels {
 					fg.Link(Vertex{f(x.Value)}, Vertex{f(y.Value)}, item)
@@ -392,7 +392,7 @@ func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) inter
 
 	for _, x := range vertices {
 		for y, rels := range g.Outs[x] {
-			for _, rel := range rels{
+			for _, rel := range rels {
 				dg.Link(Vertex{ref[x]}, Vertex{ref[y]}, rel)
 			}
 		}
