@@ -18,13 +18,13 @@ type CheckResult struct {
 //  :consistency-models, a set of additional :anomalies, an analyzer function,
 //  and a history. Analyzes the history and yields the analysis, plus an anomaly
 //  map like {:G1c [...]}.
-func Cycles(analyzer core.Analyzer, history core.History) core.Anomalies {
+func Cycles(analyzer core.Analyzer, history core.History) core.CheckResult {
 	checkedResult := core.Check(analyzer, history)
 	cases := CycleCases(checkedResult.Graph, checkedResult.Explainer, checkedResult.Sccs)
 	for k, v := range cases {
 		checkedResult.Anomalies[k] = v
 	}
-	return checkedResult.Anomalies
+	return checkedResult
 }
 
 type CycleCase struct {
@@ -49,14 +49,6 @@ func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs
 }
 
 type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
-
-// FilteredGraphs receives a graph and a collection of relations, return a new Graph filtered to just those relationships
-// Note: currently it use fork here, we can considering remove it.
-func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
-	return func(rels []core.Rel) *core.DirectedGraph {
-		return graph.Fork().FilterRelationships(rels)
-	}
-}
 
 // CycleCasesInScc searches a single SCC for cycle anomalies.
 // TODO: add timeout logic.
@@ -101,13 +93,4 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 // TODO: This function contains some logic like draw, so I leave it unimplemented.
 func CyclesWithDraw() {
 	panic("implement me")
-}
-
-// Note: maybe cache this function is better?
-func setKeys(m map[core.Rel]struct{}) []core.Rel {
-	var rels []core.Rel
-	for k, _ := range m {
-		rels = append(rels, k)
-	}
-	return rels
 }

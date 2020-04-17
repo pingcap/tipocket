@@ -1,6 +1,7 @@
 package txn
 
 import (
+	"hash/fnv"
 	"strconv"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
@@ -108,4 +109,40 @@ func mustAtoi(s string) int {
 
 func ResultMap() {
 	panic("implement me")
+}
+
+// Note: maybe cache this function is better?
+func setKeys(m map[core.Rel]struct{}) []core.Rel {
+	var rels []core.Rel
+	for k, _ := range m {
+		rels = append(rels, k)
+	}
+	return rels
+}
+
+func arrayHash(sset []core.Rel) uint32 {
+	h := fnv.New32a()
+	for _, v := range sset {
+		h.Write([]byte(v))
+	}
+	return h.Sum32()
+}
+
+// FilteredGraphs receives a graph and a collection of relations, return a new Graph filtered to just those relationships
+// Note: currently it use fork here, we can considering remove it.
+func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
+	memo := map[uint32]*core.DirectedGraph{}
+
+	return func(rels []core.Rel) *core.DirectedGraph {
+		v := arrayHash(rels)
+		if g, e := memo[v]; e {
+			return g
+		} else {
+			g = graph.FilterRelationships(rels)
+			if g != nil {
+				memo[v] = g
+			}
+			return g
+		}
+	}
 }
