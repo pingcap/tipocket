@@ -105,8 +105,8 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	if haveRel == false {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
-	
-	if _, ok:= g.Outs[v][succ] ; ok ==false{
+
+	if _, ok := g.Outs[v][succ]; ok == false {
 		g.Ins[succ] = append(g.Ins[succ], v)
 	}
 }
@@ -277,7 +277,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					dfn[x] = index
 					low[x] = index
 					s2 = append(s2, x)
-					in[x] = true;
+					in[x] = true
 				}
 				finish := true
 				for next, _ := range g.Outs[x] {
@@ -318,7 +318,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 							t = s2[len(s2)-1]
 							s2 = s2[:len(s2)-1]
 							in[t] = false
-							belong[t] = cnt;
+							belong[t] = cnt
 							if t == x {
 								break
 							}
