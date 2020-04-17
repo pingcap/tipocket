@@ -2,6 +2,7 @@ package txn
 
 import (
 	"hash/fnv"
+	"sort"
 	"strconv"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
@@ -134,6 +135,7 @@ func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
 	memo := map[uint32]*core.DirectedGraph{}
 
 	return func(rels []core.Rel) *core.DirectedGraph {
+		sort.Sort(core.RelSet(rels))
 		v := arrayHash(rels)
 		if g, e := memo[v]; e {
 			return g
