@@ -187,8 +187,11 @@ func reportableAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) 
 }
 
 func prohibitAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) map[string]struct{} {
-	a1 := core.AllAnomaliesImplying(cm)
-	a2 := core.AnomaliesProhibitedBy(anomalies)
+	if len(anomalies) == 0 {
+		anomalies = append(anomalies, "strict-serializable")
+	}
+	a1 := core.AnomaliesProhibitedBy(anomalies)
+	a2 := core.AllAnomaliesImplying(cm)
 	dest := compactAnomalies(a1...)
 	union(dest, compactAnomalies(a2...))
 	return dest
