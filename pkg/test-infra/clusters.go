@@ -140,15 +140,15 @@ func (c *compositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 
 // NewDefaultCluster creates a new TiDB cluster
 func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	return tidb.New(namespace, name, config, false)
+	return tidb.New(namespace, name, config)
 }
 
 // NewCDCCluster creates two TiDB clusters with CDC
 func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
 	return NewCompositeCluster(
 		NewGroupCluster(
-			tidb.New(namespace, name+"-upstream", conf, false),
-			tidb.New(namespace, name+"-downstream", conf, false),
+			tidb.New(namespace, name+"-upstream", conf),
+			tidb.New(namespace, name+"-downstream", conf),
 		),
 		cdc.New(namespace, name),
 	)
@@ -156,7 +156,7 @@ func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clust
 
 // NewBinlogCluster creates two TiDB clusters with Binlog
 func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	up := tidb.New(namespace, name+"-upstream", conf, false)
+	up := tidb.New(namespace, name+"-upstream", conf)
 	upstream := up.GetTiDBCluster()
 	upstream.Spec.TiDB.BinlogEnabled = pointer.BoolPtr(true)
 	upstream.Spec.Pump = &v1alpha1.PumpSpec{
@@ -172,7 +172,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 	}
 
 	return NewCompositeCluster(
-		NewGroupCluster(up, tidb.New(namespace, name+"-downstream", conf, false)),
+		NewGroupCluster(up, tidb.New(namespace, name+"-downstream", conf)),
 		binlog.New(namespace, name),
 	)
 }
@@ -180,21 +180,21 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 // NewABTestCluster creates two TiDB clusters to do AB Test
 func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
 	return NewGroupCluster(
-		tidb.New(namespace, name+"-a", confA, false),
-		tidb.New(namespace, name+"-b", confB, false),
+		tidb.New(namespace, name+"-a", confA),
+		tidb.New(namespace, name+"-b", confB),
 	)
 }
 
 // NewTiFlashCluster creates a TiDB cluster with TiFlash
 func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	return tidb.New(namespace, name, conf, true)
+	return tidb.New(namespace, name, conf)
 }
 
 // NewTiFlashABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash
 func NewTiFlashABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
 	return NewGroupCluster(
 		NewTiFlashCluster(namespace, name+"-a", confA),
-		tidb.New(namespace, name+"-b", confB, false),
+		tidb.New(namespace, name+"-b", confB),
 	)
 }
 
@@ -204,7 +204,7 @@ func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiD
 	return NewCompositeCluster(
 		NewGroupCluster(
 			NewTiFlashCluster(namespace, name+"-upstream", confA),
-			tidb.New(namespace, name+"-downstream", confB, false),
+			tidb.New(namespace, name+"-downstream", confB),
 		),
 		cdc.New(namespace, name),
 	)
