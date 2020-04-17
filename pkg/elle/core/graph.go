@@ -55,8 +55,7 @@ func (g *DirectedGraph) Out(v Vertex) []Vertex {
 // Edges returns the edge between two vertices
 func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
 	_, oka := g.Outs[a]
-	_, okb := g.Ins[b]
-	if !oka || !okb {
+	if !oka {
 		return []Edge{}
 	}
 
@@ -96,17 +95,6 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Ins[succ] = []Vertex{}
 	}
 
-	haveRel := false
-	for _, item := range g.Outs[v][succ] {
-		if item == rel {
-			haveRel = true
-			break
-		}
-	}
-	if haveRel == false {
-		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
-	}
-
 	haveV := false
 	for _, item := range g.Ins[succ] {
 		if item == v {
@@ -117,6 +105,14 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	if haveV == false {
 		g.Ins[succ] = append(g.Ins[succ], v)
 	}
+
+	for _, item := range g.Outs[v][succ] {
+		if item == rel {
+			return
+		}
+	}
+
+	g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 }
 
 // LinkToAll links x to all ys
@@ -148,19 +144,15 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 func (g *DirectedGraph) Fork() *DirectedGraph {
 	return deepcopy.Copy(g).(*DirectedGraph)
 }
-// IntersectionRel returns the union of res1 and res2
+
+// IntersectionRel returns the intersection of res1 and res2
 func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel{
 	rel := []Rel{}
 	for _, rel1 := range rels1 {
-		both := false
 		for _, rel2 := range rels2{
 			if rel1 == rel2 {
-				both = true
-				break
+				rel = append(rel, rel1)
 			}
-		}
-		if both == true {
-			rel = append(rel, rel1)
 		}
 	}
 	return rel
@@ -168,23 +160,7 @@ func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel{
 
 // ProjectRelationship filters a graph to just those edges with the given relationship
 func (g *DirectedGraph) ProjectRelationship(rel Rel) *DirectedGraph {
-	fg := g.Fork()
-
-	vertices := fg.Vertices()
-	for _, x := range vertices {
-		_, ok := g.Outs[x]
-		if ok == true {
-			for y, _:= range g.Outs[x] {
-				rels := IntersectionRel(g.Outs[x][y], []Rel{rel})
-				fg.UnLink(x, y)
-				for _, item := range rels {
-					fg.Link(x, y, item)
-				}
-			}
-		}
-	}
-
-	return fg
+	return g.FilterRelationships([]Rel{rel})
 }
 
 // FilterRelationships filters a graph g to just those edges which intersect with the given set of
@@ -372,13 +348,18 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	return scc
 }
 
+// NewDirectedGraph returns a empty DirectedGraph
+func NewDirectedGraph() *DirectedGraph {
+	var g DirectedGraph
+	g.Ins = make(map[Vertex][]Vertex)
+	g.Outs = make(map[Vertex]map[Vertex][]Rel)
+	return &g
+}
+
 // MapVertices takes a function of vertices, returns graph with all
 //  vertices mapped via f
 func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGraph {
-	var fg DirectedGraph
-	fg.Ins = make(map[Vertex][]Vertex)
-	fg.Outs = make(map[Vertex]map[Vertex][]Rel)
-
+	fg := NewDirectedGraph()
 	vertices := g.Vertices()
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
@@ -392,16 +373,14 @@ func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGr
 		}
 	}
 
-	return &fg
+	return fg
 }
 
 // RenumberGraph takes a Graph and rewrites each vertex to a unique integer, returning the
 //  rewritten Graph, and a vector of the original vertices for reconstruction.
 // That means if we apply MapVertices to dg with remap, it can recover to g again
 func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) interface{}) {
-	var dg DirectedGraph
-	dg.Ins = make(map[Vertex][]Vertex)
-	dg.Outs = make(map[Vertex]map[Vertex][]Rel)
+	dg := NewDirectedGraph()
 	ref := make(map[Vertex]int)
 	numberToVertices := make(map[interface{}]interface{})
 	vertices := g.Vertices()
@@ -419,7 +398,7 @@ func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) inter
 		}
 	}
 
-	return &dg, func(number interface{}) interface{} {
+	return dg, func(number interface{}) interface{} {
 		return numberToVertices[number]
 	}
 }
