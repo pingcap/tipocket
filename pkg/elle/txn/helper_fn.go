@@ -18,11 +18,10 @@ func (omi *OpMopIterator) Next() (*core.Op, core.Mop) {
 	op, mop := &omi.history[omi.historyIndex], omi.history[omi.historyIndex].Value[omi.mopIndex]
 
 	// inc index
+	omi.mopIndex++
 	if omi.mopIndex == len(omi.history[omi.historyIndex].Value) {
 		omi.mopIndex = 0
 		omi.historyIndex++
-	} else {
-		omi.mopIndex++
 	}
 	return op, mop
 }
