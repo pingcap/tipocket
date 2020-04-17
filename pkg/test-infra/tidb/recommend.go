@@ -110,7 +110,7 @@ func buildImage(name, baseVersion, version string) string {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig, enableTiFlash bool) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
@@ -253,7 +253,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 		},
 	}
 
-	if enableTiFlash {
+	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
 
 		// TODO(yeya24): There is a bug in the operator side so we can only set it

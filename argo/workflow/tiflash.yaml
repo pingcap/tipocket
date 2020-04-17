@@ -19,9 +19,9 @@ spec:
       - name: run_time
         value: "6h"
       - name: tiflash_image
-        value: "yeya24/tics:4.0"
+        value: ""
       - name: tiflash_replicas
-        value: 1
+        value: 2
   templates:
     - name: call-export-logs
       steps:
