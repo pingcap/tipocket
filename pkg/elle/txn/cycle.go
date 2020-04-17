@@ -37,6 +37,14 @@ func fromRels(rels ...core.Rel) CycleAnomalySpecType {
 	return fromRelsWithFilter(nil, rels...)
 }
 
+func fromRelsAndWith(with func(n int, lastIsRw bool, rel core.Rel) (bool, int, bool),
+	filterPath func(interface{}) bool, rels ...core.Rel) CycleAnomalySpecType {
+	r := fromRels(rels...)
+	r.FilterPathState = filterPath
+	r.With = with
+	return r
+}
+
 func fromRelsWithFilter(filter FilterExType, rels ...core.Rel) CycleAnomalySpecType {
 	relsSet := map[core.Rel]struct{}{}
 	for _, v := range rels {
@@ -64,7 +72,7 @@ func fromFirstRelAndRestWithFilter(filter FilterExType, first core.Rel, rests ..
 	}
 }
 
-func filterClosure(required string) FilterExType {
+func buildFilterExByType(required string) FilterExType {
 	return func(cycleCase *CycleCase) bool {
 		return cycleCase.Type == required
 	}
@@ -72,30 +80,25 @@ func filterClosure(required string) FilterExType {
 
 func init() {
 	CycleAnomalySpecs = map[string]CycleAnomalySpecType{
-		"G0":            fromRels(core.WW),
-		"G1c":           fromFirstRelAndRest(core.WR, core.WW, core.WR),
-		"G-single":      fromFirstRelAndRest(core.RW, core.WW, core.WR),
-		"G-nonadjacent": fromRels(core.WW, core.WR, core.RW),
+		"G0":       fromRels(core.WW),
+		"G1c":      fromFirstRelAndRest(core.WR, core.WW, core.WR),
+		"G-single": fromFirstRelAndRest(core.RW, core.WW, core.WR),
+		"G-nonadjacent": fromRelsAndWith(NonadjacentRW, func(p interface{}) bool {
+			return true
+		}, core.WW, core.WR, core.RW),
 
-		"G2-item":          fromFirstRelAndRestWithFilter(filterClosure("G2-item"), core.RW, core.WR, core.RW, core.WW),
-		"G0-process":       fromRelsWithFilter(filterClosure("G0-process"), core.WW, core.Process),
-		"G1c-process":      fromFirstRelAndRestWithFilter(filterClosure("G1c-process"), core.RW, core.WW, core.WR, core.Process),
-		"G-single-process": fromFirstRelAndRestWithFilter(filterClosure("G-single-process"), core.RW, core.WW, core.WR, core.Process),
-		"G2-item-process":  fromFirstRelAndRestWithFilter(filterClosure("G2-item-process"), core.RW, core.WW, core.WR, core.RW, core.Process),
+		"G2-item":          fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item"), core.RW, core.WR, core.RW, core.WW),
+		"G0-process":       fromRelsWithFilter(buildFilterExByType("G0-process"), core.WW, core.Process),
+		"G1c-process":      fromFirstRelAndRestWithFilter(buildFilterExByType("G1c-process"), core.WR, core.WW, core.WR, core.Process),
+		"G-single-process": fromFirstRelAndRestWithFilter(buildFilterExByType("G-single-process"), core.RW, core.WW, core.WR, core.Process),
+		"G2-item-process":  fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item-process"), core.RW, core.WW, core.WR, core.RW, core.Process),
 
 		// realtime
 
-		"G0-realtime":       fromRelsWithFilter(filterClosure("G0-realtime"), core.WW, core.Realtime),
-		"G1c-realtime":      fromFirstRelAndRestWithFilter(filterClosure("G1c-realtime"), core.WR, core.WW, core.WR, core.Realtime),
-		"G-single-realtime": fromFirstRelAndRestWithFilter(filterClosure("G-single-realtime"), core.RW, core.WW, core.WR, core.Realtime),
-		"G2-item-realtime":  fromFirstRelAndRestWithFilter(filterClosure("G2-item-realtime"), core.RW, core.WW, core.WR, core.Realtime, core.RW),
-	}
-
-	v := CycleAnomalySpecs["G-nonadjacent"]
-	v.With = NonadjacentRW
-	v.FilterPathState = func(p interface{}) bool {
-		// TODO: we need more than one rw edge for this to count; otherwise it's G-single.
-		return true
+		"G0-realtime":       fromRelsWithFilter(buildFilterExByType("G0-realtime"), core.WW, core.Realtime),
+		"G1c-realtime":      fromFirstRelAndRestWithFilter(buildFilterExByType("G1c-realtime"), core.WR, core.WW, core.WR, core.Realtime),
+		"G-single-realtime": fromFirstRelAndRestWithFilter(buildFilterExByType("G-single-realtime"), core.RW, core.WW, core.WR, core.Realtime),
+		"G2-item-realtime":  fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item-realtime"), core.RW, core.WW, core.WR, core.Realtime, core.RW),
 	}
 
 	CycleTypeNames = map[string]struct{}{
@@ -114,7 +117,7 @@ func init() {
 
 	ProcessAnalysisTypes = map[string]struct{}{}
 	RealtimeAnalysisTypes = map[string]struct{}{}
-	for k, _ := range CycleAnomalySpecs {
+	for k, _ := range CycleTypeNames {
 		if strings.Contains(k, "process") {
 			ProcessAnalysisTypes[k] = struct{}{}
 		}
@@ -137,7 +140,8 @@ func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplain
 }
 
 // NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).
-// when initialize, please provide [0, false].
+//  when initialize, please provide [0, false], if you provide [0, true], please ensure that the first
+//  edge must not rw edge.
 // This fn ensures that no :rw is next to another by testing successive edge
 //  types. In addition, we ensure that the first edge in the cycle is not an rw.
 //  Cycles must have at least two edges, and in order for no two rw edges to be
@@ -147,9 +151,9 @@ func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplain
 //  property when we jump to the first.
 func NonadjacentRW(n int, lastIsRw bool, rel core.Rel) (bool, int, bool) {
 	if rel != core.RW {
-		return true, n, lastIsRw
+		return true, n, false
 	} else {
-		return lastIsRw, n + 1, true
+		return !lastIsRw, n + 1, true
 	}
 }
 
