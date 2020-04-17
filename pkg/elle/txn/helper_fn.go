@@ -58,15 +58,15 @@ func Gen(mop []core.Mop) core.Op {
 
 // IntermediateWrites return a map likes map[key](map[old-version]overwrite-op).
 // Note: This function is very very strange, please pay attention to it carefully.
-func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
-	im := map[int]map[core.MopValueType]*core.Op{}
+func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
+	im := map[string]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
-		final := map[int]core.MopValueType{}
+		final := map[string]core.MopValueType{}
 		for _, mop := range op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
-				realKey := mustAtoi(a.Key)
+				realKey := a.Key
 				lastOp, exists := final[realKey]
 				if !exists {
 					final[realKey] = a.Value
@@ -81,8 +81,8 @@ func IntermediateWrites(history core.History) map[int]map[core.MopValueType]*cor
 }
 
 // FailedWrites is like IntermediateWrites, it returns map[key](map[aborted-value]abort-op).
-func FailedWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
-	im := map[int]map[core.MopValueType]*core.Op{}
+func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
+	im := map[string]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
 		if op.Type != core.Fail {
@@ -91,7 +91,7 @@ func FailedWrites(history core.History) map[int]map[core.MopValueType]*core.Op {
 		for _, mop := range op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
-				realKey := mustAtoi(a.Key)
+				realKey := a.Key
 				im[realKey][a.Value] = &op
 			}
 		}

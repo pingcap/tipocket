@@ -72,10 +72,6 @@ type Step struct {
 	Result ExplainResult
 }
 
-func explainCyclePairData(pairExplainer DataExplainer, prePath PathType, currentPath PathType) ExplainResult {
-	return pairExplainer.ExplainPairData(prePath, currentPath)
-}
-
 type ICycleExplainer interface {
 	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
 	RenderCycleExplanation(explainer DataExplainer, circle Circle) string
