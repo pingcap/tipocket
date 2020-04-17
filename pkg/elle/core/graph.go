@@ -95,24 +95,20 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Ins[succ] = []Vertex{}
 	}
 
-	haveV := false
-	for _, item := range g.Ins[succ] {
-		if item == v {
-			haveV = true
+	haveRel := false
+	for _, item := range g.Outs[v][succ] {
+		if item == rel {
+			haveRel = true
 			break
 		}
 	}
-	if haveV == false {
+	if haveRel == false {
+		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
+	}
+	
+	if _, ok:= g.Outs[v][succ] ; ok ==false{
 		g.Ins[succ] = append(g.Ins[succ], v)
 	}
-
-	for _, item := range g.Outs[v][succ] {
-		if item == rel {
-			return
-		}
-	}
-
-	g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 }
 
 // LinkToAll links x to all ys
@@ -268,13 +264,11 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	in := make(map[Vertex]bool)
 	tag := make(map[Vertex]map[Vertex]bool)
 	s2 := []Vertex{}
-	scc := []SCC{}
 	vertices := g.Vertices()
-
+	index := 0
 	for _, v := range vertices {
 		if dfn[v] == 0 {
 			s1 := []Vertex{v}
-			index := 0
 			for len(s1) > 0 {
 				x := s1[len(s1)-1]
 				s1 = s1[:len(s1)-1]
@@ -283,7 +277,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					dfn[x] = index
 					low[x] = index
 					s2 = append(s2, x)
-					in[x] = true
+					in[x] = true;
 				}
 				finish := true
 				for next, _ := range g.Outs[x] {
@@ -324,7 +318,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 							t = s2[len(s2)-1]
 							s2 = s2[:len(s2)-1]
 							in[t] = false
-							belong[t] = cnt
+							belong[t] = cnt;
 							if t == x {
 								break
 							}
@@ -334,16 +328,11 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 			}
 		}
 	}
-	for i := 1; i <= cnt; i++ {
-		ts := SCC{
-			Vertices: []Vertex{},
-		}
-		for _, v := range vertices {
-			if belong[v] == i {
-				ts.Vertices = append(ts.Vertices, v)
-			}
-		}
-		scc = append(scc, ts)
+
+	scc := make([]SCC, cnt)
+	for _, v := range vertices {
+		id := belong[v]
+		scc[id-1].Vertices = append(scc[id-1].Vertices, v)
 	}
 	return scc
 }
