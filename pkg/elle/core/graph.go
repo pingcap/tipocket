@@ -420,10 +420,10 @@ func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
 }
 
 // TODO
-type Transition struct{}
+type Transition interface{}
 
 // TODO
-type Predicate struct{}
+type Predicate interface{}
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
 func FindCycle(graph DirectedGraph, scc SCC) Circle {
