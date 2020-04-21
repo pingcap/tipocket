@@ -19,9 +19,9 @@ spec:
           - name: nemesis
             default: ""
           - name: tiflash_image
-            default: "pingcap/tiflash:release-4.0"
+            default: ""
           - name: tiflash_replicas
-            default: 1
+            default: 2
           - name: run_time
             default: "48h"
           - name: loki-addr
@@ -50,8 +50,8 @@ spec:
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
-            -tiflash.replica={{inputs.parameters.tiflash_replicas}} \
-            -tiflash.image={{inputs.parameters.tiflash_image}} \
+            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash_image}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

@@ -11,7 +11,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
@@ -188,15 +187,7 @@ func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterCo
 
 // NewTiFlashCluster creates a TiDB cluster with TiFlash
 func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
-	t := tidb.New(namespace, name, conf)
-	tc := t.GetTiDBCluster()
-	// To make TiFlash work, we need to enable placement rules in pd.
-	tc.Spec.PD.Config = &v1alpha1.PDConfig{
-		Replication: &v1alpha1.PDReplicationConfig{
-			EnablePlacementRules: pointer.BoolPtr(true),
-		},
-	}
-	return NewCompositeCluster(t, tiflash.New(namespace, name))
+	return tidb.New(namespace, name, conf)
 }
 
 // NewTiFlashABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash

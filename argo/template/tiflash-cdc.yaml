@@ -43,9 +43,9 @@ spec:
           - name: abtest_general_log
             default: "true"
           - name: tiflash_image
-            default: "pingcap/tiflash:release-4.0"
+            default: ""
           - name: tiflash_replicas
-            default: 1
+            default: 2
           - name: cdc_hub
             default: docker.io
           - name: cdc_repository
@@ -63,7 +63,7 @@ spec:
           ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
-        image: 'yeya24/tipocket:tiflash-cdc'
+        image: 'pingcap/tipocket:latest'
         imagePullPolicy: Always
         command:
           - sh
@@ -89,8 +89,8 @@ spec:
             -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
             -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
             -abtest.general-log={{inputs.parameters.abtest_general_log}} \
-            -tiflash.replica={{inputs.parameters.tiflash_replicas}} \
-            -tiflash.image={{inputs.parameters.tiflash_image}} \
+            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash_image}} \
             -cdc.hub={{inputs.parameters.cdc_hub}} \
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \

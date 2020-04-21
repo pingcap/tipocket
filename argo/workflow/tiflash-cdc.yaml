@@ -41,9 +41,9 @@ spec:
       - name: abtest_general_log
         value: "true"
       - name: tiflash_image
-        value: "yeya24/tics:4.0"
+        value: ""
       - name: tiflash_replicas
-        value: 1
+        value: 2
       - name: cdc_hub
         value: "docker.io"
       - name: cdc_repository

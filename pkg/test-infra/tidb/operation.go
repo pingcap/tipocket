@@ -635,6 +635,12 @@ func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {
 				return s
 			}
 		}
+	case "tiflash":
+		if tc.Spec.TiFlash.Annotations != nil {
+			if s, ok := tc.Spec.TiFlash.Annotations[ioChaosAnnotation]; ok {
+				return s
+			}
+		}
 	}
 
 	return ""
