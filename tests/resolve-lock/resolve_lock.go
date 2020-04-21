@@ -152,7 +152,6 @@ func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	// ns := nodes[0].Namespace
 	// pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)
 	pdAddr := "127.0.0.1:2379"
-	// TODO: Is SecurityOption needed?
 	c.pd, err = pd.NewClient([]string{pdAddr}, pd.SecurityOption{})
 	if err != nil {
 		return errors.Trace(err)
@@ -211,7 +210,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		log.Infof("[round-%d] start to async generate locks during GC", loopNum)
 		// Generate locks before ts to let lock observer do it job. ts is the safeLockTs which means
 		// locks with ts before it are safe locks. These locks can be left after GC and won't break data consistency.
-		cancel, wg := c.asyncGenerateLocksDuringGC(ctx, ts, 200*time.Millisecond, 5*time.Second)
+		cancel, wg := c.asyncGenerateLocksDuringGC(ctx, ts, 200*time.Millisecond, 1*time.Second)
 
 		// Get a ts as the safe point so it's greater than any locks written by `generateLocks`
 		c.safePoint, err = c.getTs(ctx)
@@ -224,6 +223,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		greenGCUsed, err := gcworker.RunDistributedGCJob(ctx, c.kv, c.pd, c.safePoint, id, 3, c.EnableGreenGC)
 		if err != nil {
 			log.Errorf("[round-%d] %s failed to run GC at safe point %v", loopNum, id, c.safePoint)
+			return errors.Trace(err)
 		}
 		log.Infof("[round-%d] GC done at safePoint(%v)", loopNum, c.safePoint)
 
@@ -382,7 +382,7 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 				Mutations:    mutations,
 				PrimaryLock:  primary,
 				StartVersion: startTs,
-				LockTtl:      3000,
+				LockTtl:      30000,
 			},
 		)
 
@@ -405,11 +405,11 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte, primar
 		if resp.Resp == nil {
 			return 0, errors.Errorf("response body missing")
 		}
-		prewriteResp := resp.Resp.(*kvrpcpb.PrewriteResponse)
-		keyErrors := prewriteResp.GetErrors()
-		if len(keyErrors) != 0 {
-			return 0, errors.New(fmt.Sprintf("fail to prewrite locks: %v", keyErrors))
-		}
+		// prewriteResp := resp.Resp.(*kvrpcpb.PrewriteResponse)
+		// keyErrors := prewriteResp.GetErrors()
+		// if len(keyErrors) != 0 {
+		// return 0, errors.New(fmt.Sprintf("fail to prewrite locks: %v", keyErrors))
+		// }
 
 		return lockedKeys, nil
 	}
@@ -457,33 +457,34 @@ func (c *resolveLockClient) CheckData(ctx context.Context) ([]*tikv.Lock, error)
 		}
 
 		locksInfo := scanLockResp.GetLocks()
-		locks := make([]*tikv.Lock, 0, len(locksInfo))
+		safeLocks := make([]*tikv.Lock, 0, len(locksInfo))
 		for _, info := range locksInfo {
 			lock := tikv.NewLock(info)
-			locks = append(locks, lock)
-			if lock.TxnID >= c.safeLockTs {
+			if lock.TxnID < c.safeLockTs {
+				safeLocks = append(safeLocks, lock)
+			} else {
 				unsafeLocks = append(unsafeLocks, lock)
 			}
 		}
-		if len(locks) != 0 {
-			log.Infof("found %d locks after GC at safePoint(%v)", len(locks), c.safePoint)
+		if len(safeLocks) != 0 {
+			log.Infof("found %d locks after GC at safePoint(%v)", len(safeLocks), c.safePoint)
 		}
 
-		ok, err := c.kv.GetLockResolver().BatchResolveLocks(bo, locks, loc.Region)
+		ok, err := c.kv.GetLockResolver().BatchResolveLocks(bo, safeLocks, loc.Region)
 		if err != nil {
 			return unsafeLocks, errors.Trace(err)
 		}
 		if !ok {
-			err = bo.Backoff(tikv.BoTxnLock, errors.Errorf("remain locks: %d", len(locks)))
+			err = bo.Backoff(tikv.BoTxnLock, errors.Errorf("remain locks: %d", len(safeLocks)))
 			if err != nil {
 				return unsafeLocks, errors.Trace(err)
 			}
 			continue
 		}
-		if len(locks) < scanLockLimit {
+		if len(locksInfo) < scanLockLimit {
 			key = loc.EndKey
 		} else {
-			key = locks[len(locks)-1].Key
+			key = locksInfo[len(locksInfo)-1].GetKey()
 		}
 		if len(key) == 0 {
 			break

@@ -32,7 +32,7 @@ import (
 var (
 	enableGreenGC = flag.Bool("enable-green-gc", true, "whether to enable green gc")
 	regionCount   = flag.Int("region-count", 200, "count of regions")
-	lockPerRegion = flag.Int("lock-per-region", 20, "count of locks in each region")
+	lockPerRegion = flag.Int("lock-per-region", 10, "count of locks in each region")
 	workers       = flag.Int("worker", 10, "count of workers to generate locks")
 )
 
