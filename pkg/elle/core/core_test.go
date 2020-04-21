@@ -18,14 +18,13 @@ func TestProcessGraph(t *testing.T) {
 		v2 = Vertex{Value: history[2]}
 		v3 = Vertex{Value: history[3]}
 	)
-	processGraph := DirectedGraph{
-		Outs: map[Vertex]map[Vertex][]Rel{
-			v0: {
-				v3: {Process},
-			},
-			v1: {
-				v2: {Process},
-			},
+	processGraph := NewDirectedGraph()
+	processGraph.Outs = map[Vertex]map[Vertex][]Rel{
+		v0: {
+			v3: {Process},
+		},
+		v1: {
+			v2: {Process},
 		},
 	}
 
