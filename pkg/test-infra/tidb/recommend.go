@@ -123,7 +123,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
-				Timezone:        "Asia/Shanghai",
+				Timezone:        "UTC",
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
