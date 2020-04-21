@@ -394,12 +394,29 @@ func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) inter
 
 // MapToDirectedGraph turns a sequence of [node, successors] map into a directed graph
 func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
-	panic("impl me")
+	dg := NewDirectedGraph()
+	for x, vertices := range m {
+		for _, y := range vertices {
+			dg.Link(x, y, "")
+		}
+	}
+	return dg
 }
 
-// DigraphUion takes the union of n graphs, merging edges with union
-func DigraphUion(graphs ...DirectedGraph) *DirectedGraph {
-	panic("impl me")
+// DigraphUnion takes the union of n graphs, merging edges with union
+func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
+	dg := NewDirectedGraph()
+	for _, g := range graphs {
+		vertices := g.Vertices()
+		for _, x := range vertices {
+			for y, rels := range g.Outs[x] {
+				for _, rel := range rels {
+					dg.Link(x, y, rel)
+				}
+			}
+		}
+	}
+	return dg
 }
 
 // TODO
