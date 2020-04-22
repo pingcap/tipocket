@@ -10,6 +10,8 @@ spec:
             default: tipocket-bank
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -35,27 +37,19 @@ spec:
           - name: pd_config
             default: ""
           - name: tikv-replicas
-            default: "3"
+            default: "4"
       outputs:
         artifacts:
           - name: case-logs
             archiveLogs: true
             path: /logs
-            s3:
-              accessKeySecret:
-                key: accesskey
-                name: my-minio-cred
-              bucket: my-bucket
-              endpoint: minio:9000
-              key: "{{workflow.name}}/{{pod.name}}/case-logs.tar.gz"
-              insecure: true
-              secretKeySecret:
-                key: secretkey
-                name: my-minio-cred
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
-        workingDir: /logs
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'
@@ -63,6 +57,7 @@ spec:
             /bin/chaos-tidb \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \

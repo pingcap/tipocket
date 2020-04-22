@@ -10,6 +10,8 @@ spec:
             default: tipocket-block-writer
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -24,9 +26,13 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'
@@ -34,6 +40,7 @@ spec:
             /bin/block-writer \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \

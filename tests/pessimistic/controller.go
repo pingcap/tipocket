@@ -120,7 +120,7 @@ func (c *pessimisticClient) TearDown(ctx context.Context, nodes []types.ClientNo
 	return nil
 }
 
-func (c *pessimisticClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *pessimisticClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

@@ -20,11 +20,10 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
-
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	resolvelock "github.com/pingcap/tipocket/tests/resolve-lock"
 )
@@ -55,7 +54,8 @@ func main() {
 			Worker:        *workers,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: tidb.RecommendedTiDBCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.ImageVersion, fixture.TiDBImageConfig{}),
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

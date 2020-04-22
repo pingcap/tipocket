@@ -35,18 +35,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/verify"
 )
 
-// Version information.
-var (
-	BuildTS   = "None"
-	BuildHash = "None"
-)
-
-// PrintInfo prints the octopus version information
-func PrintInfo() {
-	fmt.Println("Git Commit Hash:", BuildHash)
-	fmt.Println("UTC Build Time: ", BuildTS)
-}
-
 // Suit is a basic chaos testing suit with configurations to run chaos.
 type Suit struct {
 	*control.Config
@@ -61,7 +49,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs interface{}
+	ClusterDefs clusterTypes.Cluster
 }
 
 // Run runs the suit.
@@ -69,8 +57,8 @@ func (suit *Suit) Run(ctx context.Context) {
 	var (
 		err         error
 		clusterSpec = clusterTypes.ClusterSpecs{
-			Defs:        suit.ClusterDefs,
-			NemesisGens: nemesisGeneratorNames(suit.NemesisGens),
+			Cluster:   suit.ClusterDefs,
+			Namespace: fixture.Context.Namespace,
 		}
 	)
 	sctx, cancel := context.WithCancel(ctx)
@@ -163,15 +151,15 @@ func OnClientLoop(
 			log.Printf("%d %s: call %+v", procID, node, request)
 		}
 		response := client.Invoke(ctx, node, request)
+
 		if stringer, ok := response.(fmt.Stringer); ok {
 			log.Printf("%d %s: return %+v", procID, node, stringer.String())
 		} else {
 			log.Printf("%d %s: return %+v", procID, node, response)
 		}
-		isUnknown := true
-		if v, ok := response.(core.UnknownResponse); ok {
-			isUnknown = v.IsUnknown()
-		}
+
+		v := response.(core.UnknownResponse)
+		isUnknown := v.IsUnknown()
 
 		if err := recorder.RecordResponse(procID, response); err != nil {
 			log.Fatalf("record response %v failed %v", response, err)
@@ -233,10 +221,9 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			log.Printf("[%d] %s: call %+v", procID, node.String(), request)
 			response := client.Invoke(ctx, node, request)
 			log.Printf("[%d] %s: return %+v", procID, node.String(), response)
-			isUnknown := true
-			if v, ok := response.(core.UnknownResponse); ok {
-				isUnknown = v.IsUnknown()
-			}
+
+			v := response.(core.UnknownResponse)
+			isUnknown := v.IsUnknown()
 
 			if err := recorder.RecordResponse(procID, response); err != nil {
 				log.Fatalf("record response %v failed %v", response, err)
@@ -245,6 +232,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			// If Unknown, we need to use another process ID.
 			if isUnknown {
 				procID = atomic.AddInt64(proc, 1)
+				log.Printf("[%d] %s: procID add 1", procID, node.String())
 			}
 
 			select {
@@ -298,13 +286,6 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
-	}
-	return
-}
-
-func nemesisGeneratorNames(gens []core.NemesisGenerator) (names []string) {
-	for _, gen := range gens {
-		names = append(names, gen.Name())
 	}
 	return
 }

@@ -128,7 +128,7 @@ ROUND:
 		}
 
 		if err := c.dumpState(ctx, recorder); err != nil {
-			log.Fatalf("dump state failed %v", err)
+			log.Fatalf("dump state failed, %v", err)
 		}
 
 		// requestCount for the round, shared by all clients.
@@ -365,10 +365,7 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 		return false, nil
 	})
 
-	if err != nil {
-		return fmt.Errorf("fail to dump: %v", err)
-	}
-	return nil
+	return err
 }
 
 func (c *Controller) dispatchNemesis(ctx context.Context) {

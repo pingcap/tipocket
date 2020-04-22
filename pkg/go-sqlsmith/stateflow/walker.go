@@ -117,7 +117,7 @@ func (s *StateFlow) walkDeleteStmt(node *ast.DeleteStmt) *types.Table {
 	table := s.walkTableName(node.TableRefs.TableRefs.Left.(*ast.TableName), false, true)
 	s.walkExprNode(node.Where, table, nil)
 	_, node.TableHints = s.walkHintList(len(node.TableHints), table)
-	return nil
+	return table
 }
 
 func (s *StateFlow) walkOnStmt(node *ast.OnCondition, table1, table2 *types.Table) {

@@ -11,13 +11,19 @@ spec:
       - name: purge
         value: "true"
       - name: image_version
-        value: release-4.0-nightly
+        value: nightly
+      - name: tidb_image
+        value: ""
+      - name: tikv_image
+        value: ""
+      - name: pd_image
+        value: ""
       - name: storage_class
-        value: pd-ssd
+        value: gp2
       - name: nemesis
         value: ""
       - name: run_time
-        value: "60m"
+        value: "12h"
       - name: tikv_config
         value: ""
       - name: cdc_hub
@@ -26,18 +32,6 @@ spec:
         value: "pingcap"
       - name: cdc_version
         value: "nightly"
-      - name: cdc_upstream_pd_image
-        value: ""
-      - name: cdc_upstream_tidb_image
-        value: ""
-      - name: cdc_upstream_tikv_image
-        value: ""
-      - name: cdc_downstream_pd_image
-        value: ""
-      - name: cdc_downstream_tidb_image
-        value: ""
-      - name: cdc_downstream_tikv_image
-        value: ""
       - name: abtest_general_log
         value: "true"
       - name: binlog_sync_timeout
@@ -69,6 +63,12 @@ spec:
                   value: "{{workflow.parameters.purge}}"
                 - name: image_version
                   value: "{{workflow.parameters.image_version}}"
+                - name: tidb_image
+                  value: "{{workflow.parameters.tidb_image}}"
+                - name: tikv_image
+                  value: "{{workflow.parameters.tikv_image}}"
+                - name: pd_image
+                  value: "{{workflow.parameters.pd_image}}"
                 - name: storage_class
                   value: "{{workflow.parameters.storage_class}}"
                 - name: nemesis
@@ -83,21 +83,10 @@ spec:
                   value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
-                - name: cdc_upstream_pd_image
-                  value: "{{workflow.parameters.cdc_upstream_pd_image}}"
-                - name: cdc_upstream_tidb_image
-                  value: "{{workflow.parameters.cdc_upstream_tidb_image}}"
-                - name: cdc_upstream_tikv_image
-                  value: "{{workflow.parameters.cdc_upstream_tikv_image}}"
-                - name: cdc_downstream_pd_image
-                  value: "{{workflow.parameters.cdc_downstream_pd_image}}"
-                - name: cdc_downstream_tidb_image
-                  value: "{{workflow.parameters.cdc_downstream_tidb_image}}"
-                - name: cdc_downstream_tikv_image
-                  value: "{{workflow.parameters.cdc_downstream_tikv_image}}"
                 - name: abtest_general_log
                   value: "{{workflow.parameters.abtest_general_log}}"
                 - name: binlog_sync_timeout
                   value: "{{workflow.parameters.binlog_sync_timeout}}"
                 - name: abtest_concurrency
                   value: "{{workflow.parameters.abtest_concurrency}}"
+

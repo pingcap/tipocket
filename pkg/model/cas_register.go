@@ -104,10 +104,7 @@ func (p casRegisterParser) OnRequest(data json.RawMessage) (interface{}, error) 
 func (p casRegisterParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := CasRegisterResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
-	return r, nil
+	return r, err
 }
 
 func (p casRegisterParser) OnNoopResponse() interface{} {

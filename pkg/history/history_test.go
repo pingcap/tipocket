@@ -131,7 +131,7 @@ func TestCompleteOperation(t *testing.T) {
 		{
 			ops: []core.Operation{
 				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
-				{Action: core.ReturnOperation, Proc: 1, Data: nil},
+				{Action: core.ReturnOperation, Proc: 1, Data: NoopResponse{Unknown: true}},
 			},
 			compOps: []core.Operation{
 				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
@@ -156,9 +156,9 @@ func TestCompleteOperation(t *testing.T) {
 				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
 				{Action: core.InvokeOperation, Proc: 3, Data: NoopRequest{Op: 0}},
 				{Action: core.InvokeOperation, Proc: 2, Data: NoopRequest{Op: 1, Value: 15}},
-				{Action: core.ReturnOperation, Proc: 2, Data: nil},
+				{Action: core.ReturnOperation, Proc: 2, Data: NoopResponse{Unknown: true}},
 				{Action: core.InvokeOperation, Proc: 4, Data: NoopRequest{Op: 1, Value: 16}},
-				{Action: core.ReturnOperation, Proc: 3, Data: nil},
+				{Action: core.ReturnOperation, Proc: 3, Data: NoopResponse{Unknown: true}},
 			},
 			compOps: []core.Operation{
 				{Action: core.InvokeOperation, Proc: 1, Data: NoopRequest{Op: 0}},
@@ -180,7 +180,7 @@ func TestCompleteOperation(t *testing.T) {
 		}
 		for idx, op := range compOps {
 			if op != cs.compOps[idx] {
-				t.Fatalf("op %#v, compOps %#v, case %d", op, cs.compOps[idx], i)
+				t.Fatalf("op %#v, compOps %#v, case %d, idx %d", op, cs.compOps[idx], i, idx)
 			}
 		}
 	}

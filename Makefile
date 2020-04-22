@@ -6,8 +6,8 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|github.com/pingcap/tipocket/||'
 
-LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
-LDFLAGS += -X "github.com/pingcap/tipocket/cmd/util.BuildHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
+LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell git rev-parse HEAD)"
 
 GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
@@ -17,7 +17,7 @@ default: tidy fmt lint build
 
 build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress resolve-lock
+		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc resolve_lock
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -82,11 +82,20 @@ abtest:
 cdc-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
 
+rawkv-linearizability:
+	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
+
 tiflash-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go
 
 read-stress:
 	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
+
+tiflash-abtest:
+	$(GOBUILD) $(GOMOD) -o bin/tiflash-abtest cmd/tiflash-abtest/*.go
+
+tiflash-cdc:
+	$(GOBUILD) $(GOMOD) -o bin/tiflash-cdc cmd/tiflash-cdc/*.go
 
 fmt: groupimports
 	go fmt ./...

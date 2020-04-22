@@ -10,6 +10,8 @@ spec:
             default: tipocket-tiflash
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
@@ -17,9 +19,9 @@ spec:
           - name: nemesis
             default: ""
           - name: tiflash_image
-            default: "pingcap/tiflash:release-4.0"
+            default: ""
           - name: tiflash_replicas
-            default: 1
+            default: 2
           - name: run_time
             default: "48h"
           - name: loki-addr
@@ -28,9 +30,13 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'
@@ -38,13 +44,14 @@ spec:
             /bin/tiflash-pocket \
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
+            -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run_time}} \
-            -tiflash.replica={{inputs.parameters.tiflash_replicas}} \
-            -tiflash.image={{inputs.parameters.tiflash_image}} \
+            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash_image}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

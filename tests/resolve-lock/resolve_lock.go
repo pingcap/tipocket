@@ -171,7 +171,7 @@ func (c *resolveLockClient) TearDown(ctx context.Context, nodes []types.ClientNo
 	return c.db.Close()
 }
 
-func (c *resolveLockClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (c *resolveLockClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

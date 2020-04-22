@@ -22,8 +22,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/tiflash"
 )
 
 var (
@@ -54,8 +54,8 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: tiflash.RecommendedTiFlashCluster(fixture.Context.Namespace, fixture.Context.Namespace,
-			fixture.Context.ImageVersion),
+		ClusterDefs: test_infra.NewTiFlashCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

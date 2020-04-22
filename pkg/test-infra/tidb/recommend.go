@@ -32,13 +32,6 @@ type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
-	NS   string
-	Name string
-}
-
-// Make ...
-func (t *Recommendation) Make() *v1alpha1.TidbCluster {
-	return t.TidbCluster
 }
 
 // EnablePump ...
@@ -51,6 +44,34 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 		}
 	}
 	return t
+}
+
+// EnableTiFlash add TiFlash spec in TiDB cluster
+func (t *Recommendation) EnableTiFlash(version string, replicas int) {
+	if t.TidbCluster.Spec.TiFlash == nil {
+		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
+			Replicas:         int32(replicas),
+			MaxFailoverCount: pointer.Int32Ptr(0),
+			ComponentSpec: v1alpha1.ComponentSpec{
+				Image: buildImage("tiflash", "", version),
+			},
+			StorageClaims: []v1alpha1.StorageClaim{
+				{
+					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+					Resources: fixture.WithStorage(corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("2Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.Memory: resource.MustParse("16Gi"),
+						},
+					}, "50Gi"),
+				},
+			},
+		}
+	}
 }
 
 // PDReplicas ...
@@ -71,11 +92,7 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	return t
 }
 
-func buildImage(name, version string, image string) string {
-	if image != "" {
-		return image
-	}
-
+func buildImage(name, baseVersion, version string) string {
 	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
@@ -84,17 +101,18 @@ func buildImage(name, version string, image string) string {
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(version)
+	if len(version) > 0 {
+		b.WriteString(version)
+	} else {
+		b.WriteString(baseVersion)
+	}
 	return b.String()
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBImageConfig) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
-
-	return &Recommendation{
-		NS:   ns,
-		Name: name,
+	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -105,6 +123,7 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 				},
 			},
 			Spec: v1alpha1.TidbClusterSpec{
+				Timezone:        "UTC",
 				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
@@ -113,18 +132,18 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd", version, imageConfig.PDImage),
+						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImageVersion),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
-					Replicas: int32(fixture.Context.TiKVReplicas),
+					Replicas: int32(clusterConfig.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.CPU:    resource.MustParse("500m"),
 							fixture.Memory: resource.MustParse("4Gi"),
 						},
 						Limits: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.CPU:    resource.MustParse("1000m"),
 							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					}, "200Gi"),
@@ -132,7 +151,7 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv", version, imageConfig.TiKVImage),
+						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImageVersion),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -140,10 +159,10 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
-							fixture.Memory: resource.MustParse("2Gi"),
+							fixture.Memory: resource.MustParse("1Gi"),
 						},
 						Limits: corev1.ResourceList{
-							fixture.CPU:    resource.MustParse("4000m"),
+							fixture.CPU:    resource.MustParse("1000m"),
 							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					},
@@ -156,7 +175,7 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb", version, imageConfig.TiDBImage),
+						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImageVersion),
 					},
 				},
 			},
@@ -230,8 +249,42 @@ func RecommendedTiDBCluster(ns, name, version string, imageConfig fixture.TiDBIm
 					"app.kubernetes.io/component": "tidb",
 					"app.kubernetes.io/name":      "tidb-cluster",
 				},
-				ClusterIP: "",
 			},
 		},
 	}
+
+	if clusterConfig.TiFlashReplicas > 0 {
+		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
+
+		// TODO(yeya24): There is a bug in the operator side so we can only set it
+		// manually https://github.com/pingcap/tidb-operator/issues/2219.
+		// Remove this after it fixes the bug.
+		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
+			Replication: &v1alpha1.PDReplicationConfig{
+				EnablePlacementRules: pointer.BoolPtr(true),
+			},
+		}
+	}
+
+	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
+		name := strings.TrimSpace(name)
+		if len(name) == 0 {
+			continue
+		}
+		switch name {
+		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
+			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
+			}
+		case "delay_pd", "errno_pd", "mixed_pd":
+			r.TidbCluster.Spec.PD.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-pd",
+			}
+		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
+			r.TidbCluster.Spec.TiFlash.Annotations = map[string]string{
+				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
+			}
+		}
+	}
+	return r
 }

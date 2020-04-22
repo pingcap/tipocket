@@ -100,7 +100,7 @@ func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []types.Cl
 	return nil
 }
 
-func (d *regionAvailableDetector) Invoke(ctx context.Context, node types.ClientNode, r interface{}) interface{} {
+func (d *regionAvailableDetector) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

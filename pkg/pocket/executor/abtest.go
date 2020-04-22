@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/pocket/connection"
@@ -33,8 +32,8 @@ func (e *Executor) abTest() {
 
 func (e *Executor) execABTestSQL(sql *types.SQL) error {
 	var err error
-	e.logStmtTodo(sql.SQLStmt)
 
+	e.logStmtTodo(sql.SQLStmt)
 	switch sql.SQLType {
 	case types.SQLTypeDMLSelect, types.SQLTypeDMLSelectForUpdate:
 		err = e.abTestSelect(sql.SQLStmt)
@@ -44,7 +43,14 @@ func (e *Executor) execABTestSQL(sql *types.SQL) error {
 		err = e.abTestInsert(sql.SQLStmt)
 	case types.SQLTypeDMLDelete:
 		err = e.abTestDelete(sql.SQLStmt)
-	case types.SQLTypeDDLCreateTable, types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
+	case types.SQLTypeDDLCreateTable:
+		err = e.abTestExecDDL(sql.SQLStmt)
+		if e.TiFlash {
+			if err := e.createTiFlashTableReplica(sql.SQLTable); err != nil {
+				return err
+			}
+		}
+	case types.SQLTypeDDLAlterTable, types.SQLTypeDDLCreateIndex:
 		err = e.abTestExecDDL(sql.SQLStmt)
 	case types.SQLTypeTxnBegin:
 		if err := e.reloadSchema(); err != nil {
@@ -163,7 +169,7 @@ func (e *Executor) abTestSelect(sql string) error {
 	}
 
 	if len(res1) != len(res2) {
-		return errors.Errorf("row number not match res1: %d, res2: %d", len(res1), len(res2))
+		return util.WrapErrExactlyNotSame("row number not match res1: %d, res2: %d", len(res1), len(res2))
 	}
 	for index := range res1 {
 		var (
@@ -172,7 +178,7 @@ func (e *Executor) abTestSelect(sql string) error {
 		)
 
 		if len(row1) != len(row1) {
-			return errors.Errorf("column number not match res1: %d, res2: %d", len(res1), len(res2))
+			return util.WrapErrExactlyNotSame("column number not match res1: %d, res2: %d", len(res1), len(res2))
 		}
 
 		for rIndex := range row1 {
@@ -181,7 +187,7 @@ func (e *Executor) abTestSelect(sql string) error {
 				item2 = row2[rIndex]
 			)
 			if err := item1.MustSame(item2); err != nil {
-				return errors.Errorf("%s, row index %d, column index %d", err.Error(), index, rIndex)
+				return util.WrapErrExactlyNotSame("%s, row index %d, column index %d", err.Error(), index, rIndex)
 			}
 		}
 	}

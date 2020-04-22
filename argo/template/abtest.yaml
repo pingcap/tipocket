@@ -10,6 +10,8 @@ spec:
             default: tipocket-abtest
           - name: purge
             default: "false"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: abtest_version
@@ -44,9 +46,13 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
         image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
         command:
           - sh
           - '-c'
@@ -55,6 +61,7 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub=docker.io \
             -storage-class={{inputs.parameters.storage_class}} \
+            -repository={{inputs.parameters.repository}} \
             -image-version={{inputs.parameters.image_version}} \
             -abtest.image-version={{inputs.parameters.abtest_version}} \
             -purge={{inputs.parameters.purge}} \

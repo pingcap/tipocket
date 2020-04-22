@@ -1,0 +1,81 @@
+metadata:
+  name: tipocket-tiflash-abtest
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-tiflash-abtest
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-tiflash-abtest
+          - name: purge
+            default: "true"
+          - name: image_version
+            default: nightly
+          - name: abtest_version
+            value: latest
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: ""
+          - name: client
+            default: "2"
+          - name: run_time
+            default: "48h"
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: abtest_tidb_config
+            default: ""
+          - name: abtest_tikv_config
+            default: ""
+          - name: abtest_pd_config
+            default: ""
+          - name: abtest_general_log
+            default: "true"
+          - name: tiflash_image
+            default: ""
+          - name: tiflash_replicas
+            default: 2
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        imagePullPolicy: Always
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/tiflash-abtest \
+            -namespace={{inputs.parameters.ns}} \
+            -hub=docker.io \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -abtest.image-version={{inputs.parameters.abtest_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -client={{inputs.parameters.client}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
+            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
+            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
+            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
+            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash_image}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}

@@ -113,7 +113,7 @@ func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *bankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) interface{} {
+func (c *bankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -345,9 +345,6 @@ func (p bankParser) OnRequest(data json.RawMessage) (interface{}, error) {
 func (p bankParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := bankResponse{}
 	err := json.Unmarshal(data, &r)
-	if r.Unknown {
-		return nil, err
-	}
 	return r, err
 }
 
@@ -412,7 +409,7 @@ func (s tsoEvents) Less(i, j int) bool { return s[i].Tso < s[j].Tso }
 func generateTsoEvents(events []porcupine.Event) tsoEvents {
 	tEvents := make(tsoEvents, 0, len(events))
 
-	mapEvents := make(map[uint]porcupine.Event, len(events))
+	mapEvents := make(map[int]porcupine.Event, len(events))
 	for _, event := range events {
 		if event.Kind == porcupine.CallEvent {
 			mapEvents[event.Id] = event
