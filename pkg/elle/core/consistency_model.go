@@ -21,7 +21,9 @@ var impliedAnomalies = MapToDirectedGraph(map[Vertex][]Vertex{
 	Vertex{"dirty-update"}:           {{"G1a"}},
 })
 
-var canonicalModelNames = map[string]string{
+type ConsistencyModelName = string
+
+var canonicalModelNames = map[ConsistencyModelName]string{
 	"consistent-view":         "PL-2+",
 	"conflict-serializable":   "PL-3",
 	"cursor-stability":        "PL-CS",

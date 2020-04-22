@@ -5,7 +5,20 @@ import "sort"
 // Rel stands for relation in dependencies
 type Rel string
 
-// Rel enums
+type RelSet []Rel
+
+func (r RelSet) Len() int {
+	return len(r)
+}
+
+func (r RelSet) Less(i, j int) bool {
+	return r[i] < r[j]
+}
+
+func (r RelSet) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
+}
+
 const (
 	Empty    Rel = ""
 	WW       Rel = "ww"
@@ -14,6 +27,18 @@ const (
 	Process  Rel = "process"
 	Realtime Rel = "realtime"
 )
+
+type DependType string
+
+const (
+	RealtimeDepend  DependType = "realtime"
+	MonotonicDepend DependType = "monotonic"
+	ProcessDepend   DependType = "process"
+)
+
+type ExplainResult interface {
+	Type() DependType
+}
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface{}
@@ -31,7 +56,7 @@ func MergeAnomalies(anomalies ...Anomalies) Anomalies {
 type DataExplainer interface {
 	// Given a pair of operations a and b, explains why b depends on a, in the
 	//    form of a data structure. Returns `nil` if b does not depend on a.
-	ExplainPairData() interface{}
+	ExplainPairData(p1, p2 PathType) ExplainResult
 	// Given a pair of operations, and short names for them, explain why b
 	//  depends on a, as a string. `nil` indicates that b does not depend on a.
 	RenderExplanation() string
@@ -62,23 +87,37 @@ func Combine(analyzers ...Analyzer) Analyzer {
 	panic("implement me")
 }
 
+type PathType = Op
+
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
-	Path []interface{}
+	Path []PathType
 }
 
 // TODO: refine me
-type Step struct{}
+type Step struct {
+	Result ExplainResult
+}
+
+type ICycleExplainer interface {
+	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
+	RenderCycleExplanation(explainer DataExplainer, circle Circle) string
+}
 
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
 type CycleExplainer struct {
 }
 
-func (c *CycleExplainer) explainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
-	panic("impl me")
+func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
+	var steps []Step
+	for i := 1; i < len(circle.Path); i++ {
+		res := explainer.ExplainPairData(circle.Path[i-1], circle.Path[i])
+		steps = append(steps, Step{Result: res})
+	}
+	return circle, steps
 }
 
-func (c *CycleExplainer) renderCycleExplanation(explainer DataExplainer, circle Circle) string {
+func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle) string {
 	panic("impl me")
 }
 
