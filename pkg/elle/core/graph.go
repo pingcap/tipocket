@@ -125,6 +125,11 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 	}
 }
 
+// LinkAllToAll links all xs to ys
+func (g *DirectedGraph) LinkAllToAll(xs []Vertex, ys []Vertex) {
+	panic("impl me")
+}
+
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
 
