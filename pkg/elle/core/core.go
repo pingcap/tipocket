@@ -122,9 +122,31 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle 
 	panic("impl me")
 }
 
-// RealtimeGraph analyzes real-time
+// RealtimeGraph analyzes real-time.
 func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
-	panic("implement me")
+	realtimeGraph := NewDirectedGraph()
+	processMap := map[int]Op{}
+	// TODO: change it to an ordered container
+	var doneEvents []Vertex
+	for _, v := range history  {
+		if !v.Process.Present() {
+			continue
+		}
+		switch v.Type {
+		case OpTypeNemesis, OpTypeFail, OpTypeInfo:
+			delete(processMap, v.Process.MustGet())
+		case OpTypeInvoke:
+			processMap[v.Process.MustGet()] = v
+		case OpTypeOk:
+			if len(doneEvents) != 0 {
+				realtimeGraph.LinkToAll(Vertex{Value:v}, doneEvents, Realtime)
+			}
+			doneEvents = append(doneEvents, Vertex{Value:v})
+			delete(processMap, v.Process.MustGet())
+		}
+	}
+	// TODO: return a realtime explainer
+	return nil, *realtimeGraph, nil
 }
 
 // ProcessExplainer ...
@@ -197,7 +219,7 @@ func (e MonotonicKeyExplainer) RenderExplanation() string {
 // MonotonicKeyOrder find dependencies of a process
 func MonotonicKeyOrder(history History, k string) DirectedGraph {
 	var (
-		val2ops map[int][]Op
+		val2ops map[int][]Op = map[int][]Op{}
 		vals    []int
 		graph   DirectedGraph
 	)
@@ -243,7 +265,7 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
 		okHistory = history.FilterType(OpTypeOk)
-		keys      map[string]struct{}
+		keys      map[string]struct{} = map[string]struct{}{}
 		graphs    []DirectedGraph
 	)
 
@@ -268,5 +290,21 @@ type CheckResult struct {
 
 // Check receives analyzer and a history, returns a map of {graph, explainer, cycles, sccs, anomalies}
 func Check(analyzer Analyzer, history History) CheckResult {
-	panic("implement me")
+	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history)
+	return CheckResult{
+		Graph:     g,
+		Explainer: explainer,
+		Cycles:    circles,
+		Sccs:      sccs,
+		Anomalies: anomalies,
+	}
+}
+
+// checkHelper is `check-` in original code.
+func checkHelper(analyzer Analyzer, history History) (DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
+	anomalies, g, explainer := analyzer(history)
+	sccs := g.StronglyConnectedComponents()
+	// TODO: should explain why it happens
+	var cycles []string
+	return g, explainer, cycles, sccs, anomalies
 }
