@@ -5,7 +5,6 @@ import "sort"
 // Rel stands for relation in dependencies
 type Rel string
 
-
 type RelSet []Rel
 
 func (r RelSet) Len() int {
@@ -145,35 +144,37 @@ func (e ProcessExplainer) RenderExplanation() string {
 func ProcessOrder(history History, process int) DirectedGraph {
 	var (
 		processHistory History
-		graph          DirectedGraph
+		graph          *DirectedGraph = NewDirectedGraph()
 	)
 
 	for _, op := range history {
-		if op.Process != nil && *op.Process == process {
+		if op.Process.Present() && op.Process.MustGet() == process {
 			processHistory = append(processHistory, op)
 		}
 	}
 
 	for i := 0; i < len(processHistory)-1; i++ {
 		op1, op2 := processHistory[i], processHistory[i+1]
-		graph.LinkToAll(Vertex{op1}, []Vertex{{op2}}, Process)
+		graph.Link(Vertex{op1}, Vertex{op2}, Process)
 	}
-	return *graph.Fork()
+	// TODO: make clear why this failed
+	//return *graph.Fork()
+	return *graph
 }
 
 // ProcessGraph analyzes process
 func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
-		okHistory = history.FilterType(OpTypeOk)
-		processes map[int]struct{}
+		okHistory                  = history.FilterType(OpTypeOk)
+		processes map[int]struct{} = map[int]struct{}{}
 		graphs    []DirectedGraph
 	)
 
 	for _, op := range okHistory {
-		if op.Process != nil {
-			if _, ok := processes[*op.Process]; !ok {
-				processes[*op.Process] = struct{}{}
-				graphs = append(graphs, ProcessOrder(okHistory, *op.Process))
+		if op.Process.Present() {
+			if _, ok := processes[op.Process.MustGet()]; !ok {
+				processes[op.Process.MustGet()] = struct{}{}
+				graphs = append(graphs, ProcessOrder(okHistory, op.Process.MustGet()))
 			}
 		}
 	}
@@ -202,7 +203,7 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 	)
 
 	for _, op := range history {
-		for _, mop := range op.Value {
+		for _, mop := range *op.Value {
 			if mop.GetKey() != k {
 				continue
 			}
