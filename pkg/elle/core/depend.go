@@ -1,5 +1,10 @@
 package core
 
+import (
+	"fmt"
+	"log"
+)
+
 // DataExplainer ...
 type DataExplainer interface {
 	// Given a pair of operations a and b, explains why b depends on a, in the
@@ -72,14 +77,22 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 
 // RenderExplanation render explanation
 func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
-	panic("impl me")
+	if result.Type() != ProcessDepend {
+		log.Fatalf("result type is not %s, type error", result.Type())
+	}
+	res := result.(ProcessDependent)
+	return fmt.Sprintf("process %d excuted %s before %s", res.Process, preName, postName)
 }
 
 // RealtimeExplainer is Realtime order explainer
-type RealtimeExplainer struct{}
+type RealtimeExplainer struct {
+	historyReference History
+	nextIndex        []int
+}
 
 // TODO: here it needs to get the preEnd and the postStart, it maybe complex and introduce another logic here.
-func (r RealtimeExplainer) ExplainPairData(preEnd, postStart PathType) ExplainResult {
+func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
+	postStart := r.historyReference[r.nextIndex[postEnd.Index]]
 	if preEnd.Index < postStart.Index {
 		return RealtimeDependent{
 			prefixEnd: &preEnd,
@@ -90,7 +103,22 @@ func (r RealtimeExplainer) ExplainPairData(preEnd, postStart PathType) ExplainRe
 }
 
 func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
-	panic("implement me")
+	if result.Type() != RealtimeDepend {
+		log.Fatalf("result type is not %s, type error", result.Type())
+	}
+	res := result.(RealtimeDependent)
+	s := fmt.Sprintf("%s complete at index %d, ", preName, res.postStart.Index)
+
+	if !res.postStart.Time.IsZero() && !res.prefixEnd.Time.IsZero() {
+		t1, t2 := res.prefixEnd.Time, res.postStart.Time
+		if t1.Before(t2) {
+			delta := t2.Sub(t1)
+			s += fmt.Sprintf("%v seconds just ", delta.Milliseconds())
+		}
+	}
+
+	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.prefixEnd.Index)
+	return s
 }
 
 type RealtimeDependent struct {

@@ -84,6 +84,13 @@ func (op Op) ValueLength() int {
 // History contains operations
 type History []Op
 
+// AttachIndex add the index for history with it's number in array.
+func (h History) AttachIndex() {
+	for i, _ := range h {
+		h[i].Index = i
+	}
+}
+
 // IsAppend ...
 func (Append) IsAppend() bool {
 	return true

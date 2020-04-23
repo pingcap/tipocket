@@ -98,8 +98,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 			doneEvents[*v] = struct{}{}
 		}
 	}
-	// TODO: return a realtime explainer
-	return nil, *realtimeGraph, RealtimeExplainer{}
+	return nil, *realtimeGraph, RealtimeExplainer{nextIndex: nextMap, historyReference: history}
 }
 
 func opSet(vertex []Vertex) map[Op]struct{} {
