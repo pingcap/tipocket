@@ -93,14 +93,19 @@ func (c *resolveLockClient) openDB(ctx context.Context, ip string, port int32) e
 	return errors.Trace(err)
 }
 
-func (c *resolveLockClient) CreateTable(ctx context.Context, i int) (int64, error) {
+func (c *resolveLockClient) CreateTable(ctx context.Context, i int, node types.ClientNode) (int64, error) {
 	table := "t" + strconv.Itoa(i)
 	_, err := c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(id int primary key, v varchar(128))", table))
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
 
-	url := fmt.Sprintf("http://%s:%d/schema/%s/%s", c.dbAddr, 10080, c.dbName, table)
+	clusterName := node.ClusterName
+	ns := node.Namespace
+	tidbStatusAddr := fmt.Sprintf("%s-tidb.%s.svc:10080", clusterName, ns)
+	url := fmt.Sprintf("http://%s/schema/%s/%s", tidbStatusAddr, c.dbName, table)
+	// NOTE: local run
+	// url := fmt.Sprintf("http://%s:%d/schema/%s/%s", c.dbAddr, 10080, c.dbName, table)
 	resp, err := httputil.NewHTTPClient(http.DefaultClient).Get(url)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -141,7 +146,7 @@ func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 	log.Infof("create %d tables", c.RegionCount)
 	// Can't create tables concurrently because there are too many WriteConflicts.
 	for i := 0; i < c.RegionCount; i++ {
-		id, err := c.CreateTable(ctx, i)
+		id, err := c.CreateTable(ctx, i, node)
 		if err != nil {
 			return errors.Trace(err)
 		}
