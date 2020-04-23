@@ -111,9 +111,10 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
 
-	if _, ok := g.Outs[v][succ]; ok == false {
-		g.Ins[succ] = append(g.Ins[succ], v)
-	}
+	//if _, ok := g.Outs[v][succ]; ok == false {
+	//	g.Ins[succ] = append(g.Ins[succ], v)
+	//}
+	g.Ins[succ] = append(g.Ins[succ], v)
 }
 
 // LinkToAll links x to all ys

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"github.com/pingcap/log"
 	"sort"
 )
 
@@ -128,42 +127,66 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle 
 // RealtimeGraph analyzes real-time.
 func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
-	processMap := map[int]Op{}
-	// TODO: change it to an ordered container
-	var doneEvents []*Op
-	for i, _ := range history  {
+
+	nextMap := make([]int, len(history), len(history))
+	// build nextMap
+	{
+		processMap := map[int]int{}
+		for i, v := range history {
+			switch v.Type {
+			case OpTypeNemesis, OpTypeFail, OpTypeInfo:
+				delete(processMap, v.Process.MustGet())
+			case OpTypeInvoke:
+				processMap[v.Process.MustGet()] = i
+			case OpTypeOk:
+				nextMap[processMap[v.Process.MustGet()]] = i
+				delete(processMap, v.Process.MustGet())
+			}
+		}
+	}
+
+	// build state machine
+	var doneEvents map[Op]struct{} = map[Op]struct{}{}
+	for i, _ := range history {
 		v := &history[i]
 		if !v.Process.Present() {
 			continue
 		}
 		switch v.Type {
 		case OpTypeNemesis, OpTypeFail, OpTypeInfo:
-			delete(processMap, v.Process.MustGet())
+			continue
 		case OpTypeInvoke:
-			processMap[v.Process.MustGet()] = v
-		case OpTypeOk:
-			if len(doneEvents) != 0 {
-				// It's an ok
-				// Link correspond start to all ends.
-				startEvent, existsStart := processMap[v.Process.MustGet()]
-				if !existsStart {
-					log.Warn("warning: RealtimeGraph doesn't get the right data")
-					continue
-				}
-				for _, de := range doneEvents {
-					if de.Time.Before(startEvent.Time) {
-						realtimeGraph.Link(Vertex{Value:v}, Vertex{Value:*de}, Realtime)
-					} else {
-						break
-					}
-				}
+			effectOp := history[nextMap[i]]
+			for k, _ := range doneEvents {
+				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: effectOp}, Realtime)
 			}
-			doneEvents = append(doneEvents, Vertex{Value:v})
-			delete(processMap, v.Process.MustGet())
+		case OpTypeOk:
+			implied := opSet(realtimeGraph.In(Vertex{Value: history[i]}))
+			doneEvents = setDel(doneEvents, implied)
+			doneEvents[*v] = struct{}{}
 		}
 	}
 	// TODO: return a realtime explainer
 	return nil, *realtimeGraph, nil
+}
+
+func opSet(vertex []Vertex) map[Op]struct{} {
+	dataMap := map[Op]struct{}{}
+	for _, v := range vertex {
+		op, e := v.Value.(Op)
+		if !e {
+			continue
+		}
+		dataMap[op] = struct{}{}
+	}
+	return dataMap
+}
+
+func setDel(origin, delta map[Op]struct{}) map[Op]struct{} {
+	for k, _ := range delta {
+		delete(origin, k)
+	}
+	return origin
 }
 
 // ProcessExplainer ...
@@ -281,7 +304,7 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 // MonotonicKeyGraph analyzes monotonic key
 func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
-		okHistory = history.FilterType(OpTypeOk)
+		okHistory                     = history.FilterType(OpTypeOk)
 		keys      map[string]struct{} = map[string]struct{}{}
 		graphs    []DirectedGraph
 	)
