@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // DataExplainer ...
@@ -154,7 +155,7 @@ func explainCyclePairData(pairExplainer DataExplainer, p1, p2 PathType) ExplainR
 }
 
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
-type CycleExplainer struct {}
+type CycleExplainer struct{}
 
 // Explain for the whole scc.
 func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
@@ -172,17 +173,40 @@ type OpBinding struct {
 }
 
 func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string {
-	panic("implement me")
+	var bindings []OpBinding
+	for i, v := range circle.Path {
+		bindings = append(bindings, OpBinding{
+			Operation: v,
+			Name:      fmt.Sprintf("T%d", i),
+		})
+	}
+	bindingsExplain := explainBindings(bindings)
+	stepsResult := explainCycleOps(explainer, bindings, steps)
+	return bindingsExplain + "\n" + stepsResult
 }
 
+// Takes a seq of [name op] pairs, and constructs a string naming each op.
 func explainBindings(bindings []OpBinding) string {
-	panic("implement me")
+	var seq []string
+	seq = []string{"Let:"}
+	for _, v := range bindings {
+		seq = append(seq, fmt.Sprintf(" %s = %s", v.Name, v.Operation.String()))
+	}
+	return strings.Join(seq, "\n")
 }
 
-func explainCycleOps(pairExplainer DataExplainer, binding OpBinding, steps []Step) {
-	panic("implement me")
+func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []Step) string {
+	var explainitions []string
+	for i := 1; i < len(bindings); i++ {
+		res := pairExplainer.ExplainPairData(bindings[i-1].Operation, bindings[i].Operation)
+		explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[i-1].Name,
+			bindings[i].Name, pairExplainer.RenderExplanation(res, bindings[i-1].Name, bindings[i].Name)))
+	}
+	return strings.Join(explainitions, "\n")
 }
 
-func explainSCC(graph DirectedGraph, pairExplainer DataExplainer, scc SCC) string {
-	panic("implement me")
+func explainSCC(g DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
+	cycle := FindCycle(g, scc)
+	_, steps := cycleExplainer.ExplainCycle(pairExplainer, cycle)
+	return cycleExplainer.RenderCycleExplanation(pairExplainer, cycle, steps)
 }
