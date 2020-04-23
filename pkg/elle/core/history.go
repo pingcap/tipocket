@@ -67,11 +67,18 @@ type Read struct {
 
 // Op is operation
 type Op struct {
-	Index   int       `json:"index"`
-	Process *int      `json:"process"`
-	Time    time.Time `json:"time"`
-	Type    OpType    `json:"type"`
-	Value   []Mop     `json:"value"`
+	Index   int         `json:"index"`
+	Process IntOptional `json:"process"`
+	Time    time.Time   `json:"time"`
+	Type    OpType      `json:"type"`
+	Value   *[]Mop      `json:"value"`
+}
+
+func (op Op) ValueLength() int {
+	if op.Value == nil {
+		return 0
+	}
+	return len(*op.Value)
 }
 
 // History contains operations
@@ -167,7 +174,7 @@ func ParseOp(opString string) (Op, error) {
 		if err != nil {
 			return empty, err
 		}
-		op.Process = &opProcess
+		op.Process.Set(opProcess)
 	}
 
 	opTypeMatch := opTypePattern.FindStringSubmatch(operationMatch[1])
@@ -237,7 +244,11 @@ func ParseOp(opString string) (Op, error) {
 			default:
 				panic("unreachable")
 			}
-			op.Value = append(op.Value, mop)
+			if op.Value == nil {
+				destArray := make([]Mop, 0)
+				op.Value = &destArray
+			}
+			*op.Value = append(*op.Value, mop)
 		}
 	}
 
@@ -259,7 +270,7 @@ func (h History) FilterType(t OpType) History {
 func (h History) FilterProcess(p int) History {
 	var filterHistory History
 	for _, op := range h {
-		if op.Process != nil && *op.Process == p {
+		if op.Process.Present() && op.Process.MustGet() == p {
 			filterHistory = append(filterHistory, op)
 		}
 	}
@@ -272,7 +283,7 @@ func (h History) GetKeys(t MopType) []string {
 	var keys []string
 
 	for _, op := range h {
-		for _, mop := range op.Value {
+		for _, mop := range *op.Value {
 			if t == MopTypeAll || mop.GetMopType() == t {
 				keys = append(keys, mop.GetKey())
 			}

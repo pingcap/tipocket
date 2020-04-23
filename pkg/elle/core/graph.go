@@ -1,6 +1,10 @@
 package core
 
-import "github.com/mohae/deepcopy"
+import (
+	"github.com/mohae/deepcopy"
+
+	log "github.com/sirupsen/logrus"
+)
 
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
@@ -8,6 +12,7 @@ type Edge struct {
 	To    Vertex
 	Value Rel // raw value of edge
 }
+
 type Vertex struct {
 	Value interface{}
 }
@@ -106,9 +111,10 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
 
-	if _, ok := g.Outs[v][succ]; ok == false {
-		g.Ins[succ] = append(g.Ins[succ], v)
-	}
+	//if _, ok := g.Outs[v][succ]; ok == false {
+	//	g.Ins[succ] = append(g.Ins[succ], v)
+	//}
+	g.Ins[succ] = append(g.Ins[succ], v)
 }
 
 // LinkToAll links x to all ys
@@ -416,6 +422,7 @@ func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
 		for _, x := range vertices {
 			for y, rels := range g.Outs[x] {
 				for _, rel := range rels {
+					log.Infof("Link %v, %v, %s", x, y, string(rel))
 					dg.Link(x, y, rel)
 				}
 			}
