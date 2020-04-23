@@ -78,19 +78,30 @@ func graph(history core.History) (core.Anomalies, core.DirectedGraph, core.DataE
 	panic("implement me")
 }
 
-func g1aCases(history core.History) interface{} {
+type GCaseTp struct {
+	Operation core.Op
+	Mop core.Mop
+
+	Writer core.Op
+	Element core.MopValueType
+
+	Expected interface{}
+}
+
+func g1aCases(history core.History) GCaseTp {
+	failed := txn.FailedWrites(history)
+
+}
+
+func g1bCases(history core.History) GCaseTp {
 	panic("implement me")
 }
 
-func g1bCases(history core.History) interface{} {
+func internalCases(history core.History) GCaseTp {
 	panic("implement me")
 }
 
-func internalCases(history core.History) interface{} {
-	panic("implement me")
-}
-
-func dirtyUpdateCases(history core.History) interface{} {
+func dirtyUpdateCases(history core.History) GCaseTp {
 	panic("implement me")
 }
 

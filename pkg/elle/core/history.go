@@ -84,6 +84,16 @@ func (op Op) ValueLength() int {
 // History contains operations
 type History []Op
 
+func AllTypesHistory(history History, tp OpType) History {
+	var resp History
+	for _, v := range history {
+		if v.Type == tp {
+			resp = append(resp, v)
+		}
+	}
+	return resp
+}
+
 // IsAppend ...
 func (Append) IsAppend() bool {
 	return true

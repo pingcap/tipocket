@@ -174,3 +174,22 @@ func toJson(v interface{}) string {
 	}
 	return string(s)
 }
+
+// Note: MonotonicKeyGraph requires rw_register, which is not supported now.
+//func TestCheck(t *testing.T) {
+//	// testing valid
+//	history, err := ParseHistory(`{:index 0 :type :invoke :process 0 :f :read :value nil}
+//                   {:index 1 :type :ok     :process 0 :f :read :value {:x 0 :y 0}}
+//                   {:index 2 :type :invoke :process 0 :f :inc :value [:x]}
+//                   {:index 3 :type :ok     :process 0 :f :inc :value {:x 1}}
+//                   {:index 4 :type :invoke :process 0 :f :read :value nil}
+//                   {:index 5 :type :ok     :process 0 :f :read :value {:x 1 :y 1}}`)
+//	if err != nil {
+//		assert.Equal(t, err, nil, "test process graph, parse history")
+//	}
+//	assert.Equal(t, len(history), 6, "length of history should be 6")
+//
+//	res := Check(MonotonicKeyGraph, history)
+//	assert.Equal(t, 0, len(res.Sccs), "length of sccs should be zero")
+//}
+
