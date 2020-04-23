@@ -31,18 +31,6 @@ const (
 	Realtime Rel = "realtime"
 )
 
-type DependType string
-
-const (
-	RealtimeDepend  DependType = "realtime"
-	MonotonicDepend DependType = "monotonic"
-	ProcessDepend   DependType = "process"
-)
-
-type ExplainResult interface {
-	Type() DependType
-}
-
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface{}
 type Anomalies map[string]Anomaly
@@ -52,41 +40,6 @@ type Analyzer func(history History) (Anomalies, DirectedGraph, DataExplainer)
 
 // MergeAnomalies merges n Anomaly together.
 func MergeAnomalies(anomalies ...Anomalies) Anomalies {
-	panic("implement me")
-}
-
-// DataExplainer ...
-type DataExplainer interface {
-	// Given a pair of operations a and b, explains why b depends on a, in the
-	//    form of a data structure. Returns `nil` if b does not depend on a.
-	ExplainPairData(p1, p2 PathType) ExplainResult
-	// Given a pair of operations, and short names for them, explain why b
-	//  depends on a, as a string. `nil` indicates that b does not depend on a.
-	RenderExplanation() string
-}
-
-// CombinedExplainer struct
-type CombinedExplainer struct {
-	Explainers []DataExplainer
-}
-
-// ExplainPairData find dependencies in a and b
-func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
-	panic("implement me")
-}
-
-// RenderExplanation render explanation result
-func (c *CombinedExplainer) RenderExplanation() string {
-	return ""
-}
-
-// CombineExplainer combines explainers into one
-func CombineExplainer(explainers []DataExplainer) DataExplainer {
-	return &CombinedExplainer{explainers}
-}
-
-// Combine composes multiple analyzers
-func Combine(analyzers ...Analyzer) Analyzer {
 	panic("implement me")
 }
 
@@ -100,28 +53,6 @@ type Circle struct {
 // TODO: refine me
 type Step struct {
 	Result ExplainResult
-}
-
-type ICycleExplainer interface {
-	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
-	RenderCycleExplanation(explainer DataExplainer, circle Circle) string
-}
-
-// CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
-type CycleExplainer struct {
-}
-
-func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
-	var steps []Step
-	for i := 1; i < len(circle.Path); i++ {
-		res := explainer.ExplainPairData(circle.Path[i-1], circle.Path[i])
-		steps = append(steps, Step{Result: res})
-	}
-	return circle, steps
-}
-
-func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle) string {
-	panic("impl me")
 }
 
 // RealtimeGraph analyzes real-time.
@@ -168,7 +99,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 		}
 	}
 	// TODO: return a realtime explainer
-	return nil, *realtimeGraph, nil
+	return nil, *realtimeGraph, RealtimeExplainer{}
 }
 
 func opSet(vertex []Vertex) map[Op]struct{} {
@@ -188,19 +119,6 @@ func setDel(origin, delta map[Op]struct{}) map[Op]struct{} {
 		delete(origin, k)
 	}
 	return origin
-}
-
-// ProcessExplainer ...
-type ProcessExplainer struct{}
-
-// ExplainPairData explain pair data
-func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
-	panic("implement me")
-}
-
-// RenderExplanation render explanation
-func (e ProcessExplainer) RenderExplanation() string {
-	panic("impl me")
 }
 
 // ProcessOrder find dependencies of a process
@@ -243,18 +161,6 @@ func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	}
 
 	return nil, *DigraphUnion(graphs...), ProcessExplainer{}
-}
-
-// MonotonicKeyExplainer ...
-type MonotonicKeyExplainer struct{}
-
-func (e MonotonicKeyExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
-	panic("implement me")
-}
-
-// RenderExplanation render explanation
-func (e MonotonicKeyExplainer) RenderExplanation() string {
-	panic("impl me")
 }
 
 // MonotonicKeyOrder find dependencies of a process
