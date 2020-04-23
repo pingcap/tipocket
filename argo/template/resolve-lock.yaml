@@ -9,19 +9,17 @@ spec:
           - name: ns
             default: tipocket-resolve-lock
           - name: purge
-            default: "false"
+            default: "true"
+          - name: repository
+            default: pingcap
           - name: image_version
             default: nightly
           - name: storage_class
             default: standard
           - name: nemesis
             default: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
-          - name: client
-            default: "5"
-          - name: request_count
-            default: "10000"
-          - name: round
-            default: "100"
+          - name: run_time
+            default: "6h"
           - name: loki-addr
             default: http://gateway.loki.svc
           - name: loki-username
@@ -35,15 +33,14 @@ spec:
           - name: pd_config
             default: ""
           - name: tikv-replicas
-            default: "2"
+            default: "3"
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
-        image: 'pingcap/tipocket:latest'
+        image: 'mahjonp/tipocket:green_gc'
         imagePullPolicy: Always
-        workingDir: /logs
         command:
           - sh
           - '-c'
@@ -57,16 +54,9 @@ spec:
             -tikv-config={{inputs.parameters.tikv_config}} \
             -pd-config={{inputs.parameters.pd_config}} \
             -purge={{inputs.parameters.purge}} \
-            -client={{inputs.parameters.client}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -round={{inputs.parameters.round}} \
-            -request-count={{inputs.parameters.request_count}} \
+            -run-time={{inputs.parameters.run_time}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-      outputs:
-        artifacts:
-          - name: case-logs
-            archiveLogs: true
-            path: /logs
