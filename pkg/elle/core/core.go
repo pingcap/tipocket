@@ -237,6 +237,7 @@ type CheckResult struct {
 // Check receives analyzer and a history, returns a map of {graph, explainer, cycles, sccs, anomalies}
 func Check(analyzer Analyzer, history History) CheckResult {
 	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history)
+	WriteCycles(CycleExplainer{}, explainer, "", "", circles)
 	return CheckResult{
 		Graph:     g,
 		Explainer: explainer,
@@ -247,10 +248,19 @@ func Check(analyzer Analyzer, history History) CheckResult {
 }
 
 // checkHelper is `check-` in original code.
+// TODO: add the logic for anomalies.
 func checkHelper(analyzer Analyzer, history History) (DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
-	anomalies, g, explainer := analyzer(history)
+	// The sample program will first remove nemesis, but we will not leave nemesis here.
+	anomalies, g, exp := analyzer(history)
 	sccs := g.StronglyConnectedComponents()
-	// TODO: should explain why it happens
 	var cycles []string
-	return g, explainer, cycles, sccs, anomalies
+	for _, scc := range sccs {
+		cycles = append(cycles, explainSCC(g, CycleExplainer{}, exp, scc))
+	}
+	return g, exp, cycles, sccs, anomalies
+}
+
+// TODO: implement it.
+func WriteCycles(cexp CycleExplainer, exp DataExplainer, dir, filename string, cycles []string) {
+	return
 }
