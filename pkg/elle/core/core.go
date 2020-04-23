@@ -1,6 +1,8 @@
 package core
 
-import "sort"
+import (
+	"sort"
+)
 
 // Rel stands for relation in dependencies
 type Rel string
@@ -19,6 +21,7 @@ func (r RelSet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
+// Rel enums
 const (
 	Empty    Rel = ""
 	WW       Rel = "ww"
@@ -68,8 +71,8 @@ type CombinedExplainer struct {
 }
 
 // ExplainPairData find dependencies in a and b
-func (c *CombinedExplainer) ExplainPairData() interface{} {
-	return nil
+func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
+	panic("implement me")
 }
 
 // RenderExplanation render explanation result
@@ -121,17 +124,78 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle 
 	panic("impl me")
 }
 
-// RealtimeGraph analyzes real-time
+// RealtimeGraph analyzes real-time.
 func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
-	panic("implement me")
+	realtimeGraph := NewDirectedGraph()
+
+	nextMap := make([]int, len(history), len(history))
+	// build nextMap
+	{
+		processMap := map[int]int{}
+		for i, v := range history {
+			switch v.Type {
+			case OpTypeNemesis, OpTypeFail, OpTypeInfo:
+				nextMap[processMap[v.Process.MustGet()]] = i
+				delete(processMap, v.Process.MustGet())
+			case OpTypeInvoke:
+				processMap[v.Process.MustGet()] = i
+			case OpTypeOk:
+				nextMap[processMap[v.Process.MustGet()]] = i
+				delete(processMap, v.Process.MustGet())
+			}
+		}
+	}
+
+	// build state machine
+	var doneEvents map[Op]struct{} = map[Op]struct{}{}
+	for i, _ := range history {
+		v := &history[i]
+		if !v.Process.Present() {
+			continue
+		}
+		switch v.Type {
+		case OpTypeNemesis, OpTypeFail, OpTypeInfo:
+			continue
+		case OpTypeInvoke:
+			effectOp := history[nextMap[i]]
+			for k, _ := range doneEvents {
+				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: effectOp}, Realtime)
+			}
+		case OpTypeOk:
+			implied := opSet(realtimeGraph.In(Vertex{Value: history[i]}))
+			doneEvents = setDel(doneEvents, implied)
+			doneEvents[*v] = struct{}{}
+		}
+	}
+	// TODO: return a realtime explainer
+	return nil, *realtimeGraph, nil
+}
+
+func opSet(vertex []Vertex) map[Op]struct{} {
+	dataMap := map[Op]struct{}{}
+	for _, v := range vertex {
+		op, e := v.Value.(Op)
+		if !e {
+			continue
+		}
+		dataMap[op] = struct{}{}
+	}
+	return dataMap
+}
+
+func setDel(origin, delta map[Op]struct{}) map[Op]struct{} {
+	for k, _ := range delta {
+		delete(origin, k)
+	}
+	return origin
 }
 
 // ProcessExplainer ...
 type ProcessExplainer struct{}
 
 // ExplainPairData explain pair data
-func (e ProcessExplainer) ExplainPairData() interface{} {
-	panic("impl me")
+func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
+	panic("implement me")
 }
 
 // RenderExplanation render explanation
@@ -143,48 +207,49 @@ func (e ProcessExplainer) RenderExplanation() string {
 func ProcessOrder(history History, process int) DirectedGraph {
 	var (
 		processHistory History
-		graph          DirectedGraph
+		graph          *DirectedGraph = NewDirectedGraph()
 	)
 
 	for _, op := range history {
-		if op.Process != nil && *op.Process == process {
+		if op.Process.Present() && op.Process.MustGet() == process {
 			processHistory = append(processHistory, op)
 		}
 	}
 
 	for i := 0; i < len(processHistory)-1; i++ {
 		op1, op2 := processHistory[i], processHistory[i+1]
-		graph.Link(Vertex{op1}, []Vertex{{op2}}, Process)
+		graph.Link(Vertex{op1}, Vertex{op2}, Process)
 	}
-	return *graph.Fork()
+	// TODO: make clear why this failed
+	//return *graph.Fork()
+	return *graph
 }
 
 // ProcessGraph analyzes process
 func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
-		okHistory = history.FilterType(OpTypeOk)
-		processes map[int]struct{}
+		okHistory                  = history.FilterType(OpTypeOk)
+		processes map[int]struct{} = map[int]struct{}{}
 		graphs    []DirectedGraph
 	)
 
 	for _, op := range okHistory {
-		if op.Process != nil {
-			if _, ok := processes[*op.Process]; !ok {
-				processes[*op.Process] = struct{}{}
-				graphs = append(graphs, ProcessOrder(okHistory, *op.Process))
+		if op.Process.Present() {
+			if _, ok := processes[op.Process.MustGet()]; !ok {
+				processes[op.Process.MustGet()] = struct{}{}
+				graphs = append(graphs, ProcessOrder(okHistory, op.Process.MustGet()))
 			}
 		}
 	}
 
-	return nil, *DigraphUion(graphs...), ProcessExplainer{}
+	return nil, *DigraphUnion(graphs...), ProcessExplainer{}
 }
 
 // MonotonicKeyExplainer ...
 type MonotonicKeyExplainer struct{}
 
-// ExplainPairData explain pair data
-func (e MonotonicKeyExplainer) ExplainPairData() interface{} {
-	panic("impl me")
+func (e MonotonicKeyExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
+	panic("implement me")
 }
 
 // RenderExplanation render explanation
@@ -195,13 +260,13 @@ func (e MonotonicKeyExplainer) RenderExplanation() string {
 // MonotonicKeyOrder find dependencies of a process
 func MonotonicKeyOrder(history History, k string) DirectedGraph {
 	var (
-		val2ops map[int][]Op
+		val2ops map[int][]Op = map[int][]Op{}
 		vals    []int
 		graph   DirectedGraph
 	)
 
 	for _, op := range history {
-		for _, mop := range op.Value {
+		for _, mop := range *op.Value {
 			if mop.GetKey() != k {
 				continue
 			}
@@ -240,8 +305,8 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 // MonotonicKeyGraph analyzes monotonic key
 func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	var (
-		okHistory = history.FilterType(OpTypeOk)
-		keys      map[string]struct{}
+		okHistory                     = history.FilterType(OpTypeOk)
+		keys      map[string]struct{} = map[string]struct{}{}
 		graphs    []DirectedGraph
 	)
 
@@ -253,7 +318,7 @@ func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer
 		}
 	}
 
-	return nil, *DigraphUion(graphs...), MonotonicKeyExplainer{}
+	return nil, *DigraphUnion(graphs...), MonotonicKeyExplainer{}
 }
 
 type CheckResult struct {
@@ -266,5 +331,21 @@ type CheckResult struct {
 
 // Check receives analyzer and a history, returns a map of {graph, explainer, cycles, sccs, anomalies}
 func Check(analyzer Analyzer, history History) CheckResult {
-	panic("implement me")
+	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history)
+	return CheckResult{
+		Graph:     g,
+		Explainer: explainer,
+		Cycles:    circles,
+		Sccs:      sccs,
+		Anomalies: anomalies,
+	}
+}
+
+// checkHelper is `check-` in original code.
+func checkHelper(analyzer Analyzer, history History) (DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
+	anomalies, g, explainer := analyzer(history)
+	sccs := g.StronglyConnectedComponents()
+	// TODO: should explain why it happens
+	var cycles []string
+	return g, explainer, cycles, sccs, anomalies
 }

@@ -15,11 +15,11 @@ type OpMopIterator struct {
 }
 
 func (omi *OpMopIterator) Next() (*core.Op, core.Mop) {
-	op, mop := &omi.history[omi.historyIndex], omi.history[omi.historyIndex].Value[omi.mopIndex]
+	op, mop := &omi.history[omi.historyIndex], (*omi.history[omi.historyIndex].Value)[omi.mopIndex]
 
 	// inc index
 	omi.mopIndex++
-	if omi.mopIndex == len(omi.history[omi.historyIndex].Value) {
+	if omi.mopIndex == omi.history[omi.historyIndex].ValueLength() {
 		omi.mopIndex = 0
 		omi.historyIndex++
 	}
@@ -39,7 +39,7 @@ func OpMops(history core.History) *OpMopIterator {
 func OkKeep(validateFunc func(op core.Op) bool, history core.History) core.History {
 	var newHistory core.History
 	for _, v := range history {
-		if v.Type == core.Ok && validateFunc(v) {
+		if v.Type == core.OpTypeOk && validateFunc(v) {
 			newHistory = append(newHistory, v)
 		}
 	}
@@ -50,8 +50,8 @@ func OkKeep(validateFunc func(op core.Op) bool, history core.History) core.Histo
 // Note: Currently we don't need :f.
 func Gen(mop []core.Mop) core.Op {
 	return core.Op{
-		Type:  core.Invoke,
-		Value: mop,
+		Type:  core.OpTypeInvoke,
+		Value: &mop,
 	}
 }
 
@@ -62,7 +62,7 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 
 	for _, op := range history {
 		final := map[string]core.MopValueType{}
-		for _, mop := range op.Value {
+		for _, mop := range *op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
@@ -84,10 +84,10 @@ func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.O
 	im := map[string]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
-		if op.Type != core.Fail {
+		if op.Type != core.OpTypeFail {
 			continue
 		}
-		for _, mop := range op.Value {
+		for _, mop := range *op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
