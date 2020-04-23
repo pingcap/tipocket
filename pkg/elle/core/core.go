@@ -1,6 +1,9 @@
 package core
 
-import "sort"
+import (
+	"github.com/pingcap/log"
+	"sort"
+)
 
 // Rel stands for relation in dependencies
 type Rel string
@@ -127,8 +130,9 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
 	processMap := map[int]Op{}
 	// TODO: change it to an ordered container
-	var doneEvents []Vertex
-	for _, v := range history  {
+	var doneEvents []*Op
+	for i, _ := range history  {
+		v := &history[i]
 		if !v.Process.Present() {
 			continue
 		}
@@ -139,7 +143,20 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 			processMap[v.Process.MustGet()] = v
 		case OpTypeOk:
 			if len(doneEvents) != 0 {
-				realtimeGraph.LinkToAll(Vertex{Value:v}, doneEvents, Realtime)
+				// It's an ok
+				// Link correspond start to all ends.
+				startEvent, existsStart := processMap[v.Process.MustGet()]
+				if !existsStart {
+					log.Warn("warning: RealtimeGraph doesn't get the right data")
+					continue
+				}
+				for _, de := range doneEvents {
+					if de.Time.Before(startEvent.Time) {
+						realtimeGraph.Link(Vertex{Value:v}, Vertex{Value:*de}, Realtime)
+					} else {
+						break
+					}
+				}
 			}
 			doneEvents = append(doneEvents, Vertex{Value:v})
 			delete(processMap, v.Process.MustGet())
