@@ -148,10 +148,11 @@ func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode,
 		c.tableIDs = append(c.tableIDs, id)
 	}
 
-	// clusterName := nodes[0].ClusterName
-	// ns := nodes[0].Namespace
-	// pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)
-	pdAddr := "127.0.0.1:2379"
+	clusterName := nodes[0].ClusterName
+	ns := nodes[0].Namespace
+	pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)
+	// NOTE: local run
+	// pdAddr := "127.0.0.1:2379"
 	c.pd, err = pd.NewClient([]string{pdAddr}, pd.SecurityOption{})
 	if err != nil {
 		return errors.Trace(err)
