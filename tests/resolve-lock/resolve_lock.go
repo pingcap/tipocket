@@ -207,6 +207,8 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 			return errors.Trace(err)
 		}
 
+		// Sleep to let locks are applied in all replicas.
+		// time.Sleep(5 * time.Second)
 		log.Infof("[round-%d] start to async generate locks during GC", loopNum)
 		// Generate locks before ts to let lock observer do it job. ts is the safeLockTs which means
 		// locks with ts before it are safe locks. These locks can be left after GC and won't break data consistency.
