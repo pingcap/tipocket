@@ -209,7 +209,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		}
 
 		// Sleep to let locks are applied in all replicas.
-		// time.Sleep(5 * time.Second)
+		time.Sleep(5 * time.Second)
 		log.Infof("[round-%d] start to async generate locks during GC", loopNum)
 		// Generate locks before ts to let lock observer do it job. ts is the safeLockTs which means
 		// locks with ts before it are safe locks. These locks can be left after GC and won't break data consistency.
@@ -235,8 +235,8 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		} else {
 			log.Warnf("[round-%d] %s failed to resolve lock physically at safe point %v", loopNum, id, c.safePoint)
 		}
-		if c.EnableGreenGC && loopNum-lastGreenGC > 10 {
-			return errors.New("green gc failed to run for over 10 times")
+		if c.EnableGreenGC && loopNum-lastGreenGC > 50 {
+			return errors.New("green gc failed to run for over 50 times")
 		}
 
 		log.Infof("[round-%d] start to check data at safePoint(%v)", loopNum, c.safePoint)
