@@ -135,6 +135,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 		for i, v := range history {
 			switch v.Type {
 			case OpTypeNemesis, OpTypeFail, OpTypeInfo:
+				nextMap[processMap[v.Process.MustGet()]] = i
 				delete(processMap, v.Process.MustGet())
 			case OpTypeInvoke:
 				processMap[v.Process.MustGet()] = i
