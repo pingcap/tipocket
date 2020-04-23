@@ -145,13 +145,18 @@ func (e MonotonicKeyExplainer) RenderExplanation(result ExplainResult, preName, 
 
 type ICycleExplainer interface {
 	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
-	RenderCycleExplanation(explainer DataExplainer, circle Circle) string
+	RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string
+}
+
+// TODO: add panic & recover logic here.
+func explainCyclePairData(pairExplainer DataExplainer, p1, p2 PathType) ExplainResult {
+	return pairExplainer.ExplainPairData(p1, p2)
 }
 
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
-type CycleExplainer struct {
-}
+type CycleExplainer struct {}
 
+// Explain for the whole scc.
 func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
 	var steps []Step
 	for i := 1; i < len(circle.Path); i++ {
@@ -161,8 +166,21 @@ func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (C
 	return circle, steps
 }
 
-func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle) string {
-	panic("impl me")
+type OpBinding struct {
+	Operation Op
+	Name      string
+}
+
+func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string {
+	panic("implement me")
+}
+
+func explainBindings(bindings []OpBinding) string {
+	panic("implement me")
+}
+
+func explainCycleOps(pairExplainer DataExplainer, binding OpBinding, steps []Step) {
+	panic("implement me")
 }
 
 func explainSCC(graph DirectedGraph, pairExplainer DataExplainer, scc SCC) string {
