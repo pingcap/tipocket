@@ -34,7 +34,7 @@ type CDC struct {
 }
 
 // RecommendedCDCCluster creates cluster with CDC
-func newCDC(ns, name string, enableKafka bool) *CDC {
+func newCDC(ns, name string) *CDC {
 	var (
 		cdcName        = fmt.Sprintf("%s-cdc", name)
 		cdcJobName     = fmt.Sprintf("%s-job", cdcName)
@@ -47,7 +47,7 @@ func newCDC(ns, name string, enableKafka bool) *CDC {
 		}
 		sinkURI string
 	)
-	if enableKafka {
+	if fixture.Context.CDCConfig.EnableKafka {
 		kafkaName := fmt.Sprintf("%s-kafka", name)
 		sinkURI = fmt.Sprintf("kafka://%s:9092/cdc-test?partition-num=6&max-message-bytes=67108864&replication-factor=1", kafkaName)
 	} else {

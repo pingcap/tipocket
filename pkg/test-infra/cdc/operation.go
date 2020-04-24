@@ -25,6 +25,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -43,12 +44,12 @@ type Ops struct {
 }
 
 // New creates cdc ops
-func New(ns, name string, enableKafka bool) *Ops {
+func New(ns, name string) *Ops {
 	var kafka *Kafka
-	if enableKafka {
+	if fixture.Context.CDCConfig.EnableKafka {
 		kafka = newKafka(ns, name)
 	}
-	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name, enableKafka), kafka: kafka}
+	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name), kafka: kafka}
 }
 
 // Apply CDC cluster
