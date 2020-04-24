@@ -19,7 +19,7 @@ spec:
       - name: run_time
         value: "6h"
       - name: tiflash_image
-        value: ""
+        value: "v4.0.0-rc"
       - name: tiflash_replicas
         value: 2
   templates:
