@@ -144,13 +144,13 @@ func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig)
 }
 
 // NewCDCCluster creates two TiDB clusters with CDC
-func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig, enableKafka bool) clusterTypes.Cluster {
 	return NewCompositeCluster(
 		NewGroupCluster(
 			tidb.New(namespace, name+"-upstream", conf),
 			tidb.New(namespace, name+"-downstream", conf),
 		),
-		cdc.New(namespace, name),
+		cdc.New(namespace, name, enableKafka),
 	)
 }
 
@@ -206,6 +206,6 @@ func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiD
 			NewTiFlashCluster(namespace, name+"-upstream", confA),
 			tidb.New(namespace, name+"-downstream", confB),
 		),
-		cdc.New(namespace, name),
+		cdc.New(namespace, name, false),
 	)
 }

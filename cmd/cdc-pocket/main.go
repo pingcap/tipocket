@@ -28,6 +28,7 @@ import (
 
 var (
 	configPath = flag.String("config", "", "config file path")
+	enableKafa = flag.Bool("enable-kafka", false, "enable kafka")
 )
 
 func main() {
@@ -58,7 +59,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, *enableKafa),
 	}
 	suit.Run(context.Background())
 }

@@ -34,7 +34,7 @@ type CDC struct {
 }
 
 // RecommendedCDCCluster creates cluster with CDC
-func newCDC(ns, name string) *CDC {
+func newCDC(ns, name string, enableKafka bool) *CDC {
 	var (
 		cdcName        = fmt.Sprintf("%s-cdc", name)
 		cdcJobName     = fmt.Sprintf("%s-job", cdcName)
@@ -45,7 +45,14 @@ func newCDC(ns, name string) *CDC {
 			"app.kubernetes.io/component": "cdc",
 			"app.kubernetes.io/instance":  cdcName,
 		}
+		sinkURI string
 	)
+	if enableKafka {
+		kafkaName := fmt.Sprintf("%s-kafka", name)
+		sinkURI = fmt.Sprintf("kafka://%s:9092/cdc-test?partition-num=6&max-message-bytes=67108864&replication-factor=1", kafkaName)
+	} else {
+		sinkURI = fmt.Sprintf("mysql://root@%s:4000/", downstreamDB)
+	}
 	logVol := corev1.VolumeMount{
 		Name:      "log",
 		MountPath: "/var/log/cdc",
@@ -150,12 +157,153 @@ func newCDC(ns, name string) *CDC {
 									"changefeed",
 									"create",
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-									fmt.Sprintf("--sink-uri=mysql://root@%s:4000/", downstreamDB),
+									fmt.Sprintf("--sink-uri=%s", sinkURI),
 									"--start-ts=0",
 								},
 							},
 						},
 						RestartPolicy: corev1.RestartPolicyNever,
+					},
+				},
+			},
+		},
+	}
+}
+
+// Kafka ...
+type Kafka struct {
+	*appsv1.StatefulSet
+	*corev1.Service
+	*batchv1.Job
+}
+
+func newKafka(ns, name string) *Kafka {
+	var (
+		kafkaName    = fmt.Sprintf("%s-kafka", name)
+		kafkaJobName = fmt.Sprintf("%s-comsumer", kafkaName)
+		kafkaLabels  = map[string]string{
+			"app.kubernetes.io/name":      "tidb-cluster",
+			"app.kubernetes.io/component": "kafka",
+			"app.kubernetes.io/instance":  kafkaName,
+		}
+		downstreamDB = fmt.Sprintf("%s-downstream-tidb", name)
+	)
+	logVol := corev1.VolumeMount{
+		Name:      "log",
+		MountPath: "/var/log/kafka",
+	}
+
+	return &Kafka{
+		Service: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      kafkaName,
+				Namespace: ns,
+				Labels:    kafkaLabels,
+			},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeClusterIP,
+				Ports: []corev1.ServicePort{
+					{
+						Name: "http",
+						Port: 9092,
+					},
+				},
+				ClusterIP: corev1.ClusterIPNone,
+				Selector:  kafkaLabels,
+			},
+		},
+		StatefulSet: &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      kafkaName,
+				Namespace: ns,
+				Labels:    kafkaLabels,
+			},
+			Spec: appsv1.StatefulSetSpec{
+				ServiceName: kafkaName,
+				Replicas:    pointer.Int32Ptr(1),
+				Selector:    &metav1.LabelSelector{MatchLabels: kafkaLabels},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{Labels: kafkaLabels},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name: "kafka",
+								Env: []corev1.EnvVar{
+									{
+										Name:  "KAFKA_MESSAGE_MAX_BYTES",
+										Value: "1073741824",
+									},
+									{
+										Name:  "KAFKA_REPLICA_FETCH_MAX_BYTES",
+										Value: "1073741824",
+									},
+									{
+										Name:  "KAFKA_ADVERTISED_PORT",
+										Value: "9092",
+									},
+									{
+										Name:  "KAFKA_ADVERTISED_HOST_NAME",
+										Value: "127.0.0.1",
+									},
+									{
+										Name:  "KAFKA_BROKER_ID",
+										Value: "1",
+									},
+									{
+										Name: "ZK", Value: "zk",
+									},
+									{
+										Name:  "KAFKA_ZOOKEEPER_CONNECT",
+										Value: "localhost:2181",
+									},
+								},
+								Image:           "wurstmeister/kafka",
+								ImagePullPolicy: corev1.PullIfNotPresent,
+								Ports: []corev1.ContainerPort{
+									{
+										Name:          "http",
+										ContainerPort: 9092,
+									},
+								},
+								VolumeMounts: []corev1.VolumeMount{logVol},
+							},
+						},
+						Volumes: []corev1.Volume{{
+							Name: "log",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						}},
+					},
+				},
+			},
+		},
+		Job: &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      kafkaJobName,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app.kubernetes.io/name":      "tidb-cluster",
+					"app.kubernetes.io/component": "kafka",
+					"app.kubernetes.io/instance":  kafkaJobName,
+				},
+			},
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
+							{
+								Name:            "cdc-kafka-consumer",
+								Image:           buildCDCImage("cdc-kafka-consumer"),
+								ImagePullPolicy: corev1.PullAlways,
+								Command: []string{
+									"/cdc_kafka_consumer",
+									fmt.Sprintf("--upstream-uri=%s", fmt.Sprintf("http://%s:9032", kafkaName)),
+									fmt.Sprintf("--downstream-uri=mysql://root@%s:4000/", downstreamDB),
+								},
+							},
+						},
+						RestartPolicy: corev1.RestartPolicyAlways,
 					},
 				},
 			},
