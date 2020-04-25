@@ -55,7 +55,6 @@ type fixtureContext struct {
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
 	MySQLVersion             string
-	KafkaVersion             string
 	HubAddress               string
 	DockerRepository         string
 	TiDBClusterConfig        TiDBClusterConfig

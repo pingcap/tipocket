@@ -101,6 +101,16 @@ func (o *Ops) applyKafka() error {
 	if o.kafka == nil {
 		return nil
 	}
+	if err := util.ApplyObject(o.cli, o.kafka.Zookeeper.Service); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.kafka.Zookeeper.StatefulSet); err != nil {
+		return err
+	}
+	if err := o.waitServiceReady(o.kafka.Zookeeper.StatefulSet, 5*time.Minute); err != nil {
+		return err
+	}
+
 	if err := util.ApplyObject(o.cli, o.kafka.Service); err != nil {
 		return err
 	}
@@ -108,9 +118,6 @@ func (o *Ops) applyKafka() error {
 		return err
 	}
 	if err := o.waitServiceReady(o.kafka.StatefulSet, 5*time.Minute); err != nil {
-		return err
-	}
-	if err := util.ApplyObject(o.cli, o.kafka.Job); err != nil {
 		return err
 	}
 	return nil
