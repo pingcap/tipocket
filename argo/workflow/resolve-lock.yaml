@@ -1,0 +1,71 @@
+metadata:
+  generateName: tipocket-resolve-lock-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-resolve-lock
+  onExit: call-export-logs
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-resolve-lock
+      - name: purge
+        value: "true"
+      - name: repository
+        value: pingcap
+      - name: image_version
+        value: nightly
+      - name: storage_class
+        value: gp2
+      - name: nemesis
+        value: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
+      - name: run_time
+        value: "6h"
+      - name: tikv_config
+        value: ""
+      - name: loki-addr
+        value: http://gateway.loki.svc
+      - name: loki-username
+        value: loki
+      - name: loki-password
+        value: admin
+  templates:
+    - name: call-export-logs
+      steps:
+        - - name: call-export-logs
+            templateRef:
+              name: export-logs
+              template: export-logs
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-resolve-lock
+    - name: call-tipocket-resolve-lock
+      steps:
+        - - name: call-tipocket-resolve-lock
+            templateRef:
+              name: tipocket-resolve-lock
+              template: tipocket-resolve-lock
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: run_time
+                  value: "{{workflow.parameters.run_time}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
+                - name: tikv_config
+                  value: "{{workflow.parameters.tikv_config}}"
