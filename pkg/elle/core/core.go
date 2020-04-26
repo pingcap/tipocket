@@ -35,13 +35,15 @@ const (
 type Anomaly interface{}
 type Anomalies map[string]Anomaly
 
-// Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
-type Analyzer func(history History) (Anomalies, DirectedGraph, DataExplainer)
-
-// MergeAnomalies merges n Anomaly together.
-func MergeAnomalies(anomalies ...Anomalies) Anomalies {
-	panic("implement me")
+// Merge merges another anomalies
+func (a Anomalies) Merge(another Anomalies) {
+	for key, value := range another {
+		a[key] = value
+	}
 }
+
+// Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
+type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
 type PathType = Op
 
@@ -56,7 +58,7 @@ type Step struct {
 }
 
 // RealtimeGraph analyzes real-time.
-func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
+func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
 
 	nextMap := make([]int, len(history), len(history))
@@ -79,8 +81,8 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 	}
 
 	// build state machine
-	var doneEvents map[Op]struct{} = map[Op]struct{}{}
-	for i, _ := range history {
+	var doneEvents = map[Op]struct{}{}
+	for i := range history {
 		v := &history[i]
 		if !v.Process.Present() {
 			continue
@@ -90,7 +92,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 			continue
 		case OpTypeInvoke:
 			effectOp := history[nextMap[i]]
-			for k, _ := range doneEvents {
+			for k := range doneEvents {
 				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: effectOp}, Realtime)
 			}
 		case OpTypeOk:
@@ -99,7 +101,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 			doneEvents[*v] = struct{}{}
 		}
 	}
-	return nil, *realtimeGraph, RealtimeExplainer{nextIndex: nextMap, historyReference: history}
+	return nil, realtimeGraph, RealtimeExplainer{nextIndex: nextMap, historyReference: history}
 }
 
 func opSet(vertex []Vertex) map[Op]struct{} {
@@ -122,7 +124,7 @@ func setDel(origin, delta map[Op]struct{}) map[Op]struct{} {
 }
 
 // ProcessOrder find dependencies of a process
-func ProcessOrder(history History, process int) DirectedGraph {
+func ProcessOrder(history History, process int) *DirectedGraph {
 	var (
 		processHistory History
 		graph          *DirectedGraph = NewDirectedGraph()
@@ -140,15 +142,15 @@ func ProcessOrder(history History, process int) DirectedGraph {
 	}
 	// TODO: make clear why this failed
 	//return *graph.Fork()
-	return *graph
+	return graph
 }
 
 // ProcessGraph analyzes process
-func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
+func ProcessGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	var (
-		okHistory                  = history.FilterType(OpTypeOk)
-		processes map[int]struct{} = map[int]struct{}{}
-		graphs    []DirectedGraph
+		okHistory = history.FilterType(OpTypeOk)
+		processes = map[int]struct{}{}
+		graphs    []*DirectedGraph
 	)
 
 	for _, op := range okHistory {
@@ -160,13 +162,13 @@ func ProcessGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 		}
 	}
 
-	return nil, *DigraphUnion(graphs...), ProcessExplainer{}
+	return nil, DigraphUnion(graphs...), ProcessExplainer{}
 }
 
 // MonotonicKeyOrder find dependencies of a process
-func MonotonicKeyOrder(history History, k string) DirectedGraph {
+func MonotonicKeyOrder(history History, k string) *DirectedGraph {
 	var (
-		val2ops map[int][]Op = map[int][]Op{}
+		val2ops = map[int][]Op{}
 		vals    []int
 		graph   DirectedGraph
 	)
@@ -205,15 +207,15 @@ func MonotonicKeyOrder(history History, k string) DirectedGraph {
 		graph.LinkAllToAll(xs, ys)
 	}
 
-	return graph
+	return &graph
 }
 
 // MonotonicKeyGraph analyzes monotonic key
-func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
+func MonotonicKeyGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	var (
-		okHistory                     = history.FilterType(OpTypeOk)
-		keys      map[string]struct{} = map[string]struct{}{}
-		graphs    []DirectedGraph
+		okHistory = history.FilterType(OpTypeOk)
+		keys      = map[string]struct{}{}
+		graphs    []*DirectedGraph
 	)
 
 	// not sure if monotonic only works for read type mops
@@ -224,7 +226,7 @@ func MonotonicKeyGraph(history History) (Anomalies, DirectedGraph, DataExplainer
 		}
 	}
 
-	return nil, *DigraphUnion(graphs...), MonotonicKeyExplainer{}
+	return nil, DigraphUnion(graphs...), MonotonicKeyExplainer{}
 }
 
 type CheckResult struct {
@@ -240,7 +242,7 @@ func Check(analyzer Analyzer, history History) CheckResult {
 	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history)
 	WriteCycles(CycleExplainer{}, explainer, "", "", circles)
 	return CheckResult{
-		Graph:     g,
+		Graph:     *g,
 		Explainer: explainer,
 		Cycles:    circles,
 		Sccs:      sccs,
@@ -250,7 +252,7 @@ func Check(analyzer Analyzer, history History) CheckResult {
 
 // checkHelper is `check-` in original code.
 // TODO: add the logic for anomalies.
-func checkHelper(analyzer Analyzer, history History) (DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
+func checkHelper(analyzer Analyzer, history History) (*DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
 	// The sample program will first remove nemesis, but we will not leave nemesis here.
 	anomalies, g, exp := analyzer(history)
 	sccs := g.StronglyConnectedComponents()

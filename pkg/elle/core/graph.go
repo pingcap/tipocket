@@ -2,8 +2,6 @@ package core
 
 import (
 	"github.com/mohae/deepcopy"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Edge is a intermediate representation of edge on DirectedGraph
@@ -415,14 +413,13 @@ func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
 }
 
 // DigraphUnion takes the union of n graphs, merging edges with union
-func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
+func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 	dg := NewDirectedGraph()
 	for _, g := range graphs {
 		vertices := g.Vertices()
 		for _, x := range vertices {
 			for y, rels := range g.Outs[x] {
 				for _, rel := range rels {
-					log.Infof("Link %v, %v, %s", x, y, string(rel))
 					dg.Link(x, y, rel)
 				}
 			}
