@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -46,6 +47,8 @@ const (
 
 // Mop interface
 type Mop interface {
+	fmt.Stringer
+
 	IsAppend() bool
 	IsRead() bool
 	GetMopType() MopType
@@ -59,10 +62,18 @@ type Append struct {
 	Value MopValueType `json:"value"`
 }
 
+func (a Append) String() string {
+	return fmt.Sprintf("[:append %s %v]", a.Key, a.Value)
+}
+
 // Read implements Mop
 type Read struct {
 	Key   string       `json:"key"`
 	Value MopValueType `json:"value"`
+}
+
+func (r Read) String() string {
+	return fmt.Sprintf("[:r %s %v]", r.Key, r.Value)
 }
 
 // Op is operation
@@ -74,6 +85,10 @@ type Op struct {
 	Value   *[]Mop      `json:"value"`
 }
 
+func (op Op) String() string {
+	return fmt.Sprintf("{:type %s :process %d :time %d :index %d}", string(op.Type), op.Process, op.Time.UnixNano(), op.Index)
+}
+
 func (op Op) ValueLength() int {
 	if op.Value == nil {
 		return 0
@@ -83,6 +98,13 @@ func (op Op) ValueLength() int {
 
 // History contains operations
 type History []Op
+
+// AttachIndex add the index for history with it's number in array.
+func (h History) AttachIndex() {
+	for i, _ := range h {
+		h[i].Index = i
+	}
+}
 
 // IsAppend ...
 func (Append) IsAppend() bool {
