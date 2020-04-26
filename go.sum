@@ -1427,8 +1427,8 @@ github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1/go.mod h1:QcJo0QPSf
 github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6/go.mod h1:ce1O1j6UtZfjr22oyGxGLbauSBp2YVXpARAosm7dHBg=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/yookoala/realpath v1.0.0/go.mod h1:gJJMA9wuX7AcqLy1+ffPatSCySA1FQ2S8Ya9AIoYBpE=
-github.com/youjiali1995/tidb v1.1.0-beta.0.20200422024406-b6c88a9b6da5 h1:IbTVg4pLhxJS3MtsR57KrUKh89IG1p0s5U52Sl2vWO4=
-github.com/youjiali1995/tidb v1.1.0-beta.0.20200422024406-b6c88a9b6da5/go.mod h1:Hykj3nxUZ1lmKg0EOHWSfi66Ck/WSd2EatI9fA9NEdE=
+github.com/youjiali1995/tidb v1.1.0-beta.0.20200426030705-72b8fa1435b3 h1:znu27SQvnlgPEbL1Gf6fhsLFcuC3WWNCtCWZH5BuwzM=
+github.com/youjiali1995/tidb v1.1.0-beta.0.20200426030705-72b8fa1435b3/go.mod h1:Hykj3nxUZ1lmKg0EOHWSfi66Ck/WSd2EatI9fA9NEdE=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b/go.mod h1:T3BPAOm2cqquPa0MKWeNkmOM5RQsRhkrwMWonFMN7fE=
 go.elastic.co/apm v1.5.0/go.mod h1:OdB9sPtM6Vt7oz3VXt7+KR96i9li74qrxBGHTQygFvk=

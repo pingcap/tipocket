@@ -317,7 +317,7 @@ func (c *resolveLockClient) generateLocks(ctx context.Context, interval time.Dur
 	close(taskCh)
 	for i := 0; i < workers; i++ {
 		e := <-errCh
-		if err != nil {
+		if err == nil {
 			err = e
 		}
 	}
