@@ -192,4 +192,3 @@ func toJson(v interface{}) string {
 //	res := Check(MonotonicKeyGraph, history)
 //	assert.Equal(t, 0, len(res.Sccs), "length of sccs should be zero")
 //}
-
