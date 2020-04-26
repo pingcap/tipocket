@@ -16,41 +16,77 @@ type DataExplainer interface {
 	RenderExplanation(result ExplainResult, preName, postName string) string
 }
 
-// CombinedExplainer struct
-type CombinedExplainer struct {
-	Explainers []DataExplainer
-}
-
-// ExplainPairData find dependencies in a and b
-func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
-	panic("implement me")
-}
-
-// RenderExplanation render explanation result
-func (c *CombinedExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
-	return ""
-}
-
-// CombineExplainer combines explainers into one
-func CombineExplainer(explainers []DataExplainer) DataExplainer {
-	return &CombinedExplainer{explainers}
-}
-
-// Combine composes multiple analyzers
-func Combine(analyzers ...Analyzer) Analyzer {
-	panic("implement me")
-}
-
 type DependType string
 
 const (
 	RealtimeDepend  DependType = "realtime"
 	MonotonicDepend DependType = "monotonic"
 	ProcessDepend   DependType = "process"
+
+	// CombineDepend is a special form of DependType
+	CombineDepend DependType = "combine"
 )
 
 type ExplainResult interface {
 	Type() DependType
+}
+
+// CombinedExplainer struct
+type CombinedExplainer struct {
+	Explainers []DataExplainer
+}
+
+type CombineExplainResult struct {
+	ex DataExplainer
+	er ExplainResult
+}
+
+func (c CombineExplainResult) Type() DependType {
+	return CombineDepend
+}
+
+// ExplainPairData find dependencies in a and b
+func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
+	for _, ex := range c.Explainers {
+		er := ex.ExplainPairData(p1, p2)
+		if er != nil {
+			return CombineExplainResult{
+				ex: ex,
+				er: er,
+			}
+		}
+	}
+	return nil
+}
+
+// RenderExplanation render explanation result
+func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
+	if result.Type() != CombineDepend {
+		log.Fatalf("result type is not %s, type error", result.Type())
+	}
+	er := result.(CombineExplainResult)
+	return er.ex.RenderExplanation(er.er, p1, p2)
+}
+
+// Combine composes multiple analyzers
+func Combine(analyzers ...Analyzer) Analyzer {
+	return func(history History) (anomalies Anomalies, graph *DirectedGraph, explainer DataExplainer) {
+		ca := make(Anomalies)
+		cg := NewDirectedGraph()
+		var ce []DataExplainer
+
+		for _, analyzer := range analyzers {
+			a, g, e := analyzer(history)
+			if g == nil {
+				panic("got a nil graph")
+			}
+			ca.Merge(a)
+			cg = DigraphUnion(cg, g)
+			ce = append(ce, e)
+		}
+
+		return ca, cg, &CombinedExplainer{Explainers: ce}
+	}
 }
 
 type ProcessDependent struct {
@@ -206,8 +242,8 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 	return strings.Join(explainitions, "\n")
 }
 
-func explainSCC(g DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
-	cycle := FindCycle(g, scc)
+func explainSCC(g *DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
+	cycle := FindCycle(*g, scc)
 	_, steps := cycleExplainer.ExplainCycle(pairExplainer, cycle)
 	return cycleExplainer.RenderCycleExplanation(pairExplainer, cycle, steps)
 }
