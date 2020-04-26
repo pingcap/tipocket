@@ -91,9 +91,14 @@ func (mIter *MopIterator) Next() []core.Mop {
 		case Uniform:
 			k, writeVersion = mIter.activeKeys.randomGet()
 		}
-		// TODO: here may cause a bug, so please pay attention and change the logic here.
 		if writeVersion >= mIter.opts.MaxWritesPerKey {
-			continue
+			// we activate a new key and replace old key with it
+			delete(mIter.activeKeys.keyRecord, k)
+			k = mustUtoa(mIter.activeKeys.maxKey)
+			mIter.activeKeys.maxKey++
+
+			mIter.activeKeys.keyRecord[k] = 0
+			writeVersion = 0
 		}
 		var mop core.Mop
 		switch rand.Intn(2) {
@@ -114,8 +119,9 @@ func (mIter *MopIterator) Next() []core.Mop {
 }
 
 type WrTxnState struct {
-	// map for [TxnID, WriteCnt]
+	// map for [Key, WriteCnt]
 	keyRecord map[string]uint
+	maxKey    uint
 }
 
 func (s WrTxnState) randomGet() (string, uint) {
@@ -138,7 +144,7 @@ func WrTxnWithDefaultOpts(state WrTxnState) *MopIterator {
 }
 
 func WrTxnWithoutState(opts WrTxnOpts) *MopIterator {
-	state := WrTxnState{keyRecord: map[string]uint{}}
+	state := WrTxnState{keyRecord: map[string]uint{}, maxKey: opts.KeyCount}
 	for i := 0; uint(i) < opts.KeyCount; i++ {
 		state.keyRecord[mustItoa(i)] = 0
 	}
