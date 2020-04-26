@@ -72,6 +72,7 @@ func RealtimeGraph(history History) (Anomalies, DirectedGraph, DataExplainer) {
 				processMap[v.Process.MustGet()] = i
 			case OpTypeOk:
 				nextMap[processMap[v.Process.MustGet()]] = i
+				nextMap[i] = processMap[v.Process.MustGet()]
 				delete(processMap, v.Process.MustGet())
 			}
 		}

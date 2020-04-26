@@ -149,11 +149,6 @@ type ICycleExplainer interface {
 	RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string
 }
 
-// TODO: add panic & recover logic here.
-func explainCyclePairData(pairExplainer DataExplainer, p1, p2 PathType) ExplainResult {
-	return pairExplainer.ExplainPairData(p1, p2)
-}
-
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
 type CycleExplainer struct{}
 
@@ -174,7 +169,10 @@ type OpBinding struct {
 
 func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string {
 	var bindings []OpBinding
-	for i, v := range circle.Path {
+	if len(bindings) < 2 {
+		return ""
+	}
+	for i, v := range circle.Path[:len(circle.Path) - 1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
 			Name:      fmt.Sprintf("T%d", i),
@@ -195,6 +193,7 @@ func explainBindings(bindings []OpBinding) string {
 	return strings.Join(seq, "\n")
 }
 
+// TODO: step is a dynamic type here, please use content of step later.
 func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []Step) string {
 	var explainitions []string
 	for i := 1; i < len(bindings); i++ {
