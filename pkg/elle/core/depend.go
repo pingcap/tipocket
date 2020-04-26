@@ -172,7 +172,7 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle 
 	if len(bindings) < 2 {
 		return ""
 	}
-	for i, v := range circle.Path[:len(circle.Path) - 1] {
+	for i, v := range circle.Path[:len(circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
 			Name:      fmt.Sprintf("T%d", i),
@@ -193,14 +193,16 @@ func explainBindings(bindings []OpBinding) string {
 	return strings.Join(seq, "\n")
 }
 
-// TODO: step is a dynamic type here, please use content of step later.
 func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []Step) string {
 	var explainitions []string
 	for i := 1; i < len(bindings); i++ {
-		res := pairExplainer.ExplainPairData(bindings[i-1].Operation, bindings[i].Operation)
 		explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[i-1].Name,
-			bindings[i].Name, pairExplainer.RenderExplanation(res, bindings[i-1].Name, bindings[i].Name)))
+			bindings[i].Name, pairExplainer.RenderExplanation(steps[i-1].Result, bindings[i-1].Name, bindings[i].Name)))
 	}
+	// extra result
+	explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[len(bindings)-1].Name,
+		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(bindings)].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
+
 	return strings.Join(explainitions, "\n")
 }
 

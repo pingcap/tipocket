@@ -50,7 +50,6 @@ type Circle struct {
 	Path []PathType
 }
 
-// TODO: refine me
 type Step struct {
 	Result ExplainResult
 }
