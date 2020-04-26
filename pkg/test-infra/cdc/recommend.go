@@ -253,13 +253,15 @@ func newZookeeper(ns, name string) *Zookeeper {
 type Kafka struct {
 	*appsv1.StatefulSet
 	*corev1.Service
+	*batchv1.Job
 	*Zookeeper
 }
 
 func newKafka(ns, name string) *Kafka {
 	var (
-		kafkaName   = fmt.Sprintf("%s-kafka", name)
-		kafkaLabels = map[string]string{
+		kafkaName         = fmt.Sprintf("%s-kafka", name)
+		kafkaConsumerName = fmt.Sprintf("%s-consumer", kafkaName)
+		kafkaLabels       = map[string]string{
 			"app.kubernetes.io/name":      "tidb-cluster",
 			"app.kubernetes.io/component": "kafka",
 			"app.kubernetes.io/instance":  kafkaName,
@@ -344,6 +346,32 @@ func newKafka(ns, name string) *Kafka {
 								},
 								VolumeMounts: []corev1.VolumeMount{logVol},
 							},
+						},
+						Volumes: []corev1.Volume{{
+							Name: "log",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{},
+							},
+						}},
+					},
+				},
+			},
+		},
+		Job: &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      kafkaConsumerName,
+				Namespace: ns,
+				Labels: map[string]string{
+					"app.kubernetes.io/name":      "tidb-cluster",
+					"app.kubernetes.io/component": "kafka-consumer",
+					"app.kubernetes.io/instance":  kafkaConsumerName,
+				},
+			},
+			Spec: batchv1.JobSpec{
+				TTLSecondsAfterFinished: pointer.Int32Ptr(10),
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{
 							{
 								Name:            "consumer",
 								Image:           buildCDCImage("cdc-kafka-consumer"),
@@ -352,17 +380,12 @@ func newKafka(ns, name string) *Kafka {
 									"/cdc_kafka_consumer",
 									"--upstream-uri", upstreamURI,
 									"--downstream-uri", downstreamURI,
-									"--log-file", "''",
+									"--log-file", "",
 									"--log-level", "debug",
 								},
 							},
 						},
-						Volumes: []corev1.Volume{{
-							Name: "log",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						}},
+						RestartPolicy: corev1.RestartPolicyOnFailure,
 					},
 				},
 			},
