@@ -438,13 +438,142 @@ type Transition interface{}
 type Predicate interface{}
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
-func FindCycle(graph DirectedGraph, scc SCC) Circle {
-	panic("impl me")
+// TODO: find the shortest cycle
+func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	inScc := make(map[Vertex]bool)
+	for _, vertex := range scc.Vertices {
+		inScc[vertex] = true
+	}
+	queue := []Vertex{scc.Vertices[0]}
+	V := []Vertex{}
+	haveVisited := make(map[Vertex]bool)
+	haveVisited[queue[0]] = true
+	from := make(map[Vertex]Vertex)
+	var first Vertex
+	flag := false
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		if flag == true {
+			break
+		}
+
+		for next, _ := range graph.Outs[cur] {
+			if inScc[next] != true {
+				continue
+			}
+			if haveVisited[next] == true {
+				flag = true
+				first = next
+				from[next] = cur
+				break
+			} else {
+				haveVisited[next] = true
+				from[next] = cur
+				queue = append(queue, next)
+			}
+		}
+	}
+
+	now := first
+	for {
+		V = append(V, now)
+		now = from[now]
+		if now == first {
+			break
+		}
+	}
+	V = append(V, first)
+	for i, j := 0, len(V)-1; i < j; i, j = i+1, j-1 {
+		V[i], V[j] = V[j], V[i]
+	}
+	return V
 }
 
 // FindCycleStartingWith ...
-func FindCycleStartingWith(initialGraph, remainingGraph DirectedGraph, scc SCC) Circle {
-	panic("impl me")
+// TODO: find the shortest cycle
+func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	inScc := make(map[Vertex]bool)
+	for _, vertex := range scc.Vertices {
+		inScc[vertex] = true
+	}
+	V := []Vertex{}
+	for _, vertex := range scc.Vertices {
+		haveFound := false
+		queue := []Vertex{}
+		haveVisited := make(map[Vertex]bool)
+		start := vertex
+		haveVisited[start] = true
+		from := make(map[Vertex]Vertex)
+
+		for next, rels := range graph.Outs[start] {
+			if inScc[next] != true {
+				continue
+			}
+			haveRel := false
+			for _, r := range rels {
+				if r == rel {
+					haveRel = true
+				}
+			}
+			if haveRel == false {
+				continue
+			} else {
+				queue = append(queue, next)
+				haveVisited[next] = true
+				from[next] = start
+			}
+		}
+		flag := false
+		for len(queue) > 0 {
+			cur := queue[0]
+			queue = queue[1:]
+			if flag == true {
+				haveFound = true
+				break
+			}
+			for next, _ := range graph.Outs[cur] {
+				if inScc[next] != true {
+					continue
+				}
+				if haveVisited[next] == true {
+					if next == start {
+						flag = true
+						haveFound = true
+						from[next] = cur
+						break
+					}
+				} else {
+					haveVisited[next] = true
+					from[next] = cur
+					queue = append(queue, next)
+				}
+			}
+		}
+		if haveFound == true {
+			now := start
+			for {
+				V = append(V, now)
+				now = from[now]
+				if now == start {
+					break
+				}
+			}
+			V = append(V, start)
+			for i, j := 0, len(V)-1; i < j; i, j = i+1, j-1 {
+				V[i], V[j] = V[j], V[i]
+			}
+			break
+		}
+	}
+	return V
 }
 
 // FindCycleWith ...
