@@ -84,6 +84,20 @@ func (op Op) ValueLength() int {
 // History contains operations
 type History []Op
 
+type SameKeyOpsByLength [][]MopValueType
+
+func (b SameKeyOpsByLength) Len() int {
+	return len(b)
+}
+
+func (b SameKeyOpsByLength) Less(i, j int) bool {
+	return len(b[i]) < len(b[j])
+}
+
+func (b SameKeyOpsByLength) Swap(i, j int) {
+	b[i], b[j] = b[j], b[i]
+}
+
 func AllTypesHistory(history History, tp OpType) History {
 	var resp History
 	for _, v := range history {

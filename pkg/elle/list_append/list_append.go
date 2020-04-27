@@ -152,18 +152,60 @@ func okHistoryFilter(history core.History) core.History {
 	return okHistory
 }
 
-func opInternalCases(op core.Op) bool {
+const InternalMagicNumber = -114514
 
+// Note: Please review this function carefully.
+func opInternalCases(op core.Op) *GCase {
+	// key -> valueList
+	dataMap := map[string][]core.MopValueType{}
 	for _, v := range *op.Value {
 		if v.IsRead() {
-
+			previousData, e := dataMap[v.GetKey()]
+			readData := v.(core.Read)
+			records := readData.Value.([]int)
+			if !e {
+				for _, rdata := range records {
+					dataMap[v.GetKey()] = append(dataMap[v.GetKey()], core.MopValueType(rdata))
+				}
+				continue
+			}
+			// check conflicts
+			comIndex := 0
+			if len(previousData) > 0 && previousData[0] == core.MopValueType(InternalMagicNumber) {
+				seqDelta := len(records) + 1 - len(previousData)
+				if seqDelta < 0 {
+					return &GCase{
+						Operation: op,
+						Mop:       &v,
+						Expected:  previousData,
+					}
+				} else {
+					comIndex = seqDelta
+				}
+			}
+			for i, indexV := range records[comIndex:] {
+				if previousData[i+1].(int) != indexV {
+					return &GCase{
+						Operation: op,
+						Mop:       &v,
+						Expected:  previousData,
+					}
+				}
+			}
+			for _, rdata := range records {
+				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], core.MopValueType(rdata))
+			}
 		} else {
 			// Note: current we only support read and append. So if it's not
 			//  read, it must be append.
-
+			_, e := dataMap[v.GetKey()]
+			if !e {
+				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], InternalMagicNumber)
+			}
+			dataMap[v.GetKey()] = append(dataMap[v.GetKey()], v.GetValue())
 		}
 	}
-	panic("implement me")
+	return nil
 }
 
 // Given an op, returns a map describing internal consistency violations, or
@@ -173,19 +215,21 @@ func opInternalCases(op core.Op) bool {
 //  :expected  The state we expected to observe. Either a definite list
 //                  like [1 2 3] or a postfix like ['... 3]}"
 func internalCases(history core.History) GCaseTp {
-	panic("implement me")
+	var tp GCaseTp
+	for _, op := range history {
+		res := opInternalCases(op)
+		if res != nil {
+			tp = append(tp, *res)
+		}
+	}
+	return tp
 }
 
-func dirtyUpdateCases(history core.History) GCaseTp {
-	panic("implement me")
-}
-
-func duplicates(history core.History) interface{} {
-	panic("implement me")
-}
-
-func incompatibleOrders(history core.History) interface{} {
-	panic("implement me")
+func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history core.History) GCaseTp {
+	wi := writeIndex(history)
+	for k, v := range appendIndexResult {
+		panic("implement me")
+	}
 }
 
 // Check checks append and read history for list_append
