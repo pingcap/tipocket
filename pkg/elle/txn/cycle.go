@@ -134,9 +134,9 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 	panic("implement me")
 }
 
-func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, circle core.Circle) string {
+func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, circle core.Circle, steps []core.Step) string {
 	exp := core.CycleExplainer{}
-	return exp.RenderCycleExplanation(explainer, circle)
+	return exp.RenderCycleExplanation(explainer, circle, steps)
 }
 
 // NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).
@@ -163,7 +163,7 @@ type AdditionalGraphOption struct {
 	Anomalies         []string
 }
 
-type GraphFunc = func(core.History) (core.Anomalies, core.DirectedGraph, core.DataExplainer)
+type GraphFunc = func(core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer)
 
 // AdditionalGraphs determines what additional graphs we'll need to consider for this analysis.
 func AdditionalGraphs(opts AdditionalGraphOption, additionalGraphs []GraphFunc) []GraphFunc {
@@ -181,17 +181,17 @@ func AdditionalGraphs(opts AdditionalGraphOption, additionalGraphs []GraphFunc) 
 
 // Anomalies worth reporting on, even if they don't cause the test to fail.
 func reportableAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) map[string]struct{} {
-	dest := prohibitAnomalyTypes(cm, anomalies)
+	dest := prohibitedAnomalyTypes(cm, anomalies)
 	union(dest, UnknownAnomalyTypes)
 	return dest
 }
 
-func prohibitAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) map[string]struct{} {
-	if len(anomalies) == 0 {
-		anomalies = append(anomalies, "strict-serializable")
+func prohibitedAnomalyTypes(cm []core.ConsistencyModelName, anomalies []string) map[string]struct{} {
+	if len(cm) == 0 {
+		cm = append(cm, "strict-serializable")
 	}
-	a1 := core.AnomaliesProhibitedBy(anomalies)
-	a2 := core.AllAnomaliesImplying(cm)
+	a1 := core.AnomaliesProhibitedBy(cm)
+	a2 := core.AllAnomaliesImplying(anomalies)
 	dest := compactAnomalies(a1...)
 	union(dest, compactAnomalies(a2...))
 	return dest
@@ -206,13 +206,13 @@ func compactAnomalies(anomalies ...string) map[string]struct{} {
 }
 
 func union(dest map[string]struct{}, unionSrc map[string]struct{}) {
-	for k, _ := range unionSrc {
+	for k := range unionSrc {
 		dest[k] = struct{}{}
 	}
 }
 
 func hasIntersection(m1, m2 map[string]struct{}) bool {
-	for k, _ := range m2 {
+	for k := range m2 {
 		_, e := m1[k]
 		if e {
 			return true
