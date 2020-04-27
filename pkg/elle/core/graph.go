@@ -200,18 +200,18 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 // search to downstream vertices from `out` edges
 func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 	queue := initV
-	V := []Vertex{}
+	vertices := []Vertex{}
 	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
 		haveVisited[vertex] = true
-		V = append(V, vertex)
+		vertices = append(vertices, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
 		if haveVisited[cur] == false {
 			haveVisited[cur] = true
-			V = append(V, cur)
+			vertices = append(vertices, cur)
 		}
 		queue = queue[1:]
 
@@ -222,25 +222,25 @@ func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 			queue = append(queue, next)
 		}
 	}
-	return V
+	return vertices
 }
 
 // BfsIn searches from a vertices set, returns all vertices searchable
 // search to upstream vertices from `in` edges
 func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 	queue := initV
-	V := []Vertex{}
+	vertices := []Vertex{}
 	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
 		haveVisited[vertex] = true
-		V = append(V, vertex)
+		vertices = append(vertices, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
 		if haveVisited[cur] == false {
 			haveVisited[cur] = true
-			V = append(V, cur)
+			vertices = append(vertices, cur)
 		}
 		queue = queue[1:]
 
@@ -251,7 +251,7 @@ func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 			queue = append(queue, next)
 		}
 	}
-	return V
+	return vertices
 }
 
 // Bfs searches from a vertices set, returns all vertices searchable
@@ -452,7 +452,7 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 		inScc[vertex] = true
 	}
 	queue := []Vertex{scc.Vertices[0]}
-	V := []Vertex{}
+	vertices := []Vertex{}
 	haveVisited := make(map[Vertex]bool)
 	haveVisited[queue[0]] = true
 	from := make(map[Vertex]Vertex)
@@ -462,9 +462,6 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 	for len(queue) > 0 {
 		cur := queue[0]
 		queue = queue[1:]
-		if flag == true {
-			break
-		}
 
 		for next, _ := range graph.Outs[cur] {
 			if inScc[next] != true {
@@ -481,21 +478,24 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 				queue = append(queue, next)
 			}
 		}
+		if flag == true {
+			break
+		}
 	}
 
 	now := first
 	for {
-		V = append(V, now)
+		vertices = append(vertices, now)
 		now = from[now]
 		if now == first {
 			break
 		}
 	}
-	V = append(V, first)
-	for i, j := 0, len(V)-1; i < j; i, j = i+1, j-1 {
-		V[i], V[j] = V[j], V[i]
+	vertices = append(vertices, first)
+	for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
+		vertices[i], vertices[j] = vertices[j], vertices[i]
 	}
-	return V
+	return vertices
 }
 
 // FindCycleStartingWith ...
@@ -508,7 +508,7 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 	for _, vertex := range scc.Vertices {
 		inScc[vertex] = true
 	}
-	V := []Vertex{}
+	vertices := []Vertex{}
 	for _, vertex := range scc.Vertices {
 		haveFound := false
 		queue := []Vertex{}
@@ -539,10 +539,6 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 		for len(queue) > 0 {
 			cur := queue[0]
 			queue = queue[1:]
-			if flag == true {
-				haveFound = true
-				break
-			}
 			for next, _ := range graph.Outs[cur] {
 				if inScc[next] != true {
 					continue
@@ -560,24 +556,28 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 					queue = append(queue, next)
 				}
 			}
+			if flag == true {
+				haveFound = true
+				break
+			}
 		}
 		if haveFound == true {
 			now := start
 			for {
-				V = append(V, now)
+				vertices = append(vertices, now)
 				now = from[now]
 				if now == start {
 					break
 				}
 			}
-			V = append(V, start)
-			for i, j := 0, len(V)-1; i < j; i, j = i+1, j-1 {
-				V[i], V[j] = V[j], V[i]
+			vertices = append(vertices, start)
+			for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
+				vertices[i], vertices[j] = vertices[j], vertices[i]
 			}
 			break
 		}
 	}
-	return V
+	return vertices
 }
 
 // FindCycleWith ...
