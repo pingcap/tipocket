@@ -256,6 +256,10 @@ func (c *Controller) RunSelfScheduled() {
 	}()
 
 	for i := 0; i < len(c.clients); i++ {
+		// truncate more clients
+		if i >= c.cfg.ClientCount {
+			break
+		}
 		client := c.clients[i]
 		g.Go(func() error {
 			log.Infof("run client %d...", i)
