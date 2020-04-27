@@ -42,6 +42,26 @@ func (a Anomalies) Merge(another Anomalies) {
 	}
 }
 
+// SelectKeys selects specified keys and return a new Anomalies
+func (a Anomalies) SelectKeys(anomalyNames map[string]struct{}) Anomalies {
+	anomalies := make(Anomalies)
+	for name := range anomalyNames {
+		if value, ok := a[name]; ok {
+			anomalies[name] = value
+		}
+	}
+	return anomalies
+}
+
+// Keys returns all keys of Anomalies
+func (a Anomalies) Keys() (keys []string) {
+	for key := range a {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return
+}
+
 // Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
 type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
