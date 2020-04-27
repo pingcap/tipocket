@@ -22,6 +22,9 @@ const (
 	RealtimeDepend  DependType = "realtime"
 	MonotonicDepend DependType = "monotonic"
 	ProcessDepend   DependType = "process"
+	WWDepend        DependType = "ww"
+	WRDepend        DependType = "wr"
+	RWDepend        DependType = "rw"
 
 	// CombineDepend is a special form of DependType
 	CombineDepend DependType = "combine"

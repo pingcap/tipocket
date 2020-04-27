@@ -1,70 +1,199 @@
 package list_append
 
 import (
+	"fmt"
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
+	"github.com/prometheus/common/log"
 )
 
-type appendIdx struct{}
-type writeIdx struct{}
-type readIdx struct{}
+// key -> [v0, v1, v2, v3...]
+type AppendIdx map[string][]core.MopValueType
 
-func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
+// key -> v -> Op
+type WriteIdx map[string]map[core.MopValueType]core.Op
+
+// key -> [Op1, Op2, Op3...]
+type ReadIdx map[string][]core.Op
+
+func preprocess(h core.History) (history core.History, appendIdx AppendIdx, writeIdx WriteIdx, readIdx ReadIdx) {
 	panic("impl me")
+}
+
+type wwExplainResult struct {
+	Key       string
+	PreValue  core.MopValueType
+	Value     core.MopValueType
+	AMopIndex int
+	bMopIndex int
+}
+
+func (w wwExplainResult) Type() core.DependType {
+	return core.WWDepend
 }
 
 // wwExplainer explains write-write dependencies
 type wwExplainer struct {
-	appendIdx
-	writeIdx
-	readIdx
+	AppendIdx
+	WriteIdx
+	ReadIdx
 }
 
-func (W *wwExplainer) ExplainPairData() interface{} {
-	panic("implement me")
+func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
+	for _, bmop := range *b.Value {
+		k := bmop.GetKey()
+		v := bmop.GetValue()
+		if bmop.IsAppend() {
+			prev := previousAppendedElement(w.AppendIdx, w.WriteIdx, b, bmop)
+			// if bmop is the first mop of append key k
+			if prev == nil {
+				continue
+			}
+			dep := wwMopDep(w.AppendIdx, w.WriteIdx, b, bmop)
+			// TODO(mahjonp): should panic if dep == nil?
+			if dep != nil && *dep == a {
+				return wwExplainResult{
+					Key:      k,
+					PreValue: prev,
+					Value:    v,
+					AMopIndex: a.IndexOfMop(core.Append{
+						Key:   k,
+						Value: v,
+					}),
+					bMopIndex: b.IndexOfMop(bmop),
+				}
+			}
+		}
+	}
+	return nil
 }
 
-func (W *wwExplainer) RenderExplanation() string {
-	panic("implement me")
+func (w *wwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
+	if result.Type() != core.WWDepend {
+		log.Fatalf("result type is not %s, type error", result.Type())
+	}
+	er := result.(wwExplainResult)
+	return fmt.Sprintf("%s appended %v after %s appended %v to %s",
+		b, er.PreValue, a, er.Value, er.Key,
+	)
 }
 
 // wwGraph analyzes write-write dependencies
-func wwGraph(history core.History) (core.Anomalies, core.DirectedGraph, core.DataExplainer) {
-	panic("implement me")
+func wwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	history, appendIdx, writeIdx, readIdx := preprocess(history)
+	g := core.NewDirectedGraph()
+
+	for _, op := range history {
+		for _, mop := range *op.Value {
+			if !mop.IsAppend() {
+				continue
+			}
+			dep := wwMopDep(appendIdx, writeIdx, op, mop)
+			if dep != nil {
+				g.Link(core.Vertex{Value: dep}, core.Vertex{Value: op}, core.WW)
+			}
+		}
+	}
+	return nil, g, &wwExplainer{
+		AppendIdx: appendIdx,
+		WriteIdx:  writeIdx,
+		ReadIdx:   readIdx,
+	}
+}
+
+type wrExplainResult struct {
+	Key       string
+	Value     core.MopValueType
+	AMopIndex int
+	bMopIndex int
+}
+
+func (w wrExplainResult) Type() core.DependType {
+	return core.WRDepend
 }
 
 // wrExplainer explains write-read dependencies
 type wrExplainer struct {
-	appendIdx
-	writeIdx
-	readIdx
+	AppendIdx
+	WriteIdx
+	ReadIdx
 }
 
-func (w *wrExplainer) ExplainPairData() interface{} {
-	panic("implement me")
+func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
+	for _, mop := range *b.Value {
+		k := mop.GetKey()
+		v := mop.GetValue().([]core.Mop)
+		if !mop.IsRead() {
+			continue
+		}
+		writer := wrMopDep(w.WriteIdx, b, mop)
+		if writer != nil && *writer == a {
+			return wrExplainResult{
+				Key:   k,
+				Value: v[0],
+				AMopIndex: a.IndexOfMop(core.Append{
+					Key:   k,
+					Value: v[0],
+				}),
+				bMopIndex: b.IndexOfMop(mop),
+			}
+		}
+	}
+	return nil
 }
 
-func (w *wrExplainer) RenderExplanation() string {
-	panic("implement me")
+func (w *wrExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
+	if result.Type() != core.WRDepend {
+		log.Fatalf("result type is not %s, type error", result.Type())
+	}
+	er := result.(wrExplainResult)
+	return fmt.Sprintf("%s observed %s's append of %v to key %s",
+		b, a, er.Value, er.Key,
+	)
 }
 
 // wrGraph analyzes write-read dependencies
-func wrGraph(history core.History) (core.Anomalies, core.DirectedGraph, core.DataExplainer) {
-	panic("implement me")
+func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	history, appendIdx, writeIdx, readIdx := preprocess(history)
+	g := core.NewDirectedGraph()
+	for _, op := range history {
+		for _, mop := range *op.Value {
+			if !mop.IsRead() {
+				continue
+			}
+			dep := wrMopDep(writeIdx, op, mop)
+			if dep != nil {
+				g.Link(core.Vertex{Value: dep}, core.Vertex{Value: op}, core.WR)
+			}
+		}
+	}
+	return nil, g, &wrExplainer{
+		AppendIdx: appendIdx,
+		WriteIdx:  writeIdx,
+		ReadIdx:   readIdx,
+	}
+}
+
+
+type rwExplainResult struct {
+}
+
+func (w rwExplainResult) Type() core.DependType {
+	return core.RWDepend
 }
 
 // rwExplainer explains read-write anti-dependencies
 type rwExplainer struct {
-	appendIdx
-	writeIdx
-	readIdx
+	AppendIdx
+	WriteIdx
+	ReadIdx
 }
 
-func (r *rwExplainer) ExplainPairData() interface{} {
+func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	panic("implement me")
 }
 
-func (r *rwExplainer) RenderExplanation() string {
+func (r *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
 	panic("implement me")
 }
 

@@ -67,15 +67,15 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	return anomalies
 }
 
-func writeIndex(history core.History) map[string]map[core.MopValueType]core.Op {
+func writeIndex(history core.History) WriteIdx {
 	panic("implement me")
 }
 
-func readIndex(history core.History) map[string][]core.Op {
+func readIndex(history core.History) ReadIdx {
 	panic("implement me")
 }
 
-func appendIndex(sortedValues map[string][][]core.MopValueType) map[string][]core.MopValueType {
+func appendIndex(sortedValues map[string][][]core.MopValueType) AppendIdx {
 	res := map[string][]core.MopValueType{}
 	for k, v := range sortedValues {
 		var current []core.MopValueType
@@ -170,10 +170,10 @@ func incompatibleOrders(sortedValues map[string][][]core.MopValueType) map[strin
 	anomalies := map[string][]core.MopValueType{}
 
 	for k, v := range sortedValues {
-		for index := 1; index < len(v) ; index++ {
-			if seqIsPrefix(v[index - 1], v[index]) {
+		for index := 1; index < len(v); index++ {
+			if seqIsPrefix(v[index-1], v[index]) {
 				anomalies[k] = []core.MopValueType{
-					v[index - 1], v[index],
+					v[index-1], v[index],
 				}
 			}
 		}
@@ -181,8 +181,6 @@ func incompatibleOrders(sortedValues map[string][][]core.MopValueType) map[strin
 
 	return anomalies
 }
-
-
 
 func min(a, b int) int {
 	if a > b {
@@ -195,6 +193,18 @@ func min(a, b int) int {
 //  a transaction made up of [f k v] micro-ops. Runs a reduction over every
 //  micro-op, where the reduction function is of the form (f state op [f k v]).
 //  Saves you having to do endless nested reduces.
-func reduceMops()  {
-	
+func reduceMops() {
+
+}
+
+func wwMopDep(appendIdx AppendIdx, writeIdx WriteIdx, op core.Op, mop core.Mop) *core.Op {
+	panic("impl")
+}
+
+func wrMopDep(writeIdx WriteIdx, op core.Op, mop core.Mop) *core.Op {
+	panic("impl")
+}
+
+func previousAppendedElement(appendIdx AppendIdx, writeIdx WriteIdx, op core.Op, mop core.Mop) core.MopValueType {
+	panic("impl")
 }

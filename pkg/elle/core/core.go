@@ -67,6 +67,16 @@ type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
 type PathType = Op
 
+// IndexOfMop returns the index of mop in op
+func (op PathType) IndexOfMop(mop Mop) int {
+	for idx, m := range *op.Value {
+		if m == mop {
+			return idx
+		}
+	}
+	return -1
+}
+
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
 	Path []PathType
