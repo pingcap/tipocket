@@ -5,13 +5,19 @@ import (
 )
 
 type Opts struct {
+	// define what specific anomalies and consistency models to look for
+	ConsistencyModels []core.ConsistencyModelName
+	Anomalies         []string
 }
 
 type CheckResult struct {
+	// valid? true | :unknown | false
+	IsUnknown        bool
 	Valid            bool
 	AnomalyTypes     []string
 	Anomalies        core.Anomalies
 	ImpossibleModels []interface{}
+	Not, AlsoNot     []string
 }
 
 // Takes an options map, including a collection of expected consistency models

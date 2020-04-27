@@ -107,8 +107,28 @@ func mustAtoi(s string) int {
 	return n
 }
 
-func ResultMap() {
-	panic("implement me")
+// ResultMap takes opts and processes anomalies
+func ResultMap(opts Opts, anomalies core.Anomalies) CheckResult {
+	bad := anomalies.SelectKeys(prohibitedAnomalyTypes(opts.ConsistencyModels, opts.Anomalies))
+	reportable := anomalies.SelectKeys(reportableAnomalyTypes(opts.ConsistencyModels, opts.Anomalies))
+
+	if len(reportable) == 0 {
+		return CheckResult{
+			Valid: true,
+		}
+	}
+	cr := CheckResult{}
+	if len(bad) != 0 {
+		cr.Valid = false
+	} else if len(reportable) != 0 {
+		cr.IsUnknown = true
+	} else {
+		cr.Valid = true
+	}
+	cr.AnomalyTypes = reportable.Keys()
+	cr.Anomalies = reportable
+	cr.Not, cr.AlsoNot = core.FriendlyBoundary(anomalies.Keys())
+	return cr
 }
 
 // Note: maybe cache this function is better?
