@@ -11,15 +11,15 @@ import (
 )
 
 // key -> [v0, v1, v2, v3...]
-type AppendIdx map[string][]core.MopValueType
+type appendIdx map[string][]core.MopValueType
 
 // key -> v -> Op
-type WriteIdx map[string]map[core.MopValueType]core.Op
+type writeIdx map[string]map[core.MopValueType]core.Op
 
 // key -> [Op1, Op2, Op3...]
-type ReadIdx map[string][]core.Op
+type readIdx map[string][]core.Op
 
-func preprocess(h core.History) (history core.History, appendIdx AppendIdx, writeIdx WriteIdx, readIdx ReadIdx) {
+func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
 	panic("impl me")
 }
 
@@ -28,7 +28,7 @@ type wwExplainResult struct {
 	PreValue  core.MopValueType
 	Value     core.MopValueType
 	AMopIndex int
-	bMopIndex int
+	BMopIndex int
 }
 
 func (w wwExplainResult) Type() core.DependType {
@@ -37,9 +37,9 @@ func (w wwExplainResult) Type() core.DependType {
 
 // wwExplainer explains write-write dependencies
 type wwExplainer struct {
-	AppendIdx
-	WriteIdx
-	ReadIdx
+	appendIdx
+	writeIdx
+	readIdx
 }
 
 func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
@@ -47,12 +47,12 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		k := bmop.GetKey()
 		v := bmop.GetValue()
 		if bmop.IsAppend() {
-			prev := previousAppendedElement(w.AppendIdx, w.WriteIdx, b, bmop)
+			prev := previousAppendedElement(w.appendIdx, w.writeIdx, b, bmop)
 			// if bmop is the first mop of append key k
 			if prev == nil {
 				continue
 			}
-			dep := wwMopDep(w.AppendIdx, w.WriteIdx, b, bmop)
+			dep := wwMopDep(w.appendIdx, w.writeIdx, b, bmop)
 			// TODO(mahjonp): should panic if dep == nil?
 			if dep != nil && *dep == a {
 				return wwExplainResult{
@@ -63,7 +63,7 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 						Key:   k,
 						Value: v,
 					}),
-					bMopIndex: b.IndexOfMop(bmop),
+					BMopIndex: b.IndexOfMop(bmop),
 				}
 			}
 		}
@@ -73,11 +73,11 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 
 func (w *wwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
 	if result.Type() != core.WWDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", core.WWDepend)
 	}
 	er := result.(wwExplainResult)
 	return fmt.Sprintf("%s appended %v after %s appended %v to %s",
-		b, er.PreValue, a, er.Value, er.Key,
+		b, er.Value, a, er.PreValue, er.Key,
 	)
 }
 
@@ -98,9 +98,9 @@ func wwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 		}
 	}
 	return nil, g, &wwExplainer{
-		AppendIdx: appendIdx,
-		WriteIdx:  writeIdx,
-		ReadIdx:   readIdx,
+		appendIdx: appendIdx,
+		writeIdx:  writeIdx,
+		readIdx:   readIdx,
 	}
 }
 
@@ -108,7 +108,7 @@ type wrExplainResult struct {
 	Key       string
 	Value     core.MopValueType
 	AMopIndex int
-	bMopIndex int
+	BMopIndex int
 }
 
 func (w wrExplainResult) Type() core.DependType {
@@ -117,9 +117,9 @@ func (w wrExplainResult) Type() core.DependType {
 
 // wrExplainer explains write-read dependencies
 type wrExplainer struct {
-	AppendIdx
-	WriteIdx
-	ReadIdx
+	appendIdx
+	writeIdx
+	readIdx
 }
 
 func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
@@ -129,7 +129,7 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		if !mop.IsRead() {
 			continue
 		}
-		writer := wrMopDep(w.WriteIdx, b, mop)
+		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
 			return wrExplainResult{
 				Key:   k,
@@ -138,7 +138,7 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 					Key:   k,
 					Value: v[0],
 				}),
-				bMopIndex: b.IndexOfMop(mop),
+				BMopIndex: b.IndexOfMop(mop),
 			}
 		}
 	}
@@ -147,7 +147,7 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 
 func (w *wrExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
 	if result.Type() != core.WRDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", core.WRDepend)
 	}
 	er := result.(wrExplainResult)
 	return fmt.Sprintf("%s observed %s's append of %v to key %s",
@@ -171,13 +171,18 @@ func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 		}
 	}
 	return nil, g, &wrExplainer{
-		AppendIdx: appendIdx,
-		WriteIdx:  writeIdx,
-		ReadIdx:   readIdx,
+		appendIdx: appendIdx,
+		writeIdx:  writeIdx,
+		readIdx:   readIdx,
 	}
 }
 
 type rwExplainResult struct {
+	Key       string
+	PreValue  core.MopValueType
+	Value     core.MopValueType
+	AMopIndex int
+	BMopIndex int
 }
 
 func (w rwExplainResult) Type() core.DependType {
@@ -186,26 +191,90 @@ func (w rwExplainResult) Type() core.DependType {
 
 // rwExplainer explains read-write anti-dependencies
 type rwExplainer struct {
-	AppendIdx
-	WriteIdx
-	ReadIdx
+	appendIdx
+	writeIdx
+	readIdx
 }
 
 func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
-	panic("implement me")
+	for i, mop := range *b.Value {
+		k := mop.GetKey()
+		v := mop.GetValue()
+		if !mop.IsAppend() {
+			continue
+		}
+		readers := rwMopDeps(r.appendIdx, r.writeIdx, r.readIdx, b, mop)
+		if _, ok := readers[a]; ok {
+			prev := previousAppendedElement(r.appendIdx, r.writeIdx, b, mop)
+			ai := -1
+			for i, aMop := range *a.Value {
+				if aMop.IsRead() && aMop.GetKey() == k {
+					vs := aMop.GetValue().([]int)
+					if prev == nil && len(vs) == 0 {
+						ai = i
+						break
+					}
+					if prev != nil && len(vs) != 0 && vs[len(vs)-1] == prev {
+						ai = i
+						break
+					}
+				}
+			}
+			return rwExplainResult{
+				Key:       k,
+				PreValue:  prev,
+				Value:     v,
+				AMopIndex: ai,
+				BMopIndex: i,
+			}
+		}
+	}
+	return nil
 }
 
 func (r *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
-	panic("implement me")
+	if result.Type() != core.RWDepend {
+		log.Fatalf("result type is not %s, type error", core.RWDepend)
+	}
+	er := result.(rwExplainResult)
+	key, prev, value := er.Key, er.PreValue, er.Value
+	if prev == nil {
+		return fmt.Sprintf("%s observed the initial (nil) state of %s, which %s created by appending %v",
+			a, key, b, value,
+		)
+	}
+	return fmt.Sprintf("%s did not observe %s's append of %v to %s",
+		a, b, value, key,
+	)
 }
 
 // rwGraph analyzes read-write anti-dependencies
-func rwGraph(history core.History) (core.Anomalies, core.DirectedGraph, core.DataExplainer) {
-	panic("implement me")
+func rwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	history, appendIdx, writeIdx, readIdx := preprocess(history)
+	g := core.NewDirectedGraph()
+
+	for _, op := range history {
+		for _, mop := range *op.Value {
+			if mop.IsAppend() {
+				deps := rwMopDeps(appendIdx, writeIdx, readIdx, op, mop)
+				var vdeps []core.Vertex
+				for dep := range deps {
+					vdeps = append(vdeps, core.Vertex{Value: dep})
+				}
+				g.LinkAllTo(vdeps, core.Vertex{Value: op}, core.RW)
+			}
+		}
+	}
+
+	return nil, g, &rwExplainer{
+		appendIdx: appendIdx,
+		writeIdx:  writeIdx,
+		readIdx:   readIdx,
+	}
 }
 
 // graph combines wwGraph, wrGraph and rwGraph
-func graph(history core.History) (core.Anomalies, core.DirectedGraph, core.DataExplainer) {
+func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	panic("implement me")
 }
 

@@ -102,7 +102,7 @@ func readIndex(history core.History) map[string][]core.Op {
 	return indexRead
 }
 
-func appendIndex(sortedValues map[string][][]core.MopValueType) AppendIdx {
+func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 	res := map[string][]core.MopValueType{}
 	for k, v := range sortedValues {
 		var current []core.MopValueType
@@ -216,14 +216,18 @@ func min(a, b int) int {
 	return a
 }
 
-func wwMopDep(appendIdx AppendIdx, writeIdx WriteIdx, op core.Op, mop core.Mop) *core.Op {
+func wwMopDep(appendIdx appendIdx, writeIdx writeIdx, op core.Op, mop core.Mop) *core.Op {
 	panic("impl")
 }
 
-func wrMopDep(writeIdx WriteIdx, op core.Op, mop core.Mop) *core.Op {
+func wrMopDep(writeIdx writeIdx, op core.Op, mop core.Mop) *core.Op {
 	panic("impl")
 }
 
-func previousAppendedElement(appendIdx AppendIdx, writeIdx WriteIdx, op core.Op, mop core.Mop) core.MopValueType {
+func rwMopDeps(appendRes appendIdx, writeRes writeIdx, readRes readIdx, op core.Op, mop core.Mop) map[core.Op]struct{} {
+	panic("impl")
+}
+
+func previousAppendedElement(appendIdx appendIdx, writeIdx writeIdx, op core.Op, mop core.Mop) core.MopValueType {
 	panic("impl")
 }

@@ -65,7 +65,7 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 // RenderExplanation render explanation result
 func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
 	if result.Type() != CombineDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", CombineDepend)
 	}
 	er := result.(CombineExplainResult)
 	return er.ex.RenderExplanation(er.er, p1, p2)
@@ -118,7 +118,7 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 // RenderExplanation render explanation
 func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
 	if result.Type() != ProcessDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", ProcessDepend)
 	}
 	res := result.(ProcessDependent)
 	return fmt.Sprintf("process %d excuted %s before %s", res.Process, preName, postName)
@@ -144,7 +144,7 @@ func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResu
 
 func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
 	if result.Type() != RealtimeDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", RealtimeDepend)
 	}
 	res := result.(RealtimeDependent)
 	s := fmt.Sprintf("%s complete at index %d, ", preName, res.postStart.Index)
