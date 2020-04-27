@@ -2,9 +2,12 @@ package list_append
 
 import (
 	"fmt"
+
+	"github.com/ngaut/log"
+	"go.uber.org/zap"
+
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
-	"github.com/prometheus/common/log"
 )
 
 // key -> [v0, v1, v2, v3...]
@@ -173,7 +176,6 @@ func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 		ReadIdx:   readIdx,
 	}
 }
-
 
 type rwExplainResult struct {
 }
@@ -354,11 +356,90 @@ func internalCases(history core.History) GCaseTp {
 	return tp
 }
 
+func makeStateTuple(s1, s2 core.OpType) string {
+	return fmt.Sprintf("%s__%s", s1, s2)
+}
+
 func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history core.History) GCaseTp {
 	wi := writeIndex(history)
-	for k, v := range appendIndexResult {
-		panic("implement me")
+
+	var cases []GCase
+
+	for key, valueHistory := range appendIndexResult {
+		var currentMayAnomalyValues []core.MopValueType
+		currentOp := core.Op{Type: core.OpTypeOk}
+		keyWriter, e := wi[key]
+		if !e {
+			log.Warn("The key doesn't has any writer, the code may has bug", zap.String("key", key))
+			continue
+		}
+		for _, v := range valueHistory {
+			currentMayAnomalyValues = append(currentMayAnomalyValues, v)
+			writer, e := keyWriter[v]
+			if !e {
+				// value doesn't has any writer
+				log.Warn("The value doesn't has any writer, the code may has bug", zap.String("key", key))
+				continue
+			}
+
+			switchCurrentState := func() {
+				currentOp = writer
+				currentMayAnomalyValues = []core.MopValueType{v}
+			}
+
+			// do nothing
+			switchWriterState := func() {}
+
+			switch makeStateTuple(currentOp.Type, writer.Type) {
+			case makeStateTuple(core.OpTypeOk, core.OpTypeOk):
+				switchCurrentState()
+			case makeStateTuple(core.OpTypeInfo, core.OpTypeOk):
+				switchCurrentState()
+			case makeStateTuple(core.OpTypeFail, core.OpTypeOk):
+				// Find a bug!
+				// TODO: adding type for it
+				switchCurrentState()
+				cases = append(cases, GCase{})
+			case makeStateTuple(core.OpTypeOk, core.OpTypeInfo):
+				switchWriterState()
+			case makeStateTuple(core.OpTypeInfo, core.OpTypeInfo):
+				switchWriterState()
+			case makeStateTuple(core.OpTypeFail, core.OpTypeInfo):
+				switchWriterState()
+			case makeStateTuple(core.OpTypeOk, core.OpTypeFail):
+				switchCurrentState()
+			case makeStateTuple(core.OpTypeInfo, core.OpTypeFail):
+				switchCurrentState()
+			case makeStateTuple(core.OpTypeFail, core.OpTypeFail):
+				switchWriterState()
+			}
+
+			//if currentOp.Type == core.OpTypeFail {
+			//	if writer.Type == core.OpTypeInfo || writer.Type == core.OpTypeFail {
+			//		// why writer will have :info, I don't know :(
+			//		continue
+			//	}
+			//	if writer.Type == core.OpTypeOk {
+			//		// Yes, we found a bug.
+			//		// TODO: change the case type.
+			//		cases = append(cases, GCase{
+			//
+			//		})
+			//		currentMayAnomalyValues = []core.MopValueType{v}
+			//		currentOp = writer
+			//	}
+			//} else if currentOp.Type == core.OpTypeInfo {
+			//	if writer.Type == core.OpTypeInfo {
+			//		continue
+			//	} else {
+			//		currentOp = writer
+			//
+			//	}
+			//}
+		}
 	}
+
+	return cases
 }
 
 // Check checks append and read history for list_append

@@ -67,12 +67,39 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	return anomalies
 }
 
-func writeIndex(history core.History) WriteIdx {
-	panic("implement me")
+func writeIndex(history core.History) map[string]map[core.MopValueType]core.Op {
+	indexMap := map[string]map[core.MopValueType]core.Op{}
+	for _, op := range history {
+		if op.Value == nil {
+			continue
+		}
+		for _, mop := range *op.Value {
+			if mop.IsAppend() {
+				innerMap, e := indexMap[mop.GetKey()]
+				if !e {
+					indexMap[mop.GetKey()] = map[core.MopValueType]core.Op{}
+					innerMap = indexMap[mop.GetKey()]
+				}
+				innerMap[mop.GetKey()] = op
+			}
+		}
+	}
+	return indexMap
 }
 
-func readIndex(history core.History) ReadIdx {
-	panic("implement me")
+func readIndex(history core.History) map[string][]core.Op {
+	indexRead := map[string][]core.Op{}
+	for _, op := range history {
+		if op.Value == nil {
+			continue
+		}
+		for _, mop := range *op.Value {
+			if mop.IsRead() && mop.GetValue() != nil {
+				indexRead[mop.GetKey()] = append(indexRead[mop.GetKey()], op)
+			}
+		}
+	}
+	return indexRead
 }
 
 func appendIndex(sortedValues map[string][][]core.MopValueType) AppendIdx {
@@ -187,14 +214,6 @@ func min(a, b int) int {
 		return b
 	}
 	return a
-}
-
-// Takes a history of operations, where each operation op has a :value which is
-//  a transaction made up of [f k v] micro-ops. Runs a reduction over every
-//  micro-op, where the reduction function is of the form (f state op [f k v]).
-//  Saves you having to do endless nested reduces.
-func reduceMops() {
-
 }
 
 func wwMopDep(appendIdx AppendIdx, writeIdx WriteIdx, op core.Op, mop core.Mop) *core.Op {
