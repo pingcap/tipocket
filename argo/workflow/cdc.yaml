@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-cdc
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -39,16 +38,6 @@ spec:
       - name: abtest_concurrency
         value: "3"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-cdc
       steps:
         - - name: call-tipocket-cdc

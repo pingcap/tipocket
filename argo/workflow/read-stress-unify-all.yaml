@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-read-stress
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -29,16 +28,6 @@ spec:
       - name: loki-password
         value: admin
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: tipocket-read-stress
     - name: call-tipocket-read-stress
       steps:
         - - name: call-tipocket-read-stress
