@@ -231,3 +231,17 @@ func rwMopDeps(appendRes appendIdx, writeRes writeIdx, readRes readIdx, op core.
 func previousAppendedElement(appendIdx appendIdx, writeIdx writeIdx, op core.Op, mop core.Mop) core.MopValueType {
 	panic("impl")
 }
+
+func preProcessHistory(history core.History) core.History {
+	panic("impl")
+}
+
+func filterOkOrInfoHistory(history core.History) core.History {
+	var h core.History
+	for _, op := range history {
+		if op.Type == core.OpTypeOk || op.Type == core.OpTypeInfo {
+			h = append(h, op)
+		}
+	}
+	return h
+}

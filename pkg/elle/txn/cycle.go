@@ -158,25 +158,18 @@ func NonadjacentRW(n int, lastIsRw bool, rel core.Rel) (bool, int, bool) {
 	}
 }
 
-type AdditionalGraphOption struct {
-	ConsistencyModels []core.ConsistencyModelName
-	Anomalies         []string
-}
-
-type GraphFunc = func(core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer)
-
 // AdditionalGraphs determines what additional graphs we'll need to consider for this analysis.
-func AdditionalGraphs(opts AdditionalGraphOption, additionalGraphs []GraphFunc) []GraphFunc {
+func AdditionalGraphs(opts Opts) []core.Analyzer {
 	ats := reportableAnomalyTypes(opts.ConsistencyModels, opts.Anomalies)
-	var graphFn GraphFunc
+	var graphFn core.Analyzer
 	if hasIntersection(ats, RealtimeAnalysisTypes) {
 		graphFn = core.RealtimeGraph
 	} else if hasIntersection(ats, ProcessAnalysisTypes) {
 		graphFn = core.ProcessGraph
 	} else {
-		return additionalGraphs
+		return opts.additionalGraphs
 	}
-	return append(additionalGraphs, graphFn)
+	return append(opts.additionalGraphs, graphFn)
 }
 
 // Anomalies worth reporting on, even if they don't cause the test to fail.

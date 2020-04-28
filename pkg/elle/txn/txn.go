@@ -8,6 +8,7 @@ type Opts struct {
 	// define what specific anomalies and consistency models to look for
 	ConsistencyModels []core.ConsistencyModelName
 	Anomalies         []string
+	additionalGraphs  []core.Analyzer
 }
 
 type CheckResult struct {

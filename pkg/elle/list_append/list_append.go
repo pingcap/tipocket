@@ -275,7 +275,7 @@ func rwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 
 // graph combines wwGraph, wrGraph and rwGraph
 func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
-	panic("implement me")
+	return core.Combine(wwGraph, wrGraph, rwGraph)(history)
 }
 
 type GCase struct {
@@ -513,5 +513,40 @@ func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history 
 
 // Check checks append and read history for list_append
 func Check(opts txn.Opts, history core.History) txn.CheckResult {
-	panic("implement me")
+	history = preProcessHistory(history)
+	g1a := g1aCases(history)
+	g1b := g1bCases(history)
+	internal := internalCases(history)
+	dirtyUpdate := dirtyUpdateCases(appendIndex(sortedValues(history)), history)
+	historyOKOrInfo := filterOkOrInfoHistory(history)
+	dups := duplicates(historyOKOrInfo)
+	sortedValues := sortedValues(historyOKOrInfo)
+	incmpOrder := incompatibleOrders(sortedValues)
+	var analyzer core.Analyzer = graph
+	additionalGraphs := txn.AdditionalGraphs(opts)
+	if len(additionalGraphs) != 0 {
+		analyzer = core.Combine(append([]core.Analyzer{analyzer}, additionalGraphs...)...)
+	}
+
+	checkResult := txn.Cycles(analyzer, history)
+	anomalies := checkResult.Anomalies
+	if len(dups) != 0 {
+		anomalies["duplicate-elements"] = dups
+	}
+	if len(incmpOrder) != 0 {
+		anomalies["incompatible-order"] = dups
+	}
+	if len(internal) != 0 {
+		anomalies["internal"] = dups
+	}
+	if len(dirtyUpdate) != 0 {
+		anomalies["dirty-update"] = dups
+	}
+	if len(g1a) != 0 {
+		anomalies["G1a"] = dups
+	}
+	if len(g1b) != 0 {
+		anomalies["G1b"] = dups
+	}
+	return txn.ResultMap(opts, anomalies)
 }
