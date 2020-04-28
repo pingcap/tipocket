@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-block-writer
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -19,16 +18,6 @@ spec:
       - name: run_time
         value: "60m"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-block-writer
       steps:
         - - name: call-tipocket-block-writer

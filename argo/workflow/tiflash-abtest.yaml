@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-tiflash-abtest
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -39,16 +38,6 @@ spec:
       - name: tiflash_replicas
         value: 2
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-tiflash-abtest
       steps:
         - - name: call-tipocket-tiflash-abtest
