@@ -280,7 +280,7 @@ func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Data
 
 type GCase struct {
 	Operation core.Op
-	Mop       *core.Mop
+	Mop       core.Mop
 
 	Writer  core.Op
 	Element core.MopValueType
@@ -292,27 +292,27 @@ type GCaseTp []GCase
 
 type G1aConflict struct {
 	Op      core.Op
-	Mop     *core.Mop
+	Mop     core.Mop
 	Writer  core.Op
 	Element core.MopValueType
 }
 
 func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
-	okHistory := okHistoryFilter(history)
+	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
 	var excepted []GCase
 	for iter.HasNext() {
 		op, mop := iter.Next()
-		if (*mop).IsRead() {
-			versionMap := failed[(*mop).GetKey()]
-			v := (*mop).GetValue().(int)
+		if mop.IsRead() {
+			versionMap := failed[mop.GetKey()]
+			v := mop.GetValue().(int)
 			writer := versionMap[v]
 			excepted = append(excepted, GCase{
 				Operation: *op,
 				Mop:       mop,
 				Writer:    *writer,
-				Element:   (*mop).GetValue(),
+				Element:   mop.GetValue(),
 			})
 		}
 	}
@@ -324,32 +324,24 @@ func g1aCases(history core.History) GCaseTp {
 //  T1's final update to k
 func g1bCases(history core.History) GCaseTp {
 	inter := txn.IntermediateWrites(history)
-	okHistory := okHistoryFilter(history)
+	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
 	var excepted []GCase
 	for iter.HasNext() {
 		op, mop := iter.Next()
-		if (*mop).IsRead() {
-			versionMap := inter[(*mop).GetKey()]
-			v := (*mop).GetValue().(int)
+		if mop.IsRead() {
+			versionMap := inter[mop.GetKey()]
+			v := mop.GetValue().(int)
 			writer := versionMap[v]
 			excepted = append(excepted, GCase{
 				Operation: *op,
 				Mop:       mop,
 				Writer:    *writer,
-				Element:   (*mop).GetValue(),
+				Element:   mop.GetValue(),
 			})
 		}
 	}
 	return excepted
-}
-
-func okHistoryFilter(history core.History) core.History {
-	var okHistory []core.Op
-	for _, v := range history {
-		okHistory = append(okHistory, v)
-	}
-	return okHistory
 }
 
 const InternalMagicNumber = -114514
@@ -376,7 +368,7 @@ func opInternalCases(op core.Op) *GCase {
 				if seqDelta < 0 {
 					return &GCase{
 						Operation: op,
-						Mop:       &v,
+						Mop:       v,
 						Expected:  previousData,
 					}
 				} else {
@@ -387,7 +379,7 @@ func opInternalCases(op core.Op) *GCase {
 				if previousData[i+1].(int) != indexV {
 					return &GCase{
 						Operation: op,
-						Mop:       &v,
+						Mop:       v,
 						Expected:  previousData,
 					}
 				}
@@ -416,7 +408,8 @@ func opInternalCases(op core.Op) *GCase {
 //                  like [1 2 3] or a postfix like ['... 3]}"
 func internalCases(history core.History) GCaseTp {
 	var tp GCaseTp
-	for _, op := range history {
+	okHistory := filterOkHistory(history)
+	for _, op := range okHistory {
 		res := opInternalCases(op)
 		if res != nil {
 			tp = append(tp, *res)
@@ -431,7 +424,6 @@ func makeStateTuple(s1, s2 core.OpType) string {
 
 func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history core.History) GCaseTp {
 	wi := writeIndex(history)
-
 	var cases []GCase
 
 	for key, valueHistory := range appendIndexResult {

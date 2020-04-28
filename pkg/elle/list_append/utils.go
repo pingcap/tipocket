@@ -53,13 +53,13 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	anomalies := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if (*mop).IsRead() {
-			reads := (*mop).GetValue().([]core.MopValueType)
+		if mop.IsRead() {
+			reads := mop.GetValue().([]core.MopValueType)
 			readCnt := map[core.MopValueType]int{}
 			for _, v := range reads {
 				readCnt[v] = readCnt[v] + 1
 				if readCnt[v] == 2 {
-					anomalies[(*mop).GetKey()] = append(anomalies[(*mop).GetKey()], reads)
+					anomalies[mop.GetKey()] = append(anomalies[mop.GetKey()], reads)
 				}
 			}
 		}
@@ -138,11 +138,11 @@ func valuesFromSingleAppend(history core.History) map[string]core.MopValueType {
 	iter := txn.OpMops(history)
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if (*mop).IsAppend() {
-			k, _ := temp[(*mop).GetKey()]
+		if mop.IsAppend() {
+			k, _ := temp[mop.GetKey()]
 			// We can append, but for economize the memory, at most 2 value will be record.
 			if len(k) < 2 {
-				temp[(*mop).GetKey()] = append(k, (*mop).GetValue())
+				temp[mop.GetKey()] = append(k, mop.GetValue())
 			}
 		}
 	}
@@ -165,11 +165,11 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 	keyMaps := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if !(*mop).IsRead() {
+		if !mop.IsRead() {
 			continue
 		}
-		values := (*mop).GetValue().([]core.MopValueType)
-		keyMaps[(*mop).GetKey()] = append(keyMaps[(*mop).GetKey()], values)
+		values := mop.GetValue().([]core.MopValueType)
+		keyMaps[mop.GetKey()] = append(keyMaps[mop.GetKey()], values)
 	}
 
 	singleAppends := valuesFromSingleAppend(history)
@@ -241,6 +241,16 @@ func filterOkOrInfoHistory(history core.History) core.History {
 	for _, op := range history {
 		if op.Type == core.OpTypeOk || op.Type == core.OpTypeInfo {
 			h = append(h, op)
+		}
+	}
+	return h
+}
+
+func filterOkHistory(history core.History) core.History {
+	var h core.History
+	for _, v := range history {
+		if v.Type == core.OpTypeOk {
+			h = append(h, v)
 		}
 	}
 	return h
