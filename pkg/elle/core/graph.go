@@ -2,6 +2,8 @@ package core
 
 import (
 	"github.com/mohae/deepcopy"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Edge is a intermediate representation of edge on DirectedGraph
@@ -110,7 +112,7 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	}
 
 	//if _, ok := g.Outs[v][succ]; ok == false {
-	//	g.Ins[succ] = append(g.Ins[succ], v)
+	//  g.Ins[succ] = append(g.Ins[succ], v)
 	//}
 	g.Ins[succ] = append(g.Ins[succ], v)
 }
@@ -130,8 +132,12 @@ func (g *DirectedGraph) LinkAllTo(xs []Vertex, y Vertex, rel Rel) {
 }
 
 // LinkAllToAll links all xs to ys
-func (g *DirectedGraph) LinkAllToAll(xs []Vertex, ys []Vertex) {
-	panic("impl me")
+func (g *DirectedGraph) LinkAllToAll(xs []Vertex, ys []Vertex, rel Rel) {
+	for _, x := range xs {
+		for _, y := range ys {
+			g.Link(x, y, rel)
+		}
+	}
 }
 
 func (g *DirectedGraph) UnLink(a, b Vertex) {
@@ -194,18 +200,18 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 // search to downstream vertices from `out` edges
 func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 	queue := initV
-	V := []Vertex{}
+	vertices := []Vertex{}
 	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
 		haveVisited[vertex] = true
-		V = append(V, vertex)
+		vertices = append(vertices, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
 		if haveVisited[cur] == false {
 			haveVisited[cur] = true
-			V = append(V, cur)
+			vertices = append(vertices, cur)
 		}
 		queue = queue[1:]
 
@@ -216,25 +222,25 @@ func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 			queue = append(queue, next)
 		}
 	}
-	return V
+	return vertices
 }
 
 // BfsIn searches from a vertices set, returns all vertices searchable
 // search to upstream vertices from `in` edges
 func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 	queue := initV
-	V := []Vertex{}
+	vertices := []Vertex{}
 	haveVisited := make(map[Vertex]bool)
 	for _, vertex := range initV {
 		haveVisited[vertex] = true
-		V = append(V, vertex)
+		vertices = append(vertices, vertex)
 	}
 
 	for len(queue) > 0 {
 		cur := queue[0]
 		if haveVisited[cur] == false {
 			haveVisited[cur] = true
-			V = append(V, cur)
+			vertices = append(vertices, cur)
 		}
 		queue = queue[1:]
 
@@ -245,7 +251,7 @@ func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 			queue = append(queue, next)
 		}
 	}
-	return V
+	return vertices
 }
 
 // Bfs searches from a vertices set, returns all vertices searchable
@@ -413,13 +419,14 @@ func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
 }
 
 // DigraphUnion takes the union of n graphs, merging edges with union
-func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
+func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
 	dg := NewDirectedGraph()
 	for _, g := range graphs {
 		vertices := g.Vertices()
 		for _, x := range vertices {
 			for y, rels := range g.Outs[x] {
 				for _, rel := range rels {
+					log.Infof("Link %v, %v, %s", x, y, string(rel))
 					dg.Link(x, y, rel)
 				}
 			}
@@ -435,13 +442,142 @@ type Transition interface{}
 type Predicate interface{}
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
-func FindCycle(graph DirectedGraph, scc SCC) Circle {
-	panic("impl me")
+// TODO: find the shortest cycle
+func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	inScc := make(map[Vertex]bool)
+	for _, vertex := range scc.Vertices {
+		inScc[vertex] = true
+	}
+	queue := []Vertex{scc.Vertices[0]}
+	vertices := []Vertex{}
+	haveVisited := make(map[Vertex]bool)
+	haveVisited[queue[0]] = true
+	from := make(map[Vertex]Vertex)
+	var first Vertex
+	flag := false
+
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+
+		for next, _ := range graph.Outs[cur] {
+			if inScc[next] != true {
+				continue
+			}
+			if haveVisited[next] == true {
+				flag = true
+				first = next
+				from[next] = cur
+				break
+			} else {
+				haveVisited[next] = true
+				from[next] = cur
+				queue = append(queue, next)
+			}
+		}
+		if flag == true {
+			break
+		}
+	}
+
+	now := first
+	for {
+		vertices = append(vertices, now)
+		now = from[now]
+		if now == first {
+			break
+		}
+	}
+	vertices = append(vertices, first)
+	for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
+		vertices[i], vertices[j] = vertices[j], vertices[i]
+	}
+	return vertices
 }
 
 // FindCycleStartingWith ...
-func FindCycleStartingWith(initialGraph, remainingGraph DirectedGraph, scc SCC) Circle {
-	panic("impl me")
+// TODO: find the shortest cycle
+func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	inScc := make(map[Vertex]bool)
+	for _, vertex := range scc.Vertices {
+		inScc[vertex] = true
+	}
+	vertices := []Vertex{}
+	for _, vertex := range scc.Vertices {
+		haveFound := false
+		queue := []Vertex{}
+		haveVisited := make(map[Vertex]bool)
+		start := vertex
+		haveVisited[start] = true
+		from := make(map[Vertex]Vertex)
+
+		for next, rels := range graph.Outs[start] {
+			if inScc[next] != true {
+				continue
+			}
+			haveRel := false
+			for _, r := range rels {
+				if r == rel {
+					haveRel = true
+				}
+			}
+			if haveRel == false {
+				continue
+			} else {
+				queue = append(queue, next)
+				haveVisited[next] = true
+				from[next] = start
+			}
+		}
+		flag := false
+		for len(queue) > 0 {
+			cur := queue[0]
+			queue = queue[1:]
+			for next, _ := range graph.Outs[cur] {
+				if inScc[next] != true {
+					continue
+				}
+				if haveVisited[next] == true {
+					if next == start {
+						flag = true
+						haveFound = true
+						from[next] = cur
+						break
+					}
+				} else {
+					haveVisited[next] = true
+					from[next] = cur
+					queue = append(queue, next)
+				}
+			}
+			if flag == true {
+				haveFound = true
+				break
+			}
+		}
+		if haveFound == true {
+			now := start
+			for {
+				vertices = append(vertices, now)
+				now = from[now]
+				if now == start {
+					break
+				}
+			}
+			vertices = append(vertices, start)
+			for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
+				vertices[i], vertices[j] = vertices[j], vertices[i]
+			}
+			break
+		}
+	}
+	return vertices
 }
 
 // FindCycleWith ...

@@ -24,6 +24,7 @@ require (
 	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
 	go.uber.org/zap v1.14.0
