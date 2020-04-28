@@ -210,7 +210,7 @@ func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op
 	if previousElement == nil {
 		return nil
 	}
-	writerMap, e := writeIndexResult[(*mop).GetKey()]
+	writerMap, e := writeIndexResult[mop.GetKey()]
 	// It must exists, otherwise the algorithm of writeIndex is error.
 	if !e {
 		return nil
@@ -236,7 +236,7 @@ func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndex
 	}
 	mopDeps := map[core.Op]struct{}{}
 	// Note: if previousElement is not nil, mop must can call `GetKey`.
-	ops, e := readIndexResult[(*mop).GetKey()]
+	ops, e := readIndexResult[mop.GetKey()]
 	if !e {
 		return nil
 	}
@@ -253,7 +253,7 @@ func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexRe
 		return nil
 	}
 	res := map[core.Op]struct{}{}
-	if (*mop).IsAppend() {
+	if mop.IsAppend() {
 		r := rwMopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, mop)
 		resDep := wwMopDep(appendIndexResult, writeIndexResult, op, mop)
 		if resDep != nil {
@@ -275,7 +275,7 @@ func opDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexRes
 		return response
 	}
 	for k, _ := range *op.Value {
-		response = setUnion(response, mopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, &(*op.Value)[k]))
+		response = setUnion(response, mopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, (*op.Value)[k]))
 	}
 	return response
 }
@@ -375,23 +375,31 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 	return keyMaps
 }
 
+type incompatibleOrder struct {
+	Key    string
+	Values [][]core.MopValueType
+}
+
+func (i incompatibleOrder) IAnomaly() {}
+
+func (i incompatibleOrder) String() string {
+	panic("implement me")
+}
+
 // incompatibleOrders return anomaly maps.
 // return
 // * nil or length of anomalies is zero: if no anomalies (so please use len() to check).
 // * map[key](anomaly one, anomaly two)
-func incompatibleOrders(sortedValues map[string][][]core.MopValueType) map[string][]core.MopValueType {
-	anomalies := map[string][]core.MopValueType{}
-
-	for k, v := range sortedValues {
-		for index := 1; index < len(v); index++ {
-			if seqIsPrefix(v[index-1], v[index]) {
-				anomalies[k] = []core.MopValueType{
-					v[index-1], v[index],
-				}
+func incompatibleOrders(sortedValues map[string][][]core.MopValueType) []core.Anomaly {
+	var anomalies []core.Anomaly
+	for k, values := range sortedValues {
+		for index := 1; index < len(values); index++ {
+			a, b := values[index-1], values[index]
+			if seqIsPrefix(a, b) {
+				anomalies = append(anomalies, incompatibleOrder{Key: k, Values: [][]core.MopValueType{a, b}})
 			}
 		}
 	}
-
 	return anomalies
 }
 

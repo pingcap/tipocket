@@ -40,18 +40,23 @@ type CycleCase struct {
 	Type   string
 }
 
-func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]CycleCase {
+func (c CycleCase) IAnomaly() {}
+
+func (c CycleCase) String() string {
+	panic("implement me")
+}
+
+func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]core.Anomaly {
 	g := FilteredGraphs(graph)
-	cases := map[string][]CycleCase{}
+	cases := map[string][]core.Anomaly{}
 	for _, scc := range sccs {
 		for _, v := range CycleCasesInScc(graph, g, pairExplainer, scc) {
 			if _, e := cases[v.Type]; !e {
-				cases[v.Type] = make([]CycleCase, 0)
+				cases[v.Type] = make([]core.Anomaly, 0)
 			}
 			cases[v.Type] = append(cases[v.Type], v)
 		}
 	}
-
 	return cases
 }
 
@@ -88,7 +93,11 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 
 		if cycle != nil {
 			explainerWrapper := CycleExplainerWrapper{}
-			cycleCase := explainerWrapper.ExplainCycle(explainer, *cycle)
+			cycle, steps := explainerWrapper.ExplainCycle(explainer, *cycle)
+			cycleCase := CycleCase{
+				Circle: cycle,
+				Steps:  steps,
+			}
 			if v.FilterEx != nil && !v.FilterEx(&cycleCase) {
 				continue
 			}

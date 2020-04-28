@@ -288,6 +288,8 @@ type G1Conflict struct {
 	Element core.MopValueType
 }
 
+func (g G1Conflict) IAnomaly() {}
+
 func (g G1Conflict) String() string {
 	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
 }
@@ -346,6 +348,8 @@ type InternalConflict struct {
 	Mop      core.Mop
 	Expected core.MopValueType
 }
+
+func (i InternalConflict) IAnomaly() {}
 
 func (i InternalConflict) String() string {
 	return fmt.Sprintf("(InternalConflict) Op: %s, mop: %s, expected: %s", i.Op, i.Mop.String(), i.Expected)
@@ -417,7 +421,7 @@ func internalCases(history core.History) GCaseTp {
 	for _, op := range okHistory {
 		res := opInternalCases(op)
 		if res != nil {
-			tp = append(tp, *res)
+			tp = append(tp, res)
 		}
 	}
 	return tp
@@ -432,6 +436,8 @@ type DirtyUpdateConflict struct {
 	Values   []core.MopValueType
 	Op1, Op2 core.Op
 }
+
+func (d DirtyUpdateConflict) IAnomaly() {}
 
 func (d DirtyUpdateConflict) String() string {
 	return fmt.Sprintf("(DirtyUpdateConflict) Key is %s, op1 is %s, op2 is %s, values %v", d.Key, d.Op1, d.Op2, d.Values)

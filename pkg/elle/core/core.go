@@ -51,6 +51,7 @@ const (
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface {
 	fmt.Stringer
+	IAnomaly()
 }
 
 type Anomalies map[string][]Anomaly
