@@ -419,7 +419,7 @@ func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
 }
 
 // DigraphUnion takes the union of n graphs, merging edges with union
-func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
+func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 	dg := NewDirectedGraph()
 	for _, g := range graphs {
 		vertices := g.Vertices()
@@ -443,7 +443,7 @@ type Predicate interface{}
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
 // TODO: find the shortest cycle
-func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
+func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
@@ -452,7 +452,7 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 		inScc[vertex] = true
 	}
 	queue := []Vertex{scc.Vertices[0]}
-	vertices := []Vertex{}
+	var vertices []Vertex
 	haveVisited := make(map[Vertex]bool)
 	haveVisited[queue[0]] = true
 	from := make(map[Vertex]Vertex)
@@ -463,7 +463,7 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 		cur := queue[0]
 		queue = queue[1:]
 
-		for next, _ := range graph.Outs[cur] {
+		for next := range graph.Outs[cur] {
 			if inScc[next] != true {
 				continue
 			}
@@ -500,7 +500,7 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 
 // FindCycleStartingWith ...
 // TODO: find the shortest cycle
-func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
+func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
@@ -508,10 +508,10 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 	for _, vertex := range scc.Vertices {
 		inScc[vertex] = true
 	}
-	vertices := []Vertex{}
+	var vertices []Vertex
 	for _, vertex := range scc.Vertices {
 		haveFound := false
-		queue := []Vertex{}
+		var queue []Vertex
 		haveVisited := make(map[Vertex]bool)
 		start := vertex
 		haveVisited[start] = true

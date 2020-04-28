@@ -23,12 +23,13 @@ func (r RelSet) Swap(i, j int) {
 
 // Rel enums
 const (
-	Empty    Rel = ""
-	WW       Rel = "ww"
-	WR       Rel = "wr"
-	RW       Rel = "rw"
-	Process  Rel = "process"
-	Realtime Rel = "realtime"
+	Empty        Rel = ""
+	WW           Rel = "ww"
+	WR           Rel = "wr"
+	RW           Rel = "rw"
+	Process      Rel = "process"
+	Realtime     Rel = "realtime"
+	MonotonicKey Rel = "monotonic-key"
 )
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
@@ -80,6 +81,15 @@ func (op PathType) IndexOfMop(mop Mop) int {
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
 	Path []PathType
+}
+
+// NewCircle returns a Circle from a Vertex slice
+func NewCircle(vertices []Vertex) Circle {
+	c := Circle{Path: make([]PathType, 0)}
+	for _, vertex := range vertices {
+		c.Path = append(c.Path, vertex.Value.(PathType))
+	}
+	return c
 }
 
 type Step struct {
@@ -233,7 +243,7 @@ func MonotonicKeyOrder(history History, k string) *DirectedGraph {
 		for _, y := range val2ops[vals[i]] {
 			ys = append(ys, Vertex{y})
 		}
-		graph.LinkAllToAll(xs, ys)
+		graph.LinkAllToAll(xs, ys, MonotonicKey)
 	}
 
 	return &graph

@@ -246,7 +246,7 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 }
 
 func explainSCC(g *DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
-	cycle := FindCycle(*g, scc)
+	cycle := NewCircle(FindCycle(g, scc))
 	_, steps := cycleExplainer.ExplainCycle(pairExplainer, cycle)
 	return cycleExplainer.RenderCycleExplanation(pairExplainer, cycle, steps)
 }
