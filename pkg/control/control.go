@@ -72,7 +72,7 @@ func NewController(
 	verifySuit verify.Suit,
 	lokiCli *loki.Client,
 	logPath string,
-) (*Controller, error) {
+) *Controller {
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
 	}
@@ -91,10 +91,10 @@ func NewController(
 	if _, err := os.Stat(c.logPath); err != nil {
 		if os.IsNotExist(err) {
 			if err := os.Mkdir(c.logPath, os.ModePerm); err != nil {
-				return nil, err
+				log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
 			}
 		} else {
-			return nil, err
+			log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
 		}
 	}
 
@@ -102,7 +102,7 @@ func NewController(
 		c.clients = append(c.clients, clientCreator.Create(node))
 	}
 	log.Infof("start controller with %+v", cfg)
-	return c, nil
+	return c
 }
 
 // Close closes the controller.
@@ -479,7 +479,7 @@ func (c *Controller) collectLogs() {
 	}
 
 	longDur := time.Minute * 10
-	shortDur := time.Minute * 4
+	shortDur := time.Minute * 1
 	panicTicker := time.NewTicker(longDur)
 	// log ticker is a ticker for collecting pod logs, runs every 4 minute
 	logTicker := time.NewTicker(shortDur)
@@ -488,14 +488,16 @@ func (c *Controller) collectLogs() {
 		for {
 			select {
 			case <-c.ctx.Done():
-				c.fetchTiDBClusterLogs(c.cfg.Nodes)
+				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now())
 				logTicker.Stop()
 				panicTicker.Stop()
 				return
 			case <-panicTicker.C:
 				c.checkTiDBClusterPanic(longDur, c.cfg.Nodes)
 			case <-logTicker.C:
-				c.fetchTiDBClusterLogs(c.cfg.Nodes)
+				// Here we don't use time.Now() is to prevent
+				// the case that agent doesn't upload the latest logs
+				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now().Add(-2*time.Second))
 			}
 		}
 	}()
@@ -536,9 +538,8 @@ func (c *Controller) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTyp
 	wg.Wait()
 }
 
-func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node) {
+func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node, toTime time.Time) {
 	wg := &sync.WaitGroup{}
-	to := time.Now()
 
 	for _, n := range nodes {
 		switch n.Component {
@@ -550,11 +551,12 @@ func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node) {
 			go func(ns, podName, containerName string) {
 				defer wg.Done()
 				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
-					"", nil, c.lastQueryTime, to, 20000, false)
+					"", nil, c.lastQueryTime, toTime, 20000, false)
 				if err != nil {
 					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
+				} else {
+					log.Infof("collect %s pod logs successfully, %d lines total", podName, len(texts))
 				}
-				log.Infof("collect %s pod logs successfully, %d lines total", podName, len(texts))
 				if _, ok := c.podLogFiles[podName]; !ok {
 					c.podLogFiles[podName], err = os.OpenFile(path.Join(c.logPath, podName),
 						os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
@@ -572,5 +574,5 @@ func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node) {
 		}
 	}
 	wg.Wait()
-	c.lastQueryTime = to
+	c.lastQueryTime = toTime
 }

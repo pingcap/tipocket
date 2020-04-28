@@ -82,7 +82,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.Config.ClientNodes = append(suit.Config.ClientNodes,
 			suit.Config.ClientNodes[rand.Intn(retClientCount)])
 	}
-	c, err := control.NewController(
+	c := control.NewController(
 		sctx,
 		suit.Config,
 		suit.ClientCreator,
@@ -93,9 +93,6 @@ func (suit *Suit) Run(ctx context.Context) {
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
 		fixture.Context.LogPath,
 	)
-	if err != nil {
-		log.Fatalf("failed to create log directory %s", fixture.Context.LogPath)
-	}
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs,
