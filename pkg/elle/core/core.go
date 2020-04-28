@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"sort"
 )
 
@@ -37,18 +38,22 @@ func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
 
 // Rel enums
 const (
-	Empty        Rel = ""
-	WW           Rel = "ww"
-	WR           Rel = "wr"
-	RW           Rel = "rw"
-	Process      Rel = "process"
-	Realtime     Rel = "realtime"
+	Empty    Rel = ""
+	WW       Rel = "ww"
+	WR       Rel = "wr"
+	RW       Rel = "rw"
+	Process  Rel = "process"
+	Realtime Rel = "realtime"
+	// Note: currently we don't support MonotonicKey
 	MonotonicKey Rel = "monotonic-key"
 )
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
-type Anomaly interface{}
-type Anomalies map[string]Anomaly
+type Anomaly interface {
+	fmt.Stringer
+}
+
+type Anomalies map[string][]Anomaly
 
 // Merge merges another anomalies
 func (a Anomalies) Merge(another Anomalies) {

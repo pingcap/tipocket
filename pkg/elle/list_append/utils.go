@@ -63,10 +63,14 @@ func seqIsPrefix(seqBefore, seqAfter []core.MopValueType) bool {
 	return true
 }
 
+func duplicates(history core.History) GCaseTp {
+	panic("implement me")
+}
+
 // duplicates does a "single-read-count", in :r [1 1 4], it will checks if
 //  there is any duplicate words, and put it into anomalies structure.
 // Note: The return of the function may not match the original.
-func duplicates(history core.History) map[string][][]core.MopValueType {
+func duplicatesHelper(history core.History) map[string][][]core.MopValueType {
 	iter := txn.OpMops(history)
 	anomalies := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
@@ -94,7 +98,6 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	}
 	return anomalies
 }
-
 
 func writeIndex(history core.History) writeIdx {
 	indexMap := map[string]map[core.MopValueType]core.Op{}
@@ -136,7 +139,6 @@ func readIndex(history core.History) readIdx {
 	}
 	return indexRead
 }
-
 
 func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 	res := map[string][]core.MopValueType{}

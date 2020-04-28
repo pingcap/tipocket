@@ -279,41 +279,35 @@ func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Data
 	return core.Combine(wwGraph, wrGraph, rwGraph)(history)
 }
 
-type GCase struct {
-	Operation core.Op
-	Mop       core.Mop
+type GCaseTp []core.Anomaly
 
-	Writer  core.Op
-	Element core.MopValueType
-
-	Expected interface{}
-}
-
-type GCaseTp []GCase
-
-type G1aConflict struct {
+type G1Conflict struct {
 	Op      core.Op
 	Mop     core.Mop
 	Writer  core.Op
 	Element core.MopValueType
 }
 
+func (g G1Conflict) String() string {
+	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
+}
+
 func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []GCase
+	var excepted []core.Anomaly
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := failed[mop.GetKey()]
 			v := mop.GetValue().(int)
 			writer := versionMap[v]
-			excepted = append(excepted, GCase{
-				Operation: *op,
-				Mop:       mop,
-				Writer:    *writer,
-				Element:   mop.GetValue(),
+			excepted = append(excepted, G1Conflict{
+				Op:      *op,
+				Mop:     mop,
+				Writer:  *writer,
+				Element: mop.GetValue(),
 			})
 		}
 	}
@@ -327,18 +321,18 @@ func g1bCases(history core.History) GCaseTp {
 	inter := txn.IntermediateWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []GCase
+	var excepted []core.Anomaly
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := inter[mop.GetKey()]
 			v := mop.GetValue().(int)
 			writer := versionMap[v]
-			excepted = append(excepted, GCase{
-				Operation: *op,
-				Mop:       mop,
-				Writer:    *writer,
-				Element:   mop.GetValue(),
+			excepted = append(excepted, G1Conflict{
+				Op:      *op,
+				Mop:     mop,
+				Writer:  *writer,
+				Element: mop.GetValue(),
 			})
 		}
 	}
@@ -347,8 +341,18 @@ func g1bCases(history core.History) GCaseTp {
 
 const InternalMagicNumber = -114514
 
+type InternalConflict struct {
+	Op       core.Op
+	Mop      core.Mop
+	Expected core.MopValueType
+}
+
+func (i InternalConflict) String() string {
+	return fmt.Sprintf("(InternalConflict) Op: %s, mop: %s, expected: %s", i.Op, i.Mop.String(), i.Expected)
+}
+
 // Note: Please review this function carefully.
-func opInternalCases(op core.Op) *GCase {
+func opInternalCases(op core.Op) core.Anomaly {
 	// key -> valueList
 	dataMap := map[string][]core.MopValueType{}
 	for _, v := range *op.Value {
@@ -367,10 +371,10 @@ func opInternalCases(op core.Op) *GCase {
 			if len(previousData) > 0 && previousData[0] == core.MopValueType(InternalMagicNumber) {
 				seqDelta := len(records) + 1 - len(previousData)
 				if seqDelta < 0 {
-					return &GCase{
-						Operation: op,
-						Mop:       v,
-						Expected:  previousData,
+					return &InternalConflict{
+						Op:       op,
+						Mop:      v,
+						Expected: previousData,
 					}
 				} else {
 					comIndex = seqDelta
@@ -378,10 +382,10 @@ func opInternalCases(op core.Op) *GCase {
 			}
 			for i, indexV := range records[comIndex:] {
 				if previousData[i+1].(int) != indexV {
-					return &GCase{
-						Operation: op,
-						Mop:       v,
-						Expected:  previousData,
+					return &InternalConflict{
+						Op:       op,
+						Mop:      v,
+						Expected: previousData,
 					}
 				}
 			}
@@ -423,9 +427,19 @@ func makeStateTuple(s1, s2 core.OpType) string {
 	return fmt.Sprintf("%s__%s", s1, s2)
 }
 
+type DirtyUpdateConflict struct {
+	Key      string
+	Values   []core.MopValueType
+	Op1, Op2 core.Op
+}
+
+func (d DirtyUpdateConflict) String() string {
+	return fmt.Sprintf("(DirtyUpdateConflict) Key is %s, op1 is %s, op2 is %s, values %v", d.Key, d.Op1, d.Op2, d.Values)
+}
+
 func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history core.History) GCaseTp {
 	wi := writeIndex(history)
-	var cases []GCase
+	var cases []core.Anomaly
 
 	for key, valueHistory := range appendIndexResult {
 		var currentMayAnomalyValues []core.MopValueType
@@ -459,9 +473,13 @@ func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history 
 				switchCurrentState()
 			case makeStateTuple(core.OpTypeFail, core.OpTypeOk):
 				// Find a bug!
-				// TODO: adding type for it
+				cases = append(cases, DirtyUpdateConflict{
+					Key:    key,
+					Values: currentMayAnomalyValues,
+					Op1:    currentOp,
+					Op2:    writer,
+				})
 				switchCurrentState()
-				cases = append(cases, GCase{})
 			case makeStateTuple(core.OpTypeOk, core.OpTypeInfo):
 				switchWriterState()
 			case makeStateTuple(core.OpTypeInfo, core.OpTypeInfo):
@@ -475,29 +493,6 @@ func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history 
 			case makeStateTuple(core.OpTypeFail, core.OpTypeFail):
 				switchWriterState()
 			}
-
-			//if currentOp.Type == core.OpTypeFail {
-			//	if writer.Type == core.OpTypeInfo || writer.Type == core.OpTypeFail {
-			//		// why writer will have :info, I don't know :(
-			//		continue
-			//	}
-			//	if writer.Type == core.OpTypeOk {
-			//		// Yes, we found a bug.
-			//		// TODO: change the case type.
-			//		cases = append(cases, GCase{
-			//
-			//		})
-			//		currentMayAnomalyValues = []core.MopValueType{v}
-			//		currentOp = writer
-			//	}
-			//} else if currentOp.Type == core.OpTypeInfo {
-			//	if writer.Type == core.OpTypeInfo {
-			//		continue
-			//	} else {
-			//		currentOp = writer
-			//
-			//	}
-			//}
 		}
 	}
 
@@ -527,19 +522,19 @@ func Check(opts txn.Opts, history core.History) txn.CheckResult {
 		anomalies["duplicate-elements"] = dups
 	}
 	if len(incmpOrder) != 0 {
-		anomalies["incompatible-order"] = dups
+		anomalies["incompatible-order"] = incmpOrder
 	}
 	if len(internal) != 0 {
-		anomalies["internal"] = dups
+		anomalies["internal"] = internal
 	}
 	if len(dirtyUpdate) != 0 {
-		anomalies["dirty-update"] = dups
+		anomalies["dirty-update"] = dirtyUpdate
 	}
 	if len(g1a) != 0 {
-		anomalies["G1a"] = dups
+		anomalies["G1a"] = g1a
 	}
 	if len(g1b) != 0 {
-		anomalies["G1b"] = dups
+		anomalies["G1b"] = g1b
 	}
 	return txn.ResultMap(opts, anomalies)
 }
