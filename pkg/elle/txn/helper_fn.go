@@ -14,8 +14,8 @@ type OpMopIterator struct {
 	mopIndex     int
 }
 
-func (omi *OpMopIterator) Next() (*core.Op, *core.Mop) {
-	op, mop := &omi.history[omi.historyIndex], &((*omi.history[omi.historyIndex].Value)[omi.mopIndex])
+func (omi *OpMopIterator) Next() (*core.Op, core.Mop) {
+	op, mop := &omi.history[omi.historyIndex], (*omi.history[omi.historyIndex].Value)[omi.mopIndex]
 
 	// inc index
 	omi.mopIndex++
@@ -33,17 +33,6 @@ func (omi *OpMopIterator) HasNext() bool {
 // OpMops return an iterator for history.
 func OpMops(history core.History) *OpMopIterator {
 	return &OpMopIterator{history: history, historyIndex: 0, mopIndex: 0}
-}
-
-// keeps or ok records and the records satisfied the validate fn.
-func OkKeep(validateFunc func(op core.Op) bool, history core.History) core.History {
-	var newHistory core.History
-	for _, v := range history {
-		if v.Type == core.OpTypeOk && validateFunc(v) {
-			newHistory = append(newHistory, v)
-		}
-	}
-	return newHistory
 }
 
 // Gen Takes a sequence of transactions and returns a sequence of invocation operations.

@@ -16,7 +16,25 @@ func verifyMopTypes(mop core.Mop) bool {
 // Takes a history of txns made up of appends and reads, and checks to make
 //  sure that every invoke appending a value to a key chose a unique value.
 func verifyUniqueAppends(history core.History) bool {
-	panic("implement me")
+	tempDict := map[string]map[core.MopValueType]struct{}{}
+	iter := txn.OpMops(history)
+	for iter.HasNext() {
+		_, mop := iter.Next()
+		if mop.IsRead() {
+			continue
+		}
+		_, e := tempDict[mop.GetKey()]
+		if !e {
+			tempDict[mop.GetKey()] = map[core.MopValueType]struct{}{}
+		}
+
+		_, e = tempDict[mop.GetKey()][mop.GetValue()]
+		if e {
+			return false
+		}
+		tempDict[mop.GetKey()][mop.GetValue()] = struct{}{}
+	}
+	return true
 }
 
 // Takes a map of keys to observed values (e.g. from
@@ -53,14 +71,14 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	anomalies := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if mop == nil || *mop == nil {
+		if mop == nil {
 			continue
 		}
-		if (*mop).IsRead() {
-			if (*mop).GetValue() == nil {
+		if mop.IsRead() {
+			if mop.GetValue() == nil {
 				continue
 			}
-			reads := (*mop).GetValue().([]int)
+			reads := mop.GetValue().([]int)
 			mopReads := make([]core.MopValueType, len(reads), len(reads))
 			for i, v := range reads {
 				mopReads[i] = v
@@ -69,7 +87,7 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 			for _, v := range reads {
 				readCnt[v] = readCnt[v] + 1
 				if readCnt[v] == 2 {
-					anomalies[(*mop).GetKey()] = append(anomalies[(*mop).GetKey()], mopReads)
+					anomalies[mop.GetKey()] = append(anomalies[mop.GetKey()], mopReads)
 				}
 			}
 		}
@@ -77,7 +95,6 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	return anomalies
 }
 
-type writeIdx = map[string]map[core.MopValueType]core.Op
 
 func writeIndex(history core.History) writeIdx {
 	indexMap := map[string]map[core.MopValueType]core.Op{}
@@ -86,7 +103,7 @@ func writeIndex(history core.History) writeIdx {
 			continue
 		}
 		for _, mop := range *op.Value {
-			if mop == nil || *mop == nil {
+			if mop == nil {
 				continue
 			}
 			if mop.IsAppend() {
@@ -102,8 +119,6 @@ func writeIndex(history core.History) writeIdx {
 	return indexMap
 }
 
-type readIdx = map[string][]core.Op
-
 func readIndex(history core.History) readIdx {
 	indexRead := map[string][]core.Op{}
 	for _, op := range history {
@@ -111,7 +126,7 @@ func readIndex(history core.History) readIdx {
 			continue
 		}
 		for _, mop := range *op.Value {
-			if mop == nil || *mop == nil {
+			if mop == nil {
 				continue
 			}
 			if mop.IsRead() && mop.GetValue() != nil {
@@ -122,7 +137,6 @@ func readIndex(history core.History) readIdx {
 	return indexRead
 }
 
-type appendIdx = map[string][]core.MopValueType
 
 func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 	res := map[string][]core.MopValueType{}
@@ -137,15 +151,15 @@ func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 }
 
 // Note: mop should be a read, and should be part of op.
-func wrMopDep(writeIndex writeIdx, op core.Op, mop *core.Mop) *core.Op {
-	if mop != nil && (*mop).IsRead() {
-		writeMap, e := writeIndex[(*mop).GetKey()]
+func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
+	if mop != nil && mop.IsRead() {
+		writeMap, e := writeIndex[mop.GetKey()]
 		// Note: maybe unsafe
-		if (*mop).GetValue() == nil {
+		if mop.GetValue() == nil {
 			return nil
 		}
 		// (*mop).GetValue(), so it at least contains one value, it's OK to do like this
-		firstValue := (*mop).GetValue().([]int)[0]
+		firstValue := mop.GetValue().([]int)[0]
 		op2, e := writeMap[core.MopValueType(firstValue)]
 		if !e {
 			return nil
@@ -162,16 +176,16 @@ func wrMopDep(writeIndex writeIdx, op core.Op, mop *core.Mop) *core.Op {
 // * the input not match the requirements.
 // The returning bool means "it's the initialize value", if it's true, we may return (nil, true).
 // Should we have more return types here?
-func previouslyAppendElement(appendIndexResult appendIdx, op core.Op, mop *core.Mop) (core.MopValueType, bool) {
-	if mop == nil || !(*mop).IsAppend() {
+func previouslyAppendElement(appendIndexResult appendIdx, op core.Op, mop core.Mop) (core.MopValueType, bool) {
+	if mop == nil || mop.IsAppend() {
 		return nil, false
 	}
-	subdict, e := appendIndexResult[(*mop).GetKey()]
+	subdict, e := appendIndexResult[mop.GetKey()]
 	if !e {
 		return nil, false
 	}
 	// Note: It's an append, so append value should not be nil.
-	appendValue := (*mop).GetValue()
+	appendValue := mop.GetValue()
 	for i, v := range subdict {
 		if v == appendValue {
 			if i != 0 {
@@ -185,7 +199,7 @@ func previouslyAppendElement(appendIndexResult appendIdx, op core.Op, mop *core.
 }
 
 // returns What (other) operation wrote the value just before this write mop?"
-func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op, mop *core.Mop) *core.Op {
+func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op, mop core.Mop) *core.Op {
 	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
 	if isInit {
 		// no writer precedes us
@@ -209,7 +223,7 @@ func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op
 	return &element
 }
 
-func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop *core.Mop) map[core.Op]struct{} {
+func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop core.Mop) map[core.Op]struct{} {
 	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
 	if isInit {
 		// no writer precedes us
@@ -232,7 +246,7 @@ func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndex
 	return mopDeps
 }
 
-func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop *core.Mop) map[core.Op]struct{} {
+func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop core.Mop) map[core.Op]struct{} {
 	if mop == nil {
 		return nil
 	}
@@ -299,11 +313,11 @@ func valuesFromSingleAppend(history core.History) map[string]core.MopValueType {
 	iter := txn.OpMops(history)
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if (*mop).IsAppend() {
-			k, _ := temp[(*mop).GetKey()]
+		if mop.IsAppend() {
+			k, _ := temp[mop.GetKey()]
 			// We can append, but for economize the memory, at most 2 value will be record.
 			if len(k) < 2 {
-				temp[(*mop).GetKey()] = append(k, (*mop).GetValue())
+				temp[mop.GetKey()] = append(k, mop.GetValue())
 			}
 		}
 	}
@@ -326,15 +340,19 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 	keyMaps := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if mop == nil || *mop == nil {
+		if mop == nil {
 			continue
 		}
-		if !(*mop).IsRead() {
+		if !mop.IsRead() {
 			continue
 		}
-		if (*mop).GetValue() != nil {
-			values := (*mop).GetValue().([]core.MopValueType)
-			keyMaps[(*mop).GetKey()] = append(keyMaps[(*mop).GetKey()], values)
+		if mop.GetValue() != nil {
+			values := mop.GetValue().([]int)
+			valueWithRightTp := make([]core.MopValueType, len(values), len(values))
+			for i, v := range values {
+				valueWithRightTp[i] = core.MopValueType(v)
+			}
+			keyMaps[mop.GetKey()] = append(keyMaps[mop.GetKey()], valueWithRightTp)
 		}
 	}
 
@@ -380,4 +398,28 @@ func min(a, b int) int {
 		return b
 	}
 	return a
+}
+
+func preProcessHistory(history core.History) core.History {
+	panic("impl")
+}
+
+func filterOkOrInfoHistory(history core.History) core.History {
+	var h core.History
+	for _, op := range history {
+		if op.Type == core.OpTypeOk || op.Type == core.OpTypeInfo {
+			h = append(h, op)
+		}
+	}
+	return h
+}
+
+func filterOkHistory(history core.History) core.History {
+	var h core.History
+	for _, v := range history {
+		if v.Type == core.OpTypeOk {
+			h = append(h, v)
+		}
+	}
+	return h
 }

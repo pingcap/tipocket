@@ -21,14 +21,29 @@ func (r RelSet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
+func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
+	set := make(map[Rel]struct{})
+	for _, rel := range r {
+		set[rel] = struct{}{}
+	}
+	for rel := range rels {
+		set[rel] = struct{}{}
+	}
+	for rel := range set {
+		rs = append(rs, rel)
+	}
+	return
+}
+
 // Rel enums
 const (
-	Empty    Rel = ""
-	WW       Rel = "ww"
-	WR       Rel = "wr"
-	RW       Rel = "rw"
-	Process  Rel = "process"
-	Realtime Rel = "realtime"
+	Empty        Rel = ""
+	WW           Rel = "ww"
+	WR           Rel = "wr"
+	RW           Rel = "rw"
+	Process      Rel = "process"
+	Realtime     Rel = "realtime"
+	MonotonicKey Rel = "monotonic-key"
 )
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
@@ -67,9 +82,28 @@ type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
 type PathType = Op
 
+// IndexOfMop returns the index of mop in op
+func (op PathType) IndexOfMop(mop Mop) int {
+	for idx, m := range *op.Value {
+		if m == mop {
+			return idx
+		}
+	}
+	return -1
+}
+
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
 	Path []PathType
+}
+
+// NewCircle returns a Circle from a Vertex slice
+func NewCircle(vertices []Vertex) Circle {
+	c := Circle{Path: make([]PathType, 0)}
+	for _, vertex := range vertices {
+		c.Path = append(c.Path, vertex.Value.(PathType))
+	}
+	return c
 }
 
 type Step struct {
@@ -223,7 +257,7 @@ func MonotonicKeyOrder(history History, k string) *DirectedGraph {
 		for _, y := range val2ops[vals[i]] {
 			ys = append(ys, Vertex{y})
 		}
-		graph.LinkAllToAll(xs, ys)
+		graph.LinkAllToAll(xs, ys, MonotonicKey)
 	}
 
 	return &graph

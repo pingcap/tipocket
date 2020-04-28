@@ -8,6 +8,7 @@ type Opts struct {
 	// define what specific anomalies and consistency models to look for
 	ConsistencyModels []core.ConsistencyModelName
 	Anomalies         []string
+	additionalGraphs  []core.Analyzer
 }
 
 type CheckResult struct {
@@ -73,13 +74,15 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 			c := core.FindCycleWith(v.With, v.FilterPathState, *runtimeGraph, scc)
 			cycle = &c
 		} else if v.Rels != nil {
-			c := core.FindCycle(*runtimeGraph, scc)
+			c := core.NewCircle(core.FindCycle(runtimeGraph, scc))
 			cycle = &c
 		} else {
+			// TODO(mahjonp): need review
 			// Note: this requires find-cycle-starting-with
-			s1 := filterGraph([]core.Rel{v.FirstRel})
-			s2 := filterGraph(setKeys(v.RestRels))
-			c := core.FindCycleStartingWith(*s1, *s2, scc)
+			//s1 := filterGraph([]core.Rel{v.FirstRel})
+			//s2 := filterGraph(setKeys(v.RestRels))
+			filteredGraph := filterGraph(core.RelSet([]core.Rel{v.FirstRel}).Append(v.RestRels))
+			c := core.NewCircle(core.FindCycleStartingWith(filteredGraph, v.FirstRel, scc))
 			cycle = &c
 		}
 
