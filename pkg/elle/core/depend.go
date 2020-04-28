@@ -194,7 +194,8 @@ func (c CycleExplainerResult) String() string {
 	panic("implement me")
 }
 
-func (c CycleExplainerResult) IAnomaly() {
+func (c CycleExplainerResult) IAnomaly() string {
+	return c.String()
 }
 
 func (c CycleExplainerResult) Type() DependType {
