@@ -1,6 +1,7 @@
 package list_append
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
@@ -63,18 +64,25 @@ func seqIsPrefix(seqBefore, seqAfter []core.MopValueType) bool {
 	return true
 }
 
-func duplicates(history core.History) GCaseTp {
-	panic("implement me")
+type duplicateConflict struct {
+	Op   *core.Op
+	Mop  core.Mop
+	Dups core.MopValueType
+}
+
+func (d duplicateConflict) IAnomaly() string {
+	return fmt.Sprintf("(DuplicateConflict) Op: %s, mop: %s, dups: %v", d.Op, d.Mop, d.Dups)
 }
 
 // duplicates does a "single-read-count", in :r [1 1 4], it will checks if
 //  there is any duplicate words, and put it into anomalies structure.
 // Note: The return of the function may not match the original.
-func duplicatesHelper(history core.History) map[string][][]core.MopValueType {
+func duplicates(history core.History) GCaseTp {
 	iter := txn.OpMops(history)
 	anomalies := map[string][][]core.MopValueType{}
+	var duplicateCases []core.Anomaly
 	for iter.HasNext() {
-		_, mop := iter.Next()
+		op, mop := iter.Next()
 		if mop == nil {
 			continue
 		}
@@ -90,7 +98,12 @@ func duplicatesHelper(history core.History) map[string][][]core.MopValueType {
 			readCnt := map[core.MopValueType]int{}
 			for _, v := range reads {
 				readCnt[v] = readCnt[v] + 1
-				if readCnt[v] == 2 {
+				if readCnt[v] > 2 {
+					duplicateCases = append(duplicateCases, duplicateConflict{
+						Op:   op,
+						Mop:  mop,
+						Dups: v,
+					})
 					anomalies[mop.GetKey()] = append(anomalies[mop.GetKey()], mopReads)
 				}
 			}
@@ -380,10 +393,13 @@ type incompatibleOrder struct {
 	Values [][]core.MopValueType
 }
 
-func (i incompatibleOrder) IAnomaly() {}
+func (i incompatibleOrder) IAnomaly() string {
+	return i.String()
+}
 
+// Note: maybe i should format the values.
 func (i incompatibleOrder) String() string {
-	panic("implement me")
+	return fmt.Sprintf("(IncompatibleOrder) Key: %s, values: %v", i.Key, i.Values)
 }
 
 // incompatibleOrders return anomaly maps.
@@ -411,13 +427,25 @@ func min(a, b int) int {
 }
 
 func preProcessHistory(history core.History) core.History {
-	panic("impl")
+	history = filterOutNemesisHistory(history)
+	history.AttachIndex()
+	return history
 }
 
 func filterOkOrInfoHistory(history core.History) core.History {
 	var h core.History
 	for _, op := range history {
 		if op.Type == core.OpTypeOk || op.Type == core.OpTypeInfo {
+			h = append(h, op)
+		}
+	}
+	return h
+}
+
+func filterOutNemesisHistory(history core.History) core.History {
+	var h core.History
+	for _, op := range history {
+		if op.Type != core.OpTypeNemesis {
 			h = append(h, op)
 		}
 	}

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"sort"
 )
 
@@ -50,8 +49,7 @@ const (
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface {
-	fmt.Stringer
-	IAnomaly()
+	IAnomaly() string
 }
 
 type Anomalies map[string][]Anomaly

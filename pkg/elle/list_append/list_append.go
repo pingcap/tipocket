@@ -20,7 +20,14 @@ type writeIdx map[string]map[core.MopValueType]core.Op
 type readIdx map[string][]core.Op
 
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
-	panic("impl me")
+	if !verifyUniqueAppends(h) {
+		log.Fatal("Cannot pass verifyUniqueAppends")
+	}
+	history = filterOkOrInfoHistory(h)
+	sortedValueResults := sortedValues(history)
+	appendIdx = appendIndex(sortedValueResults)
+	writeIdx = writeIndex(history)
+	readIdx = readIndex(history)
 }
 
 type wwExplainResult struct {
@@ -288,7 +295,9 @@ type G1Conflict struct {
 	Element core.MopValueType
 }
 
-func (g G1Conflict) IAnomaly() {}
+func (g G1Conflict) IAnomaly() string {
+	return g.String()
+}
 
 func (g G1Conflict) String() string {
 	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
@@ -349,7 +358,9 @@ type InternalConflict struct {
 	Expected core.MopValueType
 }
 
-func (i InternalConflict) IAnomaly() {}
+func (i InternalConflict) IAnomaly() string {
+	return i.String()
+}
 
 func (i InternalConflict) String() string {
 	return fmt.Sprintf("(InternalConflict) Op: %s, mop: %s, expected: %s", i.Op, i.Mop.String(), i.Expected)
@@ -437,7 +448,9 @@ type DirtyUpdateConflict struct {
 	Op1, Op2 core.Op
 }
 
-func (d DirtyUpdateConflict) IAnomaly() {}
+func (d DirtyUpdateConflict) IAnomaly() string {
+	return d.String()
+}
 
 func (d DirtyUpdateConflict) String() string {
 	return fmt.Sprintf("(DirtyUpdateConflict) Key is %s, op1 is %s, op2 is %s, values %v", d.Key, d.Op1, d.Op2, d.Values)
