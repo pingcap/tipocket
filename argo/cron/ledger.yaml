@@ -21,6 +21,12 @@ spec:
           value: ""
         - name: run_time
           value: "60m"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
     templates:
       - name: call-tipocket-ledger
         steps:
@@ -42,3 +48,9 @@ spec:
                     value: "{{workflow.parameters.nemesis}}"
                   - name: run_time
                     value: "{{workflow.parameters.run_time}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"

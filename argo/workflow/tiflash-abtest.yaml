@@ -37,6 +37,12 @@ spec:
         value: "v4.0.0-rc"
       - name: tiflash_replicas
         value: 2
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
     - name: call-tipocket-tiflash-abtest
       steps:
@@ -78,3 +84,9 @@ spec:
                   value: "{{workflow.parameters.tiflash_image}}"
                 - name: tiflash_replicas
                   value: "{{workflow.parameters.tiflash_replicas}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
