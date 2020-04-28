@@ -21,6 +21,20 @@ func (r RelSet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
+func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
+	set := make(map[Rel]struct{})
+	for _, rel := range r {
+		set[rel] = struct{}{}
+	}
+	for rel := range rels {
+		set[rel] = struct{}{}
+	}
+	for rel := range set {
+		rs = append(rs, rel)
+	}
+	return
+}
+
 // Rel enums
 const (
 	Empty        Rel = ""

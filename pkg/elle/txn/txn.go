@@ -80,7 +80,8 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 			// Note: this requires find-cycle-starting-with
 			//s1 := filterGraph([]core.Rel{v.FirstRel})
 			//s2 := filterGraph(setKeys(v.RestRels))
-			c := core.NewCircle(core.FindCycleStartingWith(&graph, v.FirstRel, scc))
+			filteredGraph := filterGraph(core.RelSet([]core.Rel{v.FirstRel}).Append(v.RestRels))
+			c := core.NewCircle(core.FindCycleStartingWith(filteredGraph, v.FirstRel, scc))
 			cycle = &c
 		}
 
