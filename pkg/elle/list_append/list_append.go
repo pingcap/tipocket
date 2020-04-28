@@ -20,7 +20,14 @@ type writeIdx map[string]map[core.MopValueType]core.Op
 type readIdx map[string][]core.Op
 
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
-	panic("impl me")
+	if !verifyUniqueAppends(h) {
+		log.Fatal("Cannot pass verifyUniqueAppends")
+	}
+	history = filterOkOrInfoHistory(h)
+	sortedValueResults := sortedValues(history)
+	appendIdx = appendIndex(sortedValueResults)
+	writeIdx = writeIndex(history)
+	readIdx = readIndex(history)
 }
 
 type wwExplainResult struct {
