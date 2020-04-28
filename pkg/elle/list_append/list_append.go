@@ -10,10 +10,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/txn"
 )
 
-type appendIdx struct{}
-type writeIdx struct{}
-type readIdx struct{}
-
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
 	panic("impl me")
 }

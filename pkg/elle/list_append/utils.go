@@ -53,13 +53,23 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	anomalies := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
+		if mop == nil || *mop == nil {
+			continue
+		}
 		if (*mop).IsRead() {
-			reads := (*mop).GetValue().([]core.MopValueType)
+			if (*mop).GetValue() == nil {
+				continue
+			}
+			reads := (*mop).GetValue().([]int)
+			mopReads := make([]core.MopValueType, len(reads), len(reads))
+			for i, v := range reads {
+				mopReads[i] = v
+			}
 			readCnt := map[core.MopValueType]int{}
 			for _, v := range reads {
 				readCnt[v] = readCnt[v] + 1
 				if readCnt[v] == 2 {
-					anomalies[(*mop).GetKey()] = append(anomalies[(*mop).GetKey()], reads)
+					anomalies[(*mop).GetKey()] = append(anomalies[(*mop).GetKey()], mopReads)
 				}
 			}
 		}
@@ -67,13 +77,18 @@ func duplicates(history core.History) map[string][][]core.MopValueType {
 	return anomalies
 }
 
-func writeIndex(history core.History) map[string]map[core.MopValueType]core.Op {
+type writeIdx = map[string]map[core.MopValueType]core.Op
+
+func writeIndex(history core.History) writeIdx {
 	indexMap := map[string]map[core.MopValueType]core.Op{}
 	for _, op := range history {
 		if op.Value == nil {
 			continue
 		}
 		for _, mop := range *op.Value {
+			if mop == nil || *mop == nil {
+				continue
+			}
 			if mop.IsAppend() {
 				innerMap, e := indexMap[mop.GetKey()]
 				if !e {
@@ -87,13 +102,18 @@ func writeIndex(history core.History) map[string]map[core.MopValueType]core.Op {
 	return indexMap
 }
 
-func readIndex(history core.History) map[string][]core.Op {
+type readIdx = map[string][]core.Op
+
+func readIndex(history core.History) readIdx {
 	indexRead := map[string][]core.Op{}
 	for _, op := range history {
 		if op.Value == nil {
 			continue
 		}
 		for _, mop := range *op.Value {
+			if mop == nil || *mop == nil {
+				continue
+			}
 			if mop.IsRead() && mop.GetValue() != nil {
 				indexRead[mop.GetKey()] = append(indexRead[mop.GetKey()], op)
 			}
@@ -102,7 +122,9 @@ func readIndex(history core.History) map[string][]core.Op {
 	return indexRead
 }
 
-func appendIndex(sortedValues map[string][][]core.MopValueType) map[string][]core.MopValueType {
+type appendIdx = map[string][]core.MopValueType
+
+func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 	res := map[string][]core.MopValueType{}
 	for k, v := range sortedValues {
 		var current []core.MopValueType
@@ -112,6 +134,145 @@ func appendIndex(sortedValues map[string][][]core.MopValueType) map[string][]cor
 		res[k] = current
 	}
 	return res
+}
+
+// Note: mop should be a read, and should be part of op.
+func wrMopDep(writeIndex writeIdx, op core.Op, mop *core.Mop) *core.Op {
+	if mop != nil && (*mop).IsRead() {
+		writeMap, e := writeIndex[(*mop).GetKey()]
+		// Note: maybe unsafe
+		if (*mop).GetValue() == nil {
+			return nil
+		}
+		// (*mop).GetValue(), so it at least contains one value, it's OK to do like this
+		firstValue := (*mop).GetValue().([]int)[0]
+		op2, e := writeMap[core.MopValueType(firstValue)]
+		if !e {
+			return nil
+		}
+		// Note: I don't know where comparing like this is ok.
+		if op == op2 {
+			return &op
+		}
+	}
+	return nil
+}
+
+// Note: return nil if
+// * the input not match the requirements.
+// The returning bool means "it's the initialize value", if it's true, we may return (nil, true).
+// Should we have more return types here?
+func previouslyAppendElement(appendIndexResult appendIdx, op core.Op, mop *core.Mop) (core.MopValueType, bool) {
+	if mop == nil || !(*mop).IsAppend() {
+		return nil, false
+	}
+	subdict, e := appendIndexResult[(*mop).GetKey()]
+	if !e {
+		return nil, false
+	}
+	// Note: It's an append, so append value should not be nil.
+	appendValue := (*mop).GetValue()
+	for i, v := range subdict {
+		if v == appendValue {
+			if i != 0 {
+				return subdict[i-1], false
+			} else {
+				return nil, true
+			}
+		}
+	}
+	return nil, false
+}
+
+// returns What (other) operation wrote the value just before this write mop?"
+func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op, mop *core.Mop) *core.Op {
+	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
+	if isInit {
+		// no writer precedes us
+		return nil
+	}
+	if previousElement == nil {
+		return nil
+	}
+	writerMap, e := writeIndexResult[(*mop).GetKey()]
+	// It must exists, otherwise the algorithm of writeIndex is error.
+	if !e {
+		return nil
+	}
+	element, e := writerMap[previousElement]
+	if !e {
+		return nil
+	}
+	if element == op {
+		return nil
+	}
+	return &element
+}
+
+func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop *core.Mop) map[core.Op]struct{} {
+	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
+	if isInit {
+		// no writer precedes us
+		return nil
+	}
+	if previousElement == nil {
+		return nil
+	}
+	mopDeps := map[core.Op]struct{}{}
+	// Note: if previousElement is not nil, mop must can call `GetKey`.
+	ops, e := readIndexResult[(*mop).GetKey()]
+	if !e {
+		return nil
+	}
+	for _, v := range ops {
+		if v != previousElement {
+			mopDeps[v] = struct{}{}
+		}
+	}
+	return mopDeps
+}
+
+func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop *core.Mop) map[core.Op]struct{} {
+	if mop == nil {
+		return nil
+	}
+	res := map[core.Op]struct{}{}
+	if (*mop).IsAppend() {
+		r := rwMopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, mop)
+		resDep := wwMopDep(appendIndexResult, writeIndexResult, op, mop)
+		if resDep != nil {
+			r[*resDep] = struct{}{}
+		}
+		res = r
+	} else {
+		resDep := wrMopDep(writeIndexResult, op, mop)
+		if resDep != nil {
+			res[*resDep] = struct{}{}
+		}
+	}
+	return res
+}
+
+func opDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op) map[core.Op]struct{} {
+	response := map[core.Op]struct{}{}
+	if op.Value == nil {
+		return response
+	}
+	for k, _ := range *op.Value {
+		response = setUnion(response, mopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, &(*op.Value)[k]))
+	}
+	return response
+}
+
+func setUnion(dest, src2 map[core.Op]struct{}) map[core.Op]struct{} {
+	if src2 == nil {
+		return dest
+	}
+
+	for k := range src2 {
+		dest[k] = struct{}{}
+	}
+	return dest
 }
 
 func mergeOrders(prefix, seq1, seq2 []core.MopValueType) []core.MopValueType {
@@ -165,11 +326,16 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 	keyMaps := map[string][][]core.MopValueType{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
+		if mop == nil || *mop == nil {
+			continue
+		}
 		if !(*mop).IsRead() {
 			continue
 		}
-		values := (*mop).GetValue().([]core.MopValueType)
-		keyMaps[(*mop).GetKey()] = append(keyMaps[(*mop).GetKey()], values)
+		if (*mop).GetValue() != nil {
+			values := (*mop).GetValue().([]core.MopValueType)
+			keyMaps[(*mop).GetKey()] = append(keyMaps[(*mop).GetKey()], values)
+		}
 	}
 
 	singleAppends := valuesFromSingleAppend(history)

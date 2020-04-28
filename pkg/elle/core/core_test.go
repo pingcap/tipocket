@@ -154,6 +154,55 @@ func TestRealtimeGraph(t *testing.T) {
 
 }
 
+func TestMopValueType(t *testing.T) {
+	//	history, err := ParseHistory(`{:type :invoke, :f :txn, :value [[:append 11 1] [:r 11 nil] [:r 11 nil]], :process 10, :time 14532933, :index 0}
+	//{:type :invoke, :f :txn, :value [[:append 9 1]], :process 18, :time 16357277, :index 1}
+	//{:type :ok, :f :txn, :value [[:append 11 1] [:r 11 [1]] [:r 11 [1]]], :process 10, :time 31076248, :index 2}
+	//{:type :ok, :f :txn, :value [[:append 9 1]], :process 18, :time 40237832, :index 3}
+	//{:type :invoke, :f :txn, :value [[:r 11 nil] [:r 9 nil]], :process 13, :time 40623375, :index 4}
+	//{:type :invoke, :f :txn, :value [[:append 10 1] [:r 8 nil] [:append 10 2]], :process 20, :time 40896524, :index 5}
+	//{:type :invoke, :f :txn, :value [[:r 11 nil] [:append 7 1] [:r 10 nil] [:r 11 nil]], :process 10, :time 53339097, :index 6}
+	//{:type :invoke, :f :txn, :value [[:r 8 nil]], :process 18, :time 56451006, :index 7}
+	//{:type :invoke, :f :txn, :value [[:r 11 nil] [:append 11 2] [:r 10 nil] [:r 11 nil]], :process 24, :time 57053179, :index 8}
+	//{:type :ok, :f :txn, :value [[:r 11 [1]] [:r 9 [1]]], :process 13, :time 58266815, :index 9}
+	//{:type :ok, :f :txn, :value [[:append 10 1] [:r 8 []] [:append 10 2]], :process 20, :time 66867075, :index 10}
+	//{:type :invoke, :f :txn, :value [[:append 11 3] [:r 11 nil] [:r 9 nil] [:r 9 nil]], :process 4, :time 66786847, :index 11}
+	//{:type :ok, :f :txn, :value [[:r 8 []]], :process 18, :time 67064893, :index 12}
+	//{:type :ok, :f :txn, :value [[:r 11 [1]] [:append 11 2] [:r 10 [1 2]] [:r 11 [1 2]]], :process 24, :time 75478039, :index 13}
+	//{:type :ok, :f :txn, :value [[:r 11 [1 2]] [:append 7 1] [:r 10 [1 2]] [:r 11 [1 2]]], :process 10, :time 79883607, :index 14}
+	//{:type :ok, :f :txn, :value [[:append 11 3] [:r 11 [1 2 3]] [:r 9 [1]] [:r 9 [1]]], :process 4, :time 88446473, :index 15}
+	//{:type :invoke, :f :txn, :value [[:r 11 nil]], :process 8, :time 88424151, :index 16}`)
+
+	history, err := ParseHistory(`{:type :invoke, :f :txn, :value [[:append 11 1] [:r 11 nil] [:r 11 nil]], :process 10 :time 14532933, :index 0}
+{:type :invoke, :f :txn, :value [[:append 9 1]], :process 18 :time 16357277, :index 1}
+{:type :ok, :f :txn, :value [[:append 11 1] [:r 11 [1]] [:r 11 [1]]], :process 10 :time 31076248, :index 2}
+{:type :invoke, :f :txn, :value [[:r 11 nil]], :process 8 :time 88424151, :index 16}`)
+
+	if err != nil {
+		assert.Fail(t, "Parse history failed", err)
+	}
+
+	for _, op := range history {
+		if op.Value == nil {
+			continue
+		}
+		for _, mop := range *op.Value {
+			if mop.IsAppend() {
+				arg := mop.GetValue().(MopValueType)
+				_ = arg.(int)
+			} else {
+				if mop.GetValue() == nil {
+					continue
+				}
+				args := mop.GetValue().([]int)
+				for _ = range args {
+					//_ = arg.(int)
+				}
+			}
+		}
+	}
+}
+
 // toJson is a debugging function, which can be used like:
 // ```
 //for k, v := range g.Outs {
