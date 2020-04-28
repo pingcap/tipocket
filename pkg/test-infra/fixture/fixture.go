@@ -69,6 +69,7 @@ type fixtureContext struct {
 	// Other
 	pprofAddr  string
 	EnableHint bool
+	LogPath    string
 }
 
 // TiDBClusterConfig ...
@@ -252,6 +253,8 @@ func init() {
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
+
+	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
 
 	log.SetHighlighting(false)
 	go func() {

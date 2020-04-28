@@ -23,7 +23,7 @@ type Client struct {
 }
 
 // NewClient creates a client to query loki.
-func NewClient(address, username, password string) *Client {
+func NewClient(startTime time.Time, address, username, password string) *Client {
 	if address == "" {
 		return nil
 	}
@@ -33,7 +33,7 @@ func NewClient(address, username, password string) *Client {
 			Username: username,
 			Password: password,
 		},
-		startTime: time.Now(),
+		startTime: startTime,
 	}
 }
 
@@ -77,7 +77,7 @@ func (c *Client) FetchPodLogs(ns, podName, containerName, match string, nonMatch
 	}
 	query += nonEqual
 
-	res, err := c.cli.QueryRange(query, limit, queryFrom, queryTo, logproto.FORWARD, 15*time.Second, true)
+	res, err := c.cli.QueryRange(query, limit, queryFrom, queryTo, logproto.FORWARD, 1*time.Second, true)
 	if err != nil {
 		return nil, err
 	}
