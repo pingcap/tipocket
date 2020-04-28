@@ -1,12 +1,13 @@
 package txn
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
-type FilterExType = func(cycleCase *CycleCase) bool
+type FilterExType = func(cycleCase *core.CycleExplainerResult) bool
 
 type CycleAnomalySpecType struct {
 	// A set of relationships which must intersect with every edge in the cycle.
@@ -73,8 +74,8 @@ func fromFirstRelAndRestWithFilter(filter FilterExType, first core.Rel, rests ..
 }
 
 func buildFilterExByType(required string) FilterExType {
-	return func(cycleCase *CycleCase) bool {
-		return cycleCase.Type == required
+	return func(cr *core.CycleExplainerResult) bool {
+		return string(cr.Typ) == required
 	}
 }
 
@@ -130,13 +131,64 @@ func init() {
 // CycleExplainWrapper is a ICycleExplainer, it's also a wrapper for core.
 type CycleExplainerWrapper struct{}
 
-func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, circle core.Circle) CycleCase {
-	panic("implement me")
+func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, circle core.Circle) core.CycleExplainerResult {
+	ce := core.CycleExplainer{}
+	ex := ce.ExplainCycle(pairExplainer, circle)
+	steps := ex.Steps
+	var typeFrequencies map[core.DependType]int
+	for _, step := range ex.Steps {
+		t := step.Result.Type()
+		if _, ok := typeFrequencies[t]; !ok {
+			typeFrequencies[t] = 0
+		}
+		typeFrequencies[t]++
+	}
+	realtime := typeFrequencies[core.RealtimeDepend]
+	process := typeFrequencies[core.ProcessDepend]
+	ww := typeFrequencies[core.WWDepend]
+	wr := typeFrequencies[core.WRDepend]
+	rw := typeFrequencies[core.RWDepend]
+	var rwAdj bool
+	var lastType = steps[len(steps)-1].Result.Type()
+	for _, step := range steps {
+		if lastType == core.RWDepend && step.Result.Type() == core.RWDepend {
+			rwAdj = true
+			break
+		}
+		lastType = step.Result.Type()
+	}
+	var dataDepType string
+	if rw == 1 {
+		dataDepType = "G-single"
+	} else if 1 < rw {
+		if rwAdj {
+			dataDepType = "G2-item"
+		} else {
+			dataDepType = "G-nonadjacent"
+		}
+	} else if 0 < wr {
+		dataDepType = "G1c"
+	} else if 0 < ww {
+		dataDepType = "G0"
+	} else {
+		panic(fmt.Sprintf("Don't know how to classify: %+v", ex))
+	}
+	var subtype string
+	if 0 < realtime {
+		subtype = "-realtime"
+	} else if 0 < process {
+		subtype = "-process"
+	}
+	return core.CycleExplainerResult{
+		Circle: ex.Circle,
+		Steps:  ex.Steps,
+		Typ:    core.DependType(fmt.Sprintf("%s%s", dataDepType, subtype)),
+	}
 }
 
-func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, circle core.Circle, steps []core.Step) string {
+func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, cr core.CycleExplainerResult) string {
 	exp := core.CycleExplainer{}
-	return exp.RenderCycleExplanation(explainer, circle, steps)
+	return exp.RenderCycleExplanation(explainer, cr)
 }
 
 // NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).

@@ -34,27 +34,15 @@ func Cycles(analyzer core.Analyzer, history core.History) core.CheckResult {
 	return checkedResult
 }
 
-type CycleCase struct {
-	Circle core.Circle
-	Steps  []core.Step
-	Type   string
-}
-
-func (c CycleCase) IAnomaly() {}
-
-func (c CycleCase) String() string {
-	panic("implement me")
-}
-
 func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]core.Anomaly {
 	g := FilteredGraphs(graph)
 	cases := map[string][]core.Anomaly{}
 	for _, scc := range sccs {
 		for _, v := range CycleCasesInScc(graph, g, pairExplainer, scc) {
-			if _, e := cases[v.Type]; !e {
-				cases[v.Type] = make([]core.Anomaly, 0)
+			if _, e := cases[string(v.Typ)]; !e {
+				cases[string(v.Typ)] = make([]core.Anomaly, 0)
 			}
-			cases[v.Type] = append(cases[v.Type], v)
+			cases[string(v.Typ)] = append(cases[string(v.Typ)], v)
 		}
 	}
 	return cases
@@ -64,8 +52,8 @@ type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
 
 // CycleCasesInScc searches a single SCC for cycle anomalies.
 // TODO: add timeout logic.
-func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []CycleCase {
-	var cases []CycleCase
+func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []core.CycleExplainerResult {
+	var cases []core.CycleExplainerResult
 	for _, v := range CycleAnomalySpecs {
 		var runtimeGraph *core.DirectedGraph
 		if v.Rels != nil {
@@ -93,15 +81,11 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 
 		if cycle != nil {
 			explainerWrapper := CycleExplainerWrapper{}
-			cycle, steps := explainerWrapper.ExplainCycle(explainer, *cycle)
-			cycleCase := CycleCase{
-				Circle: cycle,
-				Steps:  steps,
-			}
-			if v.FilterEx != nil && !v.FilterEx(&cycleCase) {
+			ex := explainerWrapper.ExplainCycle(explainer, *cycle)
+			if v.FilterEx != nil && !v.FilterEx(&ex) {
 				continue
 			}
-			cases = append(cases, cycleCase)
+			cases = append(cases, ex)
 		}
 	}
 	return cases

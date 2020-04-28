@@ -183,22 +183,45 @@ func (e MonotonicKeyExplainer) RenderExplanation(result ExplainResult, preName, 
 	panic("impl me")
 }
 
+// CycleExplainerResult impls Anomaly
+type CycleExplainerResult struct {
+	Circle Circle
+	Steps  []Step
+	Typ    DependType
+}
+
+func (c CycleExplainerResult) String() string {
+	panic("implement me")
+}
+
+func (c CycleExplainerResult) IAnomaly() {
+}
+
+func (c CycleExplainerResult) Type() DependType {
+	return c.Typ
+}
+
 type ICycleExplainer interface {
-	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
-	RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string
+	ExplainCycle(pairExplainer DataExplainer, circle Circle) CycleExplainerResult
+	RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string
 }
 
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
 type CycleExplainer struct{}
 
 // Explain for the whole scc.
-func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
+func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) CycleExplainerResult {
 	var steps []Step
 	for i := 1; i < len(circle.Path); i++ {
 		res := explainer.ExplainPairData(circle.Path[i-1], circle.Path[i])
 		steps = append(steps, Step{Result: res})
 	}
-	return circle, steps
+	return CycleExplainerResult{
+		Circle: circle,
+		Steps:  steps,
+		// don't return type
+		Typ: "",
+	}
 }
 
 type OpBinding struct {
@@ -206,19 +229,19 @@ type OpBinding struct {
 	Name      string
 }
 
-func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string {
+func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string {
 	var bindings []OpBinding
 	if len(bindings) < 2 {
 		return ""
 	}
-	for i, v := range circle.Path[:len(circle.Path)-1] {
+	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
 			Name:      fmt.Sprintf("T%d", i),
 		})
 	}
 	bindingsExplain := explainBindings(bindings)
-	stepsResult := explainCycleOps(explainer, bindings, steps)
+	stepsResult := explainCycleOps(explainer, bindings, cr.Steps)
 	return bindingsExplain + "\n" + stepsResult
 }
 
@@ -247,6 +270,6 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 
 func explainSCC(g *DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
 	cycle := NewCircle(FindCycle(g, scc))
-	_, steps := cycleExplainer.ExplainCycle(pairExplainer, cycle)
-	return cycleExplainer.RenderCycleExplanation(pairExplainer, cycle, steps)
+	cr := cycleExplainer.ExplainCycle(pairExplainer, cycle)
+	return cycleExplainer.RenderCycleExplanation(pairExplainer, cr)
 }
