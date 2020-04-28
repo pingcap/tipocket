@@ -479,7 +479,7 @@ func (c *Controller) collectLogs() {
 	}
 
 	longDur := time.Minute * 10
-	shortDur := time.Minute * 1
+	shortDur := time.Minute * 4
 	panicTicker := time.NewTicker(longDur)
 	// log ticker is a ticker for collecting pod logs, runs every 4 minute
 	logTicker := time.NewTicker(shortDur)
