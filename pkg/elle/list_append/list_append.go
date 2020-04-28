@@ -134,6 +134,9 @@ type wrExplainer struct {
 func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	for _, mop := range *b.Value {
 		k := mop.GetKey()
+		if mop.GetValue() == nil {
+			continue
+		}
 		v := mop.GetValue().([]core.Mop)
 		if !mop.IsRead() {
 			continue
@@ -218,6 +221,9 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			ai := -1
 			for i, aMop := range *a.Value {
 				if aMop.IsRead() && aMop.GetKey() == k {
+					if aMop.GetValue() == nil {
+						continue
+					}
 					vs := aMop.GetValue().([]int)
 					if prev == nil && len(vs) == 0 {
 						ai = i
