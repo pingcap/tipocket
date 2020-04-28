@@ -109,7 +109,7 @@ func duplicates(history core.History) GCaseTp {
 			}
 		}
 	}
-	return anomalies
+	return duplicateCases
 }
 
 func writeIndex(history core.History) writeIdx {

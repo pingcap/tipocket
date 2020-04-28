@@ -28,6 +28,7 @@ func preprocess(h core.History) (history core.History, appendIdx appendIdx, writ
 	appendIdx = appendIndex(sortedValueResults)
 	writeIdx = writeIndex(history)
 	readIdx = readIndex(history)
+	return
 }
 
 type wwExplainResult struct {
