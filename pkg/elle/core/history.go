@@ -54,6 +54,7 @@ type Mop interface {
 	GetMopType() MopType
 	GetKey() string
 	GetValue() MopValueType
+	IsEqual(b Mop) bool
 }
 
 // Append implements Mop
@@ -66,6 +67,38 @@ func (a Append) String() string {
 	return fmt.Sprintf("[:append %s %v]", a.Key, a.Value)
 }
 
+// IsAppend ...
+func (Append) IsAppend() bool {
+	return true
+}
+
+// IsRead ...
+func (Append) IsRead() bool {
+	return false
+}
+
+// GetMopType ...
+func (Append) GetMopType() MopType {
+	return MopTypeAppend
+}
+
+// GetKey get append key
+func (a Append) GetKey() string {
+	return a.Key
+}
+
+// GetValue get append value
+func (a Append) GetValue() MopValueType {
+	return a.Value
+}
+
+func (a Append) IsEqual(b Mop) bool {
+	if a.GetMopType() != b.GetMopType() {
+		return false
+	}
+	return a == b
+}
+
 // Read implements Mop
 type Read struct {
 	Key   string       `json:"key"`
@@ -74,6 +107,48 @@ type Read struct {
 
 func (r Read) String() string {
 	return fmt.Sprintf("[:r %s %v]", r.Key, r.Value)
+}
+
+// IsAppend ...
+func (Read) IsAppend() bool {
+	return false
+}
+
+// IsRead ...
+func (Read) IsRead() bool {
+	return true
+}
+
+// GetMopType ...
+func (Read) GetMopType() MopType {
+	return MopTypeRead
+}
+
+// GetKey get read key
+func (r Read) GetKey() string {
+	return r.Key
+}
+
+// GetValue get read value
+func (r Read) GetValue() MopValueType {
+	return r.Value
+}
+
+func (r Read) IsEqual(b Mop) bool {
+	if r.GetMopType() != b.GetMopType() {
+		return false
+	}
+	aValue := r.GetValue().([]int)
+	bValue := r.GetValue().([]int)
+	if len(aValue) != len(bValue) {
+		return false
+	}
+	for idx := range aValue {
+		if aValue[idx] != bValue[idx] {
+			return false
+		}
+	}
+	return true
 }
 
 // Op is operation
@@ -128,56 +203,6 @@ func (h History) AttachIndex() {
 	for i, _ := range h {
 		h[i].Index = i
 	}
-}
-
-// IsAppend ...
-func (Append) IsAppend() bool {
-	return true
-}
-
-// IsRead ...
-func (Append) IsRead() bool {
-	return false
-}
-
-// GetMopType ...
-func (Append) GetMopType() MopType {
-	return MopTypeAppend
-}
-
-// GetKey get append key
-func (a Append) GetKey() string {
-	return a.Key
-}
-
-// GetValue get append value
-func (a Append) GetValue() MopValueType {
-	return a.Value
-}
-
-// IsAppend ...
-func (Read) IsAppend() bool {
-	return false
-}
-
-// IsRead ...
-func (Read) IsRead() bool {
-	return true
-}
-
-// GetMopType ...
-func (Read) GetMopType() MopType {
-	return MopTypeRead
-}
-
-// GetKey get read key
-func (r Read) GetKey() string {
-	return r.Key
-}
-
-// GetValue get read value
-func (r Read) GetValue() MopValueType {
-	return r.Value
 }
 
 // ParseHistory parse history from elle's row text

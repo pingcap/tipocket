@@ -89,7 +89,7 @@ type PathType = Op
 // IndexOfMop returns the index of mop in op
 func (op PathType) IndexOfMop(mop Mop) int {
 	for idx, m := range *op.Value {
-		if m == mop {
+		if m.IsEqual(mop) {
 			return idx
 		}
 	}

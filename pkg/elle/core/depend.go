@@ -232,9 +232,6 @@ type OpBinding struct {
 
 func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string {
 	var bindings []OpBinding
-	if len(bindings) < 2 {
-		return ""
-	}
 	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
@@ -243,7 +240,7 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr Cycl
 	}
 	bindingsExplain := explainBindings(bindings)
 	stepsResult := explainCycleOps(explainer, bindings, cr.Steps)
-	return bindingsExplain + "\n" + stepsResult
+	return bindingsExplain + "\n\nThen:\n" + stepsResult
 }
 
 // Takes a seq of [name op] pairs, and constructs a string naming each op.
@@ -264,7 +261,7 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 	}
 	// extra result
 	explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[len(bindings)-1].Name,
-		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(bindings)].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
+		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(steps)-1].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
 
 	return strings.Join(explainitions, "\n")
 }

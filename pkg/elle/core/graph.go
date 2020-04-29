@@ -2,8 +2,6 @@ package core
 
 import (
 	"github.com/mohae/deepcopy"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Edge is a intermediate representation of edge on DirectedGraph
@@ -270,7 +268,7 @@ type SCC struct {
 	Vertices []Vertex
 }
 
-// StronglyConnectedComponents finds all strongly connected components
+// StronglyConnectedComponents finds all strongly connected components, greater than 1 element
 func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	dfn := make(map[Vertex]int)
 	low := make(map[Vertex]int)
@@ -278,7 +276,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	belong := make(map[Vertex]int)
 	in := make(map[Vertex]bool)
 	tag := make(map[Vertex]map[Vertex]bool)
-	s2 := []Vertex{}
+	var s2 []Vertex
 	vertices := g.Vertices()
 	index := 0
 	for _, v := range vertices {
@@ -295,7 +293,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					in[x] = true
 				}
 				finish := true
-				for next, _ := range g.Outs[x] {
+				for next := range g.Outs[x] {
 					if dfn[next] == 0 {
 						s1 = append(s1, x)
 						s1 = append(s1, next)
@@ -315,7 +313,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					}
 				}
 				if finish == true {
-					for next, _ := range g.Outs[x] {
+					for next := range g.Outs[x] {
 						_, ok := tag[x]
 						if !ok {
 							tag[x] = make(map[Vertex]bool)
@@ -349,7 +347,14 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 		id := belong[v]
 		scc[id-1].Vertices = append(scc[id-1].Vertices, v)
 	}
-	return scc
+
+	var sccs []SCC
+	for _, sc := range scc {
+		if len(sc.Vertices) >= 2 {
+			sccs = append(sccs, sc)
+		}
+	}
+	return sccs
 }
 
 // NewDirectedGraph returns a empty DirectedGraph
@@ -426,7 +431,6 @@ func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 		for _, x := range vertices {
 			for y, rels := range g.Outs[x] {
 				for _, rel := range rels {
-					log.Infof("Link %v, %v, %s", x, y, string(rel))
 					dg.Link(x, y, rel)
 				}
 			}

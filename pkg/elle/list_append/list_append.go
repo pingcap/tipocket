@@ -72,7 +72,7 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 					Value:    v,
 					AMopIndex: a.IndexOfMop(core.Append{
 						Key:   k,
-						Value: v,
+						Value: prev,
 					}),
 					BMopIndex: b.IndexOfMop(bmop),
 				}
@@ -104,7 +104,7 @@ func wwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 			}
 			dep := wwMopDep(appendIdx, writeIdx, op, mop)
 			if dep != nil {
-				g.Link(core.Vertex{Value: dep}, core.Vertex{Value: op}, core.WW)
+				g.Link(core.Vertex{Value: *dep}, core.Vertex{Value: op}, core.WW)
 			}
 		}
 	}
@@ -135,14 +135,14 @@ type wrExplainer struct {
 
 func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	for _, mop := range *b.Value {
+		if !mop.IsRead() {
+			continue
+		}
 		k := mop.GetKey()
 		if mop.GetValue() == nil {
 			continue
 		}
-		v := mop.GetValue().([]core.Mop)
-		if !mop.IsRead() {
-			continue
-		}
+		v := mop.GetValue().([]int)
 		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
 			return wrExplainResult{
@@ -180,7 +180,7 @@ func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 			}
 			dep := wrMopDep(writeIdx, op, mop)
 			if dep != nil {
-				g.Link(core.Vertex{Value: dep}, core.Vertex{Value: op}, core.WR)
+				g.Link(core.Vertex{Value: *dep}, core.Vertex{Value: op}, core.WR)
 			}
 		}
 	}
@@ -224,7 +224,7 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			{
 				for i, aMop := range *a.Value {
 					if aMop.IsRead() && aMop.GetKey() == k {
-						// we should let it panic if vs is nil
+						// we should let it panic if vs is not []int
 						vs := aMop.GetValue().([]int)
 						if prev == initMagicNumber && len(vs) == 0 {
 							ai = i

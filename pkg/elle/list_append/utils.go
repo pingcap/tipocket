@@ -181,19 +181,21 @@ func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
 	if mop != nil && mop.IsRead() {
 		writeMap, e := writeIndex[mop.GetKey()]
-		// Note: maybe unsafe
 		if mop.GetValue() == nil {
 			return nil
 		}
-		// (*mop).GetValue(), so it at least contains one value, it's OK to do like this
-		firstValue := mop.GetValue().([]int)[0]
-		op2, e := writeMap[core.MopValueType(firstValue)]
+		v := mop.GetValue().([]int)
+		if len(v) == 0 {
+			return nil
+		}
+		lastRead := v[len(v)-1]
+		appendOp, e := writeMap[core.MopValueType(lastRead)]
 		if !e {
 			return nil
 		}
 		// Note: I don't know where comparing like this is ok.
-		if op == op2 {
-			return &op
+		if op != appendOp {
+			return &appendOp
 		}
 	}
 	return nil
