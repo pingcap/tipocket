@@ -10,14 +10,19 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/txn"
 )
 
+const unknownPrefixMagicNumber = -114514
+
+// MopValueType type
+const initMagicNumber = -114515
+
 // key -> [v0, v1, v2, v3...]
 type appendIdx map[string][]core.MopValueType
 
 // key -> v -> Op
 type writeIdx map[string]map[core.MopValueType]core.Op
 
-// key -> [Op1, Op2, Op3...]
-type readIdx map[string][]core.Op
+// key -> {v1 -> [Op1, Op2, Op3...], v2 -> [Op4, Op5...]}
+type readIdx map[string]map[core.MopValueType][]core.Op
 
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
 	if !verifyUniqueAppends(h) {
@@ -55,14 +60,11 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		k := bmop.GetKey()
 		v := bmop.GetValue()
 		if bmop.IsAppend() {
-			prev, isInit := previouslyAppendElement(w.appendIdx, b, bmop)
-			// if bmop is the first mop of append key k
-			// or some logic error
-			if prev == nil || isInit {
+			prev := previouslyAppendElement(w.appendIdx, b, bmop)
+			if prev == nil {
 				continue
 			}
 			dep := wwMopDep(w.appendIdx, w.writeIdx, b, bmop)
-			// TODO(mahjonp): should panic if dep == nil?
 			if dep != nil && *dep == a {
 				return wwExplainResult{
 					Key:      k,
@@ -217,21 +219,21 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		}
 		readers := rwMopDeps(r.appendIdx, r.writeIdx, r.readIdx, b, mop)
 		if _, ok := readers[a]; ok {
-			prev, _ := previouslyAppendElement(r.appendIdx, b, mop)
+			prev := previouslyAppendElement(r.appendIdx, b, mop)
 			ai := -1
-			for i, aMop := range *a.Value {
-				if aMop.IsRead() && aMop.GetKey() == k {
-					if aMop.GetValue() == nil {
-						continue
-					}
-					vs := aMop.GetValue().([]int)
-					if prev == nil && len(vs) == 0 {
-						ai = i
-						break
-					}
-					if prev != nil && len(vs) != 0 && vs[len(vs)-1] == prev {
-						ai = i
-						break
+			{
+				for i, aMop := range *a.Value {
+					if aMop.IsRead() && aMop.GetKey() == k {
+						// we should let it panic if vs is nil
+						vs := aMop.GetValue().([]int)
+						if prev == initMagicNumber && len(vs) == 0 {
+							ai = i
+							break
+						}
+						if prev != initMagicNumber && len(vs) != 0 && vs[len(vs)-1] == prev {
+							ai = i
+							break
+						}
 					}
 				}
 			}
@@ -319,14 +321,18 @@ func g1aCases(history core.History) GCaseTp {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := failed[mop.GetKey()]
-			v := mop.GetValue().(int)
-			writer := versionMap[v]
-			excepted = append(excepted, G1Conflict{
-				Op:      *op,
-				Mop:     mop,
-				Writer:  *writer,
-				Element: mop.GetValue(),
-			})
+			v := mop.GetValue().([]int)
+			for _, e := range v {
+				writer := versionMap[e]
+				if writer != nil {
+					excepted = append(excepted, G1Conflict{
+						Op:      *op,
+						Mop:     mop,
+						Writer:  *writer,
+						Element: e,
+					})
+				}
+			}
 		}
 	}
 	return excepted
@@ -344,20 +350,24 @@ func g1bCases(history core.History) GCaseTp {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := inter[mop.GetKey()]
-			v := mop.GetValue().(int)
-			writer := versionMap[v]
-			excepted = append(excepted, G1Conflict{
-				Op:      *op,
-				Mop:     mop,
-				Writer:  *writer,
-				Element: mop.GetValue(),
-			})
+			v := mop.GetValue().([]int)
+			if len(v) == 0 {
+				continue
+			}
+			e := v[len(v)-1]
+			writer := versionMap[e]
+			if writer != nil {
+				excepted = append(excepted, G1Conflict{
+					Op:      *op,
+					Mop:     mop,
+					Writer:  *writer,
+					Element: e,
+				})
+			}
 		}
 	}
 	return excepted
 }
-
-const InternalMagicNumber = -114514
 
 type InternalConflict struct {
 	Op       core.Op
@@ -390,7 +400,7 @@ func opInternalCases(op core.Op) core.Anomaly {
 			}
 			// check conflicts
 			comIndex := 0
-			if len(previousData) > 0 && previousData[0] == core.MopValueType(InternalMagicNumber) {
+			if len(previousData) > 0 && previousData[0] == core.MopValueType(unknownPrefixMagicNumber) {
 				seqDelta := len(records) + 1 - len(previousData)
 				if seqDelta < 0 {
 					return &InternalConflict{
@@ -419,7 +429,7 @@ func opInternalCases(op core.Op) core.Anomaly {
 			//  read, it must be append.
 			_, e := dataMap[v.GetKey()]
 			if !e {
-				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], InternalMagicNumber)
+				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], unknownPrefixMagicNumber)
 			}
 			dataMap[v.GetKey()] = append(dataMap[v.GetKey()], v.GetValue())
 		}

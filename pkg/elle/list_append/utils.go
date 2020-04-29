@@ -128,7 +128,7 @@ func writeIndex(history core.History) writeIdx {
 					indexMap[mop.GetKey()] = map[core.MopValueType]core.Op{}
 					innerMap = indexMap[mop.GetKey()]
 				}
-				innerMap[mop.GetKey()] = op
+				innerMap[mop.GetValue()] = op
 			}
 		}
 	}
@@ -136,18 +136,30 @@ func writeIndex(history core.History) writeIdx {
 }
 
 func readIndex(history core.History) readIdx {
-	indexRead := map[string][]core.Op{}
+	indexRead := map[string]map[core.MopValueType][]core.Op{}
 	for _, op := range history {
 		if op.Value == nil {
 			continue
 		}
 		for _, mop := range *op.Value {
-			if mop == nil {
+			if !mop.IsRead() {
 				continue
 			}
-			if mop.IsRead() && mop.GetValue() != nil {
-				indexRead[mop.GetKey()] = append(indexRead[mop.GetKey()], op)
+			k := mop.GetKey()
+			v := mop.GetValue().([]int)
+			// we jump not read mop
+			// we jump info type and empty read
+			if op.Type == core.OpTypeInfo && len(v) == 0 {
+				continue
 			}
+			if _, ok := indexRead[k]; !ok {
+				indexRead[k] = make(map[core.MopValueType][]core.Op)
+			}
+			var mopValue = core.MopValueType(initMagicNumber)
+			if len(v) != 0 {
+				mopValue = v[len(v)-1]
+			}
+			indexRead[k][mopValue] = append(indexRead[k][mopValue], op)
 		}
 	}
 	return indexRead
@@ -187,40 +199,38 @@ func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
 	return nil
 }
 
-// Note: return nil if
-// * the input not match the requirements.
-// The returning bool means "it's the initialize value", if it's true, we may return (nil, true).
-// Should we have more return types here?
-func previouslyAppendElement(appendIndexResult appendIdx, op core.Op, mop core.Mop) (core.MopValueType, bool) {
-	if mop == nil || mop.IsAppend() {
-		return nil, false
+// previouslyAppendElement returns:
+// * nil if mop is not a append mop
+// * or initMagicNumber if mop append the first element of that key
+// * otherwise return the previous MopValueType value
+func previouslyAppendElement(appendIndex appendIdx, op core.Op, mop core.Mop) core.MopValueType {
+	if mop == nil || !mop.IsAppend() {
+		return nil
 	}
-	subdict, e := appendIndexResult[mop.GetKey()]
-	if !e {
-		return nil, false
-	}
-	// Note: It's an append, so append value should not be nil.
-	appendValue := mop.GetValue()
-	for i, v := range subdict {
-		if v == appendValue {
-			if i != 0 {
-				return subdict[i-1], false
-			} else {
-				return nil, true
-			}
+	k := mop.GetKey()
+	v := mop.GetValue().(int)
+	appendSeq := appendIndex[k]
+	index := -1
+	for i := range appendSeq {
+		if appendSeq[i] == v {
+			index = i
+			break
 		}
 	}
-	return nil, false
+	// we don't found the value mop appended on appendIdx
+	if index < 0 {
+		return nil
+	}
+	if index > 0 {
+		return appendIndex[k][index-1]
+	}
+	return initMagicNumber
 }
 
 // returns What (other) operation wrote the value just before this write mop?"
 func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op, mop core.Mop) *core.Op {
-	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
-	if isInit {
-		// no writer precedes us
-		return nil
-	}
-	if previousElement == nil {
+	previousElement := previouslyAppendElement(appendIndexResult, op, mop)
+	if previousElement == nil || previousElement == initMagicNumber {
 		return nil
 	}
 	writerMap, e := writeIndexResult[mop.GetKey()]
@@ -228,35 +238,29 @@ func wwMopDep(appendIndexResult appendIdx, writeIndexResult writeIdx, op core.Op
 	if !e {
 		return nil
 	}
-	element, e := writerMap[previousElement]
+	writer, e := writerMap[previousElement]
 	if !e {
 		return nil
 	}
-	if element == op {
+	if writer == op {
 		return nil
 	}
-	return &element
+	return &writer
 }
 
 func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop core.Mop) map[core.Op]struct{} {
-	previousElement, isInit := previouslyAppendElement(appendIndexResult, op, mop)
-	if isInit {
-		// no writer precedes us
-		return nil
-	}
+	previousElement := previouslyAppendElement(appendIndexResult, op, mop)
 	if previousElement == nil {
 		return nil
 	}
 	mopDeps := map[core.Op]struct{}{}
-	// Note: if previousElement is not nil, mop must can call `GetKey`.
-	ops, e := readIndexResult[mop.GetKey()]
-	if !e {
-		return nil
-	}
-	for _, v := range ops {
-		if v != previousElement {
-			mopDeps[v] = struct{}{}
+	ops := readIndexResult[mop.GetKey()]
+	for _, o := range ops[previousElement] {
+		// filter out op
+		if o == op {
+			continue
 		}
+		mopDeps[o] = struct{}{}
 	}
 	return mopDeps
 }
