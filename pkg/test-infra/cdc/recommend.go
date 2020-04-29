@@ -384,7 +384,7 @@ func newKafka(ns, name string) *Kafka {
 									"/cdc_kafka_consumer",
 									"--upstream-uri", upstreamURI,
 									"--downstream-uri", downstreamURI,
-									"--log-file", "",
+									"--log-file", "/var/log/kafka/consumer.log",
 									"--log-level", "debug",
 								},
 							},
