@@ -102,8 +102,14 @@ type Circle struct {
 }
 
 // NewCircle returns a Circle from a Vertex slice
-func NewCircle(vertices []Vertex) Circle {
-	c := Circle{Path: make([]PathType, 0)}
+func NewCircle(vertices []Vertex) *Circle {
+	if len(vertices) == 0 {
+		return nil
+	}
+	if len(vertices) < 3 || vertices[0] != vertices[len(vertices)-1] {
+		panic("there isn't a cycle, the code may has bug")
+	}
+	c := &Circle{Path: make([]PathType, 0)}
 	for _, vertex := range vertices {
 		c.Path = append(c.Path, vertex.Value.(PathType))
 	}

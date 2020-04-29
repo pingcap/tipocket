@@ -84,9 +84,9 @@ func init() {
 		"G0":       fromRels(core.WW),
 		"G1c":      fromFirstRelAndRest(core.WR, core.WW, core.WR),
 		"G-single": fromFirstRelAndRest(core.RW, core.WW, core.WR),
-		"G-nonadjacent": fromRelsAndWith(NonadjacentRW, func(p interface{}) bool {
-			return true
-		}, core.WW, core.WR, core.RW),
+		//"G-nonadjacent": fromRelsAndWith(NonadjacentRW, func(p interface{}) bool {
+		//	return true
+		//}, core.WW, core.WR, core.RW),
 
 		"G2-item":          fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item"), core.RW, core.WR, core.RW, core.WW),
 		"G0-process":       fromRelsWithFilter(buildFilterExByType("G0-process"), core.WW, core.Process),
@@ -135,7 +135,7 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 	ce := core.CycleExplainer{}
 	ex := ce.ExplainCycle(pairExplainer, circle)
 	steps := ex.Steps
-	var typeFrequencies map[core.DependType]int
+	typeFrequencies := make(map[core.DependType]int)
 	for _, step := range ex.Steps {
 		t := step.Result.Type()
 		if _, ok := typeFrequencies[t]; !ok {

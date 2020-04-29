@@ -11,7 +11,6 @@ require (
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/mgechev/revive v1.0.2
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200221071630-a3e79a893072
@@ -24,7 +23,6 @@ require (
 	github.com/pingcap/tidb-operator v1.1.0-beta.1.0.20200326133238-0fe67bf5e069
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0 // indirect
 	go.uber.org/zap v1.14.0

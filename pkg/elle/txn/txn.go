@@ -54,7 +54,8 @@ type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
 // TODO: add timeout logic.
 func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []core.CycleExplainerResult {
 	var cases []core.CycleExplainerResult
-	for _, v := range CycleAnomalySpecs {
+	for cn, v := range CycleAnomalySpecs {
+		_ = cn
 		var runtimeGraph *core.DirectedGraph
 		if v.Rels != nil {
 			runtimeGraph = filterGraph(setKeys(v.Rels))
@@ -64,19 +65,18 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 		var cycle *core.Circle
 		cycle = nil
 		if v.With != nil {
-			c := core.FindCycleWith(v.With, v.FilterPathState, *runtimeGraph, scc)
-			cycle = &c
+			cycle = core.FindCycleWith(v.With, v.FilterPathState, *runtimeGraph, scc)
 		} else if v.Rels != nil {
-			c := core.NewCircle(core.FindCycle(runtimeGraph, scc))
-			cycle = &c
+			c := core.FindCycle(runtimeGraph, scc)
+			cycle = core.NewCircle(c)
 		} else {
 			// TODO(mahjonp): need review
 			// Note: this requires find-cycle-starting-with
 			//s1 := filterGraph([]core.Rel{v.FirstRel})
 			//s2 := filterGraph(setKeys(v.RestRels))
 			filteredGraph := filterGraph(core.RelSet([]core.Rel{v.FirstRel}).Append(v.RestRels))
-			c := core.NewCircle(core.FindCycleStartingWith(filteredGraph, v.FirstRel, scc))
-			cycle = &c
+			c := core.FindCycleStartingWith(filteredGraph, v.FirstRel, scc)
+			cycle = core.NewCircle(c)
 		}
 
 		if cycle != nil {

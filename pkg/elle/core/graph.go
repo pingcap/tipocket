@@ -1,9 +1,5 @@
 package core
 
-import (
-	"github.com/mohae/deepcopy"
-)
-
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
 	From  Vertex
@@ -22,7 +18,7 @@ type DirectedGraph struct {
 
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
-	vertices := []Vertex{}
+	var vertices []Vertex
 
 	for key := range g.Outs {
 		vertices = append(vertices, key)
@@ -47,7 +43,7 @@ func (g *DirectedGraph) Out(v Vertex) []Vertex {
 		return []Vertex{}
 	}
 
-	vertices := []Vertex{}
+	var vertices []Vertex
 
 	for key := range g.Outs[v] {
 		vertices = append(vertices, key)
@@ -151,12 +147,20 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 
 // Fork implements `forked` semantics on DirectedGraph
 func (g *DirectedGraph) Fork() *DirectedGraph {
-	return deepcopy.Copy(g).(*DirectedGraph)
+	d := NewDirectedGraph()
+	for _, a := range g.Vertices() {
+		for _, b := range g.Out(a) {
+			for _, e := range g.Edges(a, b) {
+				d.Link(a, b, e.Value)
+			}
+		}
+	}
+	return d
 }
 
 // IntersectionRel returns the intersection of res1 and res2
 func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel {
-	rel := []Rel{}
+	var rel []Rel
 	for _, rel1 := range rels1 {
 		for _, rel2 := range rels2 {
 			if rel1 == rel2 {
@@ -460,7 +464,7 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	haveVisited := make(map[Vertex]bool)
 	haveVisited[queue[0]] = true
 	from := make(map[Vertex]Vertex)
-	var first Vertex
+	var first *Vertex
 	flag := false
 
 	for len(queue) > 0 {
@@ -473,7 +477,7 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 			}
 			if haveVisited[next] == true {
 				flag = true
-				first = next
+				first = &next
 				from[next] = cur
 				break
 			} else {
@@ -487,15 +491,19 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 		}
 	}
 
-	now := first
+	if first == nil {
+		return nil
+	}
+
+	now := *first
 	for {
 		vertices = append(vertices, now)
 		now = from[now]
-		if now == first {
+		if now == *first {
 			break
 		}
 	}
-	vertices = append(vertices, first)
+	vertices = append(vertices, *first)
 	for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
 		vertices[i], vertices[j] = vertices[j], vertices[i]
 	}
@@ -585,6 +593,6 @@ func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
 }
 
 // FindCycleWith ...
-func FindCycleWith(transition Transition, pred Predicate, graph DirectedGraph, scc SCC) Circle {
+func FindCycleWith(transition Transition, pred Predicate, graph DirectedGraph, scc SCC) *Circle {
 	panic("impl me")
 }

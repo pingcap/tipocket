@@ -25,9 +25,6 @@ const (
 	WWDepend        DependType = "ww"
 	WRDepend        DependType = "wr"
 	RWDepend        DependType = "rw"
-
-	// CombineDepend is a special form of DependType
-	CombineDepend DependType = "combine"
 )
 
 type ExplainResult interface {
@@ -45,7 +42,7 @@ type CombineExplainResult struct {
 }
 
 func (c CombineExplainResult) Type() DependType {
-	return CombineDepend
+	return c.er.Type()
 }
 
 // ExplainPairData find dependencies in a and b
@@ -64,9 +61,6 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 
 // RenderExplanation render explanation result
 func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
-	if result.Type() != CombineDepend {
-		log.Fatalf("result type is not %s, type error", CombineDepend)
-	}
 	er := result.(CombineExplainResult)
 	return er.ex.RenderExplanation(er.er, p1, p2)
 }
@@ -263,11 +257,22 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 	explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[len(bindings)-1].Name,
 		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(steps)-1].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
 
+	for idx, ex := range explainitions {
+		if idx == len(explainitions)-1 {
+			explainitions[idx] = fmt.Sprintf("  - However, %s: a contradiction!", ex)
+		} else {
+			explainitions[idx] = fmt.Sprintf("  - %s.", ex)
+		}
+	}
+
 	return strings.Join(explainitions, "\n")
 }
 
 func explainSCC(g *DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
 	cycle := NewCircle(FindCycle(g, scc))
-	cr := cycleExplainer.ExplainCycle(pairExplainer, cycle)
+	if cycle == nil {
+		panic("don't find a cycle, the code may has bug")
+	}
+	cr := cycleExplainer.ExplainCycle(pairExplainer, *cycle)
 	return cycleExplainer.RenderCycleExplanation(pairExplainer, cr)
 }
