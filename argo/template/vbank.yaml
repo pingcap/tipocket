@@ -84,3 +84,6 @@ spec:
               secretKeySecret:
                 key: secretkey
                 name: my-minio-cred
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs

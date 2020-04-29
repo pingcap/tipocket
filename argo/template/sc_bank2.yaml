@@ -36,6 +36,11 @@ spec:
             default: "3"
           - name: tidb-replica-read
             default: "leader"
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"

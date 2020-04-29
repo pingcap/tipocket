@@ -62,6 +62,9 @@ func (suit *Suit) Run(ctx context.Context) {
 		}
 	)
 	sctx, cancel := context.WithCancel(ctx)
+	// get the time before creating the tidb cluster
+	// note this is just a approximate value
+	startTime := time.Now()
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, clusterSpec)
 	if err != nil {
 		log.Fatalf("deploy a cluster failed, err: %s", err)
@@ -86,8 +89,9 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewClient(fixture.Context.LokiAddress,
+		loki.NewClient(startTime, fixture.Context.LokiAddress,
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
+		fixture.Context.LogPath,
 	)
 
 	sigs := make(chan os.Signal, 1)

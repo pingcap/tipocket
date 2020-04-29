@@ -7,7 +7,6 @@ spec:
   startingDeadlineSeconds: 0
   workflowSpec:
     entrypoint: call-tipocket-bank
-    onExit: call-export-logs
     arguments:
       parameters:
         - name: ns
@@ -27,16 +26,6 @@ spec:
         - name: round
           value: "100"
     templates:
-      - name: call-export-logs
-        steps:
-          - - name: call-export-logs
-              templateRef:
-                name: export-logs
-                template: export-logs
-              arguments:
-                parameters:
-                  - name: ns
-                    value: "{{workflow.parameters.ns}}"
       - name: call-tipocket-bank
         steps:
           - - name: call-tipocket-bank

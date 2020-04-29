@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-rawkv-linearizability
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -23,16 +22,6 @@ spec:
       - name: round
         value: "100"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-rawkv-linearizability
       steps:
         - - name: call-tipocket-rawkv-linearizability

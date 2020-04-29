@@ -7,7 +7,6 @@ spec:
   startingDeadlineSeconds: 0
   workflowSpec:
     entrypoint: call-tipocket-ledger
-    onExit: call-export-logs
     arguments:
       parameters:
         - name: ns
@@ -23,16 +22,6 @@ spec:
         - name: run_time
           value: "60m"
     templates:
-      - name: call-export-logs
-        steps:
-          - - name: call-export-logs
-              templateRef:
-                name: export-logs
-                template: export-logs
-              arguments:
-                parameters:
-                  - name: ns
-                    value: "{{workflow.parameters.ns}}"
       - name: call-tipocket-ledger
         steps:
           - - name: call-tipocket-ledger

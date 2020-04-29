@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-tiflash-cdc
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -41,7 +40,7 @@ spec:
       - name: abtest_general_log
         value: "true"
       - name: tiflash_image
-        value: ""
+        value: "v4.0.0-rc"
       - name: tiflash_replicas
         value: 2
       - name: cdc_hub
@@ -51,16 +50,6 @@ spec:
       - name: cdc_version
         value: "nightly"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-tiflash-cdc
       steps:
         - - name: call-tipocket-tiflash-cdc

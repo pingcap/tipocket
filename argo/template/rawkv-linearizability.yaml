@@ -36,6 +36,14 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "3"
+      outputs:
+        artifacts:
+          - name: case-logs
+            archiveLogs: true
+            path: /logs
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -65,8 +73,3 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-      outputs:
-        artifacts:
-          - name: case-logs
-            archiveLogs: true
-            path: /logs

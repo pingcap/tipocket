@@ -3,7 +3,7 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-region-available
-  onExit: call-export-logs
+
   arguments:
     parameters:
       - name: ns
@@ -19,16 +19,7 @@ spec:
       - name: run_time
         value: "4h"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
+
     - name: call-tipocket-region-available
       steps:
         - - name: call-tipocket-region-available
