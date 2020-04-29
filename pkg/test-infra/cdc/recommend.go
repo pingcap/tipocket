@@ -45,6 +45,8 @@ func newCDC(ns, name string) *CDC {
 			"app.kubernetes.io/component": "cdc",
 			"app.kubernetes.io/instance":  cdcName,
 		}
+		logLevel = fixture.Context.CDCConfig.LogLevel
+		timezone = fixture.Context.CDCConfig.Timezone
 	)
 	logVol := corev1.VolumeMount{
 		Name:      "log",
@@ -91,9 +93,9 @@ func newCDC(ns, name string) *CDC {
 									"server",
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
 									"--status-addr=0.0.0.0:8300",
-									"--log-level", "debug",
 									"--log-file", "/var/log/cdc/cdc.log",
-									"--tz", "UTC",
+									"--log-level", logLevel,
+									"--tz", timezone,
 								},
 								Ports: []corev1.ContainerPort{
 									{
