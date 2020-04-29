@@ -255,6 +255,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
+		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
+			Replication: &v1alpha1.PDReplicationConfig{
+				EnablePlacementRules: pointer.BoolPtr(true),
+			},
+		}
 	}
 
 	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
