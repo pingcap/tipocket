@@ -19,10 +19,7 @@ type CDCConfig struct {
 	DockerRepository string
 	HubAddress       string
 	LogPath          string
-<<<<<<< HEAD
 	EnableKafka      bool
-=======
 	LogLevel         string
 	Timezone         string
->>>>>>> upstream/master
 }
