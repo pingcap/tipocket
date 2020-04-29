@@ -19,4 +19,6 @@ type CDCConfig struct {
 	DockerRepository string
 	HubAddress       string
 	LogPath          string
+	LogLevel         string
+	Timezone         string
 }
