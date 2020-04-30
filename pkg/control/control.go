@@ -56,6 +56,7 @@ type Controller struct {
 	// TODO(yeya24): make log service an interface
 	lokiClient    *loki.Client
 	logPath       string
+	mux           *sync.Mutex
 	podLogFiles   map[string]*os.File
 	lastQueryTime time.Time
 
@@ -84,6 +85,7 @@ func NewController(
 	c.suit = verifySuit
 	c.lokiClient = lokiCli
 	c.logPath = logPath
+	c.mux = &sync.Mutex{}
 	c.podLogFiles = make(map[string]*os.File)
 	// init time stamp
 	c.lastQueryTime = minTime
@@ -489,6 +491,10 @@ func (c *Controller) collectLogs() {
 			select {
 			case <-c.ctx.Done():
 				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now())
+				// Close all pod logs files
+				for _, f := range c.podLogFiles {
+					f.Close()
+				}
 				logTicker.Stop()
 				panicTicker.Stop()
 				return
@@ -553,13 +559,15 @@ func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node, toTime time
 				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
 					"", nil, c.lastQueryTime, toTime, 20000, false)
 				if err != nil {
-					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
+					log.Infof("failed to fetch logs from loki for pod %s in ns %s error is %v", podName, ns, err)
 				} else {
 					log.Infof("collect %s pod logs successfully, %d lines total", podName, len(texts))
 				}
 				if _, ok := c.podLogFiles[podName]; !ok {
+					c.mux.Lock()
 					c.podLogFiles[podName], err = os.OpenFile(path.Join(c.logPath, podName),
 						os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+					c.mux.Unlock()
 					if err != nil {
 						log.Fatalf("failed to create log file for pod %s error is %v", podName, err)
 					}
