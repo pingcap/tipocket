@@ -9,6 +9,10 @@ spec:
         value: tipocket-cdc
       - name: purge
         value: "true"
+      - name: hub
+        value: "docker.io"
+      - name: repository
+        value: "pingcap"
       - name: image_version
         value: nightly
       - name: tidb_image
@@ -56,6 +60,10 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
                 - name: image_version
                   value: "{{workflow.parameters.image_version}}"
                 - name: tidb_image
