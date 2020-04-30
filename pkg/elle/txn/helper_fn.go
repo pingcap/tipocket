@@ -49,24 +49,22 @@ func Gen(mop []core.Mop) core.Op {
 func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
 	im := map[string]map[core.MopValueType]*core.Op{}
 
-	for _, op := range history {
-		final := map[string]core.MopValueType{}
+	for idx, op := range history {
 		if op.Value == nil {
 			continue
 		}
+		final := map[string]core.MopValueType{}
 		for _, mop := range *op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
-				lastOp, exists := final[realKey]
-				if !exists {
-					final[realKey] = a.Value
-				} else {
+				if lastOp, exists := final[realKey]; exists {
 					if _, ok := im[realKey]; !ok {
 						im[realKey] = make(map[core.MopValueType]*core.Op)
 					}
-					im[realKey][lastOp] = &op
+					im[realKey][lastOp] = &history[idx]
 				}
+				final[realKey] = a.Value
 			}
 		}
 	}

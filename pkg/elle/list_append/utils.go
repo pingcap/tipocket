@@ -435,7 +435,7 @@ func min(a, b int) int {
 
 func preProcessHistory(history core.History) core.History {
 	history = filterOutNemesisHistory(history)
-	history.AttachIndex()
+	history.AttachIndexIfNoExists()
 	return history
 }
 

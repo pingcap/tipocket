@@ -102,7 +102,7 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	if !p1.Process.Present() || !p2.Process.Present() {
 		return nil
 	}
-	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index < p2.Index {
+	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index.MustGet() < p2.Index.MustGet() {
 		return ProcessDependent{Process: p1.Process.MustGet()}
 	} else {
 		return nil
@@ -126,8 +126,8 @@ type RealtimeExplainer struct {
 
 // TODO: here it needs to get the preEnd and the postStart, it maybe complex and introduce another logic here.
 func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
-	postStart := r.historyReference[r.nextIndex[postEnd.Index]]
-	if preEnd.Index < postStart.Index {
+	postStart := r.historyReference[r.nextIndex[postEnd.Index.MustGet()]]
+	if preEnd.Index.MustGet() < postStart.Index.MustGet() {
 		return RealtimeDependent{
 			prefixEnd: &preEnd,
 			postStart: &postStart,

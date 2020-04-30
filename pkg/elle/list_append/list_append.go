@@ -355,7 +355,7 @@ func g1bCases(history core.History) GCaseTp {
 			}
 			e := v[len(v)-1]
 			writer := versionMap[e]
-			if writer != nil {
+			if writer != nil && *writer != *op {
 				excepted = append(excepted, G1Conflict{
 					Op:      *op,
 					Mop:     mop,
@@ -383,6 +383,7 @@ func (i InternalConflict) String() string {
 }
 
 // Note: Please review this function carefully.
+// Given an op, returns a Anomaly describing internal consistency violations, or nil otherwise
 func opInternalCase(op core.Op) core.Anomaly {
 	// key -> valueList
 	dataMap := map[string][]core.MopValueType{}
@@ -397,7 +398,7 @@ func opInternalCase(op core.Op) core.Anomaly {
 			var found = false
 			if e {
 				// check conflicts
-				if previousData[0] == core.MopValueType(unknownPrefixMagicNumber) {
+				if len(previousData) != 0 && previousData[0] == core.MopValueType(unknownPrefixMagicNumber) {
 					seqDelta := len(records) + 1 - len(previousData)
 					if seqDelta < 0 {
 						found = true
@@ -415,6 +416,7 @@ func opInternalCase(op core.Op) core.Anomaly {
 					Expected: previousData,
 				}
 			}
+			dataMap[mop.GetKey()] = make([]core.MopValueType, 0)
 			for _, rdata := range records {
 				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], core.MopValueType(rdata))
 			}

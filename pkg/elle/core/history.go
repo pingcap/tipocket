@@ -155,7 +155,7 @@ func (r Read) IsEqual(b Mop) bool {
 
 // Op is operation
 type Op struct {
-	Index   int         `json:"index"`
+	Index   IntOptional `json:"index"`
 	Process IntOptional `json:"process"`
 	Time    time.Time   `json:"time"`
 	Type    OpType      `json:"type"`
@@ -200,10 +200,13 @@ func AllTypesHistory(history History, tp OpType) History {
 	return resp
 }
 
-// AttachIndex add the index for history with it's number in array.
-func (h History) AttachIndex() {
-	for i, _ := range h {
-		h[i].Index = i
+// AttachIndexIfNoExists add the index for history with it's number in array.
+func (h History) AttachIndexIfNoExists() {
+	if len(h) != 0 && h[0].Index.Present() {
+		return
+	}
+	for i := range h {
+		h[i].Index = IntOptional{i}
 	}
 }
 
@@ -241,7 +244,7 @@ func ParseOp(opString string) (Op, error) {
 		if err != nil {
 			return empty, err
 		}
-		op.Index = opIndex
+		op.Index = IntOptional{opIndex}
 	}
 
 	opProcessMatch := opProcessPattern.FindStringSubmatch(operationMatch[1])
