@@ -360,6 +360,8 @@ func valuesFromSingleAppend(history core.History) map[string]core.MopValueType {
 func sortedValues(history core.History) map[string][][]core.MopValueType {
 	iter := txn.OpMops(history)
 	keyMaps := map[string][][]core.MopValueType{}
+	// book whether a []core.MopValueExist is already in keyMaps[key]
+	valueExistMap := map[string]map[uint32]struct{}{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
 		if mop == nil {
@@ -370,20 +372,32 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 		}
 		if mop.GetValue() != nil {
 			values := mop.GetValue().([]int)
+			// we ignore the initial state
+			if len(values) == 0 {
+				continue
+			}
+			hash := txn.IntArrayHash(values)
+			if _, ok := valueExistMap[mop.GetKey()]; !ok {
+				valueExistMap[mop.GetKey()] = make(map[uint32]struct{})
+			}
+			// the read sequence already on keyMaps[key] set, so we jump it
+			if _, ok := valueExistMap[mop.GetKey()][hash]; ok {
+				continue
+			}
 			valueWithRightTp := make([]core.MopValueType, len(values), len(values))
 			for i, v := range values {
 				valueWithRightTp[i] = core.MopValueType(v)
 			}
 			keyMaps[mop.GetKey()] = append(keyMaps[mop.GetKey()], valueWithRightTp)
+			valueExistMap[mop.GetKey()][hash] = struct{}{}
 		}
 	}
 
 	singleAppends := valuesFromSingleAppend(history)
 
-	for k, _ := range singleAppends {
-		a, e := singleAppends[k]
-		if !e {
-			keyMaps[k] = [][]core.MopValueType{{a}}
+	for k, v := range singleAppends {
+		if _, ok := keyMaps[k]; !ok {
+			keyMaps[k] = [][]core.MopValueType{{v}}
 		}
 	}
 
@@ -418,7 +432,7 @@ func incompatibleOrders(sortedValues map[string][][]core.MopValueType) []core.An
 	for k, values := range sortedValues {
 		for index := 1; index < len(values); index++ {
 			a, b := values[index-1], values[index]
-			if seqIsPrefix(a, b) {
+			if seqIsPrefix(a, b) == false {
 				anomalies = append(anomalies, incompatibleOrder{Key: k, Values: [][]core.MopValueType{a, b}})
 			}
 		}

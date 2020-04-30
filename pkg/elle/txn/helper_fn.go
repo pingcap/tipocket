@@ -1,6 +1,7 @@
 package txn
 
 import (
+	"encoding/binary"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -139,6 +140,16 @@ func arrayHash(sset []core.Rel) uint32 {
 	h := fnv.New32a()
 	for _, v := range sset {
 		h.Write([]byte(v))
+	}
+	return h.Sum32()
+}
+
+func IntArrayHash(array []int) uint32 {
+	h := fnv.New32a()
+	for _, v := range array {
+		bs := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bs, uint64(v))
+		h.Write(bs)
 	}
 	return h.Sum32()
 }
