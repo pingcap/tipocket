@@ -451,32 +451,43 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 	for _, vertex := range scc.Vertices {
 		inScc[vertex] = true
 	}
-	queue := []Vertex{scc.Vertices[0]}
+	stack := []Vertex{scc.Vertices[0]}
 	vertices := []Vertex{}
+	inStack := make(map[Vertex]bool)
 	haveVisited := make(map[Vertex]bool)
-	haveVisited[queue[0]] = true
+	inStack[stack[0]] = true
+	haveVisited[stack[0]] = true
 	from := make(map[Vertex]Vertex)
 	var first Vertex
 	flag := false
 
-	for len(queue) > 0 {
-		cur := queue[0]
-		queue = queue[1:]
-
+	for len(stack) > 0 {
+		cur := stack[len(stack)-1]
+		haveNext := false
 		for next, _ := range graph.Outs[cur] {
 			if inScc[next] != true {
 				continue
 			}
-			if haveVisited[next] == true {
+			if inStack[next] == true {
 				flag = true
 				first = next
 				from[next] = cur
 				break
 			} else {
-				haveVisited[next] = true
-				from[next] = cur
-				queue = append(queue, next)
+				if haveVisited[next] == false {
+					inStack[next] = true
+					from[next] = cur
+					stack = append(stack, next)
+					haveVisited[next] = true
+					haveNext = true
+					break
+				}
 			}
+		}
+
+		if haveNext == false {
+			stack = stack[:len(stack)-1]
+			inStack[cur] = false
 		}
 		if flag == true {
 			break
@@ -498,6 +509,74 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 	return vertices
 }
 
+// FindCycleStartingWithVertex start -> succ
+func FindCycleStartingwithVertex(graph DirectedGraph, start Vertex, succ Vertex, scc SCC) ([]Vertex, bool){
+	inScc := make(map[Vertex]bool)
+	for _, vertex := range scc.Vertices {
+		inScc[vertex] = true
+	}
+	stack := []Vertex{succ}
+	vertices := []Vertex{}
+	inStack := make(map[Vertex]bool)
+	haveVisited := make(map[Vertex]bool)
+	inStack[stack[0]] = true
+	haveVisited[stack[0]] = true
+	haveVisited[start] = true
+	from := make(map[Vertex]Vertex)
+	from[succ] = start
+	var first Vertex
+	flag := false
+
+	for len(stack) > 0 {
+		cur := stack[len(stack)-1]
+		haveNext := false
+		for next, _ := range graph.Outs[cur] {
+			if inScc[next] != true {
+				continue
+			}
+			if next == start {
+				flag = true
+				first = next
+				from[next] = cur
+				break
+			} else {
+				if inStack[next] == false && haveVisited[next] == false {
+					inStack[next] = true
+					from[next] = cur
+					stack = append(stack, next)
+					haveVisited[next] = true
+					haveNext = true
+					break
+				}
+			}
+		}
+
+		if haveNext == false {
+			stack = stack[:len(stack)-1]
+			inStack[cur] = false
+		}
+		if flag == true {
+			break
+		}
+	}
+
+	if flag == true {
+		now := first
+		for {
+			vertices = append(vertices, now)
+			now = from[now]
+			if now == first {
+				break
+			}
+		}
+		vertices = append(vertices, first)
+		for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
+			vertices[i], vertices[j] = vertices[j], vertices[i]
+		}
+	}
+	return vertices, flag
+}
+
 // FindCycleStartingWith ...
 // TODO: find the shortest cycle
 func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
@@ -511,11 +590,8 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 	vertices := []Vertex{}
 	for _, vertex := range scc.Vertices {
 		haveFound := false
-		queue := []Vertex{}
-		haveVisited := make(map[Vertex]bool)
 		start := vertex
-		haveVisited[start] = true
-		from := make(map[Vertex]Vertex)
+		vertices := []Vertex{}
 
 		for next, rels := range graph.Outs[start] {
 			if inScc[next] != true {
@@ -530,51 +606,11 @@ func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
 			if haveRel == false {
 				continue
 			} else {
-				queue = append(queue, next)
-				haveVisited[next] = true
-				from[next] = start
+				vertices, haveFound = FindCycleStartingwithVertex(graph, start, next, scc)
 			}
-		}
-		flag := false
-		for len(queue) > 0 {
-			cur := queue[0]
-			queue = queue[1:]
-			for next, _ := range graph.Outs[cur] {
-				if inScc[next] != true {
-					continue
-				}
-				if haveVisited[next] == true {
-					if next == start {
-						flag = true
-						haveFound = true
-						from[next] = cur
-						break
-					}
-				} else {
-					haveVisited[next] = true
-					from[next] = cur
-					queue = append(queue, next)
-				}
+			if haveFound == true {
+				return vertices
 			}
-			if flag == true {
-				haveFound = true
-				break
-			}
-		}
-		if haveFound == true {
-			now := start
-			for {
-				vertices = append(vertices, now)
-				now = from[now]
-				if now == start {
-					break
-				}
-			}
-			vertices = append(vertices, start)
-			for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
-				vertices[i], vertices[j] = vertices[j], vertices[i]
-			}
-			break
 		}
 	}
 	return vertices
