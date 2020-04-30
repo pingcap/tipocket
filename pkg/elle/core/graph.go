@@ -510,7 +510,7 @@ func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
 }
 
 // FindCycleStartingWithVertex start -> succ
-func FindCycleStartingwithVertex(graph DirectedGraph, start Vertex, succ Vertex, scc SCC) ([]Vertex, bool){
+func FindCycleStartingwithVertex(graph DirectedGraph, start Vertex, succ Vertex, scc SCC) ([]Vertex, bool) {
 	inScc := make(map[Vertex]bool)
 	for _, vertex := range scc.Vertices {
 		inScc[vertex] = true
