@@ -27,6 +27,12 @@ spec:
         value: loki
       - name: loki-password
         value: admin
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
     - name: call-tipocket-read-stress
       steps:
@@ -58,3 +64,9 @@ spec:
                   value: "{{workflow.parameters.loki-password}}"
                 - name: tikv_config
                   value: "{{workflow.parameters.tikv_config}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
