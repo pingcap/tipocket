@@ -54,10 +54,10 @@ type Controller struct {
 	requestCount int64
 
 	// TODO(yeya24): make log service an interface
-	lokiClient    *loki.Client
-	logPath       string
-	mux           *sync.Mutex
-	podLogFiles   map[string]*os.File
+	lokiClient *loki.Client
+	logPath    string
+	// maps from string to *os.File
+	podLogFiles   sync.Map
 	lastQueryTime time.Time
 
 	suit verify.Suit
@@ -85,8 +85,6 @@ func NewController(
 	c.suit = verifySuit
 	c.lokiClient = lokiCli
 	c.logPath = logPath
-	c.mux = &sync.Mutex{}
-	c.podLogFiles = make(map[string]*os.File)
 	// init time stamp
 	c.lastQueryTime = minTime
 
@@ -492,9 +490,11 @@ func (c *Controller) collectLogs() {
 			case <-c.ctx.Done():
 				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now())
 				// Close all pod logs files
-				for _, f := range c.podLogFiles {
+				c.podLogFiles.Range(func(key, value interface{}) bool {
+					f := value.(*os.File)
 					f.Close()
-				}
+					return true
+				})
 				logTicker.Stop()
 				panicTicker.Stop()
 				return
@@ -563,17 +563,18 @@ func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node, toTime time
 				} else {
 					log.Infof("collect %s pod logs successfully, %d lines total", podName, len(texts))
 				}
-				if _, ok := c.podLogFiles[podName]; !ok {
-					c.mux.Lock()
-					c.podLogFiles[podName], err = os.OpenFile(path.Join(c.logPath, podName),
-						os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
-					c.mux.Unlock()
-					if err != nil {
-						log.Fatalf("failed to create log file for pod %s error is %v", podName, err)
-					}
+				file, err := os.OpenFile(path.Join(c.logPath, podName),
+					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					log.Fatalf("failed to create log file for pod %s error is %v", podName, err)
 				}
+				f, ok := c.podLogFiles.LoadOrStore(podName, file)
+				if ok {
+					file.Close()
+				}
+				file = f.(*os.File)
 				for _, line := range texts {
-					if _, err = c.podLogFiles[podName].Write([]byte(line)); err != nil {
+					if _, err = file.Write([]byte(line)); err != nil {
 						log.Fatal("fail to write log file for pod %s error is %v", podName, err)
 					}
 				}
