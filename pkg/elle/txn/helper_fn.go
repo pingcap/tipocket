@@ -51,6 +51,9 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 
 	for _, op := range history {
 		final := map[string]core.MopValueType{}
+		if op.Value == nil {
+			continue
+		}
 		for _, mop := range *op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
@@ -59,6 +62,9 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 				if !exists {
 					final[realKey] = a.Value
 				} else {
+					if _, ok := im[realKey]; !ok {
+						im[realKey] = make(map[core.MopValueType]*core.Op)
+					}
 					im[realKey][lastOp] = &op
 				}
 			}
@@ -70,7 +76,7 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 
 // FailedWrites is like IntermediateWrites, it returns map[key](map[aborted-value]abort-op).
 func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
-	im := map[string]map[core.MopValueType]*core.Op{}
+	failed := map[string]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
 		if op.Type != core.OpTypeFail {
@@ -80,12 +86,14 @@ func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.O
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
-				im[realKey][a.Value] = &op
+				if _, ok := failed[realKey]; !ok {
+					failed[realKey] = make(map[core.MopValueType]*core.Op)
+				}
+				failed[realKey][a.Value] = &op
 			}
 		}
 	}
-
-	return im
+	return failed
 }
 
 func mustAtoi(s string) int {

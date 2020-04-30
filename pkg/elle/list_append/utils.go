@@ -2,6 +2,7 @@ package list_append
 
 import (
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
@@ -16,26 +17,23 @@ func verifyMopTypes(mop core.Mop) bool {
 
 // Takes a history of txns made up of appends and reads, and checks to make
 //  sure that every invoke appending a value to a key chose a unique value.
-func verifyUniqueAppends(history core.History) bool {
+func verifyUniqueAppends(history core.History) {
 	tempDict := map[string]map[core.MopValueType]struct{}{}
 	iter := txn.OpMops(history)
 	for iter.HasNext() {
-		_, mop := iter.Next()
-		if mop.IsRead() {
-			continue
+		op, mop := iter.Next()
+		if op.Type == core.OpTypeInvoke && mop.IsAppend() {
+			_, e := tempDict[mop.GetKey()]
+			if !e {
+				tempDict[mop.GetKey()] = map[core.MopValueType]struct{}{}
+			}
+			_, e = tempDict[mop.GetKey()][mop.GetValue()]
+			if e {
+				log.Panicf("duplicate appends, op %s, key: %s, value: %+v", op.String(), mop.GetKey(), mop.GetValue())
+			}
+			tempDict[mop.GetKey()][mop.GetValue()] = struct{}{}
 		}
-		_, e := tempDict[mop.GetKey()]
-		if !e {
-			tempDict[mop.GetKey()] = map[core.MopValueType]struct{}{}
-		}
-
-		_, e = tempDict[mop.GetKey()][mop.GetValue()]
-		if e {
-			return false
-		}
-		tempDict[mop.GetKey()][mop.GetValue()] = struct{}{}
 	}
-	return true
 }
 
 // Takes a map of keys to observed values (e.g. from
@@ -143,6 +141,9 @@ func readIndex(history core.History) readIdx {
 		}
 		for _, mop := range *op.Value {
 			if !mop.IsRead() {
+				continue
+			}
+			if mop.GetValue() == nil {
 				continue
 			}
 			k := mop.GetKey()
@@ -451,9 +452,13 @@ func filterOkOrInfoHistory(history core.History) core.History {
 func filterOutNemesisHistory(history core.History) core.History {
 	var h core.History
 	for _, op := range history {
-		if op.Type != core.OpTypeNemesis {
-			h = append(h, op)
+		if op.Type == core.OpTypeNemesis {
+			continue
 		}
+		if op.Process.Present() && op.Process.MustGet() == core.NemesisProcessMagicNumber {
+			continue
+		}
+		h = append(h, op)
 	}
 	return h
 }
@@ -466,4 +471,16 @@ func filterOkHistory(history core.History) core.History {
 		}
 	}
 	return h
+}
+
+func isReadRecordEqual(a []core.MopValueType, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for idx := range a {
+		if a[idx] != a[idx] {
+			return false
+		}
+	}
+	return true
 }

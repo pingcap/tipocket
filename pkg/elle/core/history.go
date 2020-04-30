@@ -12,13 +12,15 @@ import (
 
 var (
 	operationPattern = regexp.MustCompile(`\{(.*)\}`)
-	opIndexPattern   = regexp.MustCompile(`:index\s+(.*?)\s?:`)
-	opProcessPattern = regexp.MustCompile(`:process\s+(.*?)\s?:`)
-	opTypePattern    = regexp.MustCompile(`:type\s+(:?.*?)(,?\s+:?|$)`)
+	opIndexPattern   = regexp.MustCompile(`:index\s+([0-9]+)`)
+	opProcessPattern = regexp.MustCompile(`:process\s+([0-9]+|:nemesis)`)
+	opTypePattern    = regexp.MustCompile(`:type\s+(:[a-zA-Z]+)`)
 	opValuePattern   = regexp.MustCompile(`:value\s+\[(.*)\]`)
-	mopPattern       = regexp.MustCompile(`\[:(append|r)\s+(\d+)\s+(\[.*?\]|.*?)\](.*)`)
+	mopPattern       = regexp.MustCompile(`(\[:(append|r)\s+(\d+)\s+(\[.*?\]|.*?)\])+`)
 	mopValuePattern  = regexp.MustCompile(`\[(.*)\]`)
 )
+
+const NemesisProcessMagicNumber = -1
 
 // MopValueType ...
 type MopValueType interface{}
@@ -209,6 +211,9 @@ func (h History) AttachIndex() {
 func ParseHistory(content string) (History, error) {
 	var history History
 	for _, line := range strings.Split(content, "\n") {
+		if line == "" {
+			continue
+		}
 		op, err := ParseOp(strings.Trim(line, " "))
 		if err != nil {
 			return nil, err
@@ -241,15 +246,19 @@ func ParseOp(opString string) (Op, error) {
 
 	opProcessMatch := opProcessPattern.FindStringSubmatch(operationMatch[1])
 	if len(opProcessMatch) == 2 {
-		opProcess, err := strconv.Atoi(strings.Trim(opProcessMatch[1], " "))
-		if err != nil {
-			return empty, err
+		if opProcessMatch[1] == ":nemesis" {
+			op.Process.Set(NemesisProcessMagicNumber)
+		} else {
+			opProcess, err := strconv.Atoi(strings.Trim(opProcessMatch[1], " "))
+			if err != nil {
+				return empty, err
+			}
+			op.Process.Set(opProcess)
 		}
-		op.Process.Set(opProcess)
 	}
 
 	opTypeMatch := opTypePattern.FindStringSubmatch(operationMatch[1])
-	if len(opTypeMatch) != 3 {
+	if len(opTypeMatch) != 2 {
 		return empty, errors.New("operation should have :type field")
 	}
 	switch opTypeMatch[1] {
@@ -271,55 +280,57 @@ func ParseOp(opString string) (Op, error) {
 	// can values be empty?
 	if len(opValueMatch) == 2 {
 		mopContent := strings.Trim(opValueMatch[1], " ")
-		for mopContent != "" {
-			mopMatch := mopPattern.FindStringSubmatch(mopContent)
-			if len(mopMatch) != 5 {
-				break
-			}
-			mopContent = strings.Trim(mopMatch[4], " ")
-
-			key := strings.Trim(mopMatch[2], " ")
-			var value MopValueType
-			mopValueMatches := mopValuePattern.FindStringSubmatch(mopMatch[3])
-			if len(mopValueMatches) == 2 {
-				values := []int{}
-				trimVal := strings.Trim(mopValueMatches[1], "[")
-				trimVal = strings.Trim(trimVal, "]")
-				for _, valStr := range strings.Split(trimVal, " ") {
-					val, err := strconv.Atoi(valStr)
-					if err != nil {
-						return empty, err
-					}
-					values = append(values, val)
+		if mopContent != "" {
+			mopMatches := mopPattern.FindAllStringSubmatch(mopContent, -1)
+			for _, mopMatch := range mopMatches {
+				if len(mopMatch) != 5 {
+					break
 				}
-				value = values
-			} else {
-				trimVal := strings.Trim(mopMatch[3], " ")
-				if trimVal == "nil" {
-					value = nil
+				key := strings.Trim(mopMatch[3], " ")
+				var value MopValueType
+				mopValueMatches := mopValuePattern.FindStringSubmatch(mopMatch[4])
+				if len(mopValueMatches) == 2 {
+					values := []int{}
+					trimVal := strings.Trim(mopValueMatches[1], "[")
+					trimVal = strings.Trim(trimVal, "]")
+					if trimVal != "" {
+						for _, valStr := range strings.Split(trimVal, " ") {
+							val, err := strconv.Atoi(valStr)
+							if err != nil {
+								return empty, err
+							}
+							values = append(values, val)
+						}
+					}
+					value = values
 				} else {
-					val, err := strconv.Atoi(trimVal)
-					if err != nil {
-						return empty, err
+					trimVal := strings.Trim(mopMatch[4], " ")
+					if trimVal == "nil" {
+						value = nil
+					} else {
+						val, err := strconv.Atoi(trimVal)
+						if err != nil {
+							return empty, err
+						}
+						value = val
 					}
-					value = val
 				}
-			}
 
-			var mop Mop
-			switch mopMatch[1] {
-			case "append":
-				mop = Append{Key: key, Value: value}
-			case "r":
-				mop = Read{Key: key, Value: value}
-			default:
-				panic("unreachable")
+				var mop Mop
+				switch mopMatch[2] {
+				case "append":
+					mop = Append{Key: key, Value: value}
+				case "r":
+					mop = Read{Key: key, Value: value}
+				default:
+					panic("unreachable")
+				}
+				if op.Value == nil {
+					destArray := make([]Mop, 0)
+					op.Value = &destArray
+				}
+				*op.Value = append(*op.Value, mop)
 			}
-			if op.Value == nil {
-				destArray := make([]Mop, 0)
-				op.Value = &destArray
-			}
-			*op.Value = append(*op.Value, mop)
 		}
 	}
 

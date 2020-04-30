@@ -25,9 +25,8 @@ type writeIdx map[string]map[core.MopValueType]core.Op
 type readIdx map[string]map[core.MopValueType][]core.Op
 
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
-	if !verifyUniqueAppends(h) {
-		log.Fatal("Cannot pass verifyUniqueAppends")
-	}
+	verifyUniqueAppends(h)
+
 	history = filterOkOrInfoHistory(h)
 	sortedValueResults := sortedValues(history)
 	appendIdx = appendIndex(sortedValueResults)
@@ -384,54 +383,48 @@ func (i InternalConflict) String() string {
 }
 
 // Note: Please review this function carefully.
-func opInternalCases(op core.Op) core.Anomaly {
+func opInternalCase(op core.Op) core.Anomaly {
 	// key -> valueList
 	dataMap := map[string][]core.MopValueType{}
-	for _, v := range *op.Value {
-		if v.IsRead() {
-			previousData, e := dataMap[v.GetKey()]
-			readData := v.(core.Read)
-			records := readData.Value.([]int)
-			if !e {
-				for _, rdata := range records {
-					dataMap[v.GetKey()] = append(dataMap[v.GetKey()], core.MopValueType(rdata))
-				}
+	for _, mop := range *op.Value {
+		if mop.IsRead() {
+			// Note: if mop's read record is nil, should we ignore this mop?
+			if mop.GetValue() == nil {
 				continue
 			}
-			// check conflicts
-			comIndex := 0
-			if len(previousData) > 0 && previousData[0] == core.MopValueType(unknownPrefixMagicNumber) {
-				seqDelta := len(records) + 1 - len(previousData)
-				if seqDelta < 0 {
-					return &InternalConflict{
-						Op:       op,
-						Mop:      v,
-						Expected: previousData,
+			previousData, e := dataMap[mop.GetKey()]
+			records := mop.GetValue().([]int)
+			var found = false
+			if e {
+				// check conflicts
+				if previousData[0] == core.MopValueType(unknownPrefixMagicNumber) {
+					seqDelta := len(records) + 1 - len(previousData)
+					if seqDelta < 0 {
+						found = true
+					} else {
+						found = isReadRecordEqual(previousData[1:], records[seqDelta:]) == false
 					}
 				} else {
-					comIndex = seqDelta
+					found = isReadRecordEqual(previousData, records) == false
 				}
 			}
-			for i, indexV := range records[comIndex:] {
-				if previousData[i+1].(int) != indexV {
-					return &InternalConflict{
-						Op:       op,
-						Mop:      v,
-						Expected: previousData,
-					}
+			if found {
+				return &InternalConflict{
+					Op:       op,
+					Mop:      mop,
+					Expected: previousData,
 				}
 			}
 			for _, rdata := range records {
-				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], core.MopValueType(rdata))
+				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], core.MopValueType(rdata))
 			}
-		} else {
-			// Note: current we only support read and append. So if it's not
-			//  read, it must be append.
-			_, e := dataMap[v.GetKey()]
+		}
+		if mop.IsAppend() {
+			_, e := dataMap[mop.GetKey()]
 			if !e {
-				dataMap[v.GetKey()] = append(dataMap[v.GetKey()], unknownPrefixMagicNumber)
+				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], unknownPrefixMagicNumber)
 			}
-			dataMap[v.GetKey()] = append(dataMap[v.GetKey()], v.GetValue())
+			dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], mop.GetValue())
 		}
 	}
 	return nil
@@ -447,7 +440,7 @@ func internalCases(history core.History) GCaseTp {
 	var tp GCaseTp
 	okHistory := filterOkHistory(history)
 	for _, op := range okHistory {
-		res := opInternalCases(op)
+		res := opInternalCase(op)
 		if res != nil {
 			tp = append(tp, res)
 		}

@@ -2,9 +2,11 @@ package list_append
 
 import (
 	"fmt"
+	"io/ioutil"
+	"testing"
+
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
-	"testing"
 )
 
 func TestCheck(t *testing.T) {
@@ -14,16 +16,19 @@ func TestCheck(t *testing.T) {
 				core.Append{
 					Key:   "x",
 					Value: 1,
-				}, core.Read{
+				},
+				core.Read{
 					Key:   "y",
 					Value: []int{1},
-				}}},
+				},
+			}},
 		core.Op{Type: core.OpTypeOk,
 			Value: &[]core.Mop{
 				core.Append{
 					Key:   "x",
 					Value: 2,
-				}, core.Append{
+				},
+				core.Append{
 					Key:   "y",
 					Value: 1,
 				}}},
@@ -39,5 +44,18 @@ func TestCheck(t *testing.T) {
 		ConsistencyModels: []core.ConsistencyModelName{"serializable"},
 	}, history)
 
+	fmt.Printf("%#v", result)
+}
+
+func TestHugeScc(t *testing.T) {
+	content, err := ioutil.ReadFile("../histories/huge-scc.edn")
+	if err != nil {
+		t.Fail()
+	}
+	history, err := core.ParseHistory(string(content))
+	if err != nil {
+		t.Fail()
+	}
+	result := Check(txn.Opts{}, history)
 	fmt.Printf("%#v", result)
 }
