@@ -54,8 +54,9 @@ type Controller struct {
 	requestCount int64
 
 	// TODO(yeya24): make log service an interface
-	lokiClient    *loki.Client
-	logPath       string
+	lokiClient *loki.Client
+	logPath    string
+	// maps from string to *os.File
 	podLogFiles   sync.Map
 	lastQueryTime time.Time
 
