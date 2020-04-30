@@ -455,59 +455,80 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
-	inScc := make(map[Vertex]bool)
+	inScc := make(map[Vertex]struct{})
 	for _, vertex := range scc.Vertices {
-		inScc[vertex] = true
+		inScc[vertex] = struct{}{}
 	}
-	queue := []Vertex{scc.Vertices[0]}
-	var vertices []Vertex
-	haveVisited := make(map[Vertex]bool)
-	haveVisited[queue[0]] = true
-	from := make(map[Vertex]Vertex)
-	var first *Vertex
-	flag := false
+	noInVertaxSet := make(map[Vertex]struct{})
+	for k, _ := range inScc {
+		noInVertaxSet[k] = struct{}{}
+	}
+	inSccIncounter := make(map[Vertex]int)
+	for k, _ := range inScc {
+		for _, out := range graph.Out(k) {
+			_, e := inScc[out]
+			if e {
+				inCount := inSccIncounter[out]
+				inSccIncounter[out] = inCount + 1
+				delete(noInVertaxSet, out)
+			}
+		}
+	}
 
-	for len(queue) > 0 {
-		cur := queue[0]
-		queue = queue[1:]
+	for len(noInVertaxSet) != 0 {
+		var current Vertex
+		for current, _ = range noInVertaxSet {
+			break
+		}
+		for _, out := range graph.Out(current) {
+			_, e := inScc[out]
+			if e {
+				inCount := inSccIncounter[out]
+				inSccIncounter[out] = inCount - 1
+				if inCount <= 1 {
+					delete(inSccIncounter, out)
+				}
+			}
+		}
+	}
 
-		for next := range graph.Outs[cur] {
-			if inScc[next] != true {
+	var cycle []Vertex
+	for k, _ := range inSccIncounter {
+		cycle = append(cycle, k)
+	}
+
+	length := len(cycle) + 1
+	valid := toSet(cycle)
+
+	var destCycle []Vertex
+	for _, v := range cycle {
+		bfs := NewBFSPath(graph, v, valid)
+		for _, w := range graph.Out(v) {
+			if _, e := valid[w]; !e {
 				continue
 			}
-			if haveVisited[next] == true {
-				flag = true
-				first = &next
-				from[next] = cur
-				break
-			} else {
-				haveVisited[next] = true
-				from[next] = cur
-				queue = append(queue, next)
+			if bfs.HasPathTo(w) && (bfs.DistTo(w) + 1) < length {
+				length = bfs.DistTo(w) + 1
+				destCycle = make([]Vertex, 0, length + 1)
+				destCycle = append(destCycle, bfs.PathTo(w)...)
+				destCycle = append(destCycle, v)
 			}
 		}
-		if flag == true {
-			break
-		}
 	}
+	//length = G.V() + 1;
+	//for (int v = 0; v < G.V(); v++) {
+	//	BreadthFirstDirectedPaths bfs = new BreadthFirstDirectedPaths(R, v);
+	//	for (int w : G.adj(v)) {
+	//		if (bfs.hasPathTo(w) && (bfs.distTo(w) + 1) < length) {
+	//			length = bfs.distTo(w) + 1;
+	//			cycle = new Stack<Integer>();
+	//			for (int x : bfs.pathTo(w))
+	//			cycle.push(x);
+	//			cycle.push(v);
+	//		}
+	//	}
 
-	if first == nil {
-		return nil
-	}
-
-	now := *first
-	for {
-		vertices = append(vertices, now)
-		now = from[now]
-		if now == *first {
-			break
-		}
-	}
-	vertices = append(vertices, *first)
-	for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
-		vertices[i], vertices[j] = vertices[j], vertices[i]
-	}
-	return vertices
+	return destCycle
 }
 
 // FindCycleStartingWith ...

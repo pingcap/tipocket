@@ -23,7 +23,7 @@ func TestFindCycle1(t *testing.T) {
 		Vertices: []Vertex{Vertex{4}, Vertex{5}, Vertex{6}},
 	})
 
-	assert.Equal(t, cycle, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, "cycle")
+	assert.Equal(t, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, cycle, "cycle")
 }
 
 func TestFindCycle2(t *testing.T) {
@@ -43,7 +43,7 @@ func TestFindCycle2(t *testing.T) {
 		Vertices: []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}},
 	})
 
-	assert.Equal(t, cycle, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, "cycle")
+	assert.Equal(t, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, cycle, "cycle")
 }
 
 func TestFindCycle3(t *testing.T) {
