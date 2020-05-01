@@ -33,7 +33,7 @@ func TestProcessGraph(t *testing.T) {
 
 	_, g, _ := ProcessGraph(history)
 
-	var graphOuts map[Vertex]map[Vertex][]Rel = map[Vertex]map[Vertex][]Rel{}
+	var graphOuts = map[Vertex]map[Vertex][]Rel{}
 	for k, v := range g.Outs {
 		if len(v) != 0 {
 			v, e := processGraph.Outs[k]

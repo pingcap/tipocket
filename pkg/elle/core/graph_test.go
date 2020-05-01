@@ -20,10 +20,10 @@ func TestFindCycle1(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{1}, "")
 
 	cycle := FindCycle(&g, SCC{
-		Vertices: []Vertex{Vertex{4}, Vertex{5}, Vertex{6}},
+		Vertices: []Vertex{{4}, {5}, {6}},
 	})
 
-	assert.Equal(t, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, cycle, "cycle")
+	assert.Equal(t, []Vertex{{4}, {5}, {6}, {4}}, cycle)
 }
 
 func TestFindCycle2(t *testing.T) {
@@ -40,10 +40,10 @@ func TestFindCycle2(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{1}, "")
 
 	cycle := FindCycle(&g, SCC{
-		Vertices: []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}},
+		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}},
 	})
 
-	assert.Equal(t, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, cycle, "cycle")
+	assert.Equal(t, []Vertex{{4}, {5}, {6}, {4}}, cycle)
 }
 
 func TestFindCycle3(t *testing.T) {
@@ -55,10 +55,10 @@ func TestFindCycle3(t *testing.T) {
 	g.Link(Vertex{2}, Vertex{1}, "")
 
 	cycle := FindCycle(&g, SCC{
-		Vertices: []Vertex{Vertex{1}, Vertex{2}},
+		Vertices: []Vertex{{1}, {2}},
 	})
 
-	assert.Equal(t, cycle, []Vertex{Vertex{1}, Vertex{2}, Vertex{1}}, "cycle")
+	assert.Equal(t, []Vertex{{1}, {2}, {1}}, cycle)
 }
 
 func TestFindCycleStartingWith1(t *testing.T) {
@@ -75,9 +75,9 @@ func TestFindCycleStartingWith1(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{1}, "")
 
 	cycle := FindCycleStartingWith(&g, "start4", SCC{
-		Vertices: []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}},
+		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}},
 	})
-	assert.Equal(t, cycle, []Vertex{Vertex{4}, Vertex{5}, Vertex{6}, Vertex{4}}, "cycle")
+	assert.Equal(t, []Vertex{{4}, {5}, {6}, {4}}, cycle)
 }
 
 func TestFindCycleStartingWith2(t *testing.T) {
@@ -94,9 +94,9 @@ func TestFindCycleStartingWith2(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{1}, "")
 
 	cycle := FindCycleStartingWith(&g, "start1", SCC{
-		Vertices: []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}},
+		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}},
 	})
-	assert.Equal(t, cycle, []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}, Vertex{1}}, "cycle")
+	assert.Equal(t, []Vertex{{1}, {2}, {3}, {4}, {5}, {6}, {1}}, cycle)
 }
 
 func TestFindCycleStartingWith3(t *testing.T) {
@@ -113,7 +113,6 @@ func TestFindCycleStartingWith3(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{1}, "")
 
 	cycle := FindCycleStartingWith(&g, "", SCC{
-		Vertices: []Vertex{Vertex{1}, Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}},
-	})
-	assert.Equal(t, cycle, []Vertex{Vertex{2}, Vertex{3}, Vertex{4}, Vertex{5}, Vertex{6}, Vertex{1}, Vertex{2}}, "cycle")
+		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}}})
+	assert.Equal(t, []Vertex{{5}, {6}, {4}, {5}}, cycle)
 }

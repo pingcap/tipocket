@@ -6,19 +6,19 @@ type BFSPath struct {
 	distTo map[Vertex]int
 }
 
-func NewBFSPath(graph *DirectedGraph, start Vertex, valid map[Vertex]struct{}) *BFSPath {
+func NewBFSPath(graph *DirectedGraph, start Vertex, sccSet map[Vertex]struct{}) *BFSPath {
 	bfsPath := BFSPath{
 		marked: map[Vertex]struct{}{},
 		edgeTo: map[Vertex]Vertex{},
 		distTo: map[Vertex]int{},
 	}
-	bfsPath.bfs(graph, start, valid)
+	bfsPath.bfs(graph, start, sccSet)
 	return &bfsPath
 }
 
-func toSet(valid []Vertex) map[Vertex]struct{} {
+func toSet(sccSet []Vertex) map[Vertex]struct{} {
 	set := map[Vertex]struct{}{}
-	for _, v := range valid {
+	for _, v := range sccSet {
 		set[v] = struct{}{}
 	}
 	return set
@@ -70,6 +70,5 @@ func (path *BFSPath) PathTo(vertex Vertex) []Vertex {
 	for current = vertex; path.distTo[current] != 0; current = path.edgeTo[current] {
 		paths = append(paths, current)
 	}
-
 	return append(paths, current)
 }

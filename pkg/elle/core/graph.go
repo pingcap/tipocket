@@ -11,6 +11,17 @@ type Vertex struct {
 	Value interface{}
 }
 
+type Rels []Rel
+
+func (rs Rels) exist(rel Rel) bool {
+	for _, r := range rs {
+		if r == rel {
+			return true
+		}
+	}
+	return false
+}
+
 type DirectedGraph struct {
 	Outs map[Vertex]map[Vertex][]Rel
 	Ins  map[Vertex][]Vertex
@@ -455,79 +466,22 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
-	inScc := make(map[Vertex]struct{})
-	for _, vertex := range scc.Vertices {
-		inScc[vertex] = struct{}{}
-	}
-	noInVertaxSet := make(map[Vertex]struct{})
-	for k, _ := range inScc {
-		noInVertaxSet[k] = struct{}{}
-	}
-	inSccIncounter := make(map[Vertex]int)
-	for k, _ := range inScc {
-		for _, out := range graph.Out(k) {
-			_, e := inScc[out]
-			if e {
-				inCount := inSccIncounter[out]
-				inSccIncounter[out] = inCount + 1
-				delete(noInVertaxSet, out)
-			}
-		}
-	}
-
-	for len(noInVertaxSet) != 0 {
-		var current Vertex
-		for current, _ = range noInVertaxSet {
-			break
-		}
-		for _, out := range graph.Out(current) {
-			_, e := inScc[out]
-			if e {
-				inCount := inSccIncounter[out]
-				inSccIncounter[out] = inCount - 1
-				if inCount <= 1 {
-					delete(inSccIncounter, out)
-				}
-			}
-		}
-	}
-
-	var cycle []Vertex
-	for k, _ := range inSccIncounter {
-		cycle = append(cycle, k)
-	}
-
-	length := len(cycle) + 1
-	valid := toSet(cycle)
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
 
 	var destCycle []Vertex
-	for _, v := range cycle {
-		bfs := NewBFSPath(graph, v, valid)
-		for _, w := range graph.Out(v) {
-			if _, e := valid[w]; !e {
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		for _, w := range graph.Out(start) {
+			if _, e := sccSet[w]; !e {
 				continue
 			}
-			if bfs.HasPathTo(w) && (bfs.DistTo(w) + 1) < length {
+			if bfs.HasPathTo(w) && (bfs.DistTo(w)+1) < length {
 				length = bfs.DistTo(w) + 1
-				destCycle = make([]Vertex, 0, length + 1)
-				destCycle = append(destCycle, bfs.PathTo(w)...)
-				destCycle = append(destCycle, v)
+				destCycle = append([]Vertex{start}, bfs.PathTo(w)...)
 			}
 		}
 	}
-	//length = G.V() + 1;
-	//for (int v = 0; v < G.V(); v++) {
-	//	BreadthFirstDirectedPaths bfs = new BreadthFirstDirectedPaths(R, v);
-	//	for (int w : G.adj(v)) {
-	//		if (bfs.hasPathTo(w) && (bfs.distTo(w) + 1) < length) {
-	//			length = bfs.distTo(w) + 1;
-	//			cycle = new Stack<Integer>();
-	//			for (int x : bfs.pathTo(w))
-	//			cycle.push(x);
-	//			cycle.push(v);
-	//		}
-	//	}
-
 	return destCycle
 }
 
@@ -537,80 +491,30 @@ func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
-	inScc := make(map[Vertex]bool)
-	for _, vertex := range scc.Vertices {
-		inScc[vertex] = true
-	}
-	var vertices []Vertex
-	for _, vertex := range scc.Vertices {
-		haveFound := false
-		var queue []Vertex
-		haveVisited := make(map[Vertex]bool)
-		start := vertex
-		haveVisited[start] = true
-		from := make(map[Vertex]Vertex)
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
 
-		for next, rels := range graph.Outs[start] {
-			if inScc[next] != true {
+	var destCycle []Vertex
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		out, ok := graph.Outs[start]
+		if !ok {
+			continue
+		}
+		for w, rs := range out {
+			if _, e := sccSet[w]; !e {
 				continue
 			}
-			haveRel := false
-			for _, r := range rels {
-				if r == rel {
-					haveRel = true
-				}
-			}
-			if haveRel == false {
+			if !Rels(rs).exist(rel) {
 				continue
-			} else {
-				queue = append(queue, next)
-				haveVisited[next] = true
-				from[next] = start
 			}
-		}
-		flag := false
-		for len(queue) > 0 {
-			cur := queue[0]
-			queue = queue[1:]
-			for next, _ := range graph.Outs[cur] {
-				if inScc[next] != true {
-					continue
-				}
-				if haveVisited[next] == true {
-					if next == start {
-						flag = true
-						haveFound = true
-						from[next] = cur
-						break
-					}
-				} else {
-					haveVisited[next] = true
-					from[next] = cur
-					queue = append(queue, next)
-				}
+			if bfs.HasPathTo(w) && (bfs.DistTo(w)+1) < length {
+				length = bfs.DistTo(w) + 1
+				destCycle = append([]Vertex{start}, bfs.PathTo(w)...)
 			}
-			if flag == true {
-				haveFound = true
-				break
-			}
-		}
-		if haveFound == true {
-			now := start
-			for {
-				vertices = append(vertices, now)
-				now = from[now]
-				if now == start {
-					break
-				}
-			}
-			vertices = append(vertices, start)
-			for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
-				vertices[i], vertices[j] = vertices[j], vertices[i]
-			}
-			break
 		}
 	}
-	return vertices
+	return destCycle
 }
 
 // FindCycleWith ...
