@@ -120,16 +120,18 @@ func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postN
 
 // RealtimeExplainer is Realtime order explainer
 type RealtimeExplainer struct {
-	historyReference History
-	nextIndex        []int
+	pair map[Op]Op
 }
 
 // TODO: here it needs to get the preEnd and the postStart, it maybe complex and introduce another logic here.
 func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
-	postStart := r.historyReference[r.nextIndex[postEnd.Index.MustGet()]]
+	postStart, ok := r.pair[postEnd]
+	if !ok {
+		log.Fatalf("cannot find the invocation of %s, the code may has bug", postEnd.String())
+	}
 	if preEnd.Index.MustGet() < postStart.Index.MustGet() {
 		return RealtimeDependent{
-			prefixEnd: &preEnd,
+			preEnd:    &preEnd,
 			postStart: &postStart,
 		}
 	}
@@ -141,22 +143,22 @@ func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, post
 		log.Fatalf("result type is not %s, type error", RealtimeDepend)
 	}
 	res := result.(RealtimeDependent)
-	s := fmt.Sprintf("%s complete at index %d, ", preName, res.postStart.Index)
+	s := fmt.Sprintf("%s complete at index %d, ", preName, res.preEnd.Index.MustGet())
 
-	if !res.postStart.Time.IsZero() && !res.prefixEnd.Time.IsZero() {
-		t1, t2 := res.prefixEnd.Time, res.postStart.Time
+	if !res.postStart.Time.IsZero() && !res.preEnd.Time.IsZero() {
+		t1, t2 := res.preEnd.Time, res.postStart.Time
 		if t1.Before(t2) {
 			delta := t2.Sub(t1)
-			s += fmt.Sprintf("%v seconds just ", delta.Milliseconds())
+			s += fmt.Sprintf("%v seconds just ", delta.Seconds())
 		}
 	}
 
-	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.prefixEnd.Index)
+	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.postStart.Index.MustGet())
 	return s
 }
 
 type RealtimeDependent struct {
-	prefixEnd *Op
+	preEnd    *Op
 	postStart *Op
 }
 
@@ -242,7 +244,7 @@ func explainBindings(bindings []OpBinding) string {
 	var seq []string
 	seq = []string{"Let:"}
 	for _, v := range bindings {
-		seq = append(seq, fmt.Sprintf(" %s = %s", v.Name, v.Operation.String()))
+		seq = append(seq, fmt.Sprintf("  %s = %s", v.Name, v.Operation.String()))
 	}
 	return strings.Join(seq, "\n")
 }

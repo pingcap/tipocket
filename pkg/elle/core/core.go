@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"sort"
 )
 
@@ -124,21 +125,31 @@ type Step struct {
 func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
 
-	nextMap := make([]int, len(history), len(history))
-	// build nextMap
+	pair := make(map[Op]Op)
 	{
-		processMap := map[int]int{}
-		for i, v := range history {
+		invocations := map[int]Op{}
+		for _, v := range history {
+			process := v.Process.MustGet()
 			switch v.Type {
-			case OpTypeNemesis, OpTypeFail, OpTypeInfo:
-				nextMap[processMap[v.Process.MustGet()]] = i
-				delete(processMap, v.Process.MustGet())
 			case OpTypeInvoke:
-				processMap[v.Process.MustGet()] = i
-			case OpTypeOk:
-				nextMap[processMap[v.Process.MustGet()]] = i
-				nextMap[i] = processMap[v.Process.MustGet()]
-				delete(processMap, v.Process.MustGet())
+				invocations[process] = v
+			case OpTypeInfo:
+				invocation, e := invocations[process]
+				if e {
+					pair[invocation] = v
+					pair[v] = invocation
+					delete(invocations, process)
+				} else {
+					invocations[process] = v
+				}
+			case OpTypeOk, OpTypeFail:
+				invocation, e := invocations[process]
+				if !e {
+					log.Fatalf("cannot find the invocation of %s, the code may has bug", v)
+				}
+				pair[invocation] = v
+				pair[v] = invocation
+				delete(invocations, process)
 			}
 		}
 	}
@@ -146,25 +157,25 @@ func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	// build state machine
 	var doneEvents = map[Op]struct{}{}
 	for i := range history {
-		v := &history[i]
-		if !v.Process.Present() {
+		op := history[i]
+		if !op.Process.Present() {
 			continue
 		}
-		switch v.Type {
-		case OpTypeNemesis, OpTypeFail, OpTypeInfo:
-			continue
+		switch op.Type {
 		case OpTypeInvoke:
-			effectOp := history[nextMap[i]]
+			pairOp := pair[op]
 			for k := range doneEvents {
-				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: effectOp}, Realtime)
+				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: pairOp}, Realtime)
 			}
 		case OpTypeOk:
-			implied := opSet(realtimeGraph.In(Vertex{Value: history[i]}))
+			implied := opSet(realtimeGraph.In(Vertex{Value: op}))
 			doneEvents = setDel(doneEvents, implied)
-			doneEvents[*v] = struct{}{}
+			doneEvents[op] = struct{}{}
+		case OpTypeFail, OpTypeInfo:
+			continue
 		}
 	}
-	return nil, realtimeGraph, RealtimeExplainer{nextIndex: nextMap, historyReference: history}
+	return nil, realtimeGraph, RealtimeExplainer{pair: pair}
 }
 
 func opSet(vertex []Vertex) map[Op]struct{} {

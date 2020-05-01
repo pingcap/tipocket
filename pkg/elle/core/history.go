@@ -13,6 +13,7 @@ import (
 var (
 	operationPattern = regexp.MustCompile(`\{(.*)\}`)
 	opIndexPattern   = regexp.MustCompile(`:index\s+([0-9]+)`)
+	opTimePattern    = regexp.MustCompile(`:time\s+([0-9]+)`)
 	opProcessPattern = regexp.MustCompile(`:process\s+([0-9]+|:nemesis)`)
 	opTypePattern    = regexp.MustCompile(`:type\s+(:[a-zA-Z]+)`)
 	opValuePattern   = regexp.MustCompile(`:value\s+\[(.*)\]`)
@@ -33,11 +34,10 @@ type MopType string
 
 // OpType enums
 const (
-	OpTypeInvoke  OpType = "invoke"
-	OpTypeOk      OpType = "ok"
-	OpTypeFail    OpType = "fail"
-	OpTypeInfo    OpType = "info"
-	OpTypeNemesis OpType = "nemesis"
+	OpTypeInvoke OpType = "invoke"
+	OpTypeOk     OpType = "ok"
+	OpTypeFail   OpType = "fail"
+	OpTypeInfo   OpType = "info"
 )
 
 // MopType enums
@@ -163,7 +163,7 @@ type Op struct {
 }
 
 func (op Op) String() string {
-	return fmt.Sprintf("{:type %s :process %d :time %d :index %d}", string(op.Type), op.Process, op.Time.UnixNano(), op.Index)
+	return fmt.Sprintf("{:type %s :process %d :time %d :index %d}", string(op.Type), op.Process.MustGet(), op.Time.Nanosecond(), op.Index.MustGet())
 }
 
 func (op Op) ValueLength() int {
@@ -247,6 +247,15 @@ func ParseOp(opString string) (Op, error) {
 		op.Index = IntOptional{opIndex}
 	}
 
+	opTimeMatch := opTimePattern.FindStringSubmatch(operationMatch[1])
+	if len(opTimeMatch) == 2 {
+		opTime, err := strconv.Atoi(strings.Trim(opTimeMatch[1], " "))
+		if err != nil {
+			return empty, err
+		}
+		op.Time = time.Unix(0, int64(opTime))
+	}
+
 	opProcessMatch := opProcessPattern.FindStringSubmatch(operationMatch[1])
 	if len(opProcessMatch) == 2 {
 		if opProcessMatch[1] == ":nemesis" {
@@ -273,8 +282,6 @@ func ParseOp(opString string) (Op, error) {
 		op.Type = OpTypeFail
 	case ":info":
 		op.Type = OpTypeInfo
-	case ":nemesis":
-		op.Type = OpTypeNemesis
 	default:
 		return empty, errors.Errorf("invalid type, %s", opTypeMatch[1])
 	}

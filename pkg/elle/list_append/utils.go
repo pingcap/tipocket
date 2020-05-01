@@ -466,9 +466,6 @@ func filterOkOrInfoHistory(history core.History) core.History {
 func filterOutNemesisHistory(history core.History) core.History {
 	var h core.History
 	for _, op := range history {
-		if op.Type == core.OpTypeNemesis {
-			continue
-		}
 		if op.Process.Present() && op.Process.MustGet() == core.NemesisProcessMagicNumber {
 			continue
 		}
