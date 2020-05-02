@@ -454,11 +454,7 @@ func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 	return dg
 }
 
-// TODO
-type Transition interface{}
-
-// TODO
-type Predicate interface{}
+type CyclePredicate func(trace []CycleTrace) bool
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
 // TODO: find the shortest cycle
@@ -469,20 +465,20 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	length := len(scc.Vertices) + 1
 	sccSet := toSet(scc.Vertices)
 
-	var destCycle []Vertex
+	var destCycle []CycleTrace
 	for _, start := range scc.Vertices {
 		bfs := NewBFSPath(graph, start, sccSet)
-		for _, w := range graph.Out(start) {
-			if _, e := sccSet[w]; !e {
+		for _, next := range graph.Out(start) {
+			if _, e := sccSet[next]; !e {
 				continue
 			}
-			if bfs.HasPathTo(w) && (bfs.DistTo(w)+1) < length {
-				length = bfs.DistTo(w) + 1
-				destCycle = append([]Vertex{start}, bfs.PathTo(w)...)
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				length = bfs.DistFrom(next) + 1
+				destCycle = append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
 			}
 		}
 	}
-	return destCycle
+	return getVerticesFromTracePath(destCycle)
 }
 
 // FindCycleStartingWith ...
@@ -494,30 +490,58 @@ func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
 	length := len(scc.Vertices) + 1
 	sccSet := toSet(scc.Vertices)
 
-	var destCycle []Vertex
+	var destCycle []CycleTrace
 	for _, start := range scc.Vertices {
 		bfs := NewBFSPath(graph, start, sccSet)
 		out, ok := graph.Outs[start]
 		if !ok {
 			continue
 		}
-		for w, rs := range out {
-			if _, e := sccSet[w]; !e {
+		for next, rs := range out {
+			if _, e := sccSet[next]; !e {
 				continue
 			}
 			if !Rels(rs).exist(rel) {
 				continue
 			}
-			if bfs.HasPathTo(w) && (bfs.DistTo(w)+1) < length {
-				length = bfs.DistTo(w) + 1
-				destCycle = append([]Vertex{start}, bfs.PathTo(w)...)
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				length = bfs.DistFrom(next) + 1
+				destCycle = append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
 			}
 		}
 	}
-	return destCycle
+	return getVerticesFromTracePath(destCycle)
 }
 
 // FindCycleWith ...
-func FindCycleWith(transition Transition, pred Predicate, graph DirectedGraph, scc SCC) *Circle {
-	panic("impl me")
+func FindCycleWith(graph *DirectedGraph, scc SCC, isWith CyclePredicate) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
+
+	var destCycle []CycleTrace
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		out, ok := graph.Outs[start]
+		if !ok {
+			continue
+		}
+		for next := range out {
+			if _, e := sccSet[next]; !e {
+				continue
+			}
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				cycle := append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
+				// cycle: t1(rels of t1 and t2) -> t2(rels of t2 and t1) -> t1(rels of t1 and t2),
+				// so we need remove the last element when we invoke isWith
+				if isWith(cycle[:len(cycle)-1]) {
+					destCycle = cycle
+					length = bfs.DistFrom(next) + 1
+				}
+			}
+		}
+	}
+	return getVerticesFromTracePath(destCycle)
 }

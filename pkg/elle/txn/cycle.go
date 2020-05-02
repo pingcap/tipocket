@@ -21,8 +21,8 @@ type CycleAnomalySpecType struct {
 	// A predicate over a cycle explanation. We use this to restrict cycles to e.g. *just* G2 instead of G-single.
 	FilterEx FilterExType
 
-	With            func(n int, lastIsRw bool, rel core.Rel) (bool, int, bool) // seems only G-nonadjacent is used, it's a little complicated
-	FilterPathState func(interface{}) bool
+	// A predicate over a cycle
+	With core.CyclePredicate
 }
 
 var CycleAnomalySpecs map[string]CycleAnomalySpecType
@@ -38,10 +38,8 @@ func fromRels(rels ...core.Rel) CycleAnomalySpecType {
 	return fromRelsWithFilter(nil, rels...)
 }
 
-func fromRelsAndWith(with func(n int, lastIsRw bool, rel core.Rel) (bool, int, bool),
-	filterPath func(interface{}) bool, rels ...core.Rel) CycleAnomalySpecType {
+func fromRelsAndWith(with core.CyclePredicate, rels ...core.Rel) CycleAnomalySpecType {
 	r := fromRels(rels...)
-	r.FilterPathState = filterPath
 	r.With = with
 	return r
 }
@@ -79,23 +77,41 @@ func buildFilterExByType(required string) FilterExType {
 	}
 }
 
+// nonadjacentRW ensures that no :rw is next to another by testing successive edge types.
+// In addition, we ensure that the first edge in the cycle is not an rw.
+// And we need more than one rw edge for this to count, otherwise it's G-single
+func nonadjacentRW(trace []core.CycleTrace) bool {
+	if len(trace) < 2 {
+		return false
+	}
+	// ensure that the first edge in the cycle is not an rw
+	lastIsRw := true
+	rwCount := 0
+	for _, path := range trace {
+		rw := len(path.Rels) == 1 && path.Rels[0] == core.RW
+		if lastIsRw && rw {
+			return false
+		}
+		if rw {
+			rwCount++
+		}
+		lastIsRw = rw
+	}
+	return rwCount > 1
+}
+
 func init() {
 	CycleAnomalySpecs = map[string]CycleAnomalySpecType{
-		"G0":       fromRels(core.WW),
-		"G1c":      fromFirstRelAndRest(core.WR, core.WW, core.WR),
-		"G-single": fromFirstRelAndRest(core.RW, core.WW, core.WR),
-		//"G-nonadjacent": fromRelsAndWith(NonadjacentRW, func(p interface{}) bool {
-		//	return true
-		//}, core.WW, core.WR, core.RW),
-
+		"G0":               fromRels(core.WW),
+		"G1c":              fromFirstRelAndRest(core.WR, core.WW, core.WR),
+		"G-single":         fromFirstRelAndRest(core.RW, core.WW, core.WR),
+		"G-nonadjacent":    fromRelsAndWith(nonadjacentRW, core.WW, core.WR, core.RW),
 		"G2-item":          fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item"), core.RW, core.WR, core.RW, core.WW),
 		"G0-process":       fromRelsWithFilter(buildFilterExByType("G0-process"), core.WW, core.Process),
 		"G1c-process":      fromFirstRelAndRestWithFilter(buildFilterExByType("G1c-process"), core.WR, core.WW, core.WR, core.Process),
 		"G-single-process": fromFirstRelAndRestWithFilter(buildFilterExByType("G-single-process"), core.RW, core.WW, core.WR, core.Process),
 		"G2-item-process":  fromFirstRelAndRestWithFilter(buildFilterExByType("G2-item-process"), core.RW, core.WW, core.WR, core.RW, core.Process),
-
 		// realtime
-
 		"G0-realtime":       fromRelsWithFilter(buildFilterExByType("G0-realtime"), core.WW, core.Realtime),
 		"G1c-realtime":      fromFirstRelAndRestWithFilter(buildFilterExByType("G1c-realtime"), core.WR, core.WW, core.WR, core.Realtime),
 		"G-single-realtime": fromFirstRelAndRestWithFilter(buildFilterExByType("G-single-realtime"), core.RW, core.WW, core.WR, core.Realtime),
@@ -107,7 +123,7 @@ func init() {
 		"G-nonadjacent-realtime": {},
 	}
 
-	for k, _ := range CycleAnomalySpecs {
+	for k := range CycleAnomalySpecs {
 		CycleTypeNames[k] = struct{}{}
 	}
 
@@ -118,7 +134,7 @@ func init() {
 
 	ProcessAnalysisTypes = map[string]struct{}{}
 	RealtimeAnalysisTypes = map[string]struct{}{}
-	for k, _ := range CycleTypeNames {
+	for k := range CycleTypeNames {
 		if strings.Contains(k, "process") {
 			ProcessAnalysisTypes[k] = struct{}{}
 		}
@@ -189,25 +205,6 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, cr core.CycleExplainerResult) string {
 	exp := core.CycleExplainer{}
 	return exp.RenderCycleExplanation(explainer, cr)
-}
-
-// NonadjacentRW is an strange helper function. It returns (valid, rw-count, current-is-rw).
-//  when initialize, please provide [0, true]. if you provide [0, true], please ensure that the first
-//  edge must not rw edge.
-// And if you provide [0, false], please finally call the first Rel again to check the tail-end rw adjacent.
-// This fn ensures that no :rw is next to another by testing successive edge
-//  types. In addition, we ensure that the first edge in the cycle is not an rw.
-//  Cycles must have at least two edges, and in order for no two rw edges to be
-//  adjacent, there must be at least one non-rw edge among them. This constraint
-//  ensures a sort of boundary condition for the first and last nodes--even if
-//  the last edge is rw, we don't have to worry about violating the nonadjacency
-//  property when we jump to the first.
-func NonadjacentRW(n int, lastIsRw bool, rel core.Rel) (bool, int, bool) {
-	if rel != core.RW {
-		return true, n, false
-	} else {
-		return !lastIsRw, n + 1, true
-	}
 }
 
 // AdditionalGraphs determines what additional graphs we'll need to consider for this analysis.

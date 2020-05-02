@@ -1,6 +1,7 @@
 package core
 
 type BFSPath struct {
+	g      *DirectedGraph
 	marked map[Vertex]struct{}
 	edgeTo map[Vertex]Vertex
 	distTo map[Vertex]int
@@ -8,11 +9,12 @@ type BFSPath struct {
 
 func NewBFSPath(graph *DirectedGraph, start Vertex, sccSet map[Vertex]struct{}) *BFSPath {
 	bfsPath := BFSPath{
+		g:      graph,
 		marked: map[Vertex]struct{}{},
 		edgeTo: map[Vertex]Vertex{},
 		distTo: map[Vertex]int{},
 	}
-	bfsPath.bfs(graph, start, sccSet)
+	bfsPath.bfs(start, sccSet)
 	return &bfsPath
 }
 
@@ -24,7 +26,7 @@ func toSet(sccSet []Vertex) map[Vertex]struct{} {
 	return set
 }
 
-func (path *BFSPath) bfs(graph *DirectedGraph, start Vertex, set map[Vertex]struct{}) {
+func (path *BFSPath) bfs(start Vertex, set map[Vertex]struct{}) {
 	bfsQueue := make([]Vertex, 0)
 	bfsQueue = append(bfsQueue, start)
 	path.marked[start] = struct{}{}
@@ -33,7 +35,7 @@ func (path *BFSPath) bfs(graph *DirectedGraph, start Vertex, set map[Vertex]stru
 	for len(bfsQueue) != 0 {
 		currentV := bfsQueue[0]
 		bfsQueue = bfsQueue[1:]
-		for _, v := range graph.In(currentV) {
+		for _, v := range path.g.In(currentV) {
 			if _, inset := set[v]; !inset {
 				continue
 			}
@@ -48,12 +50,12 @@ func (path *BFSPath) bfs(graph *DirectedGraph, start Vertex, set map[Vertex]stru
 	}
 }
 
-func (path *BFSPath) HasPathTo(vertex Vertex) bool {
+func (path *BFSPath) HasPathFrom(vertex Vertex) bool {
 	_, hasPath := path.marked[vertex]
 	return hasPath
 }
 
-func (path *BFSPath) DistTo(vertex Vertex) int {
+func (path *BFSPath) DistFrom(vertex Vertex) int {
 	length, hasPath := path.distTo[vertex]
 	if !hasPath {
 		return -1
@@ -61,14 +63,41 @@ func (path *BFSPath) DistTo(vertex Vertex) int {
 	return length
 }
 
-func (path *BFSPath) PathTo(vertex Vertex) []Vertex {
-	if !path.HasPathTo(vertex) {
+type CycleTrace struct {
+	from Vertex
+	Rels []Rel
+}
+
+func (path *BFSPath) PathFrom(vertex Vertex) []CycleTrace {
+	if !path.HasPathFrom(vertex) {
 		return nil
 	}
-	var paths []Vertex
+	var paths []CycleTrace
 	var current Vertex
+
 	for current = vertex; path.distTo[current] != 0; current = path.edgeTo[current] {
-		paths = append(paths, current)
+		next := path.edgeTo[current]
+
+		paths = append(paths, CycleTrace{
+			from: current,
+			Rels: getRelsFromEdges(path.g.Edges(current, next)),
+		})
 	}
-	return append(paths, current)
+	return append(paths, CycleTrace{
+		from: current,
+		Rels: getRelsFromEdges(path.g.Edges(current, vertex)),
+	})
+}
+
+func getRelsFromEdges(es []Edge) (rs []Rel) {
+	for _, e := range es {
+		rs = append(rs, e.Value)
+	}
+	return rs
+}
+func getVerticesFromTracePath(ts []CycleTrace) (vs []Vertex) {
+	for _, t := range ts {
+		vs = append(vs, t.from)
+	}
+	return vs
 }
