@@ -1,11 +1,5 @@
 package core
 
-import (
-	"github.com/mohae/deepcopy"
-
-	log "github.com/sirupsen/logrus"
-)
-
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
 	From  Vertex
@@ -17,6 +11,17 @@ type Vertex struct {
 	Value interface{}
 }
 
+type Rels []Rel
+
+func (rs Rels) exist(rel Rel) bool {
+	for _, r := range rs {
+		if r == rel {
+			return true
+		}
+	}
+	return false
+}
+
 type DirectedGraph struct {
 	Outs map[Vertex]map[Vertex][]Rel
 	Ins  map[Vertex][]Vertex
@@ -24,7 +29,7 @@ type DirectedGraph struct {
 
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
-	vertices := []Vertex{}
+	var vertices []Vertex
 
 	for key := range g.Outs {
 		vertices = append(vertices, key)
@@ -49,7 +54,7 @@ func (g *DirectedGraph) Out(v Vertex) []Vertex {
 		return []Vertex{}
 	}
 
-	vertices := []Vertex{}
+	var vertices []Vertex
 
 	for key := range g.Outs[v] {
 		vertices = append(vertices, key)
@@ -153,12 +158,20 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 
 // Fork implements `forked` semantics on DirectedGraph
 func (g *DirectedGraph) Fork() *DirectedGraph {
-	return deepcopy.Copy(g).(*DirectedGraph)
+	d := NewDirectedGraph()
+	for _, a := range g.Vertices() {
+		for _, b := range g.Out(a) {
+			for _, e := range g.Edges(a, b) {
+				d.Link(a, b, e.Value)
+			}
+		}
+	}
+	return d
 }
 
 // IntersectionRel returns the intersection of res1 and res2
 func IntersectionRel(rels1 []Rel, rels2 []Rel) []Rel {
-	rel := []Rel{}
+	var rel []Rel
 	for _, rel1 := range rels1 {
 		for _, rel2 := range rels2 {
 			if rel1 == rel2 {
@@ -270,7 +283,7 @@ type SCC struct {
 	Vertices []Vertex
 }
 
-// StronglyConnectedComponents finds all strongly connected components
+// StronglyConnectedComponents finds all strongly connected components, greater than 1 element
 func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	dfn := make(map[Vertex]int)
 	low := make(map[Vertex]int)
@@ -278,7 +291,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 	belong := make(map[Vertex]int)
 	in := make(map[Vertex]bool)
 	tag := make(map[Vertex]map[Vertex]bool)
-	s2 := []Vertex{}
+	var s2 []Vertex
 	vertices := g.Vertices()
 	index := 0
 	for _, v := range vertices {
@@ -295,7 +308,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					in[x] = true
 				}
 				finish := true
-				for next, _ := range g.Outs[x] {
+				for next := range g.Outs[x] {
 					if dfn[next] == 0 {
 						s1 = append(s1, x)
 						s1 = append(s1, next)
@@ -315,7 +328,7 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 					}
 				}
 				if finish == true {
-					for next, _ := range g.Outs[x] {
+					for next := range g.Outs[x] {
 						_, ok := tag[x]
 						if !ok {
 							tag[x] = make(map[Vertex]bool)
@@ -349,7 +362,14 @@ func (g *DirectedGraph) StronglyConnectedComponents() []SCC {
 		id := belong[v]
 		scc[id-1].Vertices = append(scc[id-1].Vertices, v)
 	}
-	return scc
+
+	var sccs []SCC
+	for _, sc := range scc {
+		if len(sc.Vertices) >= 2 {
+			sccs = append(sccs, sc)
+		}
+	}
+	return sccs
 }
 
 // NewDirectedGraph returns a empty DirectedGraph
@@ -419,14 +439,13 @@ func MapToDirectedGraph(m map[Vertex][]Vertex) *DirectedGraph {
 }
 
 // DigraphUnion takes the union of n graphs, merging edges with union
-func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
+func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 	dg := NewDirectedGraph()
 	for _, g := range graphs {
 		vertices := g.Vertices()
 		for _, x := range vertices {
 			for y, rels := range g.Outs[x] {
 				for _, rel := range rels {
-					log.Infof("Link %v, %v, %s", x, y, string(rel))
 					dg.Link(x, y, rel)
 				}
 			}
@@ -435,152 +454,94 @@ func DigraphUnion(graphs ...DirectedGraph) *DirectedGraph {
 	return dg
 }
 
-// TODO
-type Transition interface{}
-
-// TODO
-type Predicate interface{}
+type CyclePredicate func(trace []CycleTrace) bool
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
 // TODO: find the shortest cycle
-func FindCycle(graph DirectedGraph, scc SCC) []Vertex {
+func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
-	inScc := make(map[Vertex]bool)
-	for _, vertex := range scc.Vertices {
-		inScc[vertex] = true
-	}
-	queue := []Vertex{scc.Vertices[0]}
-	vertices := []Vertex{}
-	haveVisited := make(map[Vertex]bool)
-	haveVisited[queue[0]] = true
-	from := make(map[Vertex]Vertex)
-	var first Vertex
-	flag := false
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
 
-	for len(queue) > 0 {
-		cur := queue[0]
-		queue = queue[1:]
-
-		for next, _ := range graph.Outs[cur] {
-			if inScc[next] != true {
+	var destCycle []CycleTrace
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		for _, next := range graph.Out(start) {
+			if _, e := sccSet[next]; !e {
 				continue
 			}
-			if haveVisited[next] == true {
-				flag = true
-				first = next
-				from[next] = cur
-				break
-			} else {
-				haveVisited[next] = true
-				from[next] = cur
-				queue = append(queue, next)
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				length = bfs.DistFrom(next) + 1
+				destCycle = append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
 			}
 		}
-		if flag == true {
-			break
-		}
 	}
-
-	now := first
-	for {
-		vertices = append(vertices, now)
-		now = from[now]
-		if now == first {
-			break
-		}
-	}
-	vertices = append(vertices, first)
-	for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
-		vertices[i], vertices[j] = vertices[j], vertices[i]
-	}
-	return vertices
+	return getVerticesFromTracePath(destCycle)
 }
 
 // FindCycleStartingWith ...
 // TODO: find the shortest cycle
-func FindCycleStartingWith(graph DirectedGraph, rel Rel, scc SCC) []Vertex {
+func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}
 	}
-	inScc := make(map[Vertex]bool)
-	for _, vertex := range scc.Vertices {
-		inScc[vertex] = true
-	}
-	vertices := []Vertex{}
-	for _, vertex := range scc.Vertices {
-		haveFound := false
-		queue := []Vertex{}
-		haveVisited := make(map[Vertex]bool)
-		start := vertex
-		haveVisited[start] = true
-		from := make(map[Vertex]Vertex)
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
 
-		for next, rels := range graph.Outs[start] {
-			if inScc[next] != true {
+	var destCycle []CycleTrace
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		out, ok := graph.Outs[start]
+		if !ok {
+			continue
+		}
+		for next, rs := range out {
+			if _, e := sccSet[next]; !e {
 				continue
 			}
-			haveRel := false
-			for _, r := range rels {
-				if r == rel {
-					haveRel = true
-				}
-			}
-			if haveRel == false {
+			if !Rels(rs).exist(rel) {
 				continue
-			} else {
-				queue = append(queue, next)
-				haveVisited[next] = true
-				from[next] = start
 			}
-		}
-		flag := false
-		for len(queue) > 0 {
-			cur := queue[0]
-			queue = queue[1:]
-			for next, _ := range graph.Outs[cur] {
-				if inScc[next] != true {
-					continue
-				}
-				if haveVisited[next] == true {
-					if next == start {
-						flag = true
-						haveFound = true
-						from[next] = cur
-						break
-					}
-				} else {
-					haveVisited[next] = true
-					from[next] = cur
-					queue = append(queue, next)
-				}
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				length = bfs.DistFrom(next) + 1
+				destCycle = append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
 			}
-			if flag == true {
-				haveFound = true
-				break
-			}
-		}
-		if haveFound == true {
-			now := start
-			for {
-				vertices = append(vertices, now)
-				now = from[now]
-				if now == start {
-					break
-				}
-			}
-			vertices = append(vertices, start)
-			for i, j := 0, len(vertices)-1; i < j; i, j = i+1, j-1 {
-				vertices[i], vertices[j] = vertices[j], vertices[i]
-			}
-			break
 		}
 	}
-	return vertices
+	return getVerticesFromTracePath(destCycle)
 }
 
 // FindCycleWith ...
-func FindCycleWith(transition Transition, pred Predicate, graph DirectedGraph, scc SCC) Circle {
-	panic("impl me")
+func FindCycleWith(graph *DirectedGraph, scc SCC, isWith CyclePredicate) []Vertex {
+	if len(scc.Vertices) == 1 {
+		return []Vertex{}
+	}
+	length := len(scc.Vertices) + 1
+	sccSet := toSet(scc.Vertices)
+
+	var destCycle []CycleTrace
+	for _, start := range scc.Vertices {
+		bfs := NewBFSPath(graph, start, sccSet)
+		out, ok := graph.Outs[start]
+		if !ok {
+			continue
+		}
+		for next := range out {
+			if _, e := sccSet[next]; !e {
+				continue
+			}
+			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
+				cycle := append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
+				// cycle: t1(rels of t1 and t2) -> t2(rels of t2 and t1) -> t1(rels of t1 and t2),
+				// so we need remove the last element when we invoke isWith
+				if isWith(cycle[:len(cycle)-1]) {
+					destCycle = cycle
+					length = bfs.DistFrom(next) + 1
+				}
+			}
+		}
+	}
+	return getVerticesFromTracePath(destCycle)
 }

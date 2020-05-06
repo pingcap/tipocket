@@ -8,6 +8,7 @@ type Opts struct {
 	// define what specific anomalies and consistency models to look for
 	ConsistencyModels []core.ConsistencyModelName
 	Anomalies         []string
+	additionalGraphs  []core.Analyzer
 }
 
 type CheckResult struct {
@@ -33,24 +34,17 @@ func Cycles(analyzer core.Analyzer, history core.History) core.CheckResult {
 	return checkedResult
 }
 
-type CycleCase struct {
-	Circle core.Circle
-	Steps  []core.Step
-	Type   string
-}
-
-func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]CycleCase {
+func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]core.Anomaly {
 	g := FilteredGraphs(graph)
-	cases := map[string][]CycleCase{}
+	cases := map[string][]core.Anomaly{}
 	for _, scc := range sccs {
 		for _, v := range CycleCasesInScc(graph, g, pairExplainer, scc) {
-			if _, e := cases[v.Type]; !e {
-				cases[v.Type] = make([]CycleCase, 0)
+			if _, e := cases[string(v.Typ)]; !e {
+				cases[string(v.Typ)] = make([]core.Anomaly, 0)
 			}
-			cases[v.Type] = append(cases[v.Type], v)
+			cases[string(v.Typ)] = append(cases[string(v.Typ)], v)
 		}
 	}
-
 	return cases
 }
 
@@ -58,9 +52,10 @@ type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
 
 // CycleCasesInScc searches a single SCC for cycle anomalies.
 // TODO: add timeout logic.
-func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []CycleCase {
-	var cases []CycleCase
-	for _, v := range CycleAnomalySpecs {
+func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explainer core.DataExplainer, scc core.SCC) []core.CycleExplainerResult {
+	var cases []core.CycleExplainerResult
+	for cn, v := range CycleAnomalySpecs {
+		_ = cn
 		var runtimeGraph *core.DirectedGraph
 		if v.Rels != nil {
 			runtimeGraph = filterGraph(setKeys(v.Rels))
@@ -70,26 +65,28 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 		var cycle *core.Circle
 		cycle = nil
 		if v.With != nil {
-			c := core.FindCycleWith(v.With, v.FilterPathState, *runtimeGraph, scc)
-			cycle = &c
+			c := core.FindCycleWith(runtimeGraph, scc, v.With)
+			cycle = core.NewCircle(c)
 		} else if v.Rels != nil {
-			c := core.FindCycle(*runtimeGraph, scc)
-			cycle = &c
+			c := core.FindCycle(runtimeGraph, scc)
+			cycle = core.NewCircle(c)
 		} else {
+			// TODO(mahjonp): need review
 			// Note: this requires find-cycle-starting-with
-			s1 := filterGraph([]core.Rel{v.FirstRel})
-			s2 := filterGraph(setKeys(v.RestRels))
-			c := core.FindCycleStartingWith(*s1, *s2, scc)
-			cycle = &c
+			//s1 := filterGraph([]core.Rel{v.FirstRel})
+			//s2 := filterGraph(setKeys(v.RestRels))
+			filteredGraph := filterGraph(core.RelSet([]core.Rel{v.FirstRel}).Append(v.RestRels))
+			c := core.FindCycleStartingWith(filteredGraph, v.FirstRel, scc)
+			cycle = core.NewCircle(c)
 		}
 
 		if cycle != nil {
 			explainerWrapper := CycleExplainerWrapper{}
-			cycleCase := explainerWrapper.ExplainCycle(explainer, *cycle)
-			if v.FilterEx != nil && !v.FilterEx(&cycleCase) {
+			ex := explainerWrapper.ExplainCycle(explainer, *cycle)
+			if v.FilterEx != nil && !v.FilterEx(&ex) {
 				continue
 			}
-			cases = append(cases, cycleCase)
+			cases = append(cases, ex)
 		}
 	}
 	return cases

@@ -199,7 +199,7 @@ func anomaliesImpossibleModels(anomalies []string) []string {
 	for _, anomaly := range as {
 		allAnomalies = append(allAnomalies, stringSlice(directProscribedAnomalies.In(Vertex{anomaly}))...)
 	}
-	return allImpliedModels(allAnomalies)
+	return allImpossibleModels(allAnomalies)
 }
 
 // FriendlyBoundary takes a set of anomalies, and yields not and alsoNot
