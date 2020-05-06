@@ -319,7 +319,7 @@ func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []core.Anomaly
+	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
@@ -348,7 +348,7 @@ func g1bCases(history core.History) GCaseTp {
 	inter := txn.IntermediateWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []core.Anomaly
+	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
@@ -390,15 +390,14 @@ func (i InternalConflict) String() string {
 // Given an op, returns a Anomaly describing internal consistency violations, or nil otherwise
 func opInternalCase(op core.Op) core.Anomaly {
 	// key -> valueList
-	dataMap := map[string][]core.MopValueType{}
+	dataMap := map[string][]int{}
 	for _, mop := range *op.Value {
 		if mop.IsRead() {
-			// Note: if mop's read record is nil, should we ignore this mop?
-			if mop.GetValue() == nil {
-				continue
+			var records = make([]int, 0)
+			if mop.GetValue() != nil {
+				records = mop.GetValue().([]int)
 			}
 			previousData, e := dataMap[mop.GetKey()]
-			records := mop.GetValue().([]int)
 			var found = false
 			if e {
 				// check conflicts
@@ -414,23 +413,20 @@ func opInternalCase(op core.Op) core.Anomaly {
 				}
 			}
 			if found {
-				return &InternalConflict{
+				return InternalConflict{
 					Op:       op,
 					Mop:      mop,
 					Expected: previousData,
 				}
 			}
-			dataMap[mop.GetKey()] = make([]core.MopValueType, 0)
-			for _, rdata := range records {
-				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], core.MopValueType(rdata))
-			}
+			dataMap[mop.GetKey()] = records[:]
 		}
 		if mop.IsAppend() {
 			_, e := dataMap[mop.GetKey()]
 			if !e {
 				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], unknownPrefixMagicNumber)
 			}
-			dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], mop.GetValue())
+			dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], mop.GetValue().(int))
 		}
 	}
 	return nil

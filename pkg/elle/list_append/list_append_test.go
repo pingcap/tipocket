@@ -174,6 +174,8 @@ Then:
 }
 
 func TestG1aCases(t *testing.T) {
+	require.Equal(t, GCaseTp{}, g1aCases([]core.Op{}))
+
 	t1, _ := core.ParseOp(`{:type :fail, :value [[:append x 1]]}`)
 	t2, _ := core.ParseOp(`{:type :ok, :value [[:r x [1]] [:append x 2]]}`)
 	t3, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [3]]]}`)
@@ -198,6 +200,103 @@ func TestG1aCases(t *testing.T) {
 	}}
 
 	require.Equal(t, expect, got)
+}
+
+func TestG1bCases(t *testing.T) {
+	require.Equal(t, GCaseTp{}, g1bCases([]core.Op{}))
+
+	t1, _ := core.ParseOp(`{:type :ok, :value [[:append x 1] [:append x 2]]}`)
+	t2, _ := core.ParseOp(`{:type :ok, :value [[:r x [1]]]}`)
+	t3, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [3]]]}`)
+	t4, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2 3]]]}`)
+
+	got := g1bCases([]core.Op{t2, t3, t1, t4})
+
+	expect := GCaseTp{G1Conflict{
+		Op: t2,
+		Mop: core.Read{
+			Key:   "x",
+			Value: []int{1},
+		},
+		Writer:  t1,
+		Element: 1,
+	}}
+
+	require.Equal(t, expect, got)
+}
+
+func TestInternalCases(t *testing.T) {
+	require.Equal(t, GCaseTp(nil), internalCases([]core.Op{}))
+	if true {
+		t1, _ := core.ParseOp(`{:type :ok, :value [[:r y [5 6]] [:append x 3] [:r x [1 2 3]] [:append x 4] [:r x [1 2 3 4]]]}]]}`)
+		require.Equal(t, GCaseTp(nil), internalCases([]core.Op{t1}))
+	}
+
+	if true {
+		stale, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [1 2]]]}`)
+		badPrefix, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [0 2 3]]]}`)
+		extension, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [1 2 3 4]]]}`)
+		shortRead, _ := core.ParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [1]]]}`)
+
+		got := internalCases([]core.Op{stale, badPrefix, extension, shortRead})
+		expect := GCaseTp{
+			InternalConflict{
+				Op:       stale,
+				Mop:      core.Read{Key: "x", Value: []int{1, 2}},
+				Expected: []int{1, 2, 3},
+			},
+			InternalConflict{
+				Op:       badPrefix,
+				Mop:      core.Read{Key: "x", Value: []int{0, 2, 3}},
+				Expected: []int{1, 2, 3},
+			},
+			InternalConflict{
+				Op:       extension,
+				Mop:      core.Read{Key: "x", Value: []int{1, 2, 3, 4}},
+				Expected: []int{1, 2, 3},
+			},
+			InternalConflict{
+				Op:       shortRead,
+				Mop:      core.Read{Key: "x", Value: []int{1}},
+				Expected: []int{1, 2, 3},
+			},
+		}
+		require.Equal(t, expect, got)
+	}
+	if true {
+		disagreement, _ := core.ParseOp(`{:type :ok, :value [[:append x 3] [:r x [1 2 3 4]]]}`)
+		shortRead, _ := core.ParseOp(`{:type :ok, :value [[:append x 3] [:r x []]]}`)
+
+		got := internalCases([]core.Op{disagreement, shortRead})
+		expect := GCaseTp{
+			InternalConflict{
+				Op:       disagreement,
+				Mop:      core.Read{Key: "x", Value: []int{1, 2, 3, 4}},
+				Expected: []int{unknownPrefixMagicNumber, 3},
+			},
+			InternalConflict{
+				Op:       shortRead,
+				Mop:      core.Read{Key: "x", Value: []int{}},
+				Expected: []int{unknownPrefixMagicNumber, 3},
+			},
+		}
+		require.Equal(t, expect, got)
+	}
+	if true {
+		t1, _ := core.ParseOp(`{:type :invoke, :value [[:append 0 6] [:r 0 nil]] :process 1, :index 20}`)
+		t2, _ := core.ParseOp(`{:type :ok, :value [[:append 0 6] [:r 0 nil]] :process 1, :index 21}`)
+
+		got := internalCases([]core.Op{t1, t2})
+
+		expect := GCaseTp{
+			InternalConflict{
+				Op:       t2,
+				Mop:      core.Read{Key: "0", Value: nil},
+				Expected: []int{unknownPrefixMagicNumber, 6},
+			},
+		}
+		require.Equal(t, expect, got)
+	}
 }
 
 func TestCheck(t *testing.T) {

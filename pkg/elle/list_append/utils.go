@@ -484,12 +484,12 @@ func filterOkHistory(history core.History) core.History {
 	return h
 }
 
-func isReadRecordEqual(a []core.MopValueType, b []int) bool {
+func isReadRecordEqual(a []int, b []int) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for idx := range a {
-		if a[idx] != a[idx] {
+		if a[idx] != b[idx] {
 			return false
 		}
 	}
