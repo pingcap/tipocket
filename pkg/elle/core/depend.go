@@ -231,7 +231,7 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr Cycl
 	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
-			Name:      fmt.Sprintf("T%d", i),
+			Name:      fmt.Sprintf("T%d", i+1),
 		})
 	}
 	bindingsExplain := explainBindings(bindings)

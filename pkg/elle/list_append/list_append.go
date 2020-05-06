@@ -224,7 +224,10 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 				for i, aMop := range *a.Value {
 					if aMop.IsRead() && aMop.GetKey() == k {
 						// we should let it panic if vs is not []int
-						vs := aMop.GetValue().([]int)
+						var vs []int
+						if aMop.GetValue() != nil {
+							vs = aMop.GetValue().([]int)
+						}
 						if prev == initMagicNumber && len(vs) == 0 {
 							ai = i
 							break
@@ -254,7 +257,7 @@ func (r *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 	}
 	er := result.(rwExplainResult)
 	key, prev, value := er.Key, er.PreValue, er.Value
-	if prev == nil {
+	if prev == initMagicNumber {
 		return fmt.Sprintf("%s observed the initial (nil) state of %s, which %s created by appending %v",
 			a, key, b, value,
 		)
@@ -311,6 +314,7 @@ func (g G1Conflict) String() string {
 	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
 }
 
+// g1aCases finds aborted read cases
 func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
 	okHistory := filterOkHistory(history)

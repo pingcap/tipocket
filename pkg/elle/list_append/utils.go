@@ -143,11 +143,11 @@ func readIndex(history core.History) readIdx {
 			if !mop.IsRead() {
 				continue
 			}
-			if mop.GetValue() == nil {
-				continue
+			var k = mop.GetKey()
+			var v []int
+			if mop.GetValue() != nil {
+				v = mop.GetValue().([]int)
 			}
-			k := mop.GetKey()
-			v := mop.GetValue().([]int)
 			// we jump not read mop
 			// we jump info type and empty read
 			if op.Type == core.OpTypeInfo && len(v) == 0 {

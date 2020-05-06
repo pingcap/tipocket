@@ -17,7 +17,7 @@ var (
 	opProcessPattern = regexp.MustCompile(`:process\s+([0-9]+|:nemesis)`)
 	opTypePattern    = regexp.MustCompile(`:type\s+(:[a-zA-Z]+)`)
 	opValuePattern   = regexp.MustCompile(`:value\s+\[(.*)\]`)
-	mopPattern       = regexp.MustCompile(`(\[:(append|r)\s+(\d+)\s+(\[.*?\]|.*?)\])+`)
+	mopPattern       = regexp.MustCompile(`(\[:(append|r)\s+(\w+)\s+(\[.*?\]|.*?)\])+`)
 	mopValuePattern  = regexp.MustCompile(`\[(.*)\]`)
 )
 
@@ -108,6 +108,9 @@ type Read struct {
 }
 
 func (r Read) String() string {
+	if r.Value == nil {
+		return fmt.Sprintf("[:r %s nil]", r.Key)
+	}
 	return fmt.Sprintf("[:r %s %v]", r.Key, r.Value)
 }
 
@@ -163,7 +166,26 @@ type Op struct {
 }
 
 func (op Op) String() string {
-	return fmt.Sprintf("{:type %s :process %d :time %d :index %d}", string(op.Type), op.Process.MustGet(), op.Time.Nanosecond(), op.Index.MustGet())
+	var parts []string
+	parts = append(parts, fmt.Sprintf("{:type %s", op.Type))
+	var mopParts []string
+	if op.Value != nil {
+		for _, mop := range *op.Value {
+			mopParts = append(mopParts, mop.String())
+		}
+	}
+	parts = append(parts, fmt.Sprintf(":value [%s]", strings.Join(mopParts, " ")))
+	if op.Process.Present() {
+		parts = append(parts, fmt.Sprintf(":process %d", op.Process.MustGet()))
+	}
+	if !op.Time.IsZero() {
+		parts = append(parts, fmt.Sprintf(":time %d", op.Time.UnixNano()))
+	}
+	if op.Index.Present() {
+		parts = append(parts, fmt.Sprintf(":time %d", op.Index.MustGet()))
+	}
+
+	return strings.Join(parts, " ")
 }
 
 func (op Op) ValueLength() int {
