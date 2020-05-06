@@ -1,6 +1,7 @@
 package txn
 
 import (
+	"encoding/binary"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -35,17 +36,6 @@ func OpMops(history core.History) *OpMopIterator {
 	return &OpMopIterator{history: history, historyIndex: 0, mopIndex: 0}
 }
 
-// keeps or ok records and the records satisfied the validate fn.
-func OkKeep(validateFunc func(op core.Op) bool, history core.History) core.History {
-	var newHistory core.History
-	for _, v := range history {
-		if v.Type == core.OpTypeOk && validateFunc(v) {
-			newHistory = append(newHistory, v)
-		}
-	}
-	return newHistory
-}
-
 // Gen Takes a sequence of transactions and returns a sequence of invocation operations.
 // Note: Currently we don't need :f.
 func Gen(mop []core.Mop) core.Op {
@@ -60,18 +50,22 @@ func Gen(mop []core.Mop) core.Op {
 func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
 	im := map[string]map[core.MopValueType]*core.Op{}
 
-	for _, op := range history {
+	for idx, op := range history {
+		if op.Value == nil {
+			continue
+		}
 		final := map[string]core.MopValueType{}
 		for _, mop := range *op.Value {
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
-				lastOp, exists := final[realKey]
-				if !exists {
-					final[realKey] = a.Value
-				} else {
-					im[realKey][lastOp] = &op
+				if lastOp, exists := final[realKey]; exists {
+					if _, ok := im[realKey]; !ok {
+						im[realKey] = make(map[core.MopValueType]*core.Op)
+					}
+					im[realKey][lastOp] = &history[idx]
 				}
+				final[realKey] = a.Value
 			}
 		}
 	}
@@ -81,7 +75,7 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 
 // FailedWrites is like IntermediateWrites, it returns map[key](map[aborted-value]abort-op).
 func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
-	im := map[string]map[core.MopValueType]*core.Op{}
+	failed := map[string]map[core.MopValueType]*core.Op{}
 
 	for _, op := range history {
 		if op.Type != core.OpTypeFail {
@@ -91,12 +85,14 @@ func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.O
 			if mop.IsAppend() {
 				a := mop.(core.Append)
 				realKey := a.Key
-				im[realKey][a.Value] = &op
+				if _, ok := failed[realKey]; !ok {
+					failed[realKey] = make(map[core.MopValueType]*core.Op)
+				}
+				failed[realKey][a.Value] = &op
 			}
 		}
 	}
-
-	return im
+	return failed
 }
 
 func mustAtoi(s string) int {
@@ -144,6 +140,16 @@ func arrayHash(sset []core.Rel) uint32 {
 	h := fnv.New32a()
 	for _, v := range sset {
 		h.Write([]byte(v))
+	}
+	return h.Sum32()
+}
+
+func IntArrayHash(array []int) uint32 {
+	h := fnv.New32a()
+	for _, v := range array {
+		bs := make([]byte, 8)
+		binary.LittleEndian.PutUint64(bs, uint64(v))
+		h.Write(bs)
 	}
 	return h.Sum32()
 }

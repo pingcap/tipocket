@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"sort"
 )
 
@@ -21,6 +22,20 @@ func (r RelSet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
+func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
+	set := make(map[Rel]struct{})
+	for _, rel := range r {
+		set[rel] = struct{}{}
+	}
+	for rel := range rels {
+		set[rel] = struct{}{}
+	}
+	for rel := range set {
+		rs = append(rs, rel)
+	}
+	return
+}
+
 // Rel enums
 const (
 	Empty    Rel = ""
@@ -29,11 +44,16 @@ const (
 	RW       Rel = "rw"
 	Process  Rel = "process"
 	Realtime Rel = "realtime"
+	// Note: currently we don't support MonotonicKey
+	MonotonicKey Rel = "monotonic-key"
 )
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
-type Anomaly interface{}
-type Anomalies map[string]Anomaly
+type Anomaly interface {
+	IAnomaly() string
+}
+
+type Anomalies map[string][]Anomaly
 
 // Merge merges another anomalies
 func (a Anomalies) Merge(another Anomalies) {
@@ -67,9 +87,34 @@ type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
 type PathType = Op
 
+// IndexOfMop returns the index of mop in op
+func (op PathType) IndexOfMop(mop Mop) int {
+	for idx, m := range *op.Value {
+		if m.IsEqual(mop) {
+			return idx
+		}
+	}
+	return -1
+}
+
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
 	Path []PathType
+}
+
+// NewCircle returns a Circle from a Vertex slice
+func NewCircle(vertices []Vertex) *Circle {
+	if len(vertices) == 0 {
+		return nil
+	}
+	if len(vertices) < 3 || vertices[0] != vertices[len(vertices)-1] {
+		panic("there isn't a cycle, the code may has bug")
+	}
+	c := &Circle{Path: make([]PathType, 0)}
+	for _, vertex := range vertices {
+		c.Path = append(c.Path, vertex.Value.(PathType))
+	}
+	return c
 }
 
 type Step struct {
@@ -80,21 +125,31 @@ type Step struct {
 func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
 
-	nextMap := make([]int, len(history), len(history))
-	// build nextMap
+	pair := make(map[Op]Op)
 	{
-		processMap := map[int]int{}
-		for i, v := range history {
+		invocations := map[int]Op{}
+		for _, v := range history {
+			process := v.Process.MustGet()
 			switch v.Type {
-			case OpTypeNemesis, OpTypeFail, OpTypeInfo:
-				nextMap[processMap[v.Process.MustGet()]] = i
-				delete(processMap, v.Process.MustGet())
 			case OpTypeInvoke:
-				processMap[v.Process.MustGet()] = i
-			case OpTypeOk:
-				nextMap[processMap[v.Process.MustGet()]] = i
-				nextMap[i] = processMap[v.Process.MustGet()]
-				delete(processMap, v.Process.MustGet())
+				invocations[process] = v
+			case OpTypeInfo:
+				invocation, e := invocations[process]
+				if e {
+					pair[invocation] = v
+					pair[v] = invocation
+					delete(invocations, process)
+				} else {
+					invocations[process] = v
+				}
+			case OpTypeOk, OpTypeFail:
+				invocation, e := invocations[process]
+				if !e {
+					log.Fatalf("cannot find the invocation of %s, the code may has bug", v)
+				}
+				pair[invocation] = v
+				pair[v] = invocation
+				delete(invocations, process)
 			}
 		}
 	}
@@ -102,25 +157,25 @@ func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	// build state machine
 	var doneEvents = map[Op]struct{}{}
 	for i := range history {
-		v := &history[i]
-		if !v.Process.Present() {
+		op := history[i]
+		if !op.Process.Present() {
 			continue
 		}
-		switch v.Type {
-		case OpTypeNemesis, OpTypeFail, OpTypeInfo:
-			continue
+		switch op.Type {
 		case OpTypeInvoke:
-			effectOp := history[nextMap[i]]
+			pairOp := pair[op]
 			for k := range doneEvents {
-				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: effectOp}, Realtime)
+				realtimeGraph.Link(Vertex{Value: k}, Vertex{Value: pairOp}, Realtime)
 			}
 		case OpTypeOk:
-			implied := opSet(realtimeGraph.In(Vertex{Value: history[i]}))
+			implied := opSet(realtimeGraph.In(Vertex{Value: op}))
 			doneEvents = setDel(doneEvents, implied)
-			doneEvents[*v] = struct{}{}
+			doneEvents[op] = struct{}{}
+		case OpTypeFail, OpTypeInfo:
+			continue
 		}
 	}
-	return nil, realtimeGraph, RealtimeExplainer{nextIndex: nextMap, historyReference: history}
+	return nil, realtimeGraph, RealtimeExplainer{pair: pair}
 }
 
 func opSet(vertex []Vertex) map[Op]struct{} {
@@ -223,7 +278,7 @@ func MonotonicKeyOrder(history History, k string) *DirectedGraph {
 		for _, y := range val2ops[vals[i]] {
 			ys = append(ys, Vertex{y})
 		}
-		graph.LinkAllToAll(xs, ys)
+		graph.LinkAllToAll(xs, ys, MonotonicKey)
 	}
 
 	return &graph

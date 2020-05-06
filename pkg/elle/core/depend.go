@@ -22,9 +22,9 @@ const (
 	RealtimeDepend  DependType = "realtime"
 	MonotonicDepend DependType = "monotonic"
 	ProcessDepend   DependType = "process"
-
-	// CombineDepend is a special form of DependType
-	CombineDepend DependType = "combine"
+	WWDepend        DependType = "ww"
+	WRDepend        DependType = "wr"
+	RWDepend        DependType = "rw"
 )
 
 type ExplainResult interface {
@@ -42,7 +42,7 @@ type CombineExplainResult struct {
 }
 
 func (c CombineExplainResult) Type() DependType {
-	return CombineDepend
+	return c.er.Type()
 }
 
 // ExplainPairData find dependencies in a and b
@@ -61,9 +61,6 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 
 // RenderExplanation render explanation result
 func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
-	if result.Type() != CombineDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
-	}
 	er := result.(CombineExplainResult)
 	return er.ex.RenderExplanation(er.er, p1, p2)
 }
@@ -105,7 +102,7 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	if !p1.Process.Present() || !p2.Process.Present() {
 		return nil
 	}
-	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index < p2.Index {
+	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index.MustGet() < p2.Index.MustGet() {
 		return ProcessDependent{Process: p1.Process.MustGet()}
 	} else {
 		return nil
@@ -115,7 +112,7 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 // RenderExplanation render explanation
 func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
 	if result.Type() != ProcessDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", ProcessDepend)
 	}
 	res := result.(ProcessDependent)
 	return fmt.Sprintf("process %d excuted %s before %s", res.Process, preName, postName)
@@ -123,16 +120,18 @@ func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postN
 
 // RealtimeExplainer is Realtime order explainer
 type RealtimeExplainer struct {
-	historyReference History
-	nextIndex        []int
+	pair map[Op]Op
 }
 
 // TODO: here it needs to get the preEnd and the postStart, it maybe complex and introduce another logic here.
 func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
-	postStart := r.historyReference[r.nextIndex[postEnd.Index]]
-	if preEnd.Index < postStart.Index {
+	postStart, ok := r.pair[postEnd]
+	if !ok {
+		log.Fatalf("cannot find the invocation of %s, the code may has bug", postEnd.String())
+	}
+	if preEnd.Index.MustGet() < postStart.Index.MustGet() {
 		return RealtimeDependent{
-			prefixEnd: &preEnd,
+			preEnd:    &preEnd,
 			postStart: &postStart,
 		}
 	}
@@ -141,25 +140,25 @@ func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResu
 
 func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
 	if result.Type() != RealtimeDepend {
-		log.Fatalf("result type is not %s, type error", result.Type())
+		log.Fatalf("result type is not %s, type error", RealtimeDepend)
 	}
 	res := result.(RealtimeDependent)
-	s := fmt.Sprintf("%s complete at index %d, ", preName, res.postStart.Index)
+	s := fmt.Sprintf("%s complete at index %d, ", preName, res.preEnd.Index.MustGet())
 
-	if !res.postStart.Time.IsZero() && !res.prefixEnd.Time.IsZero() {
-		t1, t2 := res.prefixEnd.Time, res.postStart.Time
+	if !res.postStart.Time.IsZero() && !res.preEnd.Time.IsZero() {
+		t1, t2 := res.preEnd.Time, res.postStart.Time
 		if t1.Before(t2) {
 			delta := t2.Sub(t1)
-			s += fmt.Sprintf("%v seconds just ", delta.Milliseconds())
+			s += fmt.Sprintf("%v seconds just ", delta.Seconds())
 		}
 	}
 
-	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.prefixEnd.Index)
+	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.postStart.Index.MustGet())
 	return s
 }
 
 type RealtimeDependent struct {
-	prefixEnd *Op
+	preEnd    *Op
 	postStart *Op
 }
 
@@ -180,22 +179,46 @@ func (e MonotonicKeyExplainer) RenderExplanation(result ExplainResult, preName, 
 	panic("impl me")
 }
 
+// CycleExplainerResult impls Anomaly
+type CycleExplainerResult struct {
+	Circle Circle
+	Steps  []Step
+	Typ    DependType
+}
+
+func (c CycleExplainerResult) String() string {
+	panic("implement me")
+}
+
+func (c CycleExplainerResult) IAnomaly() string {
+	return c.String()
+}
+
+func (c CycleExplainerResult) Type() DependType {
+	return c.Typ
+}
+
 type ICycleExplainer interface {
-	ExplainCycle(pairExplainer DataExplainer, circle Circle) (Circle, []Step)
-	RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string
+	ExplainCycle(pairExplainer DataExplainer, circle Circle) CycleExplainerResult
+	RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string
 }
 
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
 type CycleExplainer struct{}
 
 // Explain for the whole scc.
-func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) (Circle, []Step) {
+func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) CycleExplainerResult {
 	var steps []Step
 	for i := 1; i < len(circle.Path); i++ {
 		res := explainer.ExplainPairData(circle.Path[i-1], circle.Path[i])
 		steps = append(steps, Step{Result: res})
 	}
-	return circle, steps
+	return CycleExplainerResult{
+		Circle: circle,
+		Steps:  steps,
+		// don't return type
+		Typ: "",
+	}
 }
 
 type OpBinding struct {
@@ -203,20 +226,17 @@ type OpBinding struct {
 	Name      string
 }
 
-func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, circle Circle, steps []Step) string {
+func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string {
 	var bindings []OpBinding
-	if len(bindings) < 2 {
-		return ""
-	}
-	for i, v := range circle.Path[:len(circle.Path)-1] {
+	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
 			Name:      fmt.Sprintf("T%d", i),
 		})
 	}
 	bindingsExplain := explainBindings(bindings)
-	stepsResult := explainCycleOps(explainer, bindings, steps)
-	return bindingsExplain + "\n" + stepsResult
+	stepsResult := explainCycleOps(explainer, bindings, cr.Steps)
+	return bindingsExplain + "\n\nThen:\n" + stepsResult
 }
 
 // Takes a seq of [name op] pairs, and constructs a string naming each op.
@@ -224,7 +244,7 @@ func explainBindings(bindings []OpBinding) string {
 	var seq []string
 	seq = []string{"Let:"}
 	for _, v := range bindings {
-		seq = append(seq, fmt.Sprintf(" %s = %s", v.Name, v.Operation.String()))
+		seq = append(seq, fmt.Sprintf("  %s = %s", v.Name, v.Operation.String()))
 	}
 	return strings.Join(seq, "\n")
 }
@@ -237,13 +257,24 @@ func explainCycleOps(pairExplainer DataExplainer, bindings []OpBinding, steps []
 	}
 	// extra result
 	explainitions = append(explainitions, fmt.Sprintf("%s < %s, because %s", bindings[len(bindings)-1].Name,
-		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(bindings)].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
+		bindings[0].Name, pairExplainer.RenderExplanation(steps[len(steps)-1].Result, bindings[len(bindings)-1].Name, bindings[0].Name)))
+
+	for idx, ex := range explainitions {
+		if idx == len(explainitions)-1 {
+			explainitions[idx] = fmt.Sprintf("  - However, %s: a contradiction!", ex)
+		} else {
+			explainitions[idx] = fmt.Sprintf("  - %s.", ex)
+		}
+	}
 
 	return strings.Join(explainitions, "\n")
 }
 
 func explainSCC(g *DirectedGraph, cycleExplainer CycleExplainer, pairExplainer DataExplainer, scc SCC) string {
-	cycle := FindCycle(*g, scc)
-	_, steps := cycleExplainer.ExplainCycle(pairExplainer, cycle)
-	return cycleExplainer.RenderCycleExplanation(pairExplainer, cycle, steps)
+	cycle := NewCircle(FindCycle(g, scc))
+	if cycle == nil {
+		panic("don't find a cycle, the code may has bug")
+	}
+	cr := cycleExplainer.ExplainCycle(pairExplainer, *cycle)
+	return cycleExplainer.RenderCycleExplanation(pairExplainer, cr)
 }

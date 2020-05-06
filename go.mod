@@ -13,7 +13,7 @@ require (
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/mgechev/revive v1.0.2
-	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200405033024-7a8795a92c55
@@ -28,11 +28,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0 // indirect
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	go.uber.org/zap v1.14.0
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0

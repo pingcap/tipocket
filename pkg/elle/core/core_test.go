@@ -33,7 +33,7 @@ func TestProcessGraph(t *testing.T) {
 
 	_, g, _ := ProcessGraph(history)
 
-	var graphOuts map[Vertex]map[Vertex][]Rel = map[Vertex]map[Vertex][]Rel{}
+	var graphOuts = map[Vertex]map[Vertex][]Rel{}
 	for k, v := range g.Outs {
 		if len(v) != 0 {
 			v, e := processGraph.Outs[k]
@@ -154,6 +154,39 @@ func TestRealtimeGraph(t *testing.T) {
 
 }
 
+func TestMopValueType(t *testing.T) {
+	history, err := ParseHistory(`
+{:type :invoke, :f :txn, :value [[:append 11 1] [:r 11 nil] [:r 11 nil]], :process 10 :time 14532933, :index 0}
+{:type :invoke, :f :txn, :value [[:append 9 1]], :process 18 :time 16357277, :index 1}
+{:type :ok, :f :txn, :value [[:append 11 1] [:r 11 [1 2]] [:r 11 [1]]], :process 10 :time 31076248, :index 2}
+{:type :invoke, :f :txn, :value [[:r 11 nil]], :process 8 :time 88424151, :index 16}
+`)
+
+	if err != nil {
+		assert.Fail(t, "Parse history failed", err)
+	}
+
+	for _, op := range history {
+		if op.Value == nil {
+			continue
+		}
+		for _, mop := range *op.Value {
+			if mop.IsAppend() {
+				arg := mop.GetValue().(MopValueType)
+				_ = arg.(int)
+			} else {
+				if mop.GetValue() == nil {
+					continue
+				}
+				args := mop.GetValue().([]int)
+				for _ = range args {
+					//_ = arg.(int)
+				}
+			}
+		}
+	}
+}
+
 // toJson is a debugging function, which can be used like:
 // ```
 //for k, v := range g.Outs {
@@ -174,3 +207,21 @@ func toJson(v interface{}) string {
 	}
 	return string(s)
 }
+
+// Note: MonotonicKeyGraph requires rw_register, which is not supported now.
+//func TestCheck(t *testing.T) {
+//	// testing valid
+//	history, err := ParseHistory(`{:index 0 :type :invoke :process 0 :f :read :value nil}
+//                   {:index 1 :type :ok     :process 0 :f :read :value {:x 0 :y 0}}
+//                   {:index 2 :type :invoke :process 0 :f :inc :value [:x]}
+//                   {:index 3 :type :ok     :process 0 :f :inc :value {:x 1}}
+//                   {:index 4 :type :invoke :process 0 :f :read :value nil}
+//                   {:index 5 :type :ok     :process 0 :f :read :value {:x 1 :y 1}}`)
+//	if err != nil {
+//		assert.Equal(t, err, nil, "test process graph, parse history")
+//	}
+//	assert.Equal(t, len(history), 6, "length of history should be 6")
+//
+//	res := Check(MonotonicKeyGraph, history)
+//	assert.Equal(t, 0, len(res.Sccs), "length of sccs should be zero")
+//}
