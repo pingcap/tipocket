@@ -18,11 +18,11 @@ require (
 	github.com/pingcap/chaos-mesh v0.0.0-20200405033024-7a8795a92c55
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/kvproto v0.0.0-20200409034505-a5af800ca2ef
+	github.com/pingcap/kvproto v0.0.0-20200420075417-e0c6e8842f22
 	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
-	github.com/pingcap/parser v0.0.0-20200410065024-81f3db8e6095
+	github.com/pingcap/parser v0.0.0-20200427031542-879c7bd4f27d
 	github.com/pingcap/pd v2.1.17+incompatible
-	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
+	github.com/pingcap/pd/v4 v4.0.0-rc.1
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-rc.2.p1
 	github.com/pkg/errors v0.9.1
@@ -95,4 +95,4 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+inc
 
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 
-replace github.com/pingcap/tidb => github.com/youjiali1995/tidb v1.1.0-beta.0.20200426030705-72b8fa1435b3
+replace github.com/pingcap/tidb => github.com/youjiali1995/tidb v1.1.0-beta.0.20200506103238-f4fcf5dc2012
