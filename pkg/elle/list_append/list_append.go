@@ -324,7 +324,10 @@ func g1aCases(history core.History) GCaseTp {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := failed[mop.GetKey()]
-			v := mop.GetValue().([]int)
+			var v []int
+			if mop.GetValue() != nil {
+				v = mop.GetValue().([]int)
+			}
 			for _, e := range v {
 				writer := versionMap[e]
 				if writer != nil {
@@ -353,7 +356,10 @@ func g1bCases(history core.History) GCaseTp {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := inter[mop.GetKey()]
-			v := mop.GetValue().([]int)
+			var v []int
+			if mop.GetValue() != nil {
+				v = mop.GetValue().([]int)
+			}
 			if len(v) == 0 {
 				continue
 			}

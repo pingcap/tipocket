@@ -129,7 +129,8 @@ func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	{
 		invocations := map[int]Op{}
 		for _, v := range history {
-			process := v.Process.MustGet()
+			process := v.Process.GetOr(AnonymousMagicNumber)
+
 			switch v.Type {
 			case OpTypeInvoke:
 				invocations[process] = v
@@ -334,6 +335,10 @@ func checkHelper(analyzer Analyzer, history History) (*DirectedGraph, DataExplai
 	for _, scc := range sccs {
 		cycles = append(cycles, explainSCC(g, CycleExplainer{}, exp, scc))
 	}
+	if g.IsEmpty() {
+		anomalies["empty-transaction-graph"] = []Anomaly{}
+	}
+
 	return g, exp, cycles, sccs, anomalies
 }
 

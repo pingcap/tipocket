@@ -34,15 +34,14 @@ type ExplainResult interface {
 // CombinedExplainer struct
 type CombinedExplainer struct {
 	Explainers []DataExplainer
+	store      map[ExplainResult]DataExplainer
 }
 
-type CombineExplainResult struct {
-	ex DataExplainer
-	er ExplainResult
-}
-
-func (c CombineExplainResult) Type() DependType {
-	return c.er.Type()
+func NewCombineExplainer(explainers []DataExplainer) *CombinedExplainer {
+	return &CombinedExplainer{
+		Explainers: explainers,
+		store:      make(map[ExplainResult]DataExplainer),
+	}
 }
 
 // ExplainPairData find dependencies in a and b
@@ -50,10 +49,8 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	for _, ex := range c.Explainers {
 		er := ex.ExplainPairData(p1, p2)
 		if er != nil {
-			return CombineExplainResult{
-				ex: ex,
-				er: er,
-			}
+			c.store[er] = ex
+			return er
 		}
 	}
 	return nil
@@ -61,8 +58,7 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 
 // RenderExplanation render explanation result
 func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
-	er := result.(CombineExplainResult)
-	return er.ex.RenderExplanation(er.er, p1, p2)
+	return c.store[result].RenderExplanation(result, p1, p2)
 }
 
 // Combine composes multiple analyzers
@@ -82,7 +78,7 @@ func Combine(analyzers ...Analyzer) Analyzer {
 			ce = append(ce, e)
 		}
 
-		return ca, cg, &CombinedExplainer{Explainers: ce}
+		return ca, cg, NewCombineExplainer(ce)
 	}
 }
 

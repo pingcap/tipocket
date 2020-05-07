@@ -22,6 +22,7 @@ var (
 )
 
 const NemesisProcessMagicNumber = -1
+const AnonymousMagicNumber = -2
 
 // MopValueType ...
 type MopValueType interface{}
@@ -182,7 +183,7 @@ func (op Op) String() string {
 		parts = append(parts, fmt.Sprintf(":time %d", op.Time.UnixNano()))
 	}
 	if op.Index.Present() {
-		parts = append(parts, fmt.Sprintf(":time %d", op.Index.MustGet()))
+		parts = append(parts, fmt.Sprintf(":index %d", op.Index.MustGet()))
 	}
 
 	return strings.Join(parts, " ")

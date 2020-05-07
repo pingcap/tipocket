@@ -37,6 +37,10 @@ func (g *DirectedGraph) Vertices() []Vertex {
 	return vertices
 }
 
+func (g *DirectedGraph) IsEmpty() bool {
+	return len(g.Vertices()) == 0
+}
+
 // In returns inbound vertices to v in graph g
 func (g *DirectedGraph) In(v Vertex) []Vertex {
 	_, ok := g.Ins[v]

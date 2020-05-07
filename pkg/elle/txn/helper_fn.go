@@ -77,7 +77,8 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.Op {
 	failed := map[string]map[core.MopValueType]*core.Op{}
 
-	for _, op := range history {
+	for idx := range history {
+		op := &history[idx]
 		if op.Type != core.OpTypeFail {
 			continue
 		}
@@ -88,7 +89,7 @@ func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.O
 				if _, ok := failed[realKey]; !ok {
 					failed[realKey] = make(map[core.MopValueType]*core.Op)
 				}
-				failed[realKey][a.Value] = &op
+				failed[realKey][a.Value] = op
 			}
 		}
 	}
