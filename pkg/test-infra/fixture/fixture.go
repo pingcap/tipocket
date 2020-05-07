@@ -206,7 +206,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
-	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.7", "Default mysql version")
+	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
@@ -250,6 +250,10 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
 	flag.StringVar(&Context.CDCConfig.Timezone, "cdc.timezone", "UTC", "timezone of cdc cluster, default UTC")
+
+	flag.StringVar(&Context.DMConfig.MySQLConf.Version, "dm.mysql.version", "5.7", "MySQL version used in DM-pocket")
+	flag.StringVar(&Context.DMConfig.MySQLConf.StorageSize, "dm.mysql.storage-size", "10Gi", "request storage size for MySQL")
+	flag.StringVar(&Context.DMConfig.DMVersion, "dm.version", "nightly", "image version for DM")
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 

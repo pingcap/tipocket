@@ -22,7 +22,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -149,7 +148,7 @@ func (m *MySQL) DSN() string {
 // newMySQL creates a spec for MySQL.
 func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 	mysqlName := fmt.Sprintf("tipocket-mysql-%s", name)
-	l := map[string]string{
+	mysqlLabels := map[string]string{
 		"app":      "tipocket-mysql",
 		"instance": mysqlName,
 	}
@@ -157,23 +156,37 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 	if version == "" {
 		version = fixture.Context.MySQLVersion
 	}
-	var q resource.Quantity
-	if conf.Resource.Requests != nil {
-		size := conf.Resource.Requests[fixture.Storage]
-		q = size
-	}
+
 	return &MySQL{
+		Svc: &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      mysqlName,
+				Namespace: namespace,
+				Labels:    mysqlLabels,
+			},
+			Spec: corev1.ServiceSpec{
+				Type: corev1.ServiceTypeClusterIP,
+				Ports: []corev1.ServicePort{{
+					Name:       "mysql",
+					Port:       3306,
+					TargetPort: intstr.FromInt(3306),
+					Protocol:   corev1.ProtocolTCP,
+				}},
+				Selector: mysqlLabels,
+			},
+		},
 		Sts: &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      mysqlName,
 				Namespace: namespace,
-				Labels:    l,
+				Labels:    mysqlLabels,
 			},
 			Spec: appsv1.StatefulSetSpec{
-				Replicas: pointer.Int32Ptr(1),
-				Selector: &metav1.LabelSelector{MatchLabels: l},
+				ServiceName: mysqlName,
+				Replicas:    pointer.Int32Ptr(1),
+				Selector:    &metav1.LabelSelector{MatchLabels: mysqlLabels},
 				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{Labels: l},
+					ObjectMeta: metav1.ObjectMeta{Labels: mysqlLabels},
 					Spec: corev1.PodSpec{
 						InitContainers: []corev1.Container{{
 							Name:            "remove-lost-and-found",
@@ -193,7 +206,6 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 							Name:            "mysql",
 							Image:           fmt.Sprintf("mysql:%s", version),
 							ImagePullPolicy: corev1.PullIfNotPresent,
-							// ResourceRequirements: spec.Resource,
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      name,
 								MountPath: "/var/lib/mysql",
@@ -217,31 +229,10 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 						AccessModes: []corev1.PersistentVolumeAccessMode{
 							corev1.ReadWriteOnce,
 						},
-						StorageClassName: pointer.StringPtr(fixture.StorageClass(conf.Storage)),
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: q,
-							},
-						},
+						StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+						Resources:        fixture.WithStorage(fixture.Small, conf.StorageSize),
 					},
 				}},
-			},
-		},
-		Svc: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      mysqlName,
-				Namespace: namespace,
-				Labels:    l,
-			},
-			Spec: corev1.ServiceSpec{
-				Type: corev1.ServiceTypeClusterIP,
-				Ports: []corev1.ServicePort{{
-					Name:       "mysql",
-					Port:       3306,
-					TargetPort: intstr.FromInt(3306),
-					Protocol:   corev1.ProtocolTCP,
-				}},
-				Selector: l,
 			},
 		},
 	}

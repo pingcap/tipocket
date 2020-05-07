@@ -25,6 +25,8 @@ const (
 	Monitor Component = "monitor"
 	// TiFlash Component identifier
 	TiFlash Component = "tiflash"
+	// MySQL Component identifier
+	MySQL Component = "mysql"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )

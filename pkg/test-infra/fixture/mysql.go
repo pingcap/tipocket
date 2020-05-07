@@ -13,12 +13,9 @@
 
 package fixture
 
-import corev1 "k8s.io/api/core/v1"
-
 // MySQLConfig is the configuration for a MySQL component.
 // TODO: enable binlog
 type MySQLConfig struct {
-	Version  string
-	Resource corev1.ResourceRequirements
-	Storage  StorageType
+	Version     string
+	StorageSize string
 }
