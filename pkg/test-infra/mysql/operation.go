@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
+	"github.com/pingcap/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -90,7 +91,30 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 
 // GetClientNodes returns the client nodes.
 func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	return nil, nil
+	var clientNodes []clusterTypes.ClientNode
+
+	k8sNodes, err := o.getK8sNodes()
+	if err != nil {
+		return clientNodes, err
+	}
+	ip := getNodeIP(k8sNodes)
+	if ip == "" {
+		return clientNodes, errors.New("k8s node not found")
+	}
+
+	svc, err := o.getMySQLServiceByMeta()
+	if err != nil {
+		return clientNodes, err
+	}
+
+	clientNodes = append(clientNodes, clusterTypes.ClientNode{
+		Namespace:   svc.ObjectMeta.Namespace,
+		ClusterName: svc.ObjectMeta.Labels["instance"],
+		Component:   clusterTypes.MySQL,
+		IP:          ip,
+		Port:        getMySQLNodePort(svc),
+	})
+	return clientNodes, nil
 }
 
 func (o *Ops) applyMySQL() error {
@@ -132,6 +156,47 @@ func (o *Ops) waitMySQLReady(timeout time.Duration) error {
 		log.Infof("all %d replicas of MySQL %s are ready", local.Status.Replicas, local.Name)
 		return true, nil
 	})
+}
+
+func (o *Ops) getMySQLServiceByMeta() (*corev1.Service, error) {
+	svc := o.mysql.Svc.DeepCopy()
+	key, err := client.ObjectKeyFromObject(svc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := o.cli.Get(context.Background(), key, svc); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
+}
+
+// getK8sNodes gets physical nodes
+func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
+	nodes := &corev1.NodeList{}
+	err := o.cli.List(context.Background(), nodes)
+	if err != nil {
+		return nil, err
+	}
+	return nodes, nil
+}
+
+func getNodeIP(nodeList *corev1.NodeList) string {
+	if len(nodeList.Items) == 0 {
+		return ""
+	}
+	// choose the right node from multiple items?
+	return nodeList.Items[0].Status.Addresses[0].Address
+}
+
+func getMySQLNodePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 3306 {
+			return port.NodePort
+		}
+	}
+	return 0
 }
 
 // MySQL represents a MySQL instance in K8s.
@@ -218,6 +283,12 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 								{
 									Name:  "MYSQL_DATABASE",
 									Value: "test",
+								},
+							},
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "mysql",
+									ContainerPort: 3306,
 								},
 							},
 						}},
