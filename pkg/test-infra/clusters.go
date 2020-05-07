@@ -3,6 +3,7 @@ package testinfra
 import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/util/config"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
 
@@ -175,6 +176,15 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		NewGroupCluster(up, tidb.New(namespace, name+"-downstream", conf)),
 		binlog.New(namespace, name),
 	)
+}
+
+// NewDMCluster creates two upstream MySQL instances and a downstream TiDB cluster with DM.
+func NewDMCluster(namespace, name string, conf fixture.DMConfig) clusterTypes.Cluster {
+	up1 := mysql.New(namespace, name+"-mysql1", conf.MySQLConf)
+	up2 := mysql.New(namespace, name+"-mysql2", conf.MySQLConf)
+
+	return NewCompositeCluster(
+		NewGroupCluster(up1, up2))
 }
 
 // NewABTestCluster creates two TiDB clusters to do AB Test

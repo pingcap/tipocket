@@ -60,6 +60,7 @@ type fixtureContext struct {
 	TiDBClusterConfig        TiDBClusterConfig
 	BinlogConfig             BinlogConfig
 	CDCConfig                CDCConfig
+	DMConfig                 DMConfig
 	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
 	// Loki
@@ -205,7 +206,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
-	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
+	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.7", "Default mysql version")
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")

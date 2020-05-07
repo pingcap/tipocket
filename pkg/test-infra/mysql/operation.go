@@ -16,107 +16,157 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/pingcap/errors"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-
+	"github.com/ngaut/log"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate MySQL on k8s
 type Ops struct {
-	cli client.Client
+	cli   client.Client
+	mysql *MySQL
 }
 
-// New ...
-func New(cli client.Client) *Ops {
-	return &Ops{cli}
-}
-
-// Spec ...
-type Spec struct {
-	Name      string
-	Namespace string
-	Version   string
-	Resource  corev1.ResourceRequirements
-	Storage   fixture.StorageType
-}
-
-// MySQL ...
-type MySQL struct {
-	Sts *appsv1.StatefulSet
-	Svc *corev1.Service
-}
-
-// URI ...
-func (m *MySQL) URI() string {
-	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/test", m.Svc.Name, m.Svc.Namespace)
-}
-
-// ApplyMySQL ...
-func (m *Ops) ApplyMySQL(spec *Spec) (*MySQL, error) {
-	toCreate, err := m.renderMySQL(spec)
-	if err != nil {
-		return nil, err
+// New creates a new MySQL Ops.
+func New(namespace, name string, conf fixture.MySQLConfig) *Ops {
+	return &Ops{
+		cli:   tests.TestClient.Cli,
+		mysql: newMySQL(namespace, name, conf),
 	}
-	desiredSts := toCreate.Sts.DeepCopy()
-	_, err = controllerutil.CreateOrUpdate(context.TODO(), m.cli, toCreate.Sts, func() error {
-		toCreate.Sts.Spec.Template = desiredSts.Spec.Template
-		return nil
-	})
-	desiredSvc := toCreate.Svc.DeepCopy()
-	_, err = controllerutil.CreateOrUpdate(context.TODO(), m.cli, toCreate.Svc, func() error {
-		clusterIP := toCreate.Svc.Spec.ClusterIP
-		toCreate.Svc.Spec = desiredSvc.Spec
-		toCreate.Svc.Spec.ClusterIP = clusterIP
-		return nil
-	})
-	return toCreate, nil
 }
 
-// DeleteMySQL ...
-func (m *Ops) DeleteMySQL(ms *MySQL) error {
-	err := m.cli.Delete(context.TODO(), ms.Sts)
-	if err != nil && !errors.IsNotFound(err) {
+// Apply MySQL instance.
+func (o *Ops) Apply() error {
+	return o.applyMySQL()
+}
+
+// Delete MySQL instance.
+func (o *Ops) Delete() error {
+	if err := o.cli.Delete(context.Background(), o.mysql.Svc); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+	}
+	if err := o.cli.Delete(context.Background(), o.mysql.Sts); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetNodes returns MySQL nodes.
+func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
+	pod := &corev1.Pod{} // only 1 replica
+	err := o.cli.Get(context.Background(), client.ObjectKey{
+		Namespace: o.mysql.Sts.ObjectMeta.Namespace,
+		Name:      fmt.Sprintf("%s-0", o.mysql.Sts.ObjectMeta.Name),
+	}, pod)
+	if err != nil {
+		return []clusterTypes.Node{}, err
+	}
+
+	return []clusterTypes.Node{{
+		Namespace: pod.ObjectMeta.Namespace,
+		PodName:   pod.ObjectMeta.Name,
+		IP:        pod.Status.PodIP,
+		Component: clusterTypes.MySQL,
+		Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.MySQL), pod.Spec.Containers),
+	}}, nil
+}
+
+// GetClientNodes returns the client nodes.
+func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+	return nil, nil
+}
+
+func (o *Ops) applyMySQL() error {
+	if err := util.ApplyObject(o.cli, o.mysql.Svc); err != nil {
 		return err
 	}
-	err = m.cli.Delete(context.TODO(), ms.Svc)
-	if err != nil && !errors.IsNotFound(err) {
+	if err := util.ApplyObject(o.cli, o.mysql.Sts); err != nil {
+		return err
+	}
+
+	if err := o.waitMySQLReady(5 * time.Minute); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
-	name := fmt.Sprintf("tipocket-mysql-%s", spec.Name)
+func (o *Ops) waitMySQLReady(timeout time.Duration) error {
+	log.Infof("waiting up to %v for StatefulSet %s to be ready", timeout, o.mysql.Sts.Name)
+	local := o.mysql.Sts.DeepCopy()
+	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
+		key, err := client.ObjectKeyFromObject(local)
+		if err != nil {
+			return false, err
+		}
+
+		if err = o.cli.Get(context.Background(), key, local); err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			log.Errorf("fail to get MySQL StatefulSet %s: %v", local.Name, err)
+			return false, err
+		}
+
+		if local.Status.ReadyReplicas != *local.Spec.Replicas {
+			log.Infof("MySQL %s do not have enough ready replicas, ready: %d, desired: %d",
+				local.Name, local.Status.ReadyReplicas, *local.Spec.Replicas)
+			return false, nil
+		}
+		log.Infof("all %d replicas of MySQL %s are ready", local.Status.Replicas, local.Name)
+		return true, nil
+	})
+}
+
+// MySQL represents a MySQL instance in K8s.
+type MySQL struct {
+	Sts *appsv1.StatefulSet
+	Svc *corev1.Service
+}
+
+// DSN returns a DSN for this MySQL instance.
+func (m *MySQL) DSN() string {
+	return fmt.Sprintf("root@tcp(%s.%s.svc:3306)/test", m.Svc.Name, m.Svc.Namespace)
+}
+
+// newMySQL creates a spec for MySQL.
+func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
+	mysqlName := fmt.Sprintf("tipocket-mysql-%s", name)
 	l := map[string]string{
 		"app":      "tipocket-mysql",
-		"instance": name,
+		"instance": mysqlName,
 	}
-	version := spec.Version
+	version := conf.Version
 	if version == "" {
 		version = fixture.Context.MySQLVersion
 	}
 	var q resource.Quantity
-	// var err error
-	if spec.Resource.Requests != nil {
-		size := spec.Resource.Requests[fixture.Storage]
+	if conf.Resource.Requests != nil {
+		size := conf.Resource.Requests[fixture.Storage]
 		q = size
 	}
 	return &MySQL{
 		Sts: &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: spec.Namespace,
+				Name:      mysqlName,
+				Namespace: namespace,
 				Labels:    l,
 			},
 			Spec: appsv1.StatefulSetSpec{
@@ -135,7 +185,7 @@ func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 								"/var/lib/mysql/lost+found",
 							},
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      spec.Name,
+								Name:      name,
 								MountPath: "/var/lib/mysql",
 							}},
 						}},
@@ -145,7 +195,7 @@ func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							// ResourceRequirements: spec.Resource,
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      spec.Name,
+								Name:      name,
 								MountPath: "/var/lib/mysql",
 							}},
 							Env: []corev1.EnvVar{
@@ -162,12 +212,12 @@ func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 					},
 				},
 				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{{
-					ObjectMeta: metav1.ObjectMeta{Name: spec.Name},
+					ObjectMeta: metav1.ObjectMeta{Name: name},
 					Spec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{
 							corev1.ReadWriteOnce,
 						},
-						StorageClassName: pointer.StringPtr(fixture.StorageClass(spec.Storage)),
+						StorageClassName: pointer.StringPtr(fixture.StorageClass(conf.Storage)),
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceStorage: q,
@@ -179,8 +229,8 @@ func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 		},
 		Svc: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      name,
-				Namespace: spec.Namespace,
+				Name:      mysqlName,
+				Namespace: namespace,
 				Labels:    l,
 			},
 			Spec: corev1.ServiceSpec{
@@ -194,5 +244,5 @@ func (m *Ops) renderMySQL(spec *Spec) (*MySQL, error) {
 				Selector: l,
 			},
 		},
-	}, nil
+	}
 }
