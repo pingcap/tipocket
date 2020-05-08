@@ -24,6 +24,8 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+          - name: tidb-replica-read
+            default: "leader"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -52,5 +54,5 @@ spec:
             -d=sqllogictest-tipocket \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
             -tidb-replica-read={{inputs.parameters.tidb-replica-read}}
