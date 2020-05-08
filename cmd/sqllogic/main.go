@@ -34,10 +34,13 @@ var (
 	testDir         = flag.String("d", "sqllogictest", "test case dir")
 	taskCount       = flag.Int("t", 10, "concurrency")
 	skipError       = flag.Bool("skip-error", false, "skip error for query test")
+	replicaRead     = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
+	dbname          = flag.String("dbname", "test", "name of database to test")
 )
 
 func main() {
 	flag.Parse()
+
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
@@ -49,10 +52,12 @@ func main() {
 		Provisioner: cluster.NewK8sProvisioner(),
 		ClientCreator: &sqllogictest.ClientCreator{
 			Config: &sqllogictest.Config{
-				SkipError: *skipError,
-				TaskCount: *taskCount,
-				CaseURL:   *sqllogicCaseURL,
-				TestDir:   *testDir,
+				SkipError:   *skipError,
+				TaskCount:   *taskCount,
+				CaseURL:     *sqllogicCaseURL,
+				TestDir:     *testDir,
+				ReplicaRead: *replicaRead,
+				DbName:      *dbname,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
