@@ -1,5 +1,7 @@
 package core
 
+import "sort"
+
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
 	From  Vertex
@@ -9,6 +11,27 @@ type Edge struct {
 
 type Vertex struct {
 	Value interface{}
+}
+
+type Vertices []Vertex
+
+func (v Vertices) Len() int {
+	return len(v)
+}
+
+func (v Vertices) Less(i, j int) bool {
+	// we sort Op graph specially
+	if op1, ok := v[i].Value.(Op); ok {
+		op2 := v[j].Value.(Op)
+		if op1.Index.Present() && op2.Index.Present() {
+			return op1.Index.MustGet() < op2.Index.MustGet()
+		}
+	}
+	return i < j
+}
+
+func (v Vertices) Swap(i, j int) {
+	v[i], v[j] = v[j], v[i]
 }
 
 type Rels []Rel
@@ -29,12 +52,17 @@ type DirectedGraph struct {
 
 // Vertices returns the set of all vertices in graph
 func (g *DirectedGraph) Vertices() []Vertex {
-	var vertices []Vertex
+	var vertices Vertices
 
 	for key := range g.Outs {
 		vertices = append(vertices, key)
 	}
+	sort.Sort(vertices)
 	return vertices
+}
+
+func (g *DirectedGraph) IsEmpty() bool {
+	return len(g.Vertices()) == 0
 }
 
 // In returns inbound vertices to v in graph g
@@ -482,35 +510,21 @@ func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 }
 
 // FindCycleStartingWith ...
-// TODO: find the shortest cycle
-func FindCycleStartingWith(graph *DirectedGraph, rel Rel, scc SCC) []Vertex {
-	if len(scc.Vertices) == 1 {
-		return []Vertex{}
-	}
-	length := len(scc.Vertices) + 1
-	sccSet := toSet(scc.Vertices)
-
-	var destCycle []CycleTrace
-	for _, start := range scc.Vertices {
-		bfs := NewBFSPath(graph, start, sccSet)
-		out, ok := graph.Outs[start]
-		if !ok {
-			continue
+func FindCycleStartingWith(graph *DirectedGraph, scc SCC, first Rel, rest []Rel) []Vertex {
+	return FindCycleWith(graph, scc, func(trace []CycleTrace) bool {
+		if len(trace) < 2 {
+			return false
 		}
-		for next, rs := range out {
-			if _, e := sccSet[next]; !e {
-				continue
+		for idx, path := range trace {
+			if idx == 0 && !Rels(path.Rels).exist(first) {
+				return false
 			}
-			if !Rels(rs).exist(rel) {
-				continue
-			}
-			if bfs.HasPathFrom(next) && (bfs.DistFrom(next)+1) < length {
-				length = bfs.DistFrom(next) + 1
-				destCycle = append([]CycleTrace{{from: start, Rels: getRelsFromEdges(graph.Edges(start, next))}}, bfs.PathFrom(next)...)
+			if idx > 0 && len(IntersectionRel(path.Rels, rest)) == 0 {
+				return false
 			}
 		}
-	}
-	return getVerticesFromTracePath(destCycle)
+		return true
+	})
 }
 
 // FindCycleWith ...

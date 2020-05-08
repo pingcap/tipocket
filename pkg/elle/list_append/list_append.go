@@ -138,10 +138,10 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			continue
 		}
 		k := mop.GetKey()
-		if mop.GetValue() == nil {
-			continue
+		var v []int
+		if mop.GetValue() != nil {
+			v = mop.GetValue().([]int)
 		}
-		v := mop.GetValue().([]int)
 		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
 			return wrExplainResult{
@@ -224,7 +224,10 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 				for i, aMop := range *a.Value {
 					if aMop.IsRead() && aMop.GetKey() == k {
 						// we should let it panic if vs is not []int
-						vs := aMop.GetValue().([]int)
+						var vs []int
+						if aMop.GetValue() != nil {
+							vs = aMop.GetValue().([]int)
+						}
 						if prev == initMagicNumber && len(vs) == 0 {
 							ai = i
 							break
@@ -254,7 +257,7 @@ func (r *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 	}
 	er := result.(rwExplainResult)
 	key, prev, value := er.Key, er.PreValue, er.Value
-	if prev == nil {
+	if prev == initMagicNumber {
 		return fmt.Sprintf("%s observed the initial (nil) state of %s, which %s created by appending %v",
 			a, key, b, value,
 		)
@@ -311,21 +314,25 @@ func (g G1Conflict) String() string {
 	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
 }
 
+// g1aCases finds aborted read cases
 func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []core.Anomaly
+	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := failed[mop.GetKey()]
-			v := mop.GetValue().([]int)
+			var v []int
+			if mop.GetValue() != nil {
+				v = mop.GetValue().([]int)
+			}
 			for _, e := range v {
 				writer := versionMap[e]
 				if writer != nil {
 					excepted = append(excepted, G1Conflict{
-						Op:      *op,
+						Op:      op,
 						Mop:     mop,
 						Writer:  *writer,
 						Element: e,
@@ -344,20 +351,23 @@ func g1bCases(history core.History) GCaseTp {
 	inter := txn.IntermediateWrites(history)
 	okHistory := filterOkHistory(history)
 	iter := txn.OpMops(okHistory)
-	var excepted []core.Anomaly
+	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
 		op, mop := iter.Next()
 		if mop.IsRead() {
 			versionMap := inter[mop.GetKey()]
-			v := mop.GetValue().([]int)
+			var v []int
+			if mop.GetValue() != nil {
+				v = mop.GetValue().([]int)
+			}
 			if len(v) == 0 {
 				continue
 			}
 			e := v[len(v)-1]
 			writer := versionMap[e]
-			if writer != nil && *writer != *op {
+			if writer != nil && *writer != op {
 				excepted = append(excepted, G1Conflict{
-					Op:      *op,
+					Op:      op,
 					Mop:     mop,
 					Writer:  *writer,
 					Element: e,
@@ -386,15 +396,14 @@ func (i InternalConflict) String() string {
 // Given an op, returns a Anomaly describing internal consistency violations, or nil otherwise
 func opInternalCase(op core.Op) core.Anomaly {
 	// key -> valueList
-	dataMap := map[string][]core.MopValueType{}
+	dataMap := map[string][]int{}
 	for _, mop := range *op.Value {
 		if mop.IsRead() {
-			// Note: if mop's read record is nil, should we ignore this mop?
-			if mop.GetValue() == nil {
-				continue
+			var records = make([]int, 0)
+			if mop.GetValue() != nil {
+				records = mop.GetValue().([]int)
 			}
 			previousData, e := dataMap[mop.GetKey()]
-			records := mop.GetValue().([]int)
 			var found = false
 			if e {
 				// check conflicts
@@ -410,23 +419,20 @@ func opInternalCase(op core.Op) core.Anomaly {
 				}
 			}
 			if found {
-				return &InternalConflict{
+				return InternalConflict{
 					Op:       op,
 					Mop:      mop,
 					Expected: previousData,
 				}
 			}
-			dataMap[mop.GetKey()] = make([]core.MopValueType, 0)
-			for _, rdata := range records {
-				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], core.MopValueType(rdata))
-			}
+			dataMap[mop.GetKey()] = records[:]
 		}
 		if mop.IsAppend() {
 			_, e := dataMap[mop.GetKey()]
 			if !e {
 				dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], unknownPrefixMagicNumber)
 			}
-			dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], mop.GetValue())
+			dataMap[mop.GetKey()] = append(dataMap[mop.GetKey()], mop.GetValue().(int))
 		}
 	}
 	return nil

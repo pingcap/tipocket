@@ -14,6 +14,9 @@ var impliedAnomalies = MapToDirectedGraph(map[Vertex][]Vertex{
 	Vertex{"G-nonadjacent"}:          {{"G2"}},
 	Vertex{"G-nonadjacent-process"}:  {{"G2-process"}, {"G-nonadjacent-realtime"}},
 	Vertex{"G-nonadjacent-realtime"}: {{"G2-realtime"}},
+	Vertex{"G2-item"}:                {{"G2"}},
+	Vertex{"G2-item-process"}:        {{"G2-process"}, {"G2-item-realtime"}},
+	Vertex{"G2-item-realtime"}:       {{"G2-realtime"}},
 	Vertex{"G2-process"}:             {{"G2-realtime"}},
 	Vertex{"GSIa"}:                   {{"GSI"}},
 	Vertex{"GSIb"}:                   {{"GSI"}},
@@ -250,7 +253,7 @@ func hasCommon(s1 []string, s2 []string) bool {
 }
 
 func set(slice []string) []string {
-	var res []string
+	var res = make([]string, 0)
 	for _, s := range slice {
 		if !exists(s, res) {
 			res = append(res, s)

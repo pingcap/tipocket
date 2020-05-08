@@ -34,15 +34,14 @@ type ExplainResult interface {
 // CombinedExplainer struct
 type CombinedExplainer struct {
 	Explainers []DataExplainer
+	store      map[ExplainResult]DataExplainer
 }
 
-type CombineExplainResult struct {
-	ex DataExplainer
-	er ExplainResult
-}
-
-func (c CombineExplainResult) Type() DependType {
-	return c.er.Type()
+func NewCombineExplainer(explainers []DataExplainer) *CombinedExplainer {
+	return &CombinedExplainer{
+		Explainers: explainers,
+		store:      make(map[ExplainResult]DataExplainer),
+	}
 }
 
 // ExplainPairData find dependencies in a and b
@@ -50,10 +49,8 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	for _, ex := range c.Explainers {
 		er := ex.ExplainPairData(p1, p2)
 		if er != nil {
-			return CombineExplainResult{
-				ex: ex,
-				er: er,
-			}
+			c.store[er] = ex
+			return er
 		}
 	}
 	return nil
@@ -61,8 +58,7 @@ func (c *CombinedExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 
 // RenderExplanation render explanation result
 func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 string) string {
-	er := result.(CombineExplainResult)
-	return er.ex.RenderExplanation(er.er, p1, p2)
+	return c.store[result].RenderExplanation(result, p1, p2)
 }
 
 // Combine composes multiple analyzers
@@ -82,7 +78,7 @@ func Combine(analyzers ...Analyzer) Analyzer {
 			ce = append(ce, e)
 		}
 
-		return ca, cg, &CombinedExplainer{Explainers: ce}
+		return ca, cg, NewCombineExplainer(ce)
 	}
 }
 
@@ -123,16 +119,16 @@ type RealtimeExplainer struct {
 	pair map[Op]Op
 }
 
-// TODO: here it needs to get the preEnd and the postStart, it maybe complex and introduce another logic here.
+// TODO: here it needs to get the PreEnd and the PostStart, it maybe complex and introduce another logic here.
 func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
 	postStart, ok := r.pair[postEnd]
 	if !ok {
 		log.Fatalf("cannot find the invocation of %s, the code may has bug", postEnd.String())
 	}
 	if preEnd.Index.MustGet() < postStart.Index.MustGet() {
-		return RealtimeDependent{
-			preEnd:    &preEnd,
-			postStart: &postStart,
+		return RealtimeExplainResult{
+			PreEnd:    preEnd,
+			PostStart: postStart,
 		}
 	}
 	return nil
@@ -142,27 +138,27 @@ func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, post
 	if result.Type() != RealtimeDepend {
 		log.Fatalf("result type is not %s, type error", RealtimeDepend)
 	}
-	res := result.(RealtimeDependent)
-	s := fmt.Sprintf("%s complete at index %d, ", preName, res.preEnd.Index.MustGet())
+	res := result.(RealtimeExplainResult)
+	s := fmt.Sprintf("%s complete at index %d, ", preName, res.PreEnd.Index.MustGet())
 
-	if !res.postStart.Time.IsZero() && !res.preEnd.Time.IsZero() {
-		t1, t2 := res.preEnd.Time, res.postStart.Time
+	if !res.PostStart.Time.IsZero() && !res.PreEnd.Time.IsZero() {
+		t1, t2 := res.PreEnd.Time, res.PostStart.Time
 		if t1.Before(t2) {
 			delta := t2.Sub(t1)
 			s += fmt.Sprintf("%v seconds just ", delta.Seconds())
 		}
 	}
 
-	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.postStart.Index.MustGet())
+	s += fmt.Sprintf("before the invocation of %s at index %d", postName, res.PostStart.Index.MustGet())
 	return s
 }
 
-type RealtimeDependent struct {
-	preEnd    *Op
-	postStart *Op
+type RealtimeExplainResult struct {
+	PreEnd    Op
+	PostStart Op
 }
 
-func (_ RealtimeDependent) Type() DependType {
+func (_ RealtimeExplainResult) Type() DependType {
 	return RealtimeDepend
 }
 
@@ -231,7 +227,7 @@ func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr Cycl
 	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {
 		bindings = append(bindings, OpBinding{
 			Operation: v,
-			Name:      fmt.Sprintf("T%d", i),
+			Name:      fmt.Sprintf("T%d", i+1),
 		})
 	}
 	bindingsExplain := explainBindings(bindings)
