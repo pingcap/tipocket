@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // Int is an optional int.
@@ -23,6 +24,20 @@ func (i *IntOptional) Set(v int) {
 
 func (i IntOptional) MustGet() int {
 	return i.value.(int)
+}
+
+func (i IntOptional) GetOr(defv int) int {
+	if i.Present() {
+		return i.MustGet()
+	}
+	return defv
+}
+
+func (i IntOptional) String() string {
+	if i.value == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("%d", i.value)
 }
 
 // Present returns whether or not the value is present.
