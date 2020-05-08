@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
-		ClientCount: 1,
+		ClientCount: 3, // 2 MySQL + 1 TiDB
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
@@ -55,7 +55,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewDMCluster(c.Namespace, c.Namespace, c.DMConfig),
+		ClusterDefs:      test_infra.NewDMCluster(c.Namespace, c.Namespace, c.DMConfig, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

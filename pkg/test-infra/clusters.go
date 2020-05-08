@@ -179,12 +179,13 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 }
 
 // NewDMCluster creates two upstream MySQL instances and a downstream TiDB cluster with DM.
-func NewDMCluster(namespace, name string, conf fixture.DMConfig) clusterTypes.Cluster {
-	up1 := mysql.New(namespace, name+"-mysql1", conf.MySQLConf)
-	up2 := mysql.New(namespace, name+"-mysql2", conf.MySQLConf)
+func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+	up1 := mysql.New(namespace, name+"-mysql1", dmConf.MySQLConf)
+	up2 := mysql.New(namespace, name+"-mysql2", dmConf.MySQLConf)
+	down := tidb.New(namespace, name+"-tidb", tidbConf)
 
 	return NewCompositeCluster(
-		NewGroupCluster(up1, up2))
+		NewGroupCluster(up1, up2, down))
 }
 
 // NewABTestCluster creates two TiDB clusters to do AB Test

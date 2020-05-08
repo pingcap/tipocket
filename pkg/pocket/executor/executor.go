@@ -41,8 +41,10 @@ type Executor struct {
 	id          int
 	dsn1        string
 	dsn2        string
+	dsn3        string
 	conn1       *connection.Connection
 	conn2       *connection.Connection
+	conn3       *connection.Connection
 	ss          generator.Generator
 	dbname      string
 	mode        string
@@ -156,6 +158,70 @@ func NewABTest(dsn1, dsn2 string, opt *Option, tiFlash bool) (*Executor, error) 
 	return &e, nil
 }
 
+// NewDMTest creates a DM test Executor.
+func NewDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
+	var conn1LogPath, conn2LogPath, conn3LogPath, executorLogPath string
+	if opt.Log != "" {
+		conn1LogPath = path.Join(opt.Log, fmt.Sprintf("dm-conn1%s.log", opt.LogSuffix))
+		conn2LogPath = path.Join(opt.Log, fmt.Sprintf("dm-conn2%s.log", opt.LogSuffix))
+		conn3LogPath = path.Join(opt.Log, fmt.Sprintf("dm-conn3%s.log", opt.LogSuffix))
+		executorLogPath = path.Join(opt.Log, fmt.Sprintf("dm-test%s.log", opt.LogSuffix))
+	}
+
+	conn1, err := connection.New(dsn1, &connection.Option{
+		Name:       fmt.Sprintf("conn-1-%d", opt.ID),
+		Log:        conn1LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	conn2, err := connection.New(dsn2, &connection.Option{
+		Name:       fmt.Sprintf("conn-2-%d", opt.ID),
+		Log:        conn2LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	conn3, err := connection.New(dsn3, &connection.Option{
+		Name:       fmt.Sprintf("conn-3-%d", opt.ID),
+		Log:        conn3LogPath,
+		Mute:       opt.Mute,
+		GeneralLog: opt.GeneralLog,
+	})
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	l, err := logger.New(fmt.Sprintf("dmtest-%d", opt.ID), executorLogPath, opt.Mute)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	e := Executor{
+		id:         opt.ID,
+		dsn1:       dsn1,
+		dsn2:       dsn2,
+		dsn3:       dsn3,
+		conn1:      conn1,
+		conn2:      conn2,
+		conn3:      conn3,
+		ss:         sqlsmith.New(),
+		mode:       "dm",
+		SQLCh:      make(chan *types.SQL, 1),
+		TxnReadyCh: make(chan struct{}, 1),
+		ErrCh:      make(chan error, 1),
+		dbname:     dbnameRegex.FindString(dsn1),
+		opt:        opt,
+		logger:     l,
+	}
+	go e.Start()
+	return &e, nil
+}
+
 // func (e *Executor) init() error {
 // 	switch e.mode {
 // 	case "single":
@@ -181,6 +247,8 @@ func (e *Executor) Start() {
 		e.singleTest()
 	case "abtest":
 		e.abTest()
+	case "dm":
+		e.dmTest()
 	}
 }
 

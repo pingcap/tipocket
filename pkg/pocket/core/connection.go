@@ -65,6 +65,12 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+	case "dm":
+		e, err = executor.NewDMTest(removeDSNSchema(c.cfg.DSN1), removeDSNSchema(c.cfg.DSN2), removeDSNSchema(c.cfg.DSN3),
+			c.generateExecutorOption(id))
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	default:
 		return nil, errors.Errorf("unhandled mode, %s", c.cfg.Mode)
 	}
@@ -106,6 +112,8 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+	} else if mode == "dm" {
+		e, err = executor.NewDMTest(c.cfg.DSN1, c.cfg.DSN2, c.cfg.DSN3, c.generateExecutorOption(id))
 	}
 
 	return e, nil
