@@ -253,7 +253,7 @@ func hasCommon(s1 []string, s2 []string) bool {
 }
 
 func set(slice []string) []string {
-	var res []string
+	var res = make([]string, 0)
 	for _, s := range slice {
 		if !exists(s, res) {
 			res = append(res, s)

@@ -63,9 +63,9 @@ func seqIsPrefix(seqBefore, seqAfter []core.MopValueType) bool {
 }
 
 type duplicateConflict struct {
-	Op   *core.Op
+	Op   core.Op
 	Mop  core.Mop
-	Dups core.MopValueType
+	Dups map[core.MopValueType]int
 }
 
 func (d duplicateConflict) IAnomaly() string {
@@ -74,10 +74,8 @@ func (d duplicateConflict) IAnomaly() string {
 
 // duplicates does a "single-read-count", in :r [1 1 4], it will checks if
 //  there is any duplicate words, and put it into anomalies structure.
-// Note: The return of the function may not match the original.
 func duplicates(history core.History) GCaseTp {
 	iter := txn.OpMops(history)
-	anomalies := map[string][][]core.MopValueType{}
 	var duplicateCases []core.Anomaly
 	for iter.HasNext() {
 		op, mop := iter.Next()
@@ -85,25 +83,24 @@ func duplicates(history core.History) GCaseTp {
 			continue
 		}
 		if mop.IsRead() {
-			if mop.GetValue() == nil {
-				continue
-			}
-			reads := mop.GetValue().([]int)
-			mopReads := make([]core.MopValueType, len(reads), len(reads))
-			for i, v := range reads {
-				mopReads[i] = v
+			var reads []int
+			if mop.GetValue() != nil {
+				reads = mop.GetValue().([]int)
 			}
 			readCnt := map[core.MopValueType]int{}
+			dups := map[core.MopValueType]int{}
 			for _, v := range reads {
 				readCnt[v] = readCnt[v] + 1
-				if readCnt[v] > 2 {
-					duplicateCases = append(duplicateCases, duplicateConflict{
-						Op:   op,
-						Mop:  mop,
-						Dups: v,
-					})
-					anomalies[mop.GetKey()] = append(anomalies[mop.GetKey()], mopReads)
+				if readCnt[v] > 1 {
+					dups[v] = readCnt[v]
 				}
+			}
+			if len(dups) > 0 {
+				duplicateCases = append(duplicateCases, duplicateConflict{
+					Op:   op,
+					Mop:  mop,
+					Dups: dups,
+				})
 			}
 		}
 	}
@@ -182,10 +179,10 @@ func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
 	if mop != nil && mop.IsRead() {
 		writeMap, e := writeIndex[mop.GetKey()]
-		if mop.GetValue() == nil {
-			return nil
+		var v []int
+		if mop.GetValue() != nil {
+			v = mop.GetValue().([]int)
 		}
-		v := mop.GetValue().([]int)
 		if len(v) == 0 {
 			return nil
 		}

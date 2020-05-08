@@ -138,10 +138,10 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			continue
 		}
 		k := mop.GetKey()
-		if mop.GetValue() == nil {
-			continue
+		var v []int
+		if mop.GetValue() != nil {
+			v = mop.GetValue().([]int)
 		}
-		v := mop.GetValue().([]int)
 		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
 			return wrExplainResult{
@@ -332,7 +332,7 @@ func g1aCases(history core.History) GCaseTp {
 				writer := versionMap[e]
 				if writer != nil {
 					excepted = append(excepted, G1Conflict{
-						Op:      *op,
+						Op:      op,
 						Mop:     mop,
 						Writer:  *writer,
 						Element: e,
@@ -365,9 +365,9 @@ func g1bCases(history core.History) GCaseTp {
 			}
 			e := v[len(v)-1]
 			writer := versionMap[e]
-			if writer != nil && *writer != *op {
+			if writer != nil && *writer != op {
 				excepted = append(excepted, G1Conflict{
-					Op:      *op,
+					Op:      op,
 					Mop:     mop,
 					Writer:  *writer,
 					Element: e,

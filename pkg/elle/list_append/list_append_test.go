@@ -1,6 +1,7 @@
 package list_append
 
 import (
+	"io/ioutil"
 	"log"
 	"reflect"
 	"testing"
@@ -19,7 +20,7 @@ func TestWWGraph(t *testing.T) {
 	_, g, _ := wwGraph([]core.Op{t1, t2, t3})
 
 	expect := core.NewDirectedGraph()
-	expect.Link(core.Vertex{t1}, core.Vertex{t2}, core.WW)
+	expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t2}, core.WW)
 
 	require.Equal(t, expect, g)
 }
@@ -33,8 +34,8 @@ func TestWRGraph(t *testing.T) {
 	_, g, _ := wrGraph([]core.Op{t1, t2, t3, t4})
 
 	expect := core.NewDirectedGraph()
-	expect.Link(core.Vertex{t1}, core.Vertex{t2}, core.WR)
-	expect.Link(core.Vertex{t3}, core.Vertex{t4}, core.WR)
+	expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t2}, core.WR)
+	expect.Link(core.Vertex{Value: t3}, core.Vertex{Value: t4}, core.WR)
 
 	require.Equal(t, expect, g)
 }
@@ -60,43 +61,45 @@ func TestGraph(t *testing.T) {
 	//rx12ry1:= mustParseOp(`{:type :ok, :value [[:r :x [1 2]] [:r :y [1]]]}`)
 	//rx12ry21:= mustParseOp(`{:type :ok, :value [[:r :x [1 2]] [:r :y [2 1]]]}`)
 
-	if true {
+	switches := true
+
+	if switches {
 		_, g, _ := graph([]core.Op{ax1, rx1})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{ax1}, core.Vertex{rx1}, core.WR)
+		expect.Link(core.Vertex{Value: ax1}, core.Vertex{Value: rx1}, core.WR)
 		require.Equal(t, expect.Outs, g.Outs)
 	}
 
-	if true {
+	if switches {
 		_, g, _ := graph([]core.Op{rx, ax1, rx1})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{rx}, core.Vertex{ax1}, core.RW)
-		expect.Link(core.Vertex{ax1}, core.Vertex{rx1}, core.WR)
+		expect.Link(core.Vertex{Value: rx}, core.Vertex{Value: ax1}, core.RW)
+		expect.Link(core.Vertex{Value: ax1}, core.Vertex{Value: rx1}, core.WR)
 		require.Equal(t, expect.Outs, g.Outs)
 	}
 
-	if true {
+	if switches {
 		_, g, _ := graph([]core.Op{ax2, ax1, rx12})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{ax1}, core.Vertex{ax2}, core.WW)
-		expect.Link(core.Vertex{ax2}, core.Vertex{rx12}, core.WR)
+		expect.Link(core.Vertex{Value: ax1}, core.Vertex{Value: ax2}, core.WW)
+		expect.Link(core.Vertex{Value: ax2}, core.Vertex{Value: rx12}, core.WR)
 		require.Equal(t, expect.Outs, g.Outs)
 	}
 
-	if true {
+	if switches {
 		_, g, _ := graph([]core.Op{az1ax1ay1, rx1ay2, ry12az3, rz13})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{az1ax1ay1}, core.Vertex{rx1ay2}, core.WW)
-		expect.Link(core.Vertex{az1ax1ay1}, core.Vertex{ry12az3}, core.WW)
+		expect.Link(core.Vertex{Value: az1ax1ay1}, core.Vertex{Value: rx1ay2}, core.WW)
+		expect.Link(core.Vertex{Value: az1ax1ay1}, core.Vertex{Value: ry12az3}, core.WW)
 
-		expect.Link(core.Vertex{az1ax1ay1}, core.Vertex{rx1ay2}, core.WR)
-		expect.Link(core.Vertex{rx1ay2}, core.Vertex{ry12az3}, core.WR)
+		expect.Link(core.Vertex{Value: az1ax1ay1}, core.Vertex{Value: rx1ay2}, core.WR)
+		expect.Link(core.Vertex{Value: rx1ay2}, core.Vertex{Value: ry12az3}, core.WR)
 
-		expect.Link(core.Vertex{ry12az3}, core.Vertex{rz13}, core.WR)
+		expect.Link(core.Vertex{Value: ry12az3}, core.Vertex{Value: rz13}, core.WR)
 		require.Equal(t, expect.Outs, g.Outs)
 	}
 
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append x 2] [:append y 2]]}`)
 		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [2 1]]]}`)
@@ -104,15 +107,16 @@ func TestGraph(t *testing.T) {
 		_, g, _ := graph([]core.Op{t1, t2, t3})
 		expect := core.NewDirectedGraph()
 
-		expect.Link(core.Vertex{t1}, core.Vertex{t2}, core.WW)
-		expect.Link(core.Vertex{t1}, core.Vertex{t3}, core.WR)
+		expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t2}, core.WW)
+		expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t3}, core.WR)
 
-		expect.Link(core.Vertex{t2}, core.Vertex{t1}, core.WW)
-		expect.Link(core.Vertex{t2}, core.Vertex{t3}, core.WR)
+		expect.Link(core.Vertex{Value: t2}, core.Vertex{Value: t1}, core.WW)
+		expect.Link(core.Vertex{Value: t2}, core.Vertex{Value: t3}, core.WR)
 
 		require.Equal(t, expect.Outs, g.Outs)
 	}
-	if true {
+
+	if switches {
 		checkResult := core.Check(graph, []core.Op{rxay1, ryax1, rx1ry1})
 		require.Equal(t, 1, len(checkResult.Sccs))
 		if !reflect.DeepEqual([]string{`Let:
@@ -132,31 +136,31 @@ Then:
 		}
 	}
 
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :info, :value [[:append x 2] [:r y nil]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)
 		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [1]]]}`)
 
 		_, g, _ := graph([]core.Op{t1, t2, t3})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{t1}, core.Vertex{t3}, core.WR)
-		expect.Link(core.Vertex{t2}, core.Vertex{t1}, core.WW)
-		expect.Link(core.Vertex{t2}, core.Vertex{t3}, core.WR)
+		expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t3}, core.WR)
+		expect.Link(core.Vertex{Value: t2}, core.Vertex{Value: t1}, core.WW)
+		expect.Link(core.Vertex{Value: t2}, core.Vertex{Value: t3}, core.WR)
 
 		require.Equal(t, expect.Outs, g.Outs)
 	}
 
-	if true {
+	if switches {
 		_, g, _ := graph([]core.Op{rx, ax1})
 		expect := core.NewDirectedGraph()
-		expect.Link(core.Vertex{rx}, core.Vertex{ax1}, core.RW)
+		expect.Link(core.Vertex{Value: rx}, core.Vertex{Value: ax1}, core.RW)
 		require.Equal(t, expect.Outs, g.Outs)
 
 		_, g, _ = graph([]core.Op{rx, ax1, ax2})
 		require.Equal(t, core.NewDirectedGraph(), g)
 	}
 
-	if true {
+	if switches {
 		defer func() {
 			expect := "duplicate appends, op {:type invoke :value [[:append y 2] [:append x 1]] :index 1, key: x, value: 1"
 			if r := recover(); r == nil || r.(string) != expect {
@@ -225,13 +229,14 @@ func TestG1bCases(t *testing.T) {
 }
 
 func TestInternalCases(t *testing.T) {
+	switches := true
 	require.Equal(t, GCaseTp(nil), internalCases([]core.Op{}))
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:r y [5 6]] [:append x 3] [:r x [1 2 3]] [:append x 4] [:r x [1 2 3 4]]]}]]}`)
 		require.Equal(t, GCaseTp(nil), internalCases([]core.Op{t1}))
 	}
 
-	if true {
+	if switches {
 		stale := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [1 2]]]}`)
 		badPrefix := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [0 2 3]]]}`)
 		extension := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:append x 3] [:r x [1 2 3 4]]]}`)
@@ -262,7 +267,7 @@ func TestInternalCases(t *testing.T) {
 		}
 		require.Equal(t, expect, got)
 	}
-	if true {
+	if switches {
 		disagreement := mustParseOp(`{:type :ok, :value [[:append x 3] [:r x [1 2 3 4]]]}`)
 		shortRead := mustParseOp(`{:type :ok, :value [[:append x 3] [:r x []]]}`)
 
@@ -281,7 +286,7 @@ func TestInternalCases(t *testing.T) {
 		}
 		require.Equal(t, expect, got)
 	}
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :invoke, :value [[:append 0 6] [:r 0 nil]] :process 1, :index 20}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append 0 6] [:r 0 nil]] :process 1, :index 21}`)
 
@@ -298,24 +303,15 @@ func TestInternalCases(t *testing.T) {
 	}
 }
 
-func check(opts txn.Opts, h core.History) txn.CheckResult {
-	result := Check(opts, h)
-	result.AlsoNot = nil
-	return result
-}
-
 func TestChecker(t *testing.T) {
+	var switches = false
 	// G0
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append x 2] [:append y 2]]}`)
 		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [2 1]]]}`)
 		h := []core.Op{t1, t2, t3}
 
-		got := check(txn.Opts{
-			ConsistencyModels: []string{},
-			Anomalies:         []string{"G0"},
-		}, h)
 		expect := txn.CheckResult{
 			Valid:        false,
 			AnomalyTypes: []string{"G0"},
@@ -345,10 +341,13 @@ func TestChecker(t *testing.T) {
 			ImpossibleModels: nil,
 			Not:              []string{"read-uncommitted"},
 		}
-		require.Equal(t, expect, got)
+		require.Equal(t, expect, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"G0"},
+		}, h))
 	}
 	// G1a
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :fail, :value [[:append x 1]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:r x [1]]]}`)
 		h := []core.Op{t1, t2}
@@ -416,13 +415,13 @@ func TestChecker(t *testing.T) {
 		}, h))
 	}
 	// G1b
-	if true {
-		t1_ := mustParseOp(`{:type :invoke, :value [[:append x 1] [:append x 2]] :index 0}`)
-		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append x 2]] :index 1}`)
-		t2_ := mustParseOp(`{:type :invoke, :value [[:r x [1]]] :index 2}`)
-		t2 := mustParseOp(`{:type :ok, :value [[:r x [1]]] :index 3}`)
+	if switches {
+		t1s := mustParseOp(`{:type :invoke, :value [[:append x 1] [:append x 2]] :index 0}`)
+		t1e := mustParseOp(`{:type :ok, :value [[:append x 1] [:append x 2]] :index 1}`)
+		t2s := mustParseOp(`{:type :invoke, :value [[:r x [1]]] :index 2}`)
+		t2e := mustParseOp(`{:type :ok, :value [[:r x [1]]] :index 3}`)
 
-		h := []core.Op{t1_, t1, t2_, t2}
+		h := []core.Op{t1s, t1e, t2s, t2e}
 		require.Equal(t, txn.CheckResult{Valid: true}, check(txn.Opts{
 			ConsistencyModels: []string{},
 			Anomalies:         []string{"G0"},
@@ -433,8 +432,8 @@ func TestChecker(t *testing.T) {
 			AnomalyTypes: []string{"G1b"},
 			Anomalies: core.Anomalies{
 				"G1b": []core.Anomaly{G1Conflict{
-					Op:     t2,
-					Writer: t1,
+					Op:     t2e,
+					Writer: t1e,
 					Mop: core.Read{
 						Key:   "x",
 						Value: []int{1},
@@ -460,8 +459,8 @@ func TestChecker(t *testing.T) {
 			AnomalyTypes: []string{"G1b"},
 			Anomalies: core.Anomalies{
 				"G1b": []core.Anomaly{G1Conflict{
-					Op:     t2,
-					Writer: t1,
+					Op:     t2e,
+					Writer: t1e,
 					Mop: core.Read{
 						Key:   "x",
 						Value: []int{1},
@@ -475,7 +474,7 @@ func TestChecker(t *testing.T) {
 		}, h))
 	}
 	// G1c
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:r y [1]]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append x 2] [:append y 1]]}`)
 		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]] [:r y [1]]]}`)
@@ -526,7 +525,7 @@ func TestChecker(t *testing.T) {
 	}
 
 	// G-single
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append x 2] [:r y nil]]}`)
 		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]]]}`)
@@ -608,7 +607,7 @@ func TestChecker(t *testing.T) {
 	}
 
 	// G2
-	if true {
+	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:r y nil]]}`)
 		t2 := mustParseOp(`{:type :ok, :value [[:append y 1] [:r x nil]]}`)
 		h := []core.Op{t1, t2}
@@ -634,89 +633,471 @@ func TestChecker(t *testing.T) {
 			Anomalies:         []string{"read-committed"},
 		}, h))
 
-		//require.Equal(t, txn.CheckResult{
-		//	Valid:        false,
-		//	AnomalyTypes: []string{"G2-item"},
-		//	Anomalies: core.Anomalies{
-		//		"G2-item": []core.Anomaly{core.CycleExplainerResult{
-		//			Circle: core.Circle{
-		//				Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
-		//			},
-		//			Steps: []core.Step{{rwExplainResult{
-		//				Key:       "y",
-		//				PreValue:  initMagicNumber,
-		//				Value:     core.MopValueType(1),
-		//				AMopIndex: 1,
-		//				BMopIndex: 0,
-		//			}}, {rwExplainResult{
-		//				Key:       "x",
-		//				PreValue:  initMagicNumber,
-		//				Value:     core.MopValueType(1),
-		//				AMopIndex: 1,
-		//				BMopIndex: 0,
-		//			}}},
-		//			Typ: "G2-item",
-		//		}},
-		//	},
-		//	Not: []string{"repeatable-read"},
-		//}, check(txn.Opts{
-		//	ConsistencyModels: []string{},
-		//	Anomalies:         []string{"G2"},
-		//}, h))
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G2-item"},
+			Anomalies: core.Anomalies{
+				"G2-item": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
+					},
+					Steps: []core.Step{{rwExplainResult{
+						Key:       "y",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}, {rwExplainResult{
+						Key:       "x",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}},
+					Typ: "G2-item",
+				}},
+			},
+			Not: []string{"repeatable-read"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"G2"},
+		}, h))
 
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G2-item"},
+			Anomalies: core.Anomalies{
+				"G2-item": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
+					},
+					Steps: []core.Step{{rwExplainResult{
+						Key:       "y",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}, {rwExplainResult{
+						Key:       "x",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}},
+					Typ: "G2-item",
+				}},
+			},
+			Not: []string{"repeatable-read"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{"serializable"},
+		}, h))
+
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G2-item"},
+			Anomalies: core.Anomalies{
+				"G2-item": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
+					},
+					Steps: []core.Step{{rwExplainResult{
+						Key:       "y",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}, {rwExplainResult{
+						Key:       "x",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}},
+					Typ: "G2-item",
+				}},
+			},
+			Not: []string{"repeatable-read"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{"repeatable-read"},
+		}, h))
+	}
+
+	// Strict-1SR violation
+	if switches {
+		t0 := mustParseOp(`{:index 0, :type :invoke, :value [[:append x 1]]}`)
+		t0p := mustParseOp(`{:index 1, :type :ok, :value [[:append x 1]]}`)
+		t1 := mustParseOp(`{:index 2, :type :invoke, :value [[:append x 2]]}`)
+		t1p := mustParseOp(`{:index 3, :type :ok, :value [[:append x 2]]} `)
+		t2 := mustParseOp(`{:index 4, :type :invoke, :value [[:r x nil]]}`)
+		t2p := mustParseOp(`{:index 5, :type :ok, :value [[:r x [1]]]}`)
+		t3 := mustParseOp(`{:index 6, :type :invoke, :value [[:r x nil]]}`)
+		t3p := mustParseOp(`{:index 7, :type :ok, :value [[:r x [1 2]]]}`)
+		h := []core.Op{t0, t0p, t1, t1p, t2, t2p, t3, t3p}
+
+		require.Equal(t, txn.CheckResult{
+			Valid: true,
+		}, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"G2"},
+		}, h))
+
+		require.Equal(t, txn.CheckResult{
+			Valid: true,
+		}, check(txn.Opts{
+			ConsistencyModels: []string{"serializable"},
+		}, h))
+
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G-single-realtime"},
+			Anomalies: core.Anomalies{
+				"G-single-realtime": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{t2p, t1p, t2p},
+					},
+					Steps: []core.Step{{rwExplainResult{
+						Key:       "x",
+						PreValue:  core.MopValueType(1),
+						Value:     core.MopValueType(2),
+						AMopIndex: 0,
+						BMopIndex: 0,
+					}}, {core.RealtimeExplainResult{
+						PreEnd:    t1p,
+						PostStart: t2,
+					}}},
+					Typ: "G-single-realtime",
+				}},
+			},
+			Not: []string{"strict-serializable"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{"strict-serializable"},
+		}, h))
+	}
+
+	// contradictory read orders
+	if switches {
+		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:r y [1]]]}`)
+		t2 := mustParseOp(`{:type :ok, :value [[:append x 2]]}`)
+		t3 := mustParseOp(`{:type :ok, :value [[:append x 3] [:append y 1]]}`)
+		t4 := mustParseOp(`{:type :ok, :value [[:r x [1 3]]]}`)
+		t5 := mustParseOp(`{:type :ok, :value [[:r x [1 2 3]]]}`)
+		h := []core.Op{t1, t2, t3, t4, t5}
+
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G1c", "incompatible-order"},
+			Anomalies: core.Anomalies{
+				"incompatible-order": []core.Anomaly{incompatibleOrder{
+					Key:    "x",
+					Values: [][]core.MopValueType{{1, 3}, {1, 2, 3}},
+				}},
+				"G1c": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t3, 2), withIndex(t1, 0), withIndex(t3, 2)},
+					},
+					Steps: []core.Step{{wrExplainResult{
+						Key:       "y",
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 1,
+					}}, {wwExplainResult{
+						Key:       "x",
+						PreValue:  core.MopValueType(1),
+						Value:     core.MopValueType(3),
+						AMopIndex: 0,
+						BMopIndex: 0,
+					}}},
+					Typ: "G1c",
+				}},
+			},
+			Not: []string{"read-committed", "read-atomic"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"G1"},
+		}, h))
+	}
+
+	// dirty update
+	if switches {
+		if switches {
+			t1 := mustParseOp(`{:process 0, :type :fail, :value [[:append x 1]]}`)
+			h := []core.Op{t1}
+
+			require.Equal(t, txn.CheckResult{
+				IsUnknown:    true,
+				AnomalyTypes: []string{"empty-transaction-graph"},
+				Anomalies: core.Anomalies{
+					"empty-transaction-graph": []core.Anomaly{},
+				},
+				Not: []string{},
+			}, check(txn.Opts{
+				ConsistencyModels: []string{},
+				Anomalies:         []string{"dirty-update"},
+			}, h))
+		}
+		if switches {
+			t1 := mustParseOp(`{:process 0, :type :fail, :value [[:append x 1]]}`)
+			t2 := mustParseOp(`{:process 1, :type :ok, :value [[:append x 2]]}`)
+			t3 := mustParseOp(`{:process 2, :type :ok, :value [[:r x [1 2]]]}`)
+			h := []core.Op{t1, t2, t3}
+
+			require.Equal(t, txn.CheckResult{
+				Valid:        false,
+				AnomalyTypes: []string{"dirty-update"},
+				Anomalies: core.Anomalies{
+					"dirty-update": []core.Anomaly{DirtyUpdateConflict{
+						Key:    "x",
+						Values: []core.MopValueType{1, 2},
+						Op1:    withIndex(t1, 0),
+						Op2:    withIndex(t2, 1),
+					}},
+				},
+				Not: []string{"read-atomic", "read-committed"},
+			}, check(txn.Opts{
+				ConsistencyModels: []string{},
+				Anomalies:         []string{"dirty-update"},
+			}, h))
+		}
+		if switches {
+			t1 := mustParseOp(`{:process 0, :type :fail, :value [[:append x 1]]}`)
+			t2 := mustParseOp(`{:process 1, :type :info, :value [[:append x 2]]}`)
+			t3 := mustParseOp(`{:process 2, :type :ok, :value [[:append x 3]]}`)
+			t4 := mustParseOp(`{:process 3, :type :ok, :value [[:r x [1 2 3]]]}`)
+			h := []core.Op{t1, t2, t3, t4}
+
+			require.Equal(t, txn.CheckResult{
+				Valid:        false,
+				AnomalyTypes: []string{"dirty-update"},
+				Anomalies: core.Anomalies{
+					"dirty-update": []core.Anomaly{DirtyUpdateConflict{
+						Key:    "x",
+						Values: []core.MopValueType{1, 2, 3},
+						Op1:    withIndex(t1, 0),
+						Op2:    withIndex(t3, 2),
+					}},
+				},
+				Not: []string{"read-atomic", "read-committed"},
+			}, check(txn.Opts{
+				ConsistencyModels: []string{},
+				Anomalies:         []string{"dirty-update"},
+			}, h))
+		}
+	}
+	if switches {
+		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:r y [1]]]}`)
+		t2 := mustParseOp(`{:type :ok, :value [[:append x 2] [:append y 1]]}`)
+		t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2 1]]]}`)
+		h := []core.Op{t1, t2, t3}
+
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G1c", "duplicate-elements"},
+			Anomalies: core.Anomalies{
+				"duplicate-elements": []core.Anomaly{duplicateConflict{
+					Op:  withIndex(t3, 2),
+					Mop: core.Read{Key: "x", Value: []int{1, 2, 1}},
+					Dups: map[core.MopValueType]int{
+						1: 2,
+					},
+				}},
+				"G1c": []core.Anomaly{core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t2, 1), withIndex(t1, 0), withIndex(t2, 1)},
+					},
+					Steps: []core.Step{{wrExplainResult{
+						Key:       "y",
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 1,
+					}}, {wwExplainResult{
+						Key:       "x",
+						PreValue:  core.MopValueType(1),
+						Value:     core.MopValueType(2),
+						AMopIndex: 0,
+						BMopIndex: 0,
+					}}},
+					Typ: "G1c",
+				}},
+			},
+			Not: []string{"read-uncommitted"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{"read-committed"},
+		}, h))
+	}
+	if switches {
+		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append x 2] [:append x 4]]}`)
+		t2 := mustParseOp(`{:type :ok, :value [[:append x 3] [:r x [1 2 3 4]]]}`)
+		h := []core.Op{t1, t2}
+
+		require.Equal(t, txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"internal"},
+			Anomalies: core.Anomalies{
+				"internal": []core.Anomaly{InternalConflict{
+					Op: withIndex(t2, 1),
+					Mop: core.Read{
+						Key:   "x",
+						Value: []int{1, 2, 3, 4},
+					},
+					Expected: []int{unknownPrefixMagicNumber, 3},
+				}},
+			},
+			Not: []string{"read-uncommitted", "read-atomic"},
+		}, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"internal"},
+		}, h))
 	}
 }
 
-//func TestCheck(t *testing.T) {
-//	var history = core.History{
-//		core.Op{Type: core.OpTypeOk,
-//			Value: &[]core.Mop{
-//				core.Append{
-//					Key:   "x",
-//					Value: 1,
-//				},
-//				core.Read{
-//					Key:   "y",
-//					Value: []int{1},
-//				},
-//			}},
-//		core.Op{Type: core.OpTypeOk,
-//			Value: &[]core.Mop{
-//				core.Append{
-//					Key:   "x",
-//					Value: 2,
-//				},
-//				core.Append{
-//					Key:   "y",
-//					Value: 1,
-//				}}},
-//		core.Op{Type: core.OpTypeOk,
-//			Value: &[]core.Mop{
-//				core.Read{
-//					Key:   "x",
-//					Value: []int{1, 2},
-//				}}},
-//	}
-//
-//	result := Check(txn.Opts{
-//		ConsistencyModels: []core.ConsistencyModelName{"serializable"},
-//	}, history)
-//
-//	fmt.Printf("%#v", result)
-//}
+func TestRepeatableRead(t *testing.T) {
+	t1 := mustParseOp(`{:type :ok, :value [[:r x nil] [:append y 1]]}`)
+	t2 := mustParseOp(`{:type :ok, :value [[:r y nil] [:append x 1]]}`)
+	h := []core.Op{t1, t2}
 
-//func TestHugeScc(t *testing.T) {
-//	content, err := ioutil.ReadFile("../histories/huge-scc.edn")
-//	if err != nil {
-//		t.Fail()
-//	}
-//	history, err := core.ParseHistory(string(content))
-//	if err != nil {
-//		t.Fail()
-//	}
-//	result := Check(txn.Opts{}, history)
-//	fmt.Printf("%#v", result)
-//}
+	require.Equal(t, txn.CheckResult{
+		Valid:        false,
+		AnomalyTypes: []string{"G2-item"},
+		Anomalies: core.Anomalies{
+			"G2-item": []core.Anomaly{
+				core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
+					},
+					Steps: []core.Step{{rwExplainResult{
+						Key:       "x",
+						PreValue:  initMagicNumber,
+						Value:     1,
+						AMopIndex: 0,
+						BMopIndex: 1,
+					}}, {rwExplainResult{
+						Key:       "y",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 0,
+						BMopIndex: 1,
+					}}},
+					Typ: "G2-item",
+				},
+			},
+		},
+		Not: []string{"repeatable-read"},
+	}, check(txn.Opts{
+		ConsistencyModels: []string{"repeatable-read"},
+	}, h))
+}
+
+func TestGNonadjacent(t *testing.T) {
+	t1 := mustParseOp(`{:index 0, :type :invoke, :value [[:append x 1]]}`)
+	t1p := mustParseOp(`{:index 1, :type :ok, :value [[:append x 1]]}`)
+	t2 := mustParseOp(`{:index 2, :type :invoke, :value [[:r x [1]] [:r y nil]]}`)
+	t2p := mustParseOp(`{:index 3, :type :ok, :value [[:r x [1]] [:r y nil]]}`)
+	t3 := mustParseOp(`{:index 4, :type :invoke, :value [[:append y 1]]}`)
+	t3p := mustParseOp(`{:index 5, :type :ok, :value [[:append y 1]]}`)
+	t4 := mustParseOp(`{:index 6, :type :invoke, :value [[:r y [1]] [:r x nil]]}`)
+	t4p := mustParseOp(`{:index 7, :type :ok, :value [[:r y [1]] [:r x nil]]}`)
+	h := []core.Op{t1, t1p, t2, t2p, t3, t3p, t4, t4p}
+
+	got := check(txn.Opts{}, h)
+
+	require.Equal(t, txn.CheckResult{
+		Valid:        false,
+		AnomalyTypes: []string{"G-nonadjacent"},
+		Anomalies: core.Anomalies{
+			"G-nonadjacent": []core.Anomaly{
+				core.CycleExplainerResult{
+					Circle: core.Circle{
+						Path: []core.Op{t1p, t2p, t3p, t4p, t1p},
+					},
+					Steps: []core.Step{{wrExplainResult{
+						Key:       "x",
+						Value:     1,
+						AMopIndex: 0,
+						BMopIndex: 0,
+					}}, {rwExplainResult{
+						Key:       "y",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}, {wrExplainResult{
+						Key:       "y",
+						Value:     core.MopValueType(1),
+						AMopIndex: 0,
+						BMopIndex: 0,
+					}}, {rwExplainResult{
+						Key:       "x",
+						PreValue:  initMagicNumber,
+						Value:     core.MopValueType(1),
+						AMopIndex: 1,
+						BMopIndex: 0,
+					}}},
+					Typ: "G-nonadjacent",
+				},
+			},
+		},
+		Not: []string{"strong-session-snapshot-isolation", "serializable"},
+	}, got)
+
+}
+
+func TestCheck(t *testing.T) {
+	var history = core.History{
+		core.Op{Type: core.OpTypeOk,
+			Value: &[]core.Mop{
+				core.Append{
+					Key:   "x",
+					Value: 1,
+				},
+				core.Read{
+					Key:   "y",
+					Value: []int{1},
+				},
+			}},
+		core.Op{Type: core.OpTypeOk,
+			Value: &[]core.Mop{
+				core.Append{
+					Key:   "x",
+					Value: 2,
+				},
+				core.Append{
+					Key:   "y",
+					Value: 1,
+				}}},
+		core.Op{Type: core.OpTypeOk,
+			Value: &[]core.Mop{
+				core.Read{
+					Key:   "x",
+					Value: []int{1, 2},
+				}}},
+	}
+
+	result := Check(txn.Opts{
+		ConsistencyModels: []core.ConsistencyModelName{"serializable"},
+	}, history)
+
+	_ = result
+}
+
+func TestHugeScc(t *testing.T) {
+	content, err := ioutil.ReadFile("../histories/huge-scc.edn")
+	if err != nil {
+		t.Fail()
+	}
+	history, err := core.ParseHistory(string(content))
+	if err != nil {
+		t.Fail()
+	}
+	// the shortest path we found isn't belong to any anomalies...
+	result := Check(txn.Opts{}, history)
+	_ = result
+}
+
+func check(opts txn.Opts, h core.History) txn.CheckResult {
+	result := Check(opts, h)
+	result.AlsoNot = nil
+	return result
+}
 
 func mustParseOp(opString string) core.Op {
 	op, err := core.ParseOp(opString)

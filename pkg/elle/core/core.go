@@ -159,9 +159,6 @@ func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
 	var doneEvents = map[Op]struct{}{}
 	for i := range history {
 		op := history[i]
-		if !op.Process.Present() {
-			continue
-		}
 		switch op.Type {
 		case OpTypeInvoke:
 			pairOp := pair[op]
