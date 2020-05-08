@@ -8,13 +8,15 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/follower"
 
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 )
 
 var (
-	dbname = flag.String("dbname", "test", "name of database to test")
+	dbname      = flag.String("dbname", "test", "name of database to test")
+	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
 )
 
 func main() {
@@ -33,10 +35,13 @@ func createFollowerReadCmd(cfg *control.Config) {
 		Config: cfg,
 		ClientCreator: follower.ClientCreator{
 			Cfg: &follower.Config{
-				DBName: *dbname,
+				DBName:      *dbname,
+				Concurrency: *concurrency,
 			},
 		},
-		Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:33000"}, []string{"127.0.0.1:10009"}, []string{"127.0.0.1:10000", "127.0.0.1:10002", "127.0.0.1:10004", "127.0.0.1:10006"}),
+		Provisioner: cluster.NewK8sProvisioner(),
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		VerifySuit:  verify.Suit{},
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
 	}

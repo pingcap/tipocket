@@ -239,7 +239,7 @@ func testSplitRegion(f *follower) {
 
 	// prepare some data
 	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -267,6 +267,7 @@ func testSplitRegion(f *follower) {
 	}()
 
 	// read
+	time.Sleep(10 * time.Second)
 	for i := 0; i < 16; i++ {
 		wg.Add(1)
 		go func() {
