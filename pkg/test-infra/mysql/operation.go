@@ -230,7 +230,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 				Labels:    mysqlLabels,
 			},
 			Spec: corev1.ServiceSpec{
-				Type: corev1.ServiceTypeClusterIP,
+				Type: corev1.ServiceTypeNodePort,
 				Ports: []corev1.ServicePort{{
 					Name:       "mysql",
 					Port:       3306,
