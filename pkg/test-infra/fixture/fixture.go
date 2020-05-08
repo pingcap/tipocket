@@ -69,6 +69,7 @@ type fixtureContext struct {
 	// Other
 	pprofAddr  string
 	EnableHint bool
+	LogPath    string
 }
 
 // TiDBClusterConfig ...
@@ -246,12 +247,16 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.DockerRepository, "cdc.repository", "", `specify docker registry for CDC`)
 	flag.StringVar(&Context.CDCConfig.HubAddress, "cdc.hub", "", `overwrite "-hub" flag for CDC`)
 	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
+	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
+	flag.StringVar(&Context.CDCConfig.Timezone, "cdc.timezone", "UTC", "timezone of cdc cluster, default UTC")
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
+
+	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
 
 	log.SetHighlighting(false)
 	go func() {

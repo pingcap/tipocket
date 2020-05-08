@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-txn-rand-pessimistic
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -18,17 +17,13 @@ spec:
         value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
       - name: run_time
         value: "4h"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: tipocket-txn-rand-pessimistic
     - name: call-tipocket-txn-rand-pessimistic
       steps:
         - - name: call-tipocket-txn-rand-pessimistic
@@ -49,3 +44,9 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
                   value: "{{workflow.parameters.run_time}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

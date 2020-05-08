@@ -3,13 +3,16 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-cdc
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
         value: tipocket-cdc
       - name: purge
         value: "true"
+      - name: hub
+        value: "docker.io"
+      - name: repository
+        value: "pingcap"
       - name: image_version
         value: nightly
       - name: tidb_image
@@ -38,17 +41,13 @@ spec:
         value: "1h"
       - name: abtest_concurrency
         value: "3"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-cdc
       steps:
         - - name: call-tipocket-cdc
@@ -61,6 +60,10 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
                 - name: image_version
                   value: "{{workflow.parameters.image_version}}"
                 - name: tidb_image
@@ -89,4 +92,9 @@ spec:
                   value: "{{workflow.parameters.binlog_sync_timeout}}"
                 - name: abtest_concurrency
                   value: "{{workflow.parameters.abtest_concurrency}}"
-
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

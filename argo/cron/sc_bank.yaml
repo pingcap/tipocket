@@ -7,7 +7,6 @@ spec:
   startingDeadlineSeconds: 0
   workflowSpec:
     entrypoint: call-tipocket-scbank
-    onExit: call-export-logs
     arguments:
       parameters:
         - name: ns
@@ -36,17 +35,13 @@ spec:
           value: "4"
         - name: tidb-replica-read
           value: "leader-and-follower"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
     templates:
-      - name: call-export-logs
-        steps:
-          - - name: call-export-logs
-              templateRef:
-                name: export-logs
-                template: export-logs
-              arguments:
-                parameters:
-                  - name: ns
-                    value: "{{workflow.parameters.ns}}"
       - name: call-tipocket-scbank
         steps:
           - - name: call-tipocket-scbank
@@ -81,4 +76,10 @@ spec:
                     value: "{{workflow.parameters.tikv-replicas}}"
                   - name: tidb-replica-read
                     value: "{{workflow.parameters.tidb-replica-read}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"
 

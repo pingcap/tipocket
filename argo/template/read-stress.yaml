@@ -30,6 +30,11 @@ spec:
             default: admin
           - name: tikv-replicas
             default: "4"
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
