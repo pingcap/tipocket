@@ -85,12 +85,12 @@ func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []typ
 		log.Info("testSplitRegion")
 		testSplitRegion(f)
 	}()
-	// wg.Add(1)
-	// go func() {
-	// 	defer wg.Done()
-	// 	log.Info("testSequence")
-	// 	testSequence(ctx, f)
-	// }()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Info("testSequence")
+		testSequence(ctx, f)
+	}()
 	wg.Wait()
 
 	err := f.db.Close()
