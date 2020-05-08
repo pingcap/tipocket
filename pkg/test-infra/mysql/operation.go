@@ -222,7 +222,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 		version = fixture.Context.MySQLVersion
 	}
 
-	return &MySQL{
+	mysql := &MySQL{
 		Svc: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      mysqlName,
@@ -291,6 +291,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 									ContainerPort: 3306,
 								},
 							},
+							Args: []string{"--server-id=1"},
 						}},
 					},
 				},
@@ -307,4 +308,16 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 			},
 		},
 	}
+
+	if conf.EnableBinlog {
+		mysql.Sts.Spec.Template.Spec.Containers[0].Args = append(mysql.Sts.Spec.Template.Spec.Containers[0].Args,
+			"--log-bin=/var/lib/mysql/mysql-bin")
+	}
+	if conf.EnableGTID {
+		mysql.Sts.Spec.Template.Spec.Containers[0].Args = append(mysql.Sts.Spec.Template.Spec.Containers[0].Args,
+			"--enforce-gtid-consistency=ON",
+			"--gtid-mode=ON")
+	}
+
+	return mysql
 }

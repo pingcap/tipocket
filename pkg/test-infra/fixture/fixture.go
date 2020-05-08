@@ -253,6 +253,8 @@ func init() {
 
 	flag.StringVar(&Context.DMConfig.MySQLConf.Version, "dm.mysql.version", "5.7", "MySQL version used in DM-pocket")
 	flag.StringVar(&Context.DMConfig.MySQLConf.StorageSize, "dm.mysql.storage-size", "10Gi", "request storage size for MySQL")
+	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableBinlog, "dm.mysql.enable-binlog", false, "enable binlog for MySQL")
+	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableGTID, "dm.mysql.enable-gtid", false, "enable GTID for MySQL")
 	flag.StringVar(&Context.DMConfig.DMVersion, "dm.version", "nightly", "image version for DM")
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
