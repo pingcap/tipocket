@@ -21,6 +21,8 @@ const (
 	Drainer Component = "drainer"
 	// CDC Component identifier
 	CDC Component = "cdc"
+	// DM Component identifier
+	DM Component = "dm"
 	// Monitor Component identifier
 	Monitor Component = "monitor"
 	// TiFlash Component identifier

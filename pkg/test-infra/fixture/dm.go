@@ -15,11 +15,9 @@ package fixture
 
 // DMConfig is the configuration for DM (Data Migration) component.
 type DMConfig struct {
-	MySQLConf        MySQLConfig // all MySQL instances use the same config now.
-	DMVersion        string
-	DockerRepository string
-	HubAddress       string
-	LogPath          string
-	LogLevel         string
-	Timezone         string
+	MySQLConf     MySQLConfig // all MySQL instances use the same config now.
+	DMVersion     string
+	MasterReplica int // replicas of DM-master
+	WorkerReplica int // replicas of DM-worker
+	LogPath       string
 }

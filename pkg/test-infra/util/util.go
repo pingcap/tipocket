@@ -60,6 +60,8 @@ func FindPort(podName, component string, containers []corev1.Container) int32 {
 		priorityPort = 20160
 	} else if component == string(clusterTypes.TiDB) {
 		priorityPort = 4000
+	} else if component == string(clusterTypes.DM) {
+		priorityPort = 8261
 	} else if component == string(clusterTypes.MySQL) {
 		priorityPort = 3306
 	}

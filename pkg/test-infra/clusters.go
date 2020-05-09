@@ -3,6 +3,7 @@ package testinfra
 import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/util/config"
+	"github.com/pingcap/tipocket/pkg/test-infra/dm"
 	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
@@ -185,7 +186,8 @@ func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixt
 	down := tidb.New(namespace, name+"-tidb", tidbConf)
 
 	return NewCompositeCluster(
-		NewGroupCluster(up1, up2, down))
+		NewGroupCluster(up1, up2, down),
+		dm.New(namespace, name+"-dm", dmConf))
 }
 
 // NewABTestCluster creates two TiDB clusters to do AB Test

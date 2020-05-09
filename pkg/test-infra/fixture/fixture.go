@@ -260,6 +260,8 @@ func init() {
 	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableBinlog, "dm.mysql.enable-binlog", false, "enable binlog for MySQL")
 	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableGTID, "dm.mysql.enable-gtid", false, "enable GTID for MySQL")
 	flag.StringVar(&Context.DMConfig.DMVersion, "dm.version", "nightly", "image version for DM")
+	flag.IntVar(&Context.DMConfig.MasterReplica, "dm.master-replicas", 3, "number of DM-master replicas")
+	flag.IntVar(&Context.DMConfig.WorkerReplica, "dm.worker-replicas", 3, "number of DM-worker replicas")
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 

@@ -34,7 +34,7 @@ func main() {
 	flag.Parse()
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
-		ClientCount: 3, // 2 MySQL + 1 TiDB
+		ClientCount: 4, // 2 MySQL + 1 TiDB + 1 DM-master
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
