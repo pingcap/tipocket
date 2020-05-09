@@ -1,0 +1,104 @@
+metadata:
+  name: tipocket-cdc-normal
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-cdc
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-cdc-normal
+        - name: purge
+          value: "true"
+        - name: hub
+          value: "docker.io"
+        - name: repository
+          value: "pingcap"
+        - name: image_version
+          value: nightly
+        - name: tidb_image
+          value: ""
+        - name: tikv_image
+          value: "c3219bb"
+        - name: pd_image
+          value: ""
+        - name: storage_class
+          value: gp2
+        - name: nemesis
+          value: ""
+        - name: run_time
+          value: "12h"
+        - name: tikv_config
+          value: ""
+        - name: cdc_hub
+          value: "docker.io"
+        - name: cdc_repository
+          value: "pingcap"
+        - name: cdc_version
+          value: "master"
+        - name: abtest_general_log
+          value: "true"
+        - name: binlog_sync_timeout
+          value: "30m"
+        - name: abtest_concurrency
+          value: "3"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
+    templates:
+      - name: call-tipocket-cdc
+        steps:
+          - - name: call-tipocket-cdc
+              templateRef:
+                name: tipocket-cdc
+                template: tipocket-cdc
+                arguments:
+                  parameters:
+                    - name: ns
+                      value: "{{workflow.parameters.ns}}"
+                    - name: purge
+                      value: "{{workflow.parameters.purge}}"
+                    - name: hub
+                      value: "{{workflow.parameters.hub}}"
+                    - name: repository
+                      value: "{{workflow.parameters.repository}}"
+                    - name: image_version
+                      value: "{{workflow.parameters.image_version}}"
+                    - name: tidb_image
+                      value: "{{workflow.parameters.tidb_image}}"
+                    - name: tikv_image
+                      value: "{{workflow.parameters.tikv_image}}"
+                    - name: pd_image
+                      value: "{{workflow.parameters.pd_image}}"
+                    - name: storage_class
+                      value: "{{workflow.parameters.storage_class}}"
+                    - name: nemesis
+                      value: "{{workflow.parameters.nemesis}}"
+                    - name: run_time
+                      value: "{{workflow.parameters.run_time}}"
+                    - name: tikv_config
+                      value: "{{workflow.parameters.tikv_config}}"
+                    - name: cdc_hub
+                      value: "{{workflow.parameters.cdc_hub}}"
+                    - name: cdc_repository
+                      value: "{{workflow.parameters.cdc_repository}}"
+                    - name: cdc_version
+                      value: "{{workflow.parameters.cdc_version}}"
+                    - name: abtest_general_log
+                      value: "{{workflow.parameters.abtest_general_log}}"
+                    - name: binlog_sync_timeout
+                      value: "{{workflow.parameters.binlog_sync_timeout}}"
+                    - name: abtest_concurrency
+                      value: "{{workflow.parameters.abtest_concurrency}}"
+                    - name: loki-addr
+                      value: "{{workflow.parameters.loki-addr}}"
+                    - name: loki-username
+                      value: "{{workflow.parameters.loki-username}}"
+                    - name: loki-password
+                      value: "{{workflow.parameters.loki-password}}"
