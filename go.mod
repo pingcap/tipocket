@@ -9,6 +9,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/uuid v1.1.1
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
