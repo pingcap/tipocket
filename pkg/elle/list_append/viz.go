@@ -2,9 +2,10 @@ package list_append
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/goccy/go-graphviz"
 	"github.com/pingcap/tipocket/pkg/elle/core"
-	"strings"
 )
 
 type record struct {
@@ -151,7 +152,7 @@ func renderScc(analysis core.CheckResult, scc core.SCC) string {
 	return strings.Join(tpl, "\n")
 }
 
-func plotAnalysis(analysis core.CheckResult) error {
+func plotAnalysis(analysis core.CheckResult, directory string) error {
 	g := graphviz.New()
 	for i, scc := range analysis.Sccs {
 		tpl := renderScc(analysis, scc)
@@ -159,83 +160,9 @@ func plotAnalysis(analysis core.CheckResult) error {
 		if err != nil {
 			return err
 		}
-		if err := g.RenderFilename(graph, graphviz.SVG, fmt.Sprintf("%d.svg", i)); err != nil {
+		if err := g.RenderFilename(graph, graphviz.SVG, fmt.Sprintf("%s/%d.svg", directory, i)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
-
-//func render(dg *core.DirectedGraph) error {
-//	g := graphviz.New()
-//	//graph, err := g.Graph()
-//	//if err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//defer func() {
-//	//	if err := graph.Close(); err != nil {
-//	//		log.Fatal(err)
-//	//	}
-//	//	g.Close()
-//	//}()
-//	//n, err := graph.CreateNode("n")
-//	//n.SetHeight(0.4)
-//	//n.SetShape("record")
-//	//n.SetLabel("<f0> r :x [1 2]|<f1> r :z [1]")
-//	//n.SetColor("#0058AD")
-//	//n.SetFontColor("#0058AD")
-//	//if err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//m, err := graph.CreateNode("m")
-//	//if err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//m.SetHeight(0.4)
-//	//m.SetShape("record")
-//	//m.SetLabel("<f0> a :z 2|<f1> a :y 1")
-//	//m.SetColor("#0058AD")
-//	//m.SetFontColor("#0058AD")
-//	//
-//	//e, err := graph.CreateEdge("e", n, m)
-//	//if err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//e.SetLabel("rw")
-//	//var buf bytes.Buffer
-//	//if err := g.Render(graph, "dot", &buf); err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//fmt.Println(buf.String())
-//	//
-//	//if err := g.RenderFilename(graph, graphviz.SVG, "graph.svg"); err != nil {
-//	//	log.Fatal(err)
-//	//}
-//	//return nil
-//
-//	graph, _ := graphviz.ParseBytes([]byte(`
-//digraph a_graph {
-//    T1 [height=0.4,shape=record,label="<f0> r :x [1 2]|<f1> r :z [1]",color="#0058AD",fontcolor="#0058AD"]
-//    T5 [height=0.4,shape=record,label="<f0> a :z 1",color="#0058AD",fontcolor="#0058AD"]
-//    T7 [height=0.4,shape=record,label="<f0> a :z 2|<f1> a :y 1",color="#0058AD",fontcolor="#0058AD"]
-//    T9 [height=0.4,shape=record,label="<f0> r :z nil|<f1> a :x 2",color="#0058AD",fontcolor="#0058AD"]
-//    T3 [height=0.4,shape=record,label="<f0> a :x 1|<f1> r :y [1]|<f2> r :z [1 2]",color="#0058AD",fontcolor="#0058AD"]
-//
-//    T1 -> T3 [label="rt",fontcolor="#0050C0",color="#0050C0"]
-//
-//    T1:f1 -> T7:f0 [label="rw",fontcolor="#5B00C0",color="#5B00C0"]
-//    T5:f0 -> T1:f1 [label="wr",fontcolor="#C000A5",color="#C000A5"]
-//    T5:f0 -> T7:f0 [label="ww",fontcolor="#C02700",color="#C02700"]
-//    T7:f1 -> T3:f1 [label="wr",fontcolor="#C000A5",color="#C000A5"]
-//    T7 -> T9 [label="rt",fontcolor="#0050C0",color="#0050C0"]
-//    T9:f1 -> T1:f0 [label="wr",fontcolor="#C000A5",color="#C000A5"]
-//    T9:f0 -> T5:f0 [label="rw",fontcolor="#5B00C0",color="#5B00C0"]
-//    T3 -> T5 [label="rt",fontcolor="#0050C0",color="#0050C0"]
-//    T3:f0 -> T9:f1 [label="ww",fontcolor="#C02700",color="#C02700"]
-//}
-//`))
-//	if err := g.RenderFilename(graph, graphviz.SVG, "graph.svg"); err != nil {
-//		log.Fatal(err)
-//	}
-//	return nil
-//}
