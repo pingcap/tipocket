@@ -244,7 +244,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 
 	dmMasterInitCluster := "--initial-cluster="
 	for i := 0; i < conf.MasterReplica; i++ {
-		dmMasterInitCluster += fmt.Sprintf("%[1]s-%[3]d=http://%[1]s-0.%[1]s-peer.%[2]s:8291", dmMasterName, namespace, i)
+		dmMasterInitCluster += fmt.Sprintf("%[1]s-%[3]d=http://%[1]s-%[3]d.%[1]s-peer.%[2]s:8291", dmMasterName, namespace, i)
 		if i+1 != conf.MasterReplica {
 			dmMasterInitCluster += ","
 		}
@@ -275,8 +275,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 				Labels:    dmMasterLabels,
 			},
 			Spec: corev1.ServiceSpec{
-				Type:      corev1.ServiceTypeClusterIP,
-				ClusterIP: "None",
+				Type: corev1.ServiceTypeClusterIP,
 				Ports: []corev1.ServicePort{{
 					Name:       "dm-master-peer",
 					Port:       8291,
