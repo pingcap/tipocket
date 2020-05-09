@@ -82,11 +82,11 @@ func Combine(analyzers ...Analyzer) Analyzer {
 	}
 }
 
-type ProcessDependent struct {
+type ProcessResult struct {
 	Process int
 }
 
-func (_ ProcessDependent) Type() DependType {
+func (_ ProcessResult) Type() DependType {
 	return ProcessDepend
 }
 
@@ -99,7 +99,7 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 		return nil
 	}
 	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index.MustGet() < p2.Index.MustGet() {
-		return ProcessDependent{Process: p1.Process.MustGet()}
+		return ProcessResult{Process: p1.Process.MustGet()}
 	} else {
 		return nil
 	}
@@ -110,7 +110,7 @@ func (e ProcessExplainer) RenderExplanation(result ExplainResult, preName, postN
 	if result.Type() != ProcessDepend {
 		log.Fatalf("result type is not %s, type error", ProcessDepend)
 	}
-	res := result.(ProcessDependent)
+	res := result.(ProcessResult)
 	return fmt.Sprintf("process %d excuted %s before %s", res.Process, preName, postName)
 }
 

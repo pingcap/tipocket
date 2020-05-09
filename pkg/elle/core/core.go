@@ -323,7 +323,6 @@ func Check(analyzer Analyzer, history History) CheckResult {
 }
 
 // checkHelper is `check-` in original code.
-// TODO: add the logic for anomalies.
 func checkHelper(analyzer Analyzer, history History) (*DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
 	// The sample program will first remove nemesis, but we will not leave nemesis here.
 	anomalies, g, exp := analyzer(history)

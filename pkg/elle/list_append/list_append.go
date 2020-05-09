@@ -146,10 +146,10 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		if writer != nil && *writer == a {
 			return wrExplainResult{
 				Key:   k,
-				Value: v[0],
+				Value: v[len(v)-1],
 				AMopIndex: a.IndexOfMop(core.Append{
 					Key:   k,
-					Value: v[0],
+					Value: v[len(v)-1],
 				}),
 				BMopIndex: b.IndexOfMop(mop),
 			}
