@@ -145,7 +145,7 @@ func (r Read) IsEqual(b Mop) bool {
 		return false
 	}
 	aValue := r.GetValue().([]int)
-	bValue := r.GetValue().([]int)
+	bValue := b.GetValue().([]int)
 	if len(aValue) != len(bValue) {
 		return false
 	}
