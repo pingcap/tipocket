@@ -1,18 +1,18 @@
 metadata:
-  generateName: bank-replica-read-
+  generateName: tipocket-bank-replica-read-
   namespace: argo
 spec:
-  entrypoint: call-bank-replica-read
+  entrypoint: call-tipocket-bank-replica-read
   arguments:
     parameters:
       - name: ns
-        value: bank-replica-read
+        value: tipocket-bank-replica-read
       - name: purge
         value: "true"
       - name: image_version
         value: nightly
       - name: storage_class
-        value: standard
+        value: gp2
       - name: run_time
         value: "6h"
       - name: loki-addr

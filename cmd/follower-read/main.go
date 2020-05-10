@@ -8,7 +8,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/tests/follower"
 
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
@@ -41,7 +40,6 @@ func createFollowerReadCmd(cfg *control.Config) {
 		},
 		Provisioner: cluster.NewK8sProvisioner(),
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		VerifySuit:  verify.Suit{},
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
 	}
