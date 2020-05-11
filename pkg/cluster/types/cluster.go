@@ -76,7 +76,7 @@ func (clientNode ClientNode) Address() string {
 
 // String ...
 func (clientNode ClientNode) String() string {
-	return fmt.Sprintf("%s %s:%d", clientNode.Namespace, clientNode.IP, clientNode.Port)
+	return fmt.Sprintf("%s %s:%d", clientNode.ClusterName, clientNode.IP, clientNode.Port)
 }
 
 // ClusterSpecs is a cluster specification

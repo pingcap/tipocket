@@ -116,3 +116,31 @@ func BuildBinlogImage(name string) string {
 	b.WriteString(version)
 	return b.String()
 }
+
+// GetNodeIPs gets the IPs (or addresses) for nodes.
+func GetNodeIPs(cli client.Client, namespace string, labels map[string]string) ([]string, error) {
+	var ips []string
+	pods := &corev1.PodList{}
+	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+		return ips, err
+	}
+
+	for _, item := range pods.Items {
+		ips = append(ips, item.Status.HostIP)
+	}
+	return ips, nil
+}
+
+// GetServiceByMeta gets the service by its meta.
+func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, error) {
+	clone := svc.DeepCopy()
+	key, err := client.ObjectKeyFromObject(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cli.Get(context.Background(), key, clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
+}

@@ -38,19 +38,15 @@ import (
 
 // Ops knows how to operate DM cluster on K8s.
 type Ops struct {
-	cli       client.Client
-	dm        *DM
-	namespace string
-	name      string
+	cli client.Client
+	dm  *DM
 }
 
 // New creates a new DM Ops.
 func New(namespace, name string, conf fixture.DMConfig) *Ops {
 	return &Ops{
-		cli:       tests.TestClient.Cli,
-		dm:        newDM(namespace, name, conf),
-		namespace: namespace,
-		name:      name,
+		cli: tests.TestClient.Cli,
+		dm:  newDM(namespace, name, conf),
 	}
 }
 
@@ -73,8 +69,9 @@ func (o *Ops) Delete() error {
 // GetNodes returns DM (DM-master) nodes.
 func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	pods := &corev1.PodList{}
-	if err := o.cli.List(context.Background(), pods, &client.ListOptions{Namespace: o.namespace},
-		client.MatchingLabels{"instance": fmt.Sprintf("tipocket-dm-master-%s", o.name)}); err != nil {
+	if err := o.cli.List(context.Background(), pods,
+		client.InNamespace(o.dm.StsMaster.ObjectMeta.Namespace),
+		client.MatchingLabels(o.dm.StsMaster.ObjectMeta.Labels)); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 
@@ -92,31 +89,30 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes.
-// NOTE: we only return 1 node of DM-master now.
 func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
-
-	k8sNodes, err := o.getK8sNodes()
+	ips, err := util.GetNodeIPs(o.cli, o.dm.StsMaster.Namespace, o.dm.StsMaster.ObjectMeta.Labels)
 	if err != nil {
 		return clientNodes, err
-	}
-	ip := getNodeIP(k8sNodes)
-	if ip == "" {
+	} else if len(ips) == 0 {
 		return clientNodes, errors.New("k8s node not found")
 	}
 
-	svc, err := o.getDMMasterServiceByMeta()
+	svc, err := util.GetServiceByMeta(o.cli, o.dm.SvcMaster)
 	if err != nil {
 		return clientNodes, err
 	}
+	port := getDMMasterNodePort(svc)
 
-	clientNodes = append(clientNodes, clusterTypes.ClientNode{
-		Namespace:   svc.ObjectMeta.Namespace,
-		ClusterName: svc.ObjectMeta.Labels["instance"],
-		Component:   clusterTypes.DM,
-		IP:          ip,
-		Port:        getDMMasterNodePort(svc),
-	})
+	for _, ip := range ips {
+		clientNodes = append(clientNodes, clusterTypes.ClientNode{
+			Namespace:   svc.ObjectMeta.Namespace,
+			ClusterName: svc.ObjectMeta.Labels["instance"],
+			Component:   clusterTypes.DM,
+			IP:          ip,
+			Port:        port,
+		})
+	}
 
 	return clientNodes, nil
 }
@@ -171,38 +167,6 @@ func (o *Ops) waitStsReady(timeout time.Duration, sts *appsv1.StatefulSet) error
 		log.Infof("all %d replicas of DM %s are ready", local.Status.Replicas, local.Name)
 		return true, nil
 	})
-}
-
-func (o *Ops) getDMMasterServiceByMeta() (*corev1.Service, error) {
-	svc := o.dm.SvcMaster.DeepCopy()
-	key, err := client.ObjectKeyFromObject(svc)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := o.cli.Get(context.Background(), key, svc); err != nil {
-		return nil, err
-	}
-
-	return svc, nil
-}
-
-// getK8sNodes gets physical nodes
-func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
-	nodes := &corev1.NodeList{}
-	err := o.cli.List(context.Background(), nodes)
-	if err != nil {
-		return nil, err
-	}
-	return nodes, nil
-}
-
-func getNodeIP(nodeList *corev1.NodeList) string {
-	if len(nodeList.Items) == 0 {
-		return ""
-	}
-	// choose the first node.
-	return nodeList.Items[0].Status.Addresses[0].Address
 }
 
 func getDMMasterNodePort(svc *corev1.Service) int32 {
