@@ -239,11 +239,11 @@ func testSplitRegion(f *follower) {
 
 	// prepare some data
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 24; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := 0; i < 1000; i++ {
+			for i := 0; i < 10000; i++ {
 				_, e := f.db.Exec(fmt.Sprintf("insert into test_region (a) values (%v)", rand.Intn(region)))
 				if e != nil {
 					log.Fatal(e)
@@ -253,6 +253,7 @@ func testSplitRegion(f *follower) {
 	}
 
 	// split region
+	time.Sleep(1 * time.Minute)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -268,7 +269,7 @@ func testSplitRegion(f *follower) {
 
 	// read
 	time.Sleep(10 * time.Second)
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 64; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
