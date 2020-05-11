@@ -54,7 +54,7 @@ func (f *follower) SetUp(ctx context.Context, nodes []types.ClientNode, idx int)
 	log.Infof("start to init...")
 	f.db, err = util.OpenDB(dsn, f.Concurrency)
 	if err != nil {
-		log.Fatalf("[%s] create db client error %v", f, err)
+		log.Fatal(err)
 	}
 
 	time.Sleep(2 * time.Second)
@@ -124,14 +124,14 @@ func (f *follower) DumpState(ctx context.Context) (interface{}, error) {
 func testSwitchFollowerRead(f *follower) {
 	rows, err := f.db.Query("select @@tidb_replica_read")
 	if err != nil {
-		log.Fatalf("[%s] select @@tidb_replica_read failed: %v", f, err)
+		log.Fatal(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var val string
 		rows.Scan(&val)
 		if val != "leader" {
-			log.Fatalf("[%s] assert tidb_replica_read == leader failed", f)
+			log.Fatalf("assert tidb_replica_read == leader failed")
 		}
 	}
 }
@@ -141,7 +141,7 @@ func testInvalidSet(f *follower) {
 	for _, val := range setVal {
 		_, err := f.db.Query(fmt.Sprintf("set @@tidb_replica_read = \"%v\"", val))
 		if err == nil {
-			log.Fatalf("[%s] set @@tidb_replica_read = %v succeed", f, val)
+			log.Fatalf("set @@tidb_replica_read = %v succeed", val)
 		}
 	}
 }
@@ -157,7 +157,7 @@ func testValidSet(f *follower) {
 		}
 		_, err := f.db.Query(sql)
 		if err != nil {
-			log.Fatalf("[%s] set @@tidb_replica_read = %v failed: %v", f, val, err)
+			log.Fatalf("set @@tidb_replica_read = %v failed: %v", val, err)
 		}
 	}
 }
@@ -176,22 +176,22 @@ func testSession(ctx context.Context, f *follower) {
 
 	var replicaRead string
 	if err := c2.QueryRowContext(ctx, "select @@tidb_replica_read").Scan(&replicaRead); err != nil {
-		log.Fatalf("[%s] get tidb_replica_read fail: %v", f, err)
+		log.Fatalf("get tidb_replica_read fail: %v", err)
 	}
 	if replicaRead != "leader-and-follower" {
-		log.Fatalf("[%s] assert tidb_replica_read == leader-and-follower failed: right is %v", f, replicaRead)
+		log.Fatalf("assert tidb_replica_read == leader-and-follower failed: right is %v", replicaRead)
 	}
 	if err := c0.QueryRowContext(ctx, "select @@tidb_replica_read").Scan(&replicaRead); err != nil {
-		log.Fatalf("[%s] get tidb_replica_read fail: %v", f, err)
+		log.Fatalf("get tidb_replica_read fail: %v", err)
 	}
 	if replicaRead != "follower" {
-		log.Fatalf("[%s] assert tidb_replica_read == follower failed: right is %v", f, replicaRead)
+		log.Fatalf("assert tidb_replica_read == follower failed: right is %v", replicaRead)
 	}
 	if err := c1.QueryRowContext(ctx, "select @@tidb_replica_read").Scan(&replicaRead); err != nil {
-		log.Fatalf("[%s] get tidb_replica_read fail: %v", f, err)
+		log.Fatalf("get tidb_replica_read fail: %v", err)
 	}
 	if replicaRead != "leader" {
-		log.Fatalf("[%s] assert tidb_replica_read == leader failed: right is %v", f, replicaRead)
+		log.Fatalf("assert tidb_replica_read == leader failed: right is %v", replicaRead)
 	}
 
 }
@@ -208,14 +208,14 @@ func testCorrectnes(f *follower) {
 			}
 			rows, err := f.db.Query(sql)
 			if err != nil {
-				log.Fatalf("[%s] set @@tidb_replica_read = %v failed: %v", f, val, err)
+				log.Fatalf("set @@tidb_replica_read = %v failed: %v", val, err)
 			}
 			defer rows.Close()
 			for rows.Next() {
 				var read string
 				rows.Scan(&read)
 				if read != val {
-					log.Fatalf("[%s] assert tidb_replica_read == %v failed", f, val)
+					log.Fatalf("assert tidb_replica_read == %v failed", val)
 				}
 			}
 		}
@@ -225,11 +225,11 @@ func testCorrectnes(f *follower) {
 func testGlobal(f *follower) {
 	_, e1 := f.db.Query("set @@global.tidb_replica_read=follower")
 	if e1 == nil {
-		log.Fatalf("[%s] set @@global.tidb_replica_read=follower succeed", f)
+		log.Fatalf("set @@global.tidb_replica_read=follower succeed")
 	}
 	_, e2 := f.db.Query("select @@global.tidb_replica_read")
 	if e2 == nil {
-		log.Fatalf("[%s] select @@global.tidb_replica_read succeed", f)
+		log.Fatalf("select @@global.tidb_replica_read succeed")
 	}
 }
 
@@ -246,7 +246,7 @@ func testSplitRegion(f *follower) {
 			for i := 0; i < 1000; i++ {
 				_, e := f.db.Exec(fmt.Sprintf("insert into test_region (a) values (%v)", rand.Intn(region)))
 				if e != nil {
-					log.Fatalf("[%s] insert into test_region failed:%v", f, e)
+					log.Fatal(e)
 				}
 			}
 		}()
@@ -259,7 +259,7 @@ func testSplitRegion(f *follower) {
 		for {
 			_, e := f.db.Exec(fmt.Sprintf("split table x between (0) and (%v) regions 360;", region))
 			if e != nil {
-				log.Fatalf("[%s] split table failed:%v", f, e)
+				log.Fatal(e)
 			}
 			log.Infof("Split region done")
 			time.Sleep(2 * time.Minute)
@@ -275,7 +275,7 @@ func testSplitRegion(f *follower) {
 			for {
 				_, e := f.db.Exec("select * from test_region")
 				if e != nil {
-					log.Fatalf("[%s] select * from test_region failed:%v", f, e)
+					log.Fatal(e)
 				}
 			}
 		}()
@@ -306,12 +306,12 @@ func testSequence(ctx context.Context, f *follower) {
 		var num int
 		for i := 0; i < loop; i++ {
 			if err := c0.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
-				log.Fatalf("[%s] SELECT nextval(seq) fail: %v", f, err)
+				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}
 
 			mutex.Lock()
 			if m[num] == true {
-				log.Fatalf("[%s] %v existed", f, num)
+				log.Fatalf("%v existed", num)
 			} else {
 				m[num] = true
 			}
@@ -324,12 +324,12 @@ func testSequence(ctx context.Context, f *follower) {
 		var num int
 		for i := 0; i < loop; i++ {
 			if err := c1.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
-				log.Fatalf("[%s] SELECT nextval(seq) fail: %v", f, err)
+				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}
 
 			mutex.Lock()
 			if m[num] == true {
-				log.Fatalf("[%s] %v existed", f, num)
+				log.Fatalf("%v existed", num)
 			} else {
 				m[num] = true
 			}
