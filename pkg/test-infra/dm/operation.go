@@ -61,7 +61,7 @@ func (o *Ops) Apply() error {
 
 // Delete DM cluster.
 func (o *Ops) Delete() error {
-	objs := []runtime.Object{o.dm.SvcWorker, o.dm.StsWorker, o.dm.SvcMaster, o.dm.SvcMasterPeer, o.dm.StsMaster}
+	objs := []runtime.Object{o.dm.SvcWorker, o.dm.StsWorker, o.dm.SvcMaster, o.dm.StsMaster}
 	for _, obj := range objs {
 		if err := o.cli.Delete(context.Background(), obj); err != nil {
 			return err
@@ -123,9 +123,6 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 
 func (o *Ops) applyDM() error {
 	if err := util.ApplyObject(o.cli, o.dm.SvcMaster); err != nil {
-		return err
-	}
-	if err := util.ApplyObject(o.cli, o.dm.SvcMasterPeer); err != nil {
 		return err
 	}
 	if err := util.ApplyObject(o.cli, o.dm.SvcWorker); err != nil {
@@ -219,11 +216,10 @@ func getDMMasterNodePort(svc *corev1.Service) int32 {
 
 // DM represents a DM cluster in K8s.
 type DM struct {
-	SvcMaster     *corev1.Service
-	SvcMasterPeer *corev1.Service
-	SvcWorker     *corev1.Service
-	StsMaster     *appsv1.StatefulSet
-	StsWorker     *appsv1.StatefulSet
+	SvcMaster *corev1.Service
+	SvcWorker *corev1.Service
+	StsMaster *appsv1.StatefulSet
+	StsWorker *appsv1.StatefulSet
 }
 
 // newDM creates a spec for DM.
@@ -244,7 +240,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 
 	dmMasterInitCluster := "--initial-cluster="
 	for i := 0; i < conf.MasterReplica; i++ {
-		dmMasterInitCluster += fmt.Sprintf("%[1]s-%[3]d=http://%[1]s-%[3]d.%[1]s-peer.%[2]s:8291", dmMasterName, namespace, i)
+		dmMasterInitCluster += fmt.Sprintf("%[1]s-%[3]d=http://%[1]s-%[3]d.%[1]s.%[2]s:8291", dmMasterName, namespace, i)
 		if i+1 != conf.MasterReplica {
 			dmMasterInitCluster += ","
 		}
@@ -264,19 +260,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 					Port:       8261,
 					TargetPort: intstr.FromInt(8261),
 					Protocol:   corev1.ProtocolTCP,
-				}},
-				Selector: dmMasterLabels,
-			},
-		},
-		SvcMasterPeer: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      dmMasterName + "-peer",
-				Namespace: namespace,
-				Labels:    dmMasterLabels,
-			},
-			Spec: corev1.ServiceSpec{
-				Type: corev1.ServiceTypeClusterIP,
-				Ports: []corev1.ServicePort{{
+				}, {
 					Name:       "dm-master-peer",
 					Port:       8291,
 					TargetPort: intstr.FromInt(8291),
@@ -310,7 +294,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 				Labels:    dmMasterLabels,
 			},
 			Spec: appsv1.StatefulSetSpec{
-				ServiceName:         dmMasterName + "-peer",
+				ServiceName:         dmMasterName,
 				PodManagementPolicy: appsv1.ParallelPodManagement,
 				Replicas:            pointer.Int32Ptr(int32(conf.MasterReplica)),
 				Selector:            &metav1.LabelSelector{MatchLabels: dmMasterLabels},
@@ -336,11 +320,11 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 							},
 							Ports: []corev1.ContainerPort{
 								{
-									Name:          "client",
+									Name:          "dm-master",
 									ContainerPort: 8261,
 								},
 								{
-									Name:          "peer",
+									Name:          "dm-master-peer",
 									ContainerPort: 8291,
 								},
 							},
@@ -351,7 +335,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 								"--master-addr=:8261",
 								fmt.Sprintf("--advertise-addr=$(MY_POD_NAME).%s.%s:8261", dmMasterName, namespace),
 								"--peer-urls=:8291",
-								fmt.Sprintf("--advertise-peer-urls=http://$(MY_POD_NAME).%s-peer.%s:8291", dmMasterName, namespace),
+								fmt.Sprintf("--advertise-peer-urls=http://$(MY_POD_NAME).%s.%s:8291", dmMasterName, namespace),
 								dmMasterInitCluster,
 							},
 							Env: []corev1.EnvVar{
@@ -364,30 +348,6 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 										},
 									},
 								},
-							},
-							LivenessProbe: &corev1.Probe{
-								FailureThreshold: 8,
-								Handler: corev1.Handler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path:   "/status",
-										Port:   intstr.FromInt(8261),
-										Scheme: "HTTP",
-									},
-								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
-							},
-							ReadinessProbe: &corev1.Probe{
-								FailureThreshold: 5,
-								Handler: corev1.Handler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path:   "/status",
-										Port:   intstr.FromInt(8261),
-										Scheme: "HTTP",
-									},
-								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
 							},
 						}},
 					},
@@ -459,20 +419,12 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 									},
 								},
 							},
-							LivenessProbe: &corev1.Probe{
-								FailureThreshold: 8,
-								Handler: corev1.Handler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path:   "/status",
-										Port:   intstr.FromInt(8262),
-										Scheme: "HTTP",
-									},
-								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
-							},
 							ReadinessProbe: &corev1.Probe{
-								FailureThreshold: 5,
+								// NOTE: no `ReadinessProbe` for DM-master now, because
+								// - DM-master relies on endpoint to communicate with other members when starting
+								// - but endpoint may no available if DM-master not started
+								// then DM-master may never become ready.
+								// so we only check the readiness for DM-worker.
 								Handler: corev1.Handler{
 									HTTPGet: &corev1.HTTPGetAction{
 										Path:   "/status",
@@ -481,7 +433,8 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 									},
 								},
 								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
+								PeriodSeconds:       5,
+								FailureThreshold:    5,
 							},
 						}},
 					},
