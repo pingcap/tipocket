@@ -22,6 +22,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/pingcap/tipocket/util"
 )
 
 // DBConnect wraps db
@@ -196,6 +197,9 @@ func OpenDB(dsn string, maxIdleConns int) (*DBConnect, error) {
 	}
 
 	db.SetMaxIdleConns(maxIdleConns)
+
+	util.RandomlyChangeReplicaRead("tipocket", "leader-and-follower", db)
+
 	// log.Info("DB opens successfully")
 	return &DBConnect{
 		db:  db,
