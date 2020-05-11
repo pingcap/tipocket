@@ -257,7 +257,7 @@ func testSplitRegion(f *follower) {
 	go func() {
 		defer wg.Done()
 		for {
-			_, e := f.db.Exec(fmt.Sprintf("split table x between (0) and (%v) regions 360;", region))
+			_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions 360;", region))
 			if e != nil {
 				log.Fatal(e)
 			}
