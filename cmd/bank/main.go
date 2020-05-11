@@ -39,11 +39,11 @@ var (
 	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
 	tables      = flag.Int("tables", 1, "the number of the tables")
 	replicaRead = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
+	dbname      = flag.String("dbname", "test", "name of database to test")
 )
 
 func main() {
 	flag.Parse()
-	bank.ReplicaRead = *replicaRead
 
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
@@ -60,6 +60,8 @@ func main() {
 		Tables:        *tables,
 		Interval:      *interval,
 		Concurrency:   *concurrency,
+		ReplicaRead:   *replicaRead,
+		DbName:        *dbname,
 	}
 
 	suit := util.Suit{

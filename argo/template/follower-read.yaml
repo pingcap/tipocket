@@ -1,0 +1,69 @@
+metadata:
+  name: tipocket-follower-read
+  namespace: argo
+spec:
+  templates:
+    - name: tipocket-follower-read
+      inputs:
+        parameters:
+          - name: ns
+            default: tipocket-follower-read
+          - name: hub
+            default: "docker.io"
+          - name: purge
+            default: "true"
+          - name: repository
+            default: pingcap
+          - name: image_version
+            default: nightly
+          - name: storage_class
+            default: standard
+          - name: nemesis
+            default: "random_kill, partition_one, shuffle-leader-scheduler"
+          - name: run_time
+            default: "6h"
+          - name: loki-addr
+            default: http://gateway.loki.svc
+          - name: loki-username
+            default: loki
+          - name: loki-password
+            default: admin
+          - name: tidb_config
+            default: ""
+          - name: tikv_config
+            default: ""
+          - name: pd_config
+            default: ""
+          - name: tikv-replicas
+            default: "5"
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
+      metadata:
+        labels:
+          ns: "{{inputs.parameters.ns}}"
+      container:
+        name: tipocket
+        image: 'pingcap/tipocket:latest'
+        command:
+          - sh
+          - '-c'
+          - |
+            /bin/follower-read \
+            -namespace={{inputs.parameters.ns}} \
+            -hub={{inputs.parameters.hub}} \
+            -repository={{inputs.parameters.repository}} \
+            -storage-class={{inputs.parameters.storage_class}} \
+            -image-version={{inputs.parameters.image_version}} \
+            -purge={{inputs.parameters.purge}} \
+            -tidb-config={{inputs.parameters.tidb_config}} \
+            -tikv-config={{inputs.parameters.tikv_config}} \
+            -pd-config={{inputs.parameters.pd_config}} \
+            -nemesis={{inputs.parameters.nemesis}} \
+            -run-time={{inputs.parameters.run_time}} \
+            -tikv-replicas={{inputs.parameters.tikv-replicas}} \
+            -loki-addr={{inputs.parameters.loki-addr}} \
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}

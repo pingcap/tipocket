@@ -31,10 +31,12 @@ import (
 
 // Config is for sqllogicClient
 type Config struct {
-	SkipError bool
-	TaskCount int
-	CaseURL   string
-	TestDir   string
+	SkipError   bool
+	TaskCount   int
+	CaseURL     string
+	TestDir     string
+	ReplicaRead string
+	DbName      string
 }
 
 type sqllogicClient struct {
@@ -62,7 +64,7 @@ func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, id
 	}
 	node := nodes[idx]
 	c.ip, c.port = node.IP, node.Port
-	dbDSN := fmt.Sprintf("root:@tcp(%s:%d)/test", node.IP, node.Port)
+	dbDSN := fmt.Sprintf("root:@tcp(%s:%d)/%s", node.IP, node.Port, c.DbName)
 	db, err := util.OpenDB(dbDSN, 1)
 	if err != nil {
 		return err
@@ -141,7 +143,7 @@ func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes [
 	taskChan := make(chan string, c.TaskCount)
 	doneChan := make(chan struct{}, c.TaskCount)
 	resultChan := make(chan *result, c.TaskCount)
-	dbs := createDatabases(c.TaskCount, fmt.Sprintf("%s:%d", c.ip, c.port), "root", "")
+	dbs := createDatabases(c.TaskCount, fmt.Sprintf("%s:%d", c.ip, c.port), "root", "", c.ReplicaRead)
 	defer closeDatabases(dbs)
 
 	go addTasks(ctx, fileNames, taskChan)

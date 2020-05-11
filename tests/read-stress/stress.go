@@ -23,6 +23,7 @@ type CaseCreator struct {
 	LargeTimeout     time.Duration
 	SmallConcurrency int
 	SmallTimeout     time.Duration
+	ReplicaRead      string
 }
 
 // Create creates a read-stress test client
@@ -33,6 +34,7 @@ func (c CaseCreator) Create(node types.ClientNode) core.Client {
 		largeTimeout:     c.LargeTimeout,
 		smallConcurrency: c.SmallConcurrency,
 		smallTimeout:     c.SmallTimeout,
+		replicaRead:      c.ReplicaRead,
 	}
 }
 
@@ -43,6 +45,7 @@ type stressClient struct {
 	smallConcurrency int
 	smallTimeout     time.Duration
 	db               *sql.DB
+	replicaRead      string
 }
 
 func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
@@ -64,6 +67,8 @@ func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx 
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	util.RandomlyChangeReplicaRead("read-stress", c.replicaRead, c.db)
 
 	if _, err := c.db.Exec("DROP TABLE IF EXISTS t"); err != nil {
 		log.Fatal(err)

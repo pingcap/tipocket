@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-vbank
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -52,7 +54,7 @@ spec:
           - |
             /bin/vbank \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \

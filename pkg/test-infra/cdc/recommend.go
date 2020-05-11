@@ -92,7 +92,7 @@ func newCDC(ns, name string) *CDC {
 									"/cdc",
 									"server",
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-									"--status-addr=0.0.0.0:8300",
+									"--addr=0.0.0.0:8300",
 									"--log-file", "/var/log/cdc/cdc.log",
 									"--log-level", logLevel,
 									"--tz", timezone,
