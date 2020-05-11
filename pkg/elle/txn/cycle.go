@@ -7,8 +7,10 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
+// FilterExType is a predication on a cycle case
 type FilterExType = func(cycleCase *core.CycleExplainerResult) bool
 
+// CycleAnomalySpecType specifies different anomalies
 type CycleAnomalySpecType struct {
 	// A set of relationships which must intersect with every edge in the cycle.
 	Rels map[core.Rel]struct{}
@@ -25,13 +27,17 @@ type CycleAnomalySpecType struct {
 	With core.CyclePredicate
 }
 
+// CycleAnomalySpecs defines anomaly specs
 var CycleAnomalySpecs map[string]CycleAnomalySpecType
+// CycleTypeNames ...
 var CycleTypeNames map[string]struct{}
+// UnknownAnomalyTypes ...
 var UnknownAnomalyTypes map[string]struct{}
 
-// Anomaly types involving realtime edges.
+// RealtimeAnalysisTypes saves types involving realtime edges.
 var RealtimeAnalysisTypes map[string]struct{}
 
+// ProcessAnalysisTypes saves types involving process edges
 var ProcessAnalysisTypes map[string]struct{}
 
 func fromRels(rels ...core.Rel) CycleAnomalySpecType {
@@ -144,9 +150,10 @@ func init() {
 	}
 }
 
-// CycleExplainWrapper is a ICycleExplainer, it's also a wrapper for core.
+// CycleExplainerWrapper is a ICycleExplainer, it's also a wrapper for core.
 type CycleExplainerWrapper struct{}
 
+// ExplainCycle ...
 func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, circle core.Circle) core.CycleExplainerResult {
 	ce := core.CycleExplainer{}
 	ex := ce.ExplainCycle(pairExplainer, circle)
@@ -202,6 +209,7 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 	}
 }
 
+// RenderCycleExplanation ...
 func (c CycleExplainerWrapper) RenderCycleExplanation(explainer core.DataExplainer, cr core.CycleExplainerResult) string {
 	exp := core.CycleExplainer{}
 	return exp.RenderCycleExplanation(explainer, cr)
@@ -216,9 +224,9 @@ func AdditionalGraphs(opts Opts) []core.Analyzer {
 	} else if hasIntersection(ats, ProcessAnalysisTypes) {
 		graphFn = core.ProcessGraph
 	} else {
-		return opts.additionalGraphs
+		return opts.AdditionalGraphs
 	}
-	return append(opts.additionalGraphs, graphFn)
+	return append(opts.AdditionalGraphs, graphFn)
 }
 
 // Anomalies worth reporting on, even if they don't cause the test to fail.

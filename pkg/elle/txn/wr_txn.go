@@ -8,10 +8,11 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
+// DistMode contains uniform or exponential distribution
 type DistMode = int
 
 const (
-	// Optional string field for Uniform. means every key has an equal probability of appearing.
+	// Uniform means uniform distribution, every key has an equal probability of appearing.
 	Uniform DistMode = iota
 	// Exponential means that key i in the current key pool chosen.
 	Exponential
@@ -22,6 +23,7 @@ type KeyDist struct {
 	DistMode DistMode
 }
 
+// WrTxnOpts ...
 type WrTxnOpts struct {
 	KeyDist KeyDist
 	// The base for an exponential distribution.
@@ -34,6 +36,7 @@ type WrTxnOpts struct {
 	MaxWritesPerKey uint
 }
 
+// DefaultWrTxnOpts returns default opts
 func DefaultWrTxnOpts() WrTxnOpts {
 	return WrTxnOpts{
 		KeyDist: KeyDist{
@@ -67,12 +70,13 @@ func (opts WrTxnOpts) keyDistScale() uint {
 	return ((powInt(opts.KeyDistBase, opts.KeyCount) - 1) * opts.KeyDistBase) / (opts.KeyDistBase - 1)
 }
 
+// MopIterator records the state of the mop generator
 type MopIterator struct {
 	opts       WrTxnOpts
 	activeKeys WrTxnState
 }
 
-// Note: It will return array of mop
+// Next iterates next element
 //  If the operation is `read`, it will just return [:r key nil]
 //  If the operation is `write`, it will just return [:w key value]
 func (mIter *MopIterator) Next() []core.Mop {
@@ -118,6 +122,7 @@ func (mIter *MopIterator) Next() []core.Mop {
 	return mops
 }
 
+// WrTxnState ...
 type WrTxnState struct {
 	// map for [Key, WriteCnt]
 	keyRecord map[string]uint
@@ -135,14 +140,17 @@ func (s WrTxnState) randomGet() (string, uint) {
 	panic("error")
 }
 
+// WrTxn ...
 func WrTxn(opts WrTxnOpts, state WrTxnState) *MopIterator {
 	return &MopIterator{opts: opts, activeKeys: state}
 }
 
+// WrTxnWithDefaultOpts ...
 func WrTxnWithDefaultOpts(state WrTxnState) *MopIterator {
 	return WrTxn(DefaultWrTxnOpts(), state)
 }
 
+// WrTxnWithoutState ...
 func WrTxnWithoutState(opts WrTxnOpts) *MopIterator {
 	state := WrTxnState{keyRecord: map[string]uint{}, maxKey: opts.KeyCount}
 	for i := 0; uint(i) < opts.KeyCount; i++ {
@@ -151,6 +159,7 @@ func WrTxnWithoutState(opts WrTxnOpts) *MopIterator {
 	return WrTxn(opts, state)
 }
 
+// WrTxnWithDefaultOptsWithoutState ...
 func WrTxnWithDefaultOptsWithoutState() *MopIterator {
 	return WrTxnWithoutState(DefaultWrTxnOpts())
 }

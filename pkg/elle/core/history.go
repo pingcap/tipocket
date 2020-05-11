@@ -21,7 +21,10 @@ var (
 	mopValuePattern  = regexp.MustCompile(`\[(.*)\]`)
 )
 
+// NemesisProcessMagicNumber is a magic number to stand for nemesis related event on a history
 const NemesisProcessMagicNumber = -1
+
+// AnonymousMagicNumber is a magic number, means that we don't know the process id of a history event
 const AnonymousMagicNumber = -2
 
 // MopValueType ...
@@ -95,6 +98,7 @@ func (a Append) GetValue() MopValueType {
 	return a.Value
 }
 
+// IsEqual ...
 func (a Append) IsEqual(b Mop) bool {
 	if a.GetMopType() != b.GetMopType() {
 		return false
@@ -140,6 +144,7 @@ func (r Read) GetValue() MopValueType {
 	return r.Value
 }
 
+// IsEqual return true if two Mop is deep equal
 func (r Read) IsEqual(b Mop) bool {
 	if r.GetMopType() != b.GetMopType() {
 		return false
@@ -189,6 +194,7 @@ func (op Op) String() string {
 	return strings.Join(parts, " ")
 }
 
+// ValueLength ...
 func (op Op) ValueLength() int {
 	if op.Value == nil {
 		return 0
@@ -199,6 +205,7 @@ func (op Op) ValueLength() int {
 // History contains operations
 type History []Op
 
+// SameKeyOpsByLength ...
 type SameKeyOpsByLength [][]MopValueType
 
 func (b SameKeyOpsByLength) Len() int {
@@ -211,16 +218,6 @@ func (b SameKeyOpsByLength) Less(i, j int) bool {
 
 func (b SameKeyOpsByLength) Swap(i, j int) {
 	b[i], b[j] = b[j], b[i]
-}
-
-func AllTypesHistory(history History, tp OpType) History {
-	var resp History
-	for _, v := range history {
-		if v.Type == tp {
-			resp = append(resp, v)
-		}
-	}
-	return resp
 }
 
 // AttachIndexIfNoExists add the index for history with it's number in array.

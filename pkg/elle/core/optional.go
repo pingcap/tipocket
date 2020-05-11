@@ -5,12 +5,12 @@ import (
 	"fmt"
 )
 
-// Int is an optional int.
+// IntOptional is an optional int.
 type IntOptional struct {
 	value interface{}
 }
 
-// NewInt creates an optional.Int from a int.
+// NewOptInt creates an optional.Int from a int.
 func NewOptInt(v int) IntOptional {
 	return IntOptional{
 		value: v,
@@ -22,10 +22,12 @@ func (i *IntOptional) Set(v int) {
 	i.value = v
 }
 
+// MustGet gets values or panic if isn't present
 func (i IntOptional) MustGet() int {
 	return i.value.(int)
 }
 
+// GetOr gets the value of return the defv if not present
 func (i IntOptional) GetOr(defv int) int {
 	if i.Present() {
 		return i.MustGet()
@@ -45,6 +47,7 @@ func (i IntOptional) Present() bool {
 	return i.value != nil
 }
 
+// MarshalJSON ...
 func (i IntOptional) MarshalJSON() ([]byte, error) {
 	if i.Present() {
 		return json.Marshal(i.value)
@@ -52,6 +55,7 @@ func (i IntOptional) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil)
 }
 
+// UnmarshalJSON ...
 func (i *IntOptional) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		i.value = nil

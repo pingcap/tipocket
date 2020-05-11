@@ -16,17 +16,25 @@ type DataExplainer interface {
 	RenderExplanation(result ExplainResult, preName, postName string) string
 }
 
+// DependType records the depend type of a relation
 type DependType string
 
 const (
-	RealtimeDepend  DependType = "realtime"
+	// RealtimeDepend ...
+	RealtimeDepend DependType = "realtime"
+	// MonotonicDepend ...
 	MonotonicDepend DependType = "monotonic"
-	ProcessDepend   DependType = "process"
-	WWDepend        DependType = "ww"
-	WRDepend        DependType = "wr"
-	RWDepend        DependType = "rw"
+	// ProcessDepend ...
+	ProcessDepend DependType = "process"
+	// WWDepend ...
+	WWDepend DependType = "ww"
+	// WRDepend ...
+	WRDepend DependType = "wr"
+	// RWDepend ...
+	RWDepend DependType = "rw"
 )
 
+// ExplainResult is an interface, contains rwExplainerResult, wwExplainerResult wr ExplainerResult etc
 type ExplainResult interface {
 	Type() DependType
 }
@@ -37,6 +45,7 @@ type CombinedExplainer struct {
 	store      map[ExplainResult]DataExplainer
 }
 
+// NewCombineExplainer builds a CombinedExplainer according to a explainer array
 func NewCombineExplainer(explainers []DataExplainer) *CombinedExplainer {
 	return &CombinedExplainer{
 		Explainers: explainers,
@@ -82,11 +91,13 @@ func Combine(analyzers ...Analyzer) Analyzer {
 	}
 }
 
+// ProcessResult ...
 type ProcessResult struct {
 	Process int
 }
 
-func (_ ProcessResult) Type() DependType {
+// Type ...
+func (ProcessResult) Type() DependType {
 	return ProcessDepend
 }
 
@@ -100,9 +111,8 @@ func (e ProcessExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	}
 	if p1.Process.MustGet() == p2.Process.MustGet() && p1.Index.MustGet() < p2.Index.MustGet() {
 		return ProcessResult{Process: p1.Process.MustGet()}
-	} else {
-		return nil
 	}
+	return nil
 }
 
 // RenderExplanation render explanation
@@ -119,7 +129,7 @@ type RealtimeExplainer struct {
 	pair map[Op]Op
 }
 
-// TODO: here it needs to get the PreEnd and the PostStart, it maybe complex and introduce another logic here.
+// ExplainPairData ...
 func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResult {
 	postStart, ok := r.pair[postEnd]
 	if !ok {
@@ -134,6 +144,7 @@ func (r RealtimeExplainer) ExplainPairData(preEnd, postEnd PathType) ExplainResu
 	return nil
 }
 
+// RenderExplanation ...
 func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, postName string) string {
 	if result.Type() != RealtimeDepend {
 		log.Fatalf("result type is not %s, type error", RealtimeDepend)
@@ -153,19 +164,22 @@ func (r RealtimeExplainer) RenderExplanation(result ExplainResult, preName, post
 	return s
 }
 
+// RealtimeExplainResult records a real time explain result
 type RealtimeExplainResult struct {
 	PreEnd    Op
 	PostStart Op
 }
 
-func (_ RealtimeExplainResult) Type() DependType {
+// Type ...
+func (RealtimeExplainResult) Type() DependType {
 	return RealtimeDepend
 }
 
-// Note: MonotonicKey is used on rw_register, so I don't explain it currently.
 // MonotonicKeyExplainer ...
+// Note: MonotonicKey is used on rw_register, so I don't explain it currently.
 type MonotonicKeyExplainer struct{}
 
+// ExplainPairData ...
 func (e MonotonicKeyExplainer) ExplainPairData(p1, p2 PathType) ExplainResult {
 	panic("implement me")
 }
@@ -182,18 +196,20 @@ type CycleExplainerResult struct {
 	Typ    DependType
 }
 
+// IAnomaly ...
+func (c CycleExplainerResult) IAnomaly() {}
+
+// String ...
 func (c CycleExplainerResult) String() string {
 	panic("implement me")
 }
 
-func (c CycleExplainerResult) IAnomaly() string {
-	return c.String()
-}
-
+// Type ...
 func (c CycleExplainerResult) Type() DependType {
 	return c.Typ
 }
 
+// ICycleExplainer is an interface
 type ICycleExplainer interface {
 	ExplainCycle(pairExplainer DataExplainer, circle Circle) CycleExplainerResult
 	RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string
@@ -202,7 +218,7 @@ type ICycleExplainer interface {
 // CycleExplainer provides the step-by-step explanation of the relationships between pairs of operations
 type CycleExplainer struct{}
 
-// Explain for the whole scc.
+// ExplainCycle for a circle
 func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) CycleExplainerResult {
 	var steps []Step
 	for i := 1; i < len(circle.Path); i++ {
@@ -217,11 +233,13 @@ func (c *CycleExplainer) ExplainCycle(explainer DataExplainer, circle Circle) Cy
 	}
 }
 
+// OpBinding binds the operation with Txx name
 type OpBinding struct {
 	Operation Op
 	Name      string
 }
 
+// RenderCycleExplanation ...
 func (c *CycleExplainer) RenderCycleExplanation(explainer DataExplainer, cr CycleExplainerResult) string {
 	var bindings []OpBinding
 	for i, v := range cr.Circle.Path[:len(cr.Circle.Path)-1] {

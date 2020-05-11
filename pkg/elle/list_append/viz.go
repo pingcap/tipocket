@@ -1,4 +1,4 @@
-package list_append
+package listappend
 
 import (
 	"fmt"

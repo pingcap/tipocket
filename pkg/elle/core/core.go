@@ -8,6 +8,7 @@ import (
 // Rel stands for relation in dependencies
 type Rel string
 
+// RelSet type aliases []Rel
 type RelSet []Rel
 
 func (r RelSet) Len() int {
@@ -22,6 +23,7 @@ func (r RelSet) Swap(i, j int) {
 	r[i], r[j] = r[j], r[i]
 }
 
+// Append returns a new RelSet contains the old and appended relations
 func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
 	set := make(map[Rel]struct{})
 	for _, rel := range r {
@@ -50,9 +52,10 @@ const (
 
 // Anomaly unifies all kinds of Anomalies, like G1a, G1b, dirty update etc.
 type Anomaly interface {
-	IAnomaly() string
+	IAnomaly()
 }
 
+// Anomalies groups anomalies by there names
 type Anomalies map[string][]Anomaly
 
 // Merge merges another anomalies
@@ -85,6 +88,7 @@ func (a Anomalies) Keys() (keys []string) {
 // Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
 type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
 
+// PathType type aliases Op
 type PathType = Op
 
 // IndexOfMop returns the index of mop in op
@@ -97,6 +101,7 @@ func (op PathType) IndexOfMop(mop Mop) int {
 	return -1
 }
 
+// Circle ...
 type Circle struct {
 	// Eg. [2, 1, 2] means a circle: 2 -> 1 -> 2
 	Path []PathType
@@ -117,6 +122,7 @@ func NewCircle(vertices []Vertex) *Circle {
 	return c
 }
 
+// Step saves a explain result of one step of a cycle
 type Step struct {
 	Result ExplainResult
 }
@@ -189,7 +195,7 @@ func opSet(vertex []Vertex) map[Op]struct{} {
 }
 
 func setDel(origin, delta map[Op]struct{}) map[Op]struct{} {
-	for k, _ := range delta {
+	for k := range delta {
 		delete(origin, k)
 	}
 	return origin
@@ -301,6 +307,7 @@ func MonotonicKeyGraph(history History) (Anomalies, *DirectedGraph, DataExplaine
 	return nil, DigraphUnion(graphs...), MonotonicKeyExplainer{}
 }
 
+// CheckResult records the check result
 type CheckResult struct {
 	Graph     DirectedGraph
 	Explainer DataExplainer
@@ -338,6 +345,7 @@ func checkHelper(analyzer Analyzer, history History) (*DirectedGraph, DataExplai
 	return g, exp, cycles, sccs, anomalies
 }
 
+// WriteCycles ...
 // TODO: implement it.
 func WriteCycles(cexp CycleExplainer, exp DataExplainer, dir, filename string, cycles []string) {
 	return

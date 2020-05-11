@@ -4,13 +4,15 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
+// Opts contains consistencyModels, Anomalies and AdditionalGraphs etc
 type Opts struct {
 	// define what specific anomalies and consistency models to look for
 	ConsistencyModels []core.ConsistencyModelName
 	Anomalies         []string
-	additionalGraphs  []core.Analyzer
+	AdditionalGraphs  []core.Analyzer
 }
 
+// CheckResult records the check result
 type CheckResult struct {
 	// valid? true | :unknown | false
 	IsUnknown        bool
@@ -21,7 +23,7 @@ type CheckResult struct {
 	Not, AlsoNot     []string
 }
 
-// Takes an options map, including a collection of expected consistency models
+// Cycles takes an options map, including a collection of expected consistency models
 //  :consistency-models, a set of additional :anomalies, an analyzer function,
 //  and a history. Analyzes the history and yields the analysis, plus an anomaly
 //  map like {:G1c [...]}.
@@ -34,6 +36,7 @@ func Cycles(analyzer core.Analyzer, history core.History) core.CheckResult {
 	return checkedResult
 }
 
+// CycleCases finds anomaly cases and group them by there name
 func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs []core.SCC) map[string][]core.Anomaly {
 	g := FilteredGraphs(graph)
 	cases := map[string][]core.Anomaly{}
@@ -48,6 +51,7 @@ func CycleCases(graph core.DirectedGraph, pairExplainer core.DataExplainer, sccs
 	return cases
 }
 
+// FilterGraphFn ...
 type FilterGraphFn = func(rels []core.Rel) *core.DirectedGraph
 
 // CycleCasesInScc searches a single SCC for cycle anomalies.

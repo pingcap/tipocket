@@ -1,4 +1,4 @@
-package list_append
+package listappend
 
 import (
 	"fmt"
@@ -68,7 +68,9 @@ type duplicateConflict struct {
 	Dups map[core.MopValueType]int
 }
 
-func (d duplicateConflict) IAnomaly() string {
+func (d duplicateConflict) IAnomaly() {}
+
+func (d duplicateConflict) String() string {
 	return fmt.Sprintf("(DuplicateConflict) Op: %s, mop: %s, dups: %v", d.Op, d.Mop, d.Dups)
 }
 
@@ -291,7 +293,7 @@ func opDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexRes
 	if op.Value == nil {
 		return response
 	}
-	for k, _ := range *op.Value {
+	for k := range *op.Value {
 		response = setUnion(response, mopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, (*op.Value)[k]))
 	}
 	return response
@@ -322,9 +324,8 @@ func mergeOrders(prefix, seq1, seq2 []core.MopValueType) []core.MopValueType {
 	i2 := seq2[0].(int)
 	if i1 < i2 {
 		return mergeOrders(prefix, seq1[1:], seq2)
-	} else {
-		return mergeOrders(prefix, seq1, seq2[1:])
 	}
+	return mergeOrders(prefix, seq1, seq2[1:])
 }
 
 func valuesFromSingleAppend(history core.History) map[string]core.MopValueType {
@@ -411,9 +412,7 @@ type incompatibleOrder struct {
 	Values [][]core.MopValueType
 }
 
-func (i incompatibleOrder) IAnomaly() string {
-	return i.String()
-}
+func (i incompatibleOrder) IAnomaly() {}
 
 // Note: maybe i should format the values.
 func (i incompatibleOrder) String() string {

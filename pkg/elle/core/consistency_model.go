@@ -24,6 +24,7 @@ var impliedAnomalies = MapToDirectedGraph(map[Vertex][]Vertex{
 	Vertex{"dirty-update"}:           {{"G1a"}},
 })
 
+// ConsistencyModelName defines the consistency model name
 type ConsistencyModelName = string
 
 var canonicalModelNames = map[ConsistencyModelName]string{

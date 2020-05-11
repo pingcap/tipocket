@@ -9,12 +9,14 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
+// OpMopIterator builds a op-mop iterator
 type OpMopIterator struct {
 	history      core.History
 	historyIndex int
 	mopIndex     int
 }
 
+// Next iterates next op-mop
 func (omi *OpMopIterator) Next() (core.Op, core.Mop) {
 	op, mop := omi.history[omi.historyIndex], (*omi.history[omi.historyIndex].Value)[omi.mopIndex]
 
@@ -27,6 +29,7 @@ func (omi *OpMopIterator) Next() (core.Op, core.Mop) {
 	return op, mop
 }
 
+// HasNext returns whether the iterator has ended
 func (omi *OpMopIterator) HasNext() bool {
 	return omi.historyIndex < len(omi.history)
 }
@@ -131,7 +134,7 @@ func ResultMap(opts Opts, anomalies core.Anomalies) CheckResult {
 // Note: maybe cache this function is better?
 func setKeys(m map[core.Rel]struct{}) []core.Rel {
 	var rels []core.Rel
-	for k, _ := range m {
+	for k := range m {
 		rels = append(rels, k)
 	}
 	return rels
@@ -145,6 +148,7 @@ func arrayHash(sset []core.Rel) uint32 {
 	return h.Sum32()
 }
 
+// IntArrayHash maps []int to uint32
 func IntArrayHash(array []int) uint32 {
 	h := fnv.New32a()
 	for _, v := range array {
@@ -165,12 +169,11 @@ func FilteredGraphs(graph core.DirectedGraph) FilterGraphFn {
 		v := arrayHash(rels)
 		if g, e := memo[v]; e {
 			return g
-		} else {
-			g = graph.FilterRelationships(rels)
-			if g != nil {
-				memo[v] = g
-			}
-			return g
 		}
+		g := graph.FilterRelationships(rels)
+		if g != nil {
+			memo[v] = g
+		}
+		return g
 	}
 }

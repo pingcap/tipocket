@@ -9,16 +9,20 @@ type Edge struct {
 	Value Rel // raw value of edge
 }
 
+// Vertex is a vertex on the directed graph
 type Vertex struct {
 	Value interface{}
 }
 
+// Vertices type aliases []Vertex
 type Vertices []Vertex
 
+// Len ...
 func (v Vertices) Len() int {
 	return len(v)
 }
 
+// Less ...
 func (v Vertices) Less(i, j int) bool {
 	// we sort Op graph specially
 	if op1, ok := v[i].Value.(Op); ok {
@@ -30,10 +34,12 @@ func (v Vertices) Less(i, j int) bool {
 	return i < j
 }
 
+// Swap ...
 func (v Vertices) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
 }
 
+// Rels type aliases []Rel
 type Rels []Rel
 
 func (rs Rels) exist(rel Rel) bool {
@@ -45,6 +51,7 @@ func (rs Rels) exist(rel Rel) bool {
 	return false
 }
 
+// DirectedGraph is a directed graph type
 type DirectedGraph struct {
 	Outs map[Vertex]map[Vertex][]Rel
 	Ins  map[Vertex][]Vertex
@@ -61,6 +68,7 @@ func (g *DirectedGraph) Vertices() []Vertex {
 	return vertices
 }
 
+// IsEmpty return true if the graph has no vertices
 func (g *DirectedGraph) IsEmpty() bool {
 	return len(g.Vertices()) == 0
 }
@@ -70,9 +78,8 @@ func (g *DirectedGraph) In(v Vertex) []Vertex {
 	_, ok := g.Ins[v]
 	if !ok {
 		return []Vertex{}
-	} else {
-		return g.Ins[v]
 	}
+	return g.Ins[v]
 }
 
 // Out returns outbound vertices from v in graph g
@@ -173,6 +180,7 @@ func (g *DirectedGraph) LinkAllToAll(xs []Vertex, ys []Vertex, rel Rel) {
 	}
 }
 
+// UnLink unlinks vertex a and b
 func (g *DirectedGraph) UnLink(a, b Vertex) {
 	delete(g.Outs[a], b)
 
@@ -224,7 +232,7 @@ func (g *DirectedGraph) FilterRelationships(rels []Rel) *DirectedGraph {
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
 		if ok == true {
-			for y, _ := range g.Outs[x] {
+			for y := range g.Outs[x] {
 				rels := IntersectionRel(g.Outs[x][y], rels)
 				fg.UnLink(x, y)
 				for _, item := range rels {
@@ -256,7 +264,7 @@ func (g *DirectedGraph) BfsOut(initV []Vertex) []Vertex {
 		}
 		queue = queue[1:]
 
-		for next, _ := range g.Outs[cur] {
+		for next := range g.Outs[cur] {
 			if haveVisited[next] == true {
 				continue
 			}
@@ -301,9 +309,8 @@ func (g *DirectedGraph) BfsIn(initV []Vertex) []Vertex {
 func (g *DirectedGraph) Bfs(initV []Vertex, out bool) []Vertex {
 	if out == true {
 		return g.BfsOut(initV)
-	} else {
-		return g.BfsIn(initV)
 	}
+	return g.BfsIn(initV)
 }
 
 // SCC indexes all vertices of a strongly connected component
@@ -416,7 +423,7 @@ func (g *DirectedGraph) MapVertices(f func(interface{}) interface{}) *DirectedGr
 	for _, x := range vertices {
 		_, ok := g.Outs[x]
 		if ok == true {
-			for y, _ := range g.Outs[x] {
+			for y := range g.Outs[x] {
 				rels := g.Outs[x][y]
 				for _, item := range rels {
 					fg.Link(Vertex{f(x.Value)}, Vertex{f(y.Value)}, item)
@@ -482,10 +489,10 @@ func DigraphUnion(graphs ...*DirectedGraph) *DirectedGraph {
 	return dg
 }
 
+// CyclePredicate is a predication on a CycleTrace
 type CyclePredicate func(trace []CycleTrace) bool
 
 // FindCycle receives a graph and a scc, finds a short cycle in that component
-// TODO: find the shortest cycle
 func FindCycle(graph *DirectedGraph, scc SCC) []Vertex {
 	if len(scc.Vertices) == 1 {
 		return []Vertex{}

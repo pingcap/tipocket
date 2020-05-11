@@ -1,4 +1,4 @@
-package list_append
+package listappend
 
 import (
 	"fmt"
@@ -297,8 +297,10 @@ func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Data
 	return core.Combine(wwGraph, wrGraph, rwGraph)(history)
 }
 
+// GCaseTp type aliases []core.Anomaly
 type GCaseTp []core.Anomaly
 
+// G1Conflict records a G1 conflict
 type G1Conflict struct {
 	Op      core.Op
 	Mop     core.Mop
@@ -306,10 +308,10 @@ type G1Conflict struct {
 	Element core.MopValueType
 }
 
-func (g G1Conflict) IAnomaly() string {
-	return g.String()
-}
+// IAnomaly ...
+func (g G1Conflict) IAnomaly() {}
 
+// String ...
 func (g G1Conflict) String() string {
 	return fmt.Sprintf("(G1Conflict) Op: %s, mop: %s, writer: %s, element: %v", g.Op, g.Mop.String(), g.Writer.String(), g.Element)
 }
@@ -378,16 +380,17 @@ func g1bCases(history core.History) GCaseTp {
 	return excepted
 }
 
+// InternalConflict records a internal conflict
 type InternalConflict struct {
 	Op       core.Op
 	Mop      core.Mop
 	Expected core.MopValueType
 }
 
-func (i InternalConflict) IAnomaly() string {
-	return i.String()
-}
+// IAnomaly ...
+func (i InternalConflict) IAnomaly() {}
 
+// String ...
 func (i InternalConflict) String() string {
 	return fmt.Sprintf("(InternalConflict) Op: %s, mop: %s, expected: %s", i.Op, i.Mop.String(), i.Expected)
 }
@@ -460,15 +463,15 @@ func makeStateTuple(s1, s2 core.OpType) string {
 	return fmt.Sprintf("%s__%s", s1, s2)
 }
 
+// DirtyUpdateConflict records a dirty update conflict
 type DirtyUpdateConflict struct {
 	Key      string
 	Values   []core.MopValueType
 	Op1, Op2 core.Op
 }
 
-func (d DirtyUpdateConflict) IAnomaly() string {
-	return d.String()
-}
+// IAnomaly ...
+func (d DirtyUpdateConflict) IAnomaly() {}
 
 func (d DirtyUpdateConflict) String() string {
 	return fmt.Sprintf("(DirtyUpdateConflict) Key is %s, op1 is %s, op2 is %s, values %v", d.Key, d.Op1, d.Op2, d.Values)

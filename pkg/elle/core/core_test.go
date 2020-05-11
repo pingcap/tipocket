@@ -179,7 +179,7 @@ func TestMopValueType(t *testing.T) {
 					continue
 				}
 				args := mop.GetValue().([]int)
-				for _ = range args {
+				for range args {
 					//_ = arg.(int)
 				}
 			}
@@ -200,7 +200,7 @@ func TestMopValueType(t *testing.T) {
 //	fmt.Println(toJson(k), len(v))
 //}
 // ```
-func toJson(v interface{}) string {
+func toJSON(v interface{}) string {
 	s, err := json.MarshalIndent(v, "", "\t")
 	if err != nil {
 		panic(err)

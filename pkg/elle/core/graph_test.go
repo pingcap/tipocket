@@ -74,9 +74,9 @@ func TestFindCycleStartingWith1(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{4}, "")
 	g.Link(Vertex{6}, Vertex{1}, "")
 
-	cycle := FindCycleStartingWith(&g, "start4", SCC{
+	cycle := FindCycleStartingWith(&g, SCC{
 		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}},
-	})
+	}, "start4", []Rel{"", "start1"})
 	assert.Equal(t, []Vertex{{4}, {5}, {6}, {4}}, cycle)
 }
 
@@ -93,9 +93,9 @@ func TestFindCycleStartingWith2(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{4}, "")
 	g.Link(Vertex{6}, Vertex{1}, "")
 
-	cycle := FindCycleStartingWith(&g, "start1", SCC{
+	cycle := FindCycleStartingWith(&g, SCC{
 		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}},
-	})
+	}, "start1", []Rel{"", "start4"})
 	assert.Equal(t, []Vertex{{1}, {2}, {3}, {4}, {5}, {6}, {1}}, cycle)
 }
 
@@ -112,7 +112,7 @@ func TestFindCycleStartingWith3(t *testing.T) {
 	g.Link(Vertex{6}, Vertex{4}, "")
 	g.Link(Vertex{6}, Vertex{1}, "")
 
-	cycle := FindCycleStartingWith(&g, "", SCC{
-		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}}})
+	cycle := FindCycleStartingWith(&g, SCC{
+		Vertices: []Vertex{{1}, {2}, {3}, {4}, {5}, {6}}}, "", []Rel{"", "start1", "start4"})
 	assert.Equal(t, []Vertex{{5}, {6}, {4}, {5}}, cycle)
 }

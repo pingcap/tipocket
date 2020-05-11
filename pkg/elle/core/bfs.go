@@ -1,5 +1,6 @@
 package core
 
+// BFSPath ...
 type BFSPath struct {
 	g      *DirectedGraph
 	marked map[Vertex]struct{}
@@ -7,6 +8,7 @@ type BFSPath struct {
 	distTo map[Vertex]int
 }
 
+// NewBFSPath ...
 func NewBFSPath(graph *DirectedGraph, start Vertex, sccSet map[Vertex]struct{}) *BFSPath {
 	bfsPath := BFSPath{
 		g:      graph,
@@ -50,11 +52,13 @@ func (path *BFSPath) bfs(start Vertex, set map[Vertex]struct{}) {
 	}
 }
 
+// HasPathFrom ...
 func (path *BFSPath) HasPathFrom(vertex Vertex) bool {
 	_, hasPath := path.marked[vertex]
 	return hasPath
 }
 
+// DistFrom ...
 func (path *BFSPath) DistFrom(vertex Vertex) int {
 	length, hasPath := path.distTo[vertex]
 	if !hasPath {
@@ -63,11 +67,13 @@ func (path *BFSPath) DistFrom(vertex Vertex) int {
 	return length
 }
 
+// CycleTrace records a cycle path
 type CycleTrace struct {
 	from Vertex
 	Rels []Rel
 }
 
+// PathFrom ...
 func (path *BFSPath) PathFrom(vertex Vertex) []CycleTrace {
 	if !path.HasPathFrom(vertex) {
 		return nil
