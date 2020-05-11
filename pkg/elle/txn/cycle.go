@@ -29,8 +29,10 @@ type CycleAnomalySpecType struct {
 
 // CycleAnomalySpecs defines anomaly specs
 var CycleAnomalySpecs map[string]CycleAnomalySpecType
+
 // CycleTypeNames ...
 var CycleTypeNames map[string]struct{}
+
 // UnknownAnomalyTypes ...
 var UnknownAnomalyTypes map[string]struct{}
 

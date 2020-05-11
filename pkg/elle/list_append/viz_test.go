@@ -3,8 +3,9 @@ package listappend
 import (
 	"testing"
 
-	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/stretchr/testify/require"
+
+	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
 func TestPlotAnalysis(t *testing.T) {

@@ -32,8 +32,8 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0 // indirect
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	go.uber.org/zap v1.14.0
+	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0

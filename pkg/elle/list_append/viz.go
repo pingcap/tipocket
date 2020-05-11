@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goccy/go-graphviz"
+
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
