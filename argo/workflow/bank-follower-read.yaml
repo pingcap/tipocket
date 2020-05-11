@@ -2,7 +2,7 @@ metadata:
   generateName: tipocket-bank-replica-read-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-bank-replica-read
+  entrypoint: call-tipocket-scbank
   arguments:
     parameters:
       - name: ns
@@ -22,7 +22,7 @@ spec:
       - name: loki-password
         value: "admin"
       - name: tidb-replica-read
-        default: "leader-and-follower"
+        value: "leader-and-follower"
   templates:
     - name: call-tipocket-scbank
       steps:
