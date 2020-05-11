@@ -169,6 +169,7 @@ type Op struct {
 	Time    time.Time   `json:"time"`
 	Type    OpType      `json:"type"`
 	Value   *[]Mop      `json:"value"`
+	Error   string      `json:"error"`
 }
 
 func (op Op) String() string {
@@ -189,6 +190,10 @@ func (op Op) String() string {
 	}
 	if op.Index.Present() {
 		parts = append(parts, fmt.Sprintf(":index %d", op.Index.MustGet()))
+	}
+
+	if op.Error != "" {
+		parts = append(parts, fmt.Sprintf(":error [%s]", op.Error))
 	}
 
 	return strings.Join(parts, " ")

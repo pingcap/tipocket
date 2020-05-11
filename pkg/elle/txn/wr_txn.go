@@ -42,10 +42,10 @@ func DefaultWrTxnOpts() WrTxnOpts {
 		KeyDist: KeyDist{
 			DistMode: Uniform,
 		},
-		KeyCount:        3,
+		KeyCount:        5,
 		MinTxnLength:    1,
-		MaxTxnLength:    2,
-		MaxWritesPerKey: 32,
+		MaxTxnLength:    4,
+		MaxWritesPerKey: 16,
 	}
 }
 
@@ -117,8 +117,10 @@ func (mIter *MopIterator) Next() []core.Mop {
 				Key: k,
 			}
 		}
+		fmt.Printf("%s ", mop)
 		mops = append(mops, mop)
 	}
+	fmt.Println("")
 	return mops
 }
 

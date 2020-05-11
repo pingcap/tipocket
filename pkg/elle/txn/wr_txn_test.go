@@ -11,7 +11,7 @@ import (
 func TestWrTxn(t *testing.T) {
 	iter := WrTxnWithDefaultOptsWithoutState()
 	keyRecord := map[string]uint{}
-	for loopCnt := 0; loopCnt < 10; loopCnt++ {
+	for loopCnt := 0; loopCnt < 1000; loopCnt++ {
 		mops := iter.Next()
 		if len(mops) == 0 {
 			t.Fatal("iter.Next contains no data")
