@@ -1,12 +1,12 @@
 metadata:
-  generateName: tipocket-bank-replica-read-
+  generateName: tipocket-bank2-replica-read-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-scbank
+  entrypoint: call-tipocket-scbank2
   arguments:
     parameters:
       - name: ns
-        value: tipocket-bank-replica-read
+        value: tipocket-bank2-replica-read
       - name: purge
         value: "true"
       - name: image_version
@@ -26,12 +26,12 @@ spec:
       - name: tidb-replica-read
         value: "leader-and-follower"
   templates:
-    - name: call-tipocket-scbank
+    - name: call-tipocket-scbank2
       steps:
-        - - name: call-tipocket-scbank
+        - - name: call-tipocket-scbank2
             templateRef:
-              name: tipocket-scbank
-              template: tipocket-scbank
+              name: tipocket-scbank2
+              template: tipocket-scbank2
             arguments:
               parameters:
                 - name: ns
