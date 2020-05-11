@@ -1,0 +1,54 @@
+metadata:
+  generateName: tipocket-bank-replica-read-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-scbank
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-bank-replica-read
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: nightly
+      - name: storage_class
+        value: gp2
+      - name: run_time
+        value: "6h"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
+      - name: tikv-replicas
+        value: "5"
+      - name: tidb-replica-read
+        value: "leader-and-follower"
+  templates:
+    - name: call-tipocket-scbank
+      steps:
+        - - name: call-tipocket-scbank
+            templateRef:
+              name: tipocket-scbank
+              template: tipocket-scbank
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: run_time
+                  value: "{{workflow.parameters.run_time}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
+                - name: tidb-replica-read
+                  value: "{{workflow.parameters.tidb-replica-read}}"

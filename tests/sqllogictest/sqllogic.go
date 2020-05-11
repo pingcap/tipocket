@@ -21,6 +21,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"regexp"
 	"runtime/debug"
@@ -38,6 +39,10 @@ import (
 
 	"github.com/pingcap/tipocket/util"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 const (
 	intType     = 'I'
@@ -96,7 +101,7 @@ var (
 	resultHashRE = regexp.MustCompile(`^(\d+)\s+values?\s+hashing\s+to\s+([0-9A-Fa-f]+)$`)
 )
 
-func createDatabases(num int, host string, user string, password string) []*sql.DB {
+func createDatabases(num int, host string, user string, password string, replicaMode string) []*sql.DB {
 	mdbs := make([]*sql.DB, 0, num)
 	for i := 0; i < num; i++ {
 		dbstring := fmt.Sprintf("%s:%s@tcp(%s)/sqllogic_test_%d", user, password, host, i)
@@ -110,6 +115,8 @@ func createDatabases(num int, host string, user string, password string) []*sql.
 		} else {
 			log.Infof("Executing \"SET @@sql_mode='STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'\" success NO.%d", i)
 		}
+
+		util.RandomlyChangeReplicaRead("sqllogic", replicaMode, mdb)
 
 		mdbs = append(mdbs, mdb)
 	}

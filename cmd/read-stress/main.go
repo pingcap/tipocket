@@ -35,6 +35,7 @@ var (
 	smallTimeout     = flag.Duration("small-timeout", 100*time.Millisecond, "maximum latency of small queries")
 	largeConcurrency = flag.Int("big-concurrency", 1, "concurrency of large queries")
 	largeTimeout     = flag.Duration("large-timeout", 10*time.Second, "maximum latency of big queries")
+	replicaRead      = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
 )
 
 func main() {
@@ -55,6 +56,7 @@ func main() {
 			SmallTimeout:     *smallTimeout,
 			LargeConcurrency: *largeConcurrency,
 			LargeTimeout:     *largeTimeout,
+			ReplicaRead:      *replicaRead,
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),

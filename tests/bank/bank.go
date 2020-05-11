@@ -19,12 +19,13 @@ import (
 	"github.com/pingcap/tipocket/util"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 var (
 	defaultVerifyTimeout = 6 * time.Hour
 	remark               = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq"
-
-	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
-	ReplicaRead = "leader"
 )
 
 var (
@@ -69,6 +70,8 @@ type Config struct {
 	Tables        int
 	Interval      time.Duration
 	Concurrency   int
+	ReplicaRead   string
+	DbName        string
 }
 
 // BankCase is for concurrent balance transfer.
@@ -115,7 +118,7 @@ func (c *bankCase) SetUp(ctx context.Context, nodes []types.ClientNode, idx int)
 
 	var err error
 	node := nodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.cfg.DbName)
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
 
@@ -126,6 +129,8 @@ func (c *bankCase) SetUp(ctx context.Context, nodes []types.ClientNode, idx int)
 	if err := c.Initialize(ctx, db); err != nil {
 		log.Fatalf("[bank] initial failed %v", err)
 	}
+
+	util.RandomlyChangeReplicaRead(c.String(), c.cfg.ReplicaRead, db)
 
 	c.dbConn = db
 	return nil
@@ -205,8 +210,6 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 			return err
 		}
 	}
-
-	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
 
 	uuid := fastuuid.MustNewGenerator().Hex128()
 	query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)

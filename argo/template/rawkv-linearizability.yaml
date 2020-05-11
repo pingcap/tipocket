@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-rawkv-linearizability
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: image_version
@@ -58,7 +60,7 @@ spec:
           - |
             /bin/rawkv-linearizability \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -tidb-config={{inputs.parameters.tidb_config}} \
