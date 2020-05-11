@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-tiflash-abtest
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "true"
           - name: image_version
@@ -64,7 +66,7 @@ spec:
           - |
             /bin/tiflash-abtest \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -abtest.image-version={{inputs.parameters.abtest_version}} \

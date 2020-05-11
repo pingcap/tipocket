@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-follower-read
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "true"
           - name: repository
@@ -51,7 +53,7 @@ spec:
           - |
             /bin/follower-read \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
