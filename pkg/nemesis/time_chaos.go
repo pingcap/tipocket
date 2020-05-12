@@ -9,9 +9,10 @@ import (
 
 	"github.com/ngaut/log"
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // timeChaosLevels means the level of defined time chaos like jepsen.

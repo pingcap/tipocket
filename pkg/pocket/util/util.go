@@ -20,6 +20,7 @@ import (
 
 	"github.com/juju/errors"
 	pkgerr "github.com/pkg/errors"
+
 	// "github.com/ngaut/log"
 	"github.com/go-sql-driver/mysql"
 )
