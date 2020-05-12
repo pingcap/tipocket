@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-scbank2
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -54,7 +56,7 @@ spec:
           - |
             /bin/bank2 \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -run-time={{inputs.parameters.run_time}} \

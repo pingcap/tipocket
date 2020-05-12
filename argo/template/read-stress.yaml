@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-read-stress
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "true"
           - name: repository
@@ -17,7 +19,7 @@ spec:
           - name: storage_class
             default: standard
           - name: nemesis
-            default: ""
+            default: "random_kill, partition_one, shuffle-leader-scheduler"
           - name: run_time
             default: "6h"
           - name: tikv_config
@@ -30,6 +32,8 @@ spec:
             default: admin
           - name: tikv-replicas
             default: "4"
+          - name: tidb-replica-read
+            default: "leader"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -47,7 +51,7 @@ spec:
           - |
             /bin/read-stress \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
@@ -58,4 +62,5 @@ spec:
             -tikv-config={{inputs.parameters.tikv_config}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
+            -tidb-replica-read={{inputs.parameters.tidb-replica-read}}

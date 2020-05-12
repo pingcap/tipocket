@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-abtest
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -64,7 +66,7 @@ spec:
           - |
             /bin/abtest \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -repository={{inputs.parameters.repository}} \
             -image-version={{inputs.parameters.image_version}} \

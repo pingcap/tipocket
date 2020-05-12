@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-region-available
-
   arguments:
     parameters:
       - name: ns
@@ -11,15 +10,20 @@ spec:
       - name: purge
         value: "true"
       - name: image_version
-        value: release-4.0-nightly
+        value: nightly
       - name: storage_class
-        value: gp2
+        value: local-storage
       - name: nemesis
         value: ""
       - name: run_time
         value: "4h"
+      - name: loki-addr
+        value: "http://loki.loki.svc"
+      - name: loki-username
+        value: ""
+      - name: loki-password
+        value: ""
   templates:
-
     - name: call-tipocket-region-available
       steps:
         - - name: call-tipocket-region-available
@@ -40,3 +44,9 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run_time
                   value: "{{workflow.parameters.run_time}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

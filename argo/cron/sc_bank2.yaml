@@ -35,6 +35,12 @@ spec:
           value: "4"
         - name: tidb-replica-read
           value: "leader-and-follower"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
     templates:
       - name: call-tipocket-scbank2
         steps:
@@ -70,4 +76,9 @@ spec:
                     value: "{{workflow.parameters.tikv-replicas}}"
                   - name: tidb-replica-read
                     value: "{{workflow.parameters.tidb-replica-read}}"
-
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"

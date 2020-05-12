@@ -25,6 +25,12 @@ spec:
         value: "1h"
       - name: abtest_concurrency
         value: "3"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
     - name: call-tipocket-binlog
       steps:
@@ -54,3 +60,9 @@ spec:
                   value: "{{workflow.parameters.binlog_sync_timeout}}"
                 - name: abtest_concurrency
                   value: "{{workflow.parameters.abtest_concurrency}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

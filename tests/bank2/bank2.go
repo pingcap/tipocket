@@ -19,6 +19,10 @@ import (
 	"github.com/pingcap/tipocket/util"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 const (
 	initialBalance    = 1000
 	insertConcurrency = 100
@@ -65,9 +69,6 @@ var (
 	// specified bound.
 	baseLen      = [3]int{36, 48, 16}
 	tidbDatabase = true
-
-	// ReplicaRead accepts "leader", "follower" or "leader-and-follower".
-	ReplicaRead = "leader"
 )
 
 // Config ...
@@ -84,6 +85,8 @@ type Config struct {
 	Pessimistic   bool          `toml:"pessimistic"`
 	MinLength     int           `toml:"min_length"`
 	MaxLength     int           `toml:"max_length"`
+	ReplicaRead   string
+	DbName        string
 }
 
 // ClientCreator ...
@@ -120,19 +123,23 @@ func (c *bank2Client) SetUp(ctx context.Context, nodes []types.ClientNode, idx i
 
 	var err error
 	node := nodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.DbName)
 
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
 	if err != nil {
 		log.Fatalf("[bank2Client] create db client error %v", err)
 	}
+	util.RandomlyChangeReplicaRead(c.String(), c.ReplicaRead, db)
+
 	_, err = db.Exec("set @@global.tidb_txn_mode = 'pessimistic';")
 	if err != nil {
 		log.Fatalf("[bank2Client] set txn_mode failed: %v", err)
 	}
 	time.Sleep(5 * time.Second)
 	c.db, err = util.OpenDB(dsn, c.Concurrency)
+	util.RandomlyChangeReplicaRead(c.String(), c.ReplicaRead, c.db)
+
 	if err != nil {
 		return err
 	}
@@ -251,8 +258,6 @@ func (c *bank2Client) verify(db *sql.DB) {
 			log.Infof("[%s] SELECT SUM(balance) to verify use tso %d", c, tso)
 		}
 	}
-
-	util.RandomlyChangeReplicaRead(c.String(), ReplicaRead, db)
 
 	var total int64
 	uuid := fastuuid.MustNewGenerator().Hex128()
