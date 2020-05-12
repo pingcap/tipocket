@@ -66,13 +66,10 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			dep := wwMopDep(w.appendIdx, w.writeIdx, b, bmop)
 			if dep != nil && *dep == a {
 				return wwExplainResult{
-					Key:      k,
-					PreValue: prev,
-					Value:    v,
-					AMopIndex: a.IndexOfMop(core.Append{
-						Key:   k,
-						Value: prev,
-					}),
+					Key:       k,
+					PreValue:  prev,
+					Value:     v,
+					AMopIndex: a.IndexOfMop(core.Append(k, prev.(int))),
 					BMopIndex: b.IndexOfMop(bmop),
 				}
 			}
@@ -145,12 +142,9 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
 			return wrExplainResult{
-				Key:   k,
-				Value: v[len(v)-1],
-				AMopIndex: a.IndexOfMop(core.Append{
-					Key:   k,
-					Value: v[len(v)-1],
-				}),
+				Key:       k,
+				Value:     v[len(v)-1],
+				AMopIndex: a.IndexOfMop(core.Append(k, v[len(v)-1])),
 				BMopIndex: b.IndexOfMop(mop),
 			}
 		}

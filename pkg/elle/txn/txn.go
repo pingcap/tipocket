@@ -1,6 +1,9 @@
 package txn
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/pingcap/tipocket/pkg/elle/core"
 )
 
@@ -15,12 +18,21 @@ type Opts struct {
 // CheckResult records the check result
 type CheckResult struct {
 	// valid? true | :unknown | false
-	IsUnknown        bool
-	Valid            bool
-	AnomalyTypes     []string
-	Anomalies        core.Anomalies
-	ImpossibleModels []interface{}
-	Not, AlsoNot     []string
+	IsUnknown        bool           `json:"is_unknown"`
+	Valid            bool           `json:"valid"`
+	AnomalyTypes     []string       `json:"anomaly_types"`
+	Anomalies        core.Anomalies `json:"anomalies"`
+	ImpossibleModels []interface{}  `json:"impossible_models"`
+	Not              []string       `json:"not"`
+	AlsoNot          []string       `json:"also_not"`
+}
+
+func (c CheckResult) Error() string {
+	data, err := json.Marshal(c)
+	if err != nil {
+		log.Fatalf("failed to marshal: %v", err)
+	}
+	return string(data)
 }
 
 // Cycles takes an options map, including a collection of expected consistency models

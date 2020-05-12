@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -52,123 +53,103 @@ const (
 )
 
 // Mop interface
-type Mop interface {
-	fmt.Stringer
-
-	IsAppend() bool
-	IsRead() bool
-	GetMopType() MopType
-	GetKey() string
-	GetValue() MopValueType
-	IsEqual(b Mop) bool
-}
-
-// Append implements Mop
-type Append struct {
-	Key   string       `json:"key"`
-	Value MopValueType `json:"value"`
-}
-
-func (a Append) String() string {
-	return fmt.Sprintf("[:append %s %v]", a.Key, a.Value)
+type Mop struct {
+	T MopType                `json:"type"`
+	M map[string]interface{} `json:"m"`
 }
 
 // IsAppend ...
-func (Append) IsAppend() bool {
-	return true
+func (m Mop) IsAppend() bool {
+	return m.T == MopTypeAppend
 }
 
 // IsRead ...
-func (Append) IsRead() bool {
-	return false
+func (m Mop) IsRead() bool {
+	return m.T == MopTypeRead
 }
 
 // GetMopType ...
-func (Append) GetMopType() MopType {
-	return MopTypeAppend
+func (m Mop) GetMopType() MopType {
+	return m.T
 }
 
-// GetKey get append key
-func (a Append) GetKey() string {
-	return a.Key
+// GetKey ...
+func (m Mop) GetKey() string {
+	return m.M["key"].(string)
 }
 
-// GetValue get append value
-func (a Append) GetValue() MopValueType {
-	return a.Value
+// GetValue ...
+func (m Mop) GetValue() MopValueType {
+	value := m.M["value"]
+	if value == nil {
+		return nil
+	}
+	return value.(MopValueType)
 }
 
 // IsEqual ...
-func (a Append) IsEqual(b Mop) bool {
-	if a.GetMopType() != b.GetMopType() {
-		return false
+func (m Mop) IsEqual(n Mop) bool {
+	return reflect.DeepEqual(m, n)
+}
+
+// String ...
+func (m Mop) String() string {
+	switch m.T {
+	case MopTypeRead:
+		key := m.M["key"].(string)
+		value := m.M["value"]
+		if value == nil {
+			return fmt.Sprintf("[:r %s nil]", key)
+		}
+		return fmt.Sprintf("[:r %s %v]", key, value)
+	case MopTypeAppend:
+		key := m.M["key"].(string)
+		value := m.M["value"].(int)
+		return fmt.Sprintf("[:append %s %v]", key, value)
+	default:
+		panic("unreachable")
 	}
-	return a == b
 }
 
-// Read implements Mop
-type Read struct {
-	Key   string       `json:"key"`
-	Value MopValueType `json:"value"`
-}
-
-func (r Read) String() string {
-	if r.Value == nil {
-		return fmt.Sprintf("[:r %s nil]", r.Key)
+// Append implements Mop
+func Append(key string, value int) Mop {
+	return Mop{
+		T: MopTypeAppend,
+		M: map[string]interface{}{
+			"key":   key,
+			"value": value,
+		},
 	}
-	return fmt.Sprintf("[:r %s %v]", r.Key, r.Value)
 }
 
-// IsAppend ...
-func (Read) IsAppend() bool {
-	return false
-}
-
-// IsRead ...
-func (Read) IsRead() bool {
-	return true
-}
-
-// GetMopType ...
-func (Read) GetMopType() MopType {
-	return MopTypeRead
-}
-
-// GetKey get read key
-func (r Read) GetKey() string {
-	return r.Key
-}
-
-// GetValue get read value
-func (r Read) GetValue() MopValueType {
-	return r.Value
-}
-
-// IsEqual return true if two Mop is deep equal
-func (r Read) IsEqual(b Mop) bool {
-	if r.GetMopType() != b.GetMopType() {
-		return false
-	}
-	aValue := r.GetValue().([]int)
-	bValue := b.GetValue().([]int)
-	if len(aValue) != len(bValue) {
-		return false
-	}
-	for idx := range aValue {
-		if aValue[idx] != bValue[idx] {
-			return false
+// Read ...
+func Read(key string, values []int) Mop {
+	if values == nil {
+		return Mop{
+			T: MopTypeRead,
+			M: map[string]interface{}{
+				"key":   key,
+				"value": nil,
+			},
 		}
 	}
-	return true
+	return Mop{
+		T: MopTypeRead,
+		M: map[string]interface{}{
+			"key":   key,
+			"value": values,
+		},
+	}
 }
 
 // Op is operation
 type Op struct {
-	Index   IntOptional `json:"index"`
-	Process IntOptional `json:"process"`
+	Index   IntOptional `json:"index,omitempty"`
+	Process IntOptional `json:"process,omitempty"`
 	Time    time.Time   `json:"time"`
 	Type    OpType      `json:"type"`
 	Value   *[]Mop      `json:"value"`
+	Error   string      `json:"error,omitempty"`
 }
 
 func (op Op) String() string {
@@ -191,7 +172,10 @@ func (op Op) String() string {
 		parts = append(parts, fmt.Sprintf(":index %d", op.Index.MustGet()))
 	}
 
-	return strings.Join(parts, " ")
+	if op.Error != "" {
+		parts = append(parts, fmt.Sprintf(":error [%s]", op.Error))
+	}
+	return strings.Join(parts, " ") + "}"
 }
 
 // ValueLength ...
@@ -349,9 +333,13 @@ func ParseOp(opString string) (Op, error) {
 				var mop Mop
 				switch mopMatch[2] {
 				case "append":
-					mop = Append{Key: key, Value: value}
+					mop = Append(key, value.(int))
 				case "r":
-					mop = Read{Key: key, Value: value}
+					if value != nil {
+						mop = Read(key, value.([]int))
+					} else {
+						mop = Read(key, nil)
+					}
 				default:
 					panic("unreachable")
 				}
