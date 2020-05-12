@@ -175,8 +175,7 @@ func (op Op) String() string {
 	if op.Error != "" {
 		parts = append(parts, fmt.Sprintf(":error [%s]", op.Error))
 	}
-	parts = append(parts, "}")
-	return strings.Join(parts, " ")
+	return strings.Join(parts, " ") + "}"
 }
 
 // ValueLength ...

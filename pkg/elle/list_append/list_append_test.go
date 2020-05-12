@@ -49,7 +49,6 @@ func TestGraph(t *testing.T) {
 	//ax2ay2:= mustParseOp(`{:type :ok, :value [[:append :x 2] [:append :y 2]]}`)
 	az1ax1ay1 := mustParseOp(`{:type :ok, :value [[:append z 1] [:append x 1] [:append y 1]]}`)
 	rxay1 := mustParseOp(`{:type :ok, :value [[:r x nil] [:append y 1]]}`)
-	_ = rxay1.String()
 	ryax1 := mustParseOp(`{:type :ok, :value [[:r y nil] [:append x 1]]}`)
 	//rx121:= mustParseOp(`{:type :ok, :value [[:r :x [1 2 1]]]}`)
 	rx1ry1 := mustParseOp(`{:type :ok, :value [[:r x [1]] [:r y [1]]]}`)
@@ -121,15 +120,15 @@ func TestGraph(t *testing.T) {
 		checkResult := core.Check(graph, []core.Op{rxay1, ryax1, rx1ry1})
 		require.Equal(t, 1, len(checkResult.Sccs))
 		if !reflect.DeepEqual([]string{`Let:
-  T1 = {:type ok :value [[:r y nil] [:append x 1]]
-  T2 = {:type ok :value [[:r x nil] [:append y 1]]
+  T1 = {:type ok :value [[:r y nil] [:append x 1]]}
+  T2 = {:type ok :value [[:r x nil] [:append y 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of y, which T2 created by appending 1.
   - However, T2 < T1, because T2 observed the initial (nil) state of x, which T1 created by appending 1: a contradiction!`}, checkResult.Cycles) {
 			require.Equal(t, []string{`Let:
-  T1 = {:type ok :value [[:r x nil] [:append y 1]]
-  T2 = {:type ok :value [[:r y nil] [:append x 1]]
+  T1 = {:type ok :value [[:r x nil] [:append y 1]]}
+  T2 = {:type ok :value [[:r y nil] [:append x 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of x, which T2 created by appending 1.
@@ -163,7 +162,7 @@ Then:
 
 	if switches {
 		defer func() {
-			expect := "duplicate appends, op {:type invoke :value [[:append y 2] [:append x 1]] :index 1, key: x, value: 1"
+			expect := "duplicate appends, op {:type invoke :value [[:append y 2] [:append x 1]] :index 1}, key: x, value: 1"
 			if r := recover(); r == nil || r.(string) != expect {
 				t.Fatalf("expect got panic %s", expect)
 			}
@@ -1077,37 +1076,6 @@ func TestHugeScc(t *testing.T) {
 		t.Fail()
 	}
 	history, err := core.ParseHistory(string(content))
-	if err != nil {
-		t.Fail()
-	}
-	// the shortest path we found isn't belong to any anomalies...
-	result := Check(txn.Opts{}, history)
-	_ = result
-}
-
-
-func TestTiDB(t *testing.T) {
-	history, err := core.ParseHistory(`{:type :invoke :value [[:r 0 nil] [:r 3 nil]] :process 1 :time 1589274115334788000 }
-{:type :invoke :value [[:append 2 1] [:r 0 nil] [:r 1 nil]] :process 2 :time 1589274115334840000 }
-{:type :invoke :value [[:append 2 2] [:r 1 nil] [:r 3 nil]] :process 3 :time 1589274115334868000 }
-{:type :ok :value [[:append 2 1] [:r 0 nil] [:r 1 nil]] :process 2 :time 1589274115681473000 }
-{:type :invoke :value [[:append 1 1] [:append 2 3] [:append 4 1]] :process 2 :time 1589274115681630000 }
-{:type :ok :value [[:r 0 nil] [:r 3 nil]] :process 1 :time 1589274115725561000 }
-{:type :invoke :value [[:append 4 2] [:r 3 nil] [:append 0 1]] :process 1 :time 1589274115725858000 }
-{:type :ok :value [[:append 2 2] [:r 1 nil] [:r 3 nil]] :process 3 :time 1589274115896990000 }
-{:type :invoke :value [[:append 0 2] [:append 3 1] [:append 4 3]] :process 3 :time 1589274115897103000 }
-{:type :ok :value [[:append 4 2] [:r 3 nil] [:append 0 1]] :process 1 :time 1589274116071420000 }
-{:type :invoke :value [[:append 3 2] [:r 0 nil] [:r 3 nil] [:r 0 nil]] :process 1 :time 1589274116072496000 }
-{:type :ok :value [[:append 1 1] [:append 2 3] [:append 4 1]] :process 2 :time 1589274116122175000 }
-{:type :invoke :value [[:append 0 3] [:append 1 2] [:append 4 4]] :process 2 :time 1589274116122300000 }
-{:type :ok :value [[:append 0 2] [:append 3 1] [:append 4 3]] :process 3 :time 1589274116297532000 }
-{:type :invoke :value [[:r 0 nil] [:r 4 nil]] :process 3 :time 1589274116297801000 }
-{:type :ok :value [[:append 0 3] [:append 1 2] [:append 4 4]] :process 2 :time 1589274116512963000 }
-{:type :invoke :value [[:r 1 nil] [:r 2 nil] [:append 2 4] [:append 3 3]] :process 2 :time 1589274116513127000 }
-{:type :ok :value [[:r 0 [1 2]] [:r 4 [2 1 3]]] :process 3 :time 1589274116551316000 }
-{:type :ok :value [[:append 3 2] [:r 0 [1]] [:r 3 [1 2]] [:r 0 [1]]] :process 1 :time 1589274116598367000 }
-{:type :ok :value [[:r 1 [1 2]] [:r 2 [1 2 3]] [:append 2 4] [:append 3 3]] :process 2 :time 1589274116946530000 }
-`)
 	if err != nil {
 		t.Fail()
 	}
