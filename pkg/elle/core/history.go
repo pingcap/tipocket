@@ -58,22 +58,27 @@ type Mop struct {
 	M map[string]interface{} `json:"m"`
 }
 
+// IsAppend ...
 func (m Mop) IsAppend() bool {
 	return m.T == MopTypeAppend
 }
 
+// IsRead ...
 func (m Mop) IsRead() bool {
 	return m.T == MopTypeRead
 }
 
+// GetMopType ...
 func (m Mop) GetMopType() MopType {
 	return m.T
 }
 
+// GetKey ...
 func (m Mop) GetKey() string {
 	return m.M["key"].(string)
 }
 
+// GetValue ...
 func (m Mop) GetValue() MopValueType {
 	value := m.M["value"]
 	if value == nil {
@@ -82,10 +87,12 @@ func (m Mop) GetValue() MopValueType {
 	return value.(MopValueType)
 }
 
+// IsEqual ...
 func (m Mop) IsEqual(n Mop) bool {
 	return reflect.DeepEqual(m, n)
 }
 
+// String ...
 func (m Mop) String() string {
 	switch m.T {
 	case MopTypeRead:
@@ -115,6 +122,7 @@ func Append(key string, value int) Mop {
 	}
 }
 
+// Read ...
 func Read(key string, values []int) Mop {
 	if values == nil {
 		return Mop{

@@ -215,6 +215,7 @@ type appendClientCreator struct {
 	mu         sync.Mutex
 }
 
+// NewClientCreator ...
 func NewClientCreator(tableCount int, readLock string) core.ClientCreator {
 	return &appendClientCreator{
 		tableCount: tableCount,
@@ -241,8 +242,10 @@ func (a *appendClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 	}
 }
 
+// AppendParser ...
 type AppendParser struct{}
 
+// OnRequest ...
 func (a AppendParser) OnRequest(data json.RawMessage) (interface{}, error) {
 	r := ellecore.Op{}
 	str := string(data)
@@ -251,22 +254,27 @@ func (a AppendParser) OnRequest(data json.RawMessage) (interface{}, error) {
 	return r, err
 }
 
+// OnResponse ...
 func (a AppendParser) OnResponse(data json.RawMessage) (interface{}, error) {
 	r := appendResponse{}
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
 
+// OnNoopResponse ...
 func (a AppendParser) OnNoopResponse() interface{} {
 	panic("unreachable")
 }
 
+// OnState ...
 func (a AppendParser) OnState(state json.RawMessage) (interface{}, error) {
 	return nil, nil
 }
 
+// AppendChecker ...
 type AppendChecker struct{}
 
+// Check ...
 func (a AppendChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	history := convertOperationsToHistory(ops)
 
@@ -283,6 +291,7 @@ func (a AppendChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	return false, result
 }
 
+// Name ...
 func (a AppendChecker) Name() string {
 	return "list_append"
 }
