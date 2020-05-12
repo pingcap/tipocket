@@ -1,5 +1,5 @@
 metadata:
-  name: tipocket-cdc-normal
+  name: tipocket-cdc-kafka
 spec:
   schedule: "0 */6 * * *"
   concurrencyPolicy: "Forbid"
@@ -10,7 +10,7 @@ spec:
     arguments:
       parameters:
         - name: ns
-          value: tipocket-cdc-normal
+          value: tipocket-cdc-kafka
         - name: purge
           value: "true"
         - name: hub
@@ -40,7 +40,7 @@ spec:
         - name: cdc_version
           value: "master"
         - name: cdc_enable_kafka
-          value: "false"
+          value: "true"
         - name: abtest_general_log
           value: "true"
         - name: binlog_sync_timeout
@@ -54,9 +54,9 @@ spec:
         - name: loki-password
           value: "admin"
     templates:
-      - name: call-tipocket-cdc
+      - name: tipocket-cdc-kafka
         steps:
-          - - name: call-tipocket-cdc
+          - - name: tipocket-cdc-kafka
               templateRef:
                 name: tipocket-cdc
                 template: tipocket-cdc
