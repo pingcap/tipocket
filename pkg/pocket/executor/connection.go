@@ -83,7 +83,7 @@ func (e *Executor) Exec(sql string) error {
 			return err
 		}
 		return e.conn1.Commit()
-	case "abtest":
+	case "abtest", "dm":
 		if err := e.conn1.Exec(sql); err != nil {
 			return err
 		}
@@ -104,7 +104,7 @@ func (e *Executor) ExecIgnoreErr(sql string) {
 	case "single":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
-	case "abtest", "binlog":
+	case "abtest", "binlog", "dm":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
 		_ = e.conn2.Exec(sql)

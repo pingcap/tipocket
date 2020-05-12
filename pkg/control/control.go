@@ -285,8 +285,9 @@ func (c *Controller) RunSelfScheduled() {
 			break
 		}
 		client := c.clients[i]
+		ii := i
 		g.Go(func() error {
-			log.Infof("run client %d...", i)
+			log.Infof("run client %d...", ii)
 			return client.Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
