@@ -49,6 +49,7 @@ func TestGraph(t *testing.T) {
 	//ax2ay2:= mustParseOp(`{:type :ok, :value [[:append :x 2] [:append :y 2]]}`)
 	az1ax1ay1 := mustParseOp(`{:type :ok, :value [[:append z 1] [:append x 1] [:append y 1]]}`)
 	rxay1 := mustParseOp(`{:type :ok, :value [[:r x nil] [:append y 1]]}`)
+	_ = rxay1.String()
 	ryax1 := mustParseOp(`{:type :ok, :value [[:r y nil] [:append x 1]]}`)
 	//rx121:= mustParseOp(`{:type :ok, :value [[:r :x [1 2 1]]]}`)
 	rx1ry1 := mustParseOp(`{:type :ok, :value [[:r x [1]] [:r y [1]]]}`)
@@ -185,19 +186,13 @@ func TestG1aCases(t *testing.T) {
 
 	got := g1aCases([]core.Op{t2, t3, t1})
 	expect := GCaseTp{G1Conflict{
-		Op: t2,
-		Mop: core.Read{
-			Key:   "x",
-			Value: []int{1},
-		},
+		Op:      t2,
+		Mop:     core.Read("x", []int{1}),
 		Writer:  t1,
 		Element: 1,
 	}, G1Conflict{
-		Op: t3,
-		Mop: core.Read{
-			Key:   "x",
-			Value: []int{1, 2},
-		},
+		Op:      t3,
+		Mop:     core.Read("x", []int{1, 2}),
 		Writer:  t1,
 		Element: 1,
 	}}
@@ -216,11 +211,8 @@ func TestG1bCases(t *testing.T) {
 	got := g1bCases([]core.Op{t2, t3, t1, t4})
 
 	expect := GCaseTp{G1Conflict{
-		Op: t2,
-		Mop: core.Read{
-			Key:   "x",
-			Value: []int{1},
-		},
+		Op:      t2,
+		Mop:     core.Read("x", []int{1}),
 		Writer:  t1,
 		Element: 1,
 	}}
@@ -246,22 +238,22 @@ func TestInternalCases(t *testing.T) {
 		expect := GCaseTp{
 			InternalConflict{
 				Op:       stale,
-				Mop:      core.Read{Key: "x", Value: []int{1, 2}},
+				Mop:      core.Read("x", []int{1, 2}),
 				Expected: []int{1, 2, 3},
 			},
 			InternalConflict{
 				Op:       badPrefix,
-				Mop:      core.Read{Key: "x", Value: []int{0, 2, 3}},
+				Mop:      core.Read("x", []int{0, 2, 3}),
 				Expected: []int{1, 2, 3},
 			},
 			InternalConflict{
 				Op:       extension,
-				Mop:      core.Read{Key: "x", Value: []int{1, 2, 3, 4}},
+				Mop:      core.Read("x", []int{1, 2, 3, 4}),
 				Expected: []int{1, 2, 3},
 			},
 			InternalConflict{
 				Op:       shortRead,
-				Mop:      core.Read{Key: "x", Value: []int{1}},
+				Mop:      core.Read("x", []int{1}),
 				Expected: []int{1, 2, 3},
 			},
 		}
@@ -275,12 +267,12 @@ func TestInternalCases(t *testing.T) {
 		expect := GCaseTp{
 			InternalConflict{
 				Op:       disagreement,
-				Mop:      core.Read{Key: "x", Value: []int{1, 2, 3, 4}},
+				Mop:      core.Read("x", []int{1, 2, 3, 4}),
 				Expected: []int{unknownPrefixMagicNumber, 3},
 			},
 			InternalConflict{
 				Op:       shortRead,
-				Mop:      core.Read{Key: "x", Value: []int{}},
+				Mop:      core.Read("x", []int{}),
 				Expected: []int{unknownPrefixMagicNumber, 3},
 			},
 		}
@@ -295,7 +287,7 @@ func TestInternalCases(t *testing.T) {
 		expect := GCaseTp{
 			InternalConflict{
 				Op:       t2,
-				Mop:      core.Read{Key: "0", Value: nil},
+				Mop:      core.Read("0", nil),
 				Expected: []int{unknownPrefixMagicNumber, 6},
 			},
 		}
@@ -370,10 +362,10 @@ func TestChecker(t *testing.T) {
 				"empty-transaction-graph": []core.Anomaly{},
 				"G1a": []core.Anomaly{G1Conflict{
 					Op: withIndex(t2, 1),
-					Mop: core.Read{
-						Key:   "x",
-						Value: []int{1},
-					},
+					Mop: core.Read(
+						"x",
+						[]int{1},
+					),
 					Writer:  withIndex(t1, 0),
 					Element: 1,
 				}},
@@ -401,10 +393,10 @@ func TestChecker(t *testing.T) {
 				"empty-transaction-graph": []core.Anomaly{},
 				"G1a": []core.Anomaly{G1Conflict{
 					Op: withIndex(t2, 1),
-					Mop: core.Read{
-						Key:   "x",
-						Value: []int{1},
-					},
+					Mop: core.Read(
+						"x",
+						[]int{1},
+					),
 					Writer:  withIndex(t1, 0),
 					Element: 1,
 				}},
@@ -434,10 +426,10 @@ func TestChecker(t *testing.T) {
 				"G1b": []core.Anomaly{G1Conflict{
 					Op:     t2e,
 					Writer: t1e,
-					Mop: core.Read{
-						Key:   "x",
-						Value: []int{1},
-					},
+					Mop: core.Read(
+						"x",
+						[]int{1},
+					),
 					Element: 1,
 				}},
 			},
@@ -461,10 +453,10 @@ func TestChecker(t *testing.T) {
 				"G1b": []core.Anomaly{G1Conflict{
 					Op:     t2e,
 					Writer: t1e,
-					Mop: core.Read{
-						Key:   "x",
-						Value: []int{1},
-					},
+					Mop: core.Read(
+						"x",
+						[]int{1},
+					),
 					Element: 1,
 				}},
 			},
@@ -895,7 +887,7 @@ func TestChecker(t *testing.T) {
 			Anomalies: core.Anomalies{
 				"duplicate-elements": []core.Anomaly{duplicateConflict{
 					Op:  withIndex(t3, 2),
-					Mop: core.Read{Key: "x", Value: []int{1, 2, 1}},
+					Mop: core.Read("x", []int{1, 2, 1}),
 					Dups: map[core.MopValueType]int{
 						1: 2,
 					},
@@ -935,10 +927,10 @@ func TestChecker(t *testing.T) {
 			Anomalies: core.Anomalies{
 				"internal": []core.Anomaly{InternalConflict{
 					Op: withIndex(t2, 1),
-					Mop: core.Read{
-						Key:   "x",
-						Value: []int{1, 2, 3, 4},
-					},
+					Mop: core.Read(
+						"x",
+						[]int{1, 2, 3, 4},
+					),
 					Expected: []int{unknownPrefixMagicNumber, 3},
 				}},
 			},
@@ -1045,31 +1037,31 @@ func TestCheck(t *testing.T) {
 	var history = core.History{
 		core.Op{Type: core.OpTypeOk,
 			Value: &[]core.Mop{
-				core.Append{
-					Key:   "x",
-					Value: 1,
-				},
-				core.Read{
-					Key:   "y",
-					Value: []int{1},
-				},
+				core.Append(
+					"x",
+					1,
+				),
+				core.Read(
+					"y",
+					[]int{1},
+				),
 			}},
 		core.Op{Type: core.OpTypeOk,
 			Value: &[]core.Mop{
-				core.Append{
-					Key:   "x",
-					Value: 2,
-				},
-				core.Append{
-					Key:   "y",
-					Value: 1,
-				}}},
+				core.Append(
+					"x",
+					2,
+				),
+				core.Append(
+					"y",
+					1,
+				)}},
 		core.Op{Type: core.OpTypeOk,
 			Value: &[]core.Mop{
-				core.Read{
-					Key:   "x",
-					Value: []int{1, 2},
-				}}},
+				core.Read(
+					"x",
+					[]int{1, 2},
+				)}},
 	}
 
 	result := Check(txn.Opts{
@@ -1085,6 +1077,37 @@ func TestHugeScc(t *testing.T) {
 		t.Fail()
 	}
 	history, err := core.ParseHistory(string(content))
+	if err != nil {
+		t.Fail()
+	}
+	// the shortest path we found isn't belong to any anomalies...
+	result := Check(txn.Opts{}, history)
+	_ = result
+}
+
+
+func TestTiDB(t *testing.T) {
+	history, err := core.ParseHistory(`{:type :invoke :value [[:r 0 nil] [:r 3 nil]] :process 1 :time 1589274115334788000 }
+{:type :invoke :value [[:append 2 1] [:r 0 nil] [:r 1 nil]] :process 2 :time 1589274115334840000 }
+{:type :invoke :value [[:append 2 2] [:r 1 nil] [:r 3 nil]] :process 3 :time 1589274115334868000 }
+{:type :ok :value [[:append 2 1] [:r 0 nil] [:r 1 nil]] :process 2 :time 1589274115681473000 }
+{:type :invoke :value [[:append 1 1] [:append 2 3] [:append 4 1]] :process 2 :time 1589274115681630000 }
+{:type :ok :value [[:r 0 nil] [:r 3 nil]] :process 1 :time 1589274115725561000 }
+{:type :invoke :value [[:append 4 2] [:r 3 nil] [:append 0 1]] :process 1 :time 1589274115725858000 }
+{:type :ok :value [[:append 2 2] [:r 1 nil] [:r 3 nil]] :process 3 :time 1589274115896990000 }
+{:type :invoke :value [[:append 0 2] [:append 3 1] [:append 4 3]] :process 3 :time 1589274115897103000 }
+{:type :ok :value [[:append 4 2] [:r 3 nil] [:append 0 1]] :process 1 :time 1589274116071420000 }
+{:type :invoke :value [[:append 3 2] [:r 0 nil] [:r 3 nil] [:r 0 nil]] :process 1 :time 1589274116072496000 }
+{:type :ok :value [[:append 1 1] [:append 2 3] [:append 4 1]] :process 2 :time 1589274116122175000 }
+{:type :invoke :value [[:append 0 3] [:append 1 2] [:append 4 4]] :process 2 :time 1589274116122300000 }
+{:type :ok :value [[:append 0 2] [:append 3 1] [:append 4 3]] :process 3 :time 1589274116297532000 }
+{:type :invoke :value [[:r 0 nil] [:r 4 nil]] :process 3 :time 1589274116297801000 }
+{:type :ok :value [[:append 0 3] [:append 1 2] [:append 4 4]] :process 2 :time 1589274116512963000 }
+{:type :invoke :value [[:r 1 nil] [:r 2 nil] [:append 2 4] [:append 3 3]] :process 2 :time 1589274116513127000 }
+{:type :ok :value [[:r 0 [1 2]] [:r 4 [2 1 3]]] :process 3 :time 1589274116551316000 }
+{:type :ok :value [[:append 3 2] [:r 0 [1]] [:r 3 [1 2]] [:r 0 [1]]] :process 1 :time 1589274116598367000 }
+{:type :ok :value [[:r 1 [1 2]] [:r 2 [1 2 3]] [:append 2 4] [:append 3 3]] :process 2 :time 1589274116946530000 }
+`)
 	if err != nil {
 		t.Fail()
 	}

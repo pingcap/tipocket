@@ -81,9 +81,6 @@ func duplicates(history core.History) GCaseTp {
 	var duplicateCases []core.Anomaly
 	for iter.HasNext() {
 		op, mop := iter.Next()
-		if mop == nil {
-			continue
-		}
 		if mop.IsRead() {
 			var reads []int
 			if mop.GetValue() != nil {
@@ -116,9 +113,6 @@ func writeIndex(history core.History) writeIdx {
 			continue
 		}
 		for _, mop := range *op.Value {
-			if mop == nil {
-				continue
-			}
 			if mop.IsAppend() {
 				innerMap, e := indexMap[mop.GetKey()]
 				if !e {
@@ -179,7 +173,7 @@ func appendIndex(sortedValues map[string][][]core.MopValueType) appendIdx {
 
 // Note: mop should be a read, and should be part of op.
 func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
-	if mop != nil && mop.IsRead() {
+	if mop.IsRead() {
 		writeMap, e := writeIndex[mop.GetKey()]
 		var v []int
 		if mop.GetValue() != nil {
@@ -206,7 +200,7 @@ func wrMopDep(writeIndex writeIdx, op core.Op, mop core.Mop) *core.Op {
 // * or initMagicNumber if mop append the first element of that key
 // * otherwise return the previous MopValueType value
 func previouslyAppendElement(appendIndex appendIdx, op core.Op, mop core.Mop) core.MopValueType {
-	if mop == nil || !mop.IsAppend() {
+	if !mop.IsAppend() {
 		return nil
 	}
 	k := mop.GetKey()
@@ -268,9 +262,6 @@ func rwMopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndex
 }
 
 func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexResult readIdx, op core.Op, mop core.Mop) map[core.Op]struct{} {
-	if mop == nil {
-		return nil
-	}
 	res := map[core.Op]struct{}{}
 	if mop.IsAppend() {
 		r := rwMopDeps(appendIndexResult, writeIndexResult, readIndexResult, op, mop)
@@ -279,11 +270,13 @@ func mopDeps(appendIndexResult appendIdx, writeIndexResult writeIdx, readIndexRe
 			r[*resDep] = struct{}{}
 		}
 		res = r
-	} else {
+	} else if mop.IsRead() {
 		resDep := wrMopDep(writeIndexResult, op, mop)
 		if resDep != nil {
 			res[*resDep] = struct{}{}
 		}
+	} else {
+		panic("unreachable")
 	}
 	return res
 }
@@ -362,9 +355,6 @@ func sortedValues(history core.History) map[string][][]core.MopValueType {
 	valueExistMap := map[string]map[uint32]struct{}{}
 	for iter.HasNext() {
 		_, mop := iter.Next()
-		if mop == nil {
-			continue
-		}
 		if !mop.IsRead() {
 			continue
 		}

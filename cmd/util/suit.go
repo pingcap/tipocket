@@ -82,6 +82,14 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.Config.ClientNodes = append(suit.Config.ClientNodes,
 			suit.Config.ClientNodes[rand.Intn(retClientCount)])
 	}
+
+	// set loki client
+	var lokiCli *loki.Client
+	if fixture.Context.LokiAddress != "" {
+		lokiCli = loki.NewClient(startTime, fixture.Context.LokiAddress,
+			fixture.Context.LokiUsername, fixture.Context.LokiPassword)
+	}
+
 	c := control.NewController(
 		sctx,
 		suit.Config,
@@ -89,8 +97,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.NemesisGens,
 		suit.ClientRequestGen,
 		suit.VerifySuit,
-		loki.NewClient(startTime, fixture.Context.LokiAddress,
-			fixture.Context.LokiUsername, fixture.Context.LokiPassword),
+		lokiCli,
 		fixture.Context.LogPath,
 	)
 

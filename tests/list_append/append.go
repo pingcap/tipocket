@@ -22,6 +22,10 @@ type appendResponse struct {
 	Result ellecore.Op `json:result`
 }
 
+func (c appendResponse) String() string {
+	return c.Result.String()
+}
+
 // IsUnknown always returns false because we don't want to let it be resorted
 func (c appendResponse) IsUnknown() bool {
 	return false
@@ -51,6 +55,9 @@ func (c *client) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx
 
 	log.Printf("begin to create %d tables", c.tableCount)
 	for i := 0; i < c.tableCount; i++ {
+		if _, err = db.Exec(fmt.Sprintf("drop table if exists txn_%d", i)); err != nil {
+			return err
+		}
 		if _, err = db.Exec(fmt.Sprintf(`create table if not exists txn_%d
 			(id     int not null primary key,
 			sk int not null,
@@ -113,18 +120,18 @@ func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 					},
 				}
 			}
-			mops = append(mops, ellecore.Append{
-				Key:   k,
-				Value: v,
-			})
+			mops = append(mops, ellecore.Append(
+				k,
+				v,
+			))
 		case ellecore.MopTypeRead:
 			k := mop.GetKey()
 			table := mustAtoi(k) % c.tableCount
-			key := "id"
+			column := "id"
 			if c.useIndex {
-				key = "sk"
+				column = "sk"
 			}
-			rows, err := txn.QueryContext(ctx, fmt.Sprintf("select (val) from txn_%d where %s = ?", table, key), k)
+			rows, err := txn.QueryContext(ctx, fmt.Sprintf("select (val) from txn_%d where %s = ?", table, column), k)
 			if err != nil {
 				return appendResponse{
 					Result: ellecore.Op{
@@ -136,26 +143,30 @@ func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 				}
 			}
 			var value string
-			if err := rows.Scan(&value); err != nil {
-				rows.Close()
-				return appendResponse{
-					Result: ellecore.Op{
-						Time:  time.Now(),
-						Type:  ellecore.OpTypeFail,
-						Value: request.Value,
-						Error: err.Error(),
-					},
+			if rows.Next() {
+				if err := rows.Scan(&value); err != nil {
+					rows.Close()
+					return appendResponse{
+						Result: ellecore.Op{
+							Time:  time.Now(),
+							Type:  ellecore.OpTypeFail,
+							Value: request.Value,
+							Error: err.Error(),
+						},
+					}
 				}
 			}
 			rows.Close()
 			var v []int
-			for _, n := range strings.Split(value, ",") {
-				v = append(v, mustAtoi(n))
+			if len(value) != 0 {
+				for _, n := range strings.Split(value, ",") {
+					v = append(v, mustAtoi(n))
+				}
 			}
-			mops = append(mops, ellecore.Read{
-				Key:   k,
-				Value: v,
-			})
+			mops = append(mops, ellecore.Read(
+				k,
+				v,
+			))
 		}
 	}
 
@@ -201,7 +212,7 @@ type appendClientCreator struct {
 func NewClientCreator(tableCount int) core.ClientCreator {
 	return &appendClientCreator{
 		tableCount: tableCount,
-		it:         elletxn.WrTxnWithDefaultOptsWithoutState(),
+		it:         elletxn.WrTxnWithDefaultOpts(),
 	}
 }
 
@@ -214,6 +225,7 @@ func (a *appendClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 			defer a.mu.Unlock()
 			value := a.it.Next()
 			return ellecore.Op{
+				Type:  ellecore.OpTypeInvoke,
 				Time:  time.Now(),
 				Value: &value,
 			}
@@ -225,6 +237,8 @@ type AppendParser struct{}
 
 func (a AppendParser) OnRequest(data json.RawMessage) (interface{}, error) {
 	r := ellecore.Op{}
+	str := string(data)
+	_ = str
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
@@ -246,9 +260,15 @@ func (a AppendParser) OnState(state json.RawMessage) (interface{}, error) {
 type AppendChecker struct{}
 
 func (a AppendChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
+	history := convertOperationsToHistory(ops)
+
+	for _, op := range history {
+		fmt.Println(op.String())
+	}
+
 	result := elleappend.Check(
-		elletxn.Opts{Anomalies: []string{"G-single"}, AdditionalGraphs: []ellecore.Analyzer{ellecore.RealtimeGraph}},
-		convertOpertionsToHistory(ops))
+		elletxn.Opts{Anomalies: []string{"G-single"}},
+		history)
 	if result.Valid {
 		return true, nil
 	}
@@ -267,21 +287,40 @@ func mustAtoi(s string) int {
 	return int(i)
 }
 
-func convertOpertionsToHistory(events []core.Operation) ellecore.History {
+func convertOperationsToHistory(events []core.Operation) ellecore.History {
 	var history ellecore.History
 	for _, event := range events {
+		var op ellecore.Op
 		switch e := event.Data.(type) {
 		case ellecore.Op:
-			op := e
+			op = e
 			op.Process.Set(int(event.Proc))
-			history = append(history, op)
 		case appendResponse:
-			op := e.Result
+			op = e.Result
 			op.Process.Set(int(event.Proc))
-			history = append(history, op)
 		default:
 			panic("unreachable")
 		}
+		mops := op.Value
+		typedMops := make([]ellecore.Mop, 0)
+		for _, mop := range *mops {
+			if mop.IsRead() {
+				var value []int
+				if mop.GetValue() != nil {
+					for _, v := range mop.GetValue().([]interface{}) {
+						value = append(value, int(v.(float64)))
+					}
+					typedMops = append(typedMops, ellecore.Read(mop.GetKey(), value))
+				} else {
+					typedMops = append(typedMops, ellecore.Read(mop.GetKey(), nil))
+				}
+			}
+			if mop.IsAppend() {
+				typedMops = append(typedMops, ellecore.Append(mop.GetKey(), int(mop.GetValue().(float64))))
+			}
+		}
+		op.Value = &typedMops
+		history = append(history, op)
 	}
 	return history
 }
