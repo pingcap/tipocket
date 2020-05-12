@@ -15,6 +15,7 @@ import (
 
 var (
 	tableCount = flag.Int("table-count", 1, "table count")
+	readLock   = flag.String("readLock", "FOR UPDATE", "maybe empty or 'FOR UPDATE'")
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 			History:      fixture.Context.HistoryFile,
 		},
 		Provisioner:      cluster.NewK8sProvisioner(),
-		ClientCreator:    listappend.NewClientCreator(*tableCount),
+		ClientCreator:    listappend.NewClientCreator(*tableCount, *readLock),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit: verify.Suit{

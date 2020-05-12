@@ -35,6 +35,7 @@ type client struct {
 	db         *sql.DB
 	tableCount int
 	useIndex   bool
+	readLock   string
 
 	nextRequest func() ellecore.Op
 }
@@ -131,7 +132,11 @@ func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 			if c.useIndex {
 				column = "sk"
 			}
-			rows, err := txn.QueryContext(ctx, fmt.Sprintf("select (val) from txn_%d where %s = ?", table, column), k)
+			query := fmt.Sprintf("select val from txn_%d where %s = ?", table, column)
+			if c.readLock != "" {
+				query += " " + c.readLock
+			}
+			rows, err := txn.QueryContext(ctx, query, k)
 			if err != nil {
 				return appendResponse{
 					Result: ellecore.Op{
@@ -205,13 +210,15 @@ func (c *client) Start(_ context.Context, _ interface{}, _ []clusterTypes.Client
 // ClientCreator can create list append client
 type appendClientCreator struct {
 	tableCount int
+	readLock   string
 	it         *elletxn.MopIterator
 	mu         sync.Mutex
 }
 
-func NewClientCreator(tableCount int) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock string) core.ClientCreator {
 	return &appendClientCreator{
 		tableCount: tableCount,
+		readLock:   readLock,
 		it:         elletxn.WrTxnWithDefaultOpts(),
 	}
 }
@@ -220,6 +227,7 @@ func NewClientCreator(tableCount int) core.ClientCreator {
 func (a *appendClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 	return &client{
 		tableCount: a.tableCount,
+		readLock:   a.readLock,
 		nextRequest: func() ellecore.Op {
 			a.mu.Lock()
 			defer a.mu.Unlock()
