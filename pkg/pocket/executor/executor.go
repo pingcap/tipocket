@@ -177,6 +177,7 @@ func NewDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	log.Infof("new connection to %s", dsn1)
 	conn2, err := connection.New(dsn2, &connection.Option{
 		Name:       fmt.Sprintf("conn-2-%d", opt.ID),
 		Log:        conn2LogPath,
@@ -186,6 +187,7 @@ func NewDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	log.Infof("new connection to %s", dsn2)
 	conn3, err := connection.New(dsn3, &connection.Option{
 		Name:       fmt.Sprintf("conn-3-%d", opt.ID),
 		Log:        conn3LogPath,
@@ -195,6 +197,7 @@ func NewDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
+	log.Infof("new connection to %s", dsn3)
 
 	l, err := logger.New(fmt.Sprintf("dmtest-%d", opt.ID), executorLogPath, opt.Mute)
 	if err != nil {

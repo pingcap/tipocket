@@ -96,6 +96,8 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		} else {
 			mode = "single"
 		}
+	case "dm":
+		mode = "dm"
 	}
 
 	if strings.HasPrefix(c.cfg.Mode, "tiflash") {

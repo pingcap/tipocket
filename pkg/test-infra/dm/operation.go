@@ -273,7 +273,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{{
-							Name:            "dm-master",
+							Name:            "dm",
 							Image:           image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							VolumeMounts: []corev1.VolumeMount{
@@ -350,7 +350,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 					},
 					Spec: corev1.PodSpec{
 						Containers: []corev1.Container{{
-							Name:            "dm-worker",
+							Name:            "dm",
 							Image:           image,
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							VolumeMounts: []corev1.VolumeMount{
