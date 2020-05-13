@@ -120,15 +120,15 @@ func TestGraph(t *testing.T) {
 		checkResult := core.Check(graph, []core.Op{rxay1, ryax1, rx1ry1})
 		require.Equal(t, 1, len(checkResult.Sccs))
 		if !reflect.DeepEqual([]string{`Let:
-  T1 = {:type ok :value [[:r y nil] [:append x 1]]}
-  T2 = {:type ok :value [[:r x nil] [:append y 1]]}
+  T1 = {:type :ok, :value [[:r y nil] [:append x 1]]}
+  T2 = {:type :ok, :value [[:r x nil] [:append y 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of y, which T2 created by appending 1.
   - However, T2 < T1, because T2 observed the initial (nil) state of x, which T1 created by appending 1: a contradiction!`}, checkResult.Cycles) {
 			require.Equal(t, []string{`Let:
-  T1 = {:type ok :value [[:r x nil] [:append y 1]]}
-  T2 = {:type ok :value [[:r y nil] [:append x 1]]}
+  T1 = {:type :ok, :value [[:r x nil] [:append y 1]]}
+  T2 = {:type :ok, :value [[:r y nil] [:append x 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of x, which T2 created by appending 1.
@@ -162,7 +162,7 @@ Then:
 
 	if switches {
 		defer func() {
-			expect := "duplicate appends, op {:type invoke :value [[:append y 2] [:append x 1]] :index 1}, key: x, value: 1"
+			expect := "duplicate appends, op {:type :invoke, :value [[:append y 2] [:append x 1]], :index 1}, key: x, value: 1"
 			if r := recover(); r == nil || r.(string) != expect {
 				t.Fatalf("expect got panic %s", expect)
 			}
