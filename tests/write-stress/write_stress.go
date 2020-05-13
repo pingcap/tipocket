@@ -3,9 +3,9 @@ package writestress
 import (
 	"context"
 	"database/sql"
-	"encoding/binary"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 
@@ -124,21 +124,21 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 	defer func() {
 		log.Infof("test end...")
 	}()
-	c.contract_ids = make([][]byte, c.DataNum)
+	totalNum := c.DataNum * 10000
+	c.contract_ids = make([][]byte, totalNum)
 	timeUnix := time.Now().Unix()
-	count := uint8(0)
-	b := make([]byte, 8)
-	for i := 0; i < c.DataNum; i++ {
-		// "abcd" + timestamp(8 bit) + count(8 bit)
+	count := 0
+	for i := 0; i < totalNum; i++ {
+		// "abcd" + timestamp + count
 		c.contract_ids[i] = append(c.contract_ids[i], []byte("abcd")...)
-		binary.LittleEndian.PutUint64(b, uint64(timeUnix))
-		c.contract_ids[i] = append(c.contract_ids[i], b...)
-		binary.LittleEndian.PutUint64(b, uint64(count))
-		c.contract_ids[i] = append(c.contract_ids[i], b...)
+		tm := time.Unix(timeUnix, 0)
+		c.contract_ids[i] = append(c.contract_ids[i], tm.String()...)
+		c.contract_ids[i] = append(c.contract_ids[i], strconv.Itoa(count)...)
 
 		count++
-		if count == 0 {
+		if count%200 == 0 {
 			timeUnix++
+			count = 0
 		}
 	}
 
@@ -147,15 +147,8 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-				if err := c.ExecuteInsert(c.db, i); err != nil {
-					log.Fatalf("exec failed %v", err)
-				}
+			if err := c.ExecuteInsert(c.db, i); err != nil {
+				log.Fatalf("exec failed %v", err)
 			}
 		}(i)
 	}
@@ -166,24 +159,23 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 
 // ExecuteInsert is run case
 func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
-	num := c.Config.DataNum * 10000 / c.Config.Concurrency
-
-	tx, err := db.Begin()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	defer tx.Rollback()
+	totalNum := c.DataNum * 10000
+	num := totalNum / c.Concurrency
 	str := make([]byte, 50)
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
-	for i := 0; i < num/c.Config.Batch; i++ {
-		n := num*pos + i*c.Config.Batch
-		if n >= c.DataNum {
+	for i := 0; i < num/c.Batch; i++ {
+		tx, err := db.Begin()
+		if err != nil {
+			return errors.Trace(err)
+		}
+		n := num*pos + i*c.Batch
+		if n >= totalNum {
 			break
 		}
 		query := fmt.Sprintf(`INSERT INTO write_stress (TABLE_ID, CONTRACT_NO, TERM_NO, NOUSE) VALUES `)
-		for j := 0; j < c.Config.Batch; j++ {
-			n := num*pos + i*c.Config.Batch + j
-			if n >= c.DataNum {
+		for j := 0; j < c.Batch; j++ {
+			n := num*pos + i*c.Batch + j
+			if n >= totalNum {
 				break
 			}
 			contract_id := c.contract_ids[n]
@@ -191,16 +183,15 @@ func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
 			if j != 0 {
 				query += ","
 			}
-			query += fmt.Sprintf(`(%v, %v, %v, %v)`, rnd.Uint32()%960+1, string(contract_id[:]), rnd.Uint32()%36+1, string(str[:]))
+			query += fmt.Sprintf(`(%v, "%v", %v, "%v")`, rnd.Uint32()%960+1, string(contract_id[:]), rnd.Uint32()%36+1, string(str[:]))
 		}
-		fmt.Println(query)
+		//fmt.Println(query)
 		if _, err := tx.Exec(query); err != nil {
 			return errors.Trace(err)
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Trace(err)
+		if err := tx.Commit(); err != nil {
+			return errors.Trace(err)
+		}
 	}
 
 	return nil

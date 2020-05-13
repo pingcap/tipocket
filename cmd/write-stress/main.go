@@ -43,11 +43,11 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-	kvs := []string{"127.0.0.1:20160", "127.0.0.1:20162", "127.0.0.1:20161"}
+	//kvs := []string{"127.0.0.1:20160", "127.0.0.1:20162", "127.0.0.1:20161"}
 	suit := util.Suit{
-		Config: &cfg,
-		//Provisioner: cluster.NewK8sProvisioner(),
-		Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
+		Config:      &cfg,
+		Provisioner: cluster.NewK8sProvisioner(),
+		//Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
 		ClientCreator: writestress.ClientCreator{Cfg: &writestress.Config{
 			DataNum:     *dataNum,
 			Concurrency: *concurrency,
