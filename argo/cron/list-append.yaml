@@ -1,5 +1,5 @@
 metadata:
-  generateName: tipocket-list-append-rep-
+  generateName: tipocket-list-append
   namespace: argo
 spec:
   entrypoint: call-tipocket-list-append
@@ -12,7 +12,7 @@ spec:
       - name: txn-mode
         value: pessimistic
       - name: ns
-        value: tipocket-list-append-rep
+        value: tipocket-list-append
       - name: purge
         value: "true"
       - name: repository
@@ -28,7 +28,7 @@ spec:
       - name: request_count
         value: "10000"
       - name: round
-        value: "1"
+        value: "1000"
       - name: loki-addr
         value: "http://gateway.loki.svc"
       - name: loki-username

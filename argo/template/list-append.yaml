@@ -69,7 +69,7 @@ spec:
             /bin/append \
             -table-count={{inputs.parameters.table-count}} \
             -read-lock={{inputs.parameters.read-lock}} \
-            -txn-mode={{inputs.parameters.txn-mode}}
+            -txn-mode={{inputs.parameters.txn-mode}} \
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
