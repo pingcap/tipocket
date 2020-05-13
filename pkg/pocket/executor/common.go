@@ -136,7 +136,7 @@ func (e *Executor) createTiFlashTableReplica(table string) error {
 func (e *Executor) WaitTiFlashTableSync(table string) error {
 	sql := fmt.Sprintf("SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA = '%s' and TABLE_NAME = '%s'",
 		e.dbname, table)
-	if err := wait.Poll(1*time.Second, 10*time.Second, func() (bool, error) {
+	if err := wait.Poll(1*time.Second, 30*time.Second, func() (bool, error) {
 		res, err := e.GetConn().Select(sql)
 		if err != nil {
 			return false, err
