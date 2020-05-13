@@ -19,6 +19,8 @@ var (
 )
 
 func main() {
+	flag.Parse()
+
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,

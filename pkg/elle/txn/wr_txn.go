@@ -42,10 +42,10 @@ func DefaultWrTxnOpts() WrTxnOpts {
 		KeyDist: KeyDist{
 			DistMode: Uniform,
 		},
-		KeyCount:        3,
+		KeyCount:        5,
 		MinTxnLength:    1,
-		MaxTxnLength:    2,
-		MaxWritesPerKey: 32,
+		MaxTxnLength:    4,
+		MaxWritesPerKey: 16,
 	}
 }
 
@@ -87,7 +87,7 @@ func (mIter *MopIterator) Next() []core.Mop {
 	for uint(len(mops)) < length {
 		// It's supporting for Exponential
 		//ki := uint64(math.Floor(math.Log(float64(uint(rand.Intn(int(keyDistScale)))+mIter.opts.KeyDistBase)) - 1))
-		var writeVersion uint
+		var writeVersion int
 		var k string
 		switch mIter.opts.KeyDist.DistMode {
 		case Exponential:
@@ -95,27 +95,25 @@ func (mIter *MopIterator) Next() []core.Mop {
 		case Uniform:
 			k, writeVersion = mIter.activeKeys.randomGet()
 		}
-		if writeVersion >= mIter.opts.MaxWritesPerKey {
+		if uint(writeVersion) > mIter.opts.MaxWritesPerKey {
 			// we activate a new key and replace old key with it
 			delete(mIter.activeKeys.keyRecord, k)
 			k = mustUtoa(mIter.activeKeys.maxKey)
 			mIter.activeKeys.maxKey++
 
-			mIter.activeKeys.keyRecord[k] = 0
-			writeVersion = 0
+			mIter.activeKeys.keyRecord[k] = 1
+			writeVersion = 1
 		}
 		var mop core.Mop
 		switch rand.Intn(2) {
 		case 0:
-			mop = core.Append{
-				Key:   k,
-				Value: core.MopValueType(writeVersion),
-			}
+			mop = core.Append(
+				k,
+				writeVersion,
+			)
 			mIter.activeKeys.keyRecord[k] = mIter.activeKeys.keyRecord[k] + 1
 		case 1:
-			mop = core.Read{
-				Key: k,
-			}
+			mop = core.Read(k, nil)
 		}
 		mops = append(mops, mop)
 	}
@@ -125,11 +123,11 @@ func (mIter *MopIterator) Next() []core.Mop {
 // WrTxnState ...
 type WrTxnState struct {
 	// map for [Key, WriteCnt]
-	keyRecord map[string]uint
+	keyRecord map[string]int
 	maxKey    uint
 }
 
-func (s WrTxnState) randomGet() (string, uint) {
+func (s WrTxnState) randomGet() (string, int) {
 	i := rand.Intn(len(s.keyRecord))
 	for k, v := range s.keyRecord {
 		if i == 0 {
@@ -141,31 +139,17 @@ func (s WrTxnState) randomGet() (string, uint) {
 }
 
 // WrTxn ...
-func WrTxn(opts WrTxnOpts, state WrTxnState) *MopIterator {
+func WrTxn(opts WrTxnOpts) *MopIterator {
+	state := WrTxnState{keyRecord: map[string]int{}, maxKey: opts.KeyCount}
+	for i := 0; uint(i) < opts.KeyCount; i++ {
+		state.keyRecord[mustItoa(i)] = 1
+	}
 	return &MopIterator{opts: opts, activeKeys: state}
 }
 
 // WrTxnWithDefaultOpts ...
-func WrTxnWithDefaultOpts(state WrTxnState) *MopIterator {
-	return WrTxn(DefaultWrTxnOpts(), state)
-}
-
-// WrTxnWithoutState ...
-func WrTxnWithoutState(opts WrTxnOpts) *MopIterator {
-	state := WrTxnState{keyRecord: map[string]uint{}, maxKey: opts.KeyCount}
-	for i := 0; uint(i) < opts.KeyCount; i++ {
-		state.keyRecord[mustItoa(i)] = 0
-	}
-	return WrTxn(opts, state)
-}
-
-// WrTxnWithDefaultOptsWithoutState ...
-func WrTxnWithDefaultOptsWithoutState() *MopIterator {
-	return WrTxnWithoutState(DefaultWrTxnOpts())
-}
-
-func mustAtou(s string) uint {
-	return uint(mustAtoi(s))
+func WrTxnWithDefaultOpts() *MopIterator {
+	return WrTxn(DefaultWrTxnOpts())
 }
 
 func mustItoa(i int) string {

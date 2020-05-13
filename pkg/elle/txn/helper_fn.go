@@ -60,15 +60,14 @@ func IntermediateWrites(history core.History) map[string]map[core.MopValueType]*
 		final := map[string]core.MopValueType{}
 		for _, mop := range *op.Value {
 			if mop.IsAppend() {
-				a := mop.(core.Append)
-				realKey := a.Key
+				realKey := mop.GetKey()
 				if lastOp, exists := final[realKey]; exists {
 					if _, ok := im[realKey]; !ok {
 						im[realKey] = make(map[core.MopValueType]*core.Op)
 					}
 					im[realKey][lastOp] = &history[idx]
 				}
-				final[realKey] = a.Value
+				final[realKey] = mop.GetValue()
 			}
 		}
 	}
@@ -87,12 +86,11 @@ func FailedWrites(history core.History) map[string]map[core.MopValueType]*core.O
 		}
 		for _, mop := range *op.Value {
 			if mop.IsAppend() {
-				a := mop.(core.Append)
-				realKey := a.Key
+				realKey := mop.GetKey()
 				if _, ok := failed[realKey]; !ok {
 					failed[realKey] = make(map[core.MopValueType]*core.Op)
 				}
-				failed[realKey][a.Value] = op
+				failed[realKey][mop.GetValue()] = op
 			}
 		}
 	}
