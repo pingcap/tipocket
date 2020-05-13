@@ -74,6 +74,8 @@ func (c *Core) checkConsistency(delay bool) (bool, error) {
 		result, err = c.abTestCompareData(delay)
 	case "binlog", "tiflash-binlog":
 		result, err = c.binlogTestCompareData(delay)
+	case "dm":
+		result, err = c.dmTestCompareData(delay)
 	default:
 		result, err = true, nil
 	}
@@ -247,6 +249,15 @@ SYNC:
 	}
 
 	return c.compareData(compareExecutor, schema)
+}
+
+func (c *Core) dmTestCompareData(delay bool) (bool, error) {
+	if delay {
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+	}
+
+	// TODO(csuzhangxc): use `sync-diff-inspecotr` to compare data.
+	return true, nil
 }
 
 func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {

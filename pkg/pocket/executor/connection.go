@@ -26,6 +26,8 @@ func (e *Executor) IfTxn() bool {
 		return e.singleTestIfTxn()
 	case "abtest":
 		return e.abTestIfTxn()
+	case "dm":
+		return e.dmTestIfTxn()
 	}
 	panic("unhandled switch")
 }

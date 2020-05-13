@@ -186,7 +186,7 @@ func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixt
 	down := tidb.New(namespace, name+"-tidb", tidbConf)
 
 	return NewCompositeCluster(
-		NewGroupCluster(up1, up2, down),
+		up1, up2, down,
 		dm.New(namespace, name+"-dm", dmConf))
 }
 
