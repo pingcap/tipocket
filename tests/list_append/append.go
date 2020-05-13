@@ -1,12 +1,14 @@
 package listappend
 
 import (
+	"bufio"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -292,10 +294,7 @@ type AppendChecker struct{}
 // Check ...
 func (a AppendChecker) Check(_ core.Model, ops []core.Operation) (bool, error) {
 	history := convertOperationsToHistory(ops)
-
-	for _, op := range history {
-		fmt.Println(op.String())
-	}
+	_ = writeEdnHistory(history)
 
 	result := elleappend.Check(
 		elletxn.Opts{Anomalies: []string{"G-single"}},
@@ -355,4 +354,18 @@ func convertOperationsToHistory(events []core.Operation) ellecore.History {
 		history = append(history, op)
 	}
 	return history
+}
+
+func writeEdnHistory(history ellecore.History) error {
+	history.AttachIndexIfNoExists()
+	f, err := os.Create("history.edn")
+	if err != nil {
+		return err
+	}
+	w := bufio.NewWriter(f)
+	for _, op := range history {
+		w.WriteString(op.String())
+		w.WriteString("\n")
+	}
+	return w.Flush()
 }
