@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,46 +33,38 @@ func (c appendResponse) IsUnknown() bool {
 }
 
 type client struct {
-	db         *sql.DB
 	tableCount int
 	useIndex   bool
 	readLock   string
+	txnMode    string
 
+	db          *sql.DB
 	nextRequest func() ellecore.Op
 }
 
-func (c *client) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *client) SetUp(_ context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+	var err error
+	txnMode := c.txnMode
+	if txnMode == "mixed" {
+		switch rand.Intn(2) {
+		case 0:
+			txnMode = "pessimistic"
+		default:
+			txnMode = "optimistic"
+		}
+	}
+	if txnMode != "optimistic" && txnMode != "pessimistic" {
+		return fmt.Errorf("illegal txn_mode value: %s", txnMode)
+	}
+
 	node := nodes[idx]
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
 	}
-	c.db = db
-	db.SetMaxIdleConns(c.tableCount)
-
-	// Do SetUp in the first node
-	if idx != 0 {
-		return nil
+	if _, err := c.db.Exec(fmt.Sprintf("set @@tidb_txn_mode = '%s'", txnMode)); err != nil {
+		return fmt.Errorf("set tidb_txn_mode failed: %v", err)
 	}
-
-	log.Printf("begin to create %d tables", c.tableCount)
-	for i := 0; i < c.tableCount; i++ {
-		if _, err = db.Exec(fmt.Sprintf("drop table if exists txn_%d", i)); err != nil {
-			return err
-		}
-		if _, err = db.Exec(fmt.Sprintf(`create table if not exists txn_%d
-			(id     int not null primary key,
-			sk int not null,
-			val text)`, i)); err != nil {
-			return err
-		}
-		if c.useIndex {
-			if _, err = db.Exec(fmt.Sprintf(`create index txn_%d_sk_val on txn_%d (sk, val)`, i, i)); err != nil {
-				return err
-			}
-		}
-	}
-	log.Printf("create %d tables finished", c.tableCount)
 	return nil
 }
 
@@ -199,7 +192,25 @@ func (c *client) NextRequest() interface{} {
 	return c.nextRequest()
 }
 
-func (c *client) DumpState(ctx context.Context) (interface{}, error) {
+func (c *client) DumpState(_ context.Context) (interface{}, error) {
+	log.Printf("begin to create %d tables", c.tableCount)
+	for i := 0; i < c.tableCount; i++ {
+		if _, err := c.db.Exec(fmt.Sprintf("drop table if exists txn_%d", i)); err != nil {
+			return nil, err
+		}
+		if _, err := c.db.Exec(fmt.Sprintf(`create table if not exists txn_%d
+			(id     int not null primary key,
+			sk int not null,
+			val text)`, i)); err != nil {
+			return nil, err
+		}
+		if c.useIndex {
+			if _, err := c.db.Exec(fmt.Sprintf(`create index txn_%d_sk_val on txn_%d (sk, val)`, i, i)); err != nil {
+				return nil, err
+			}
+		}
+	}
+	log.Printf("create %d tables finished", c.tableCount)
 	return nil, nil
 }
 
@@ -211,15 +222,18 @@ func (c *client) Start(_ context.Context, _ interface{}, _ []clusterTypes.Client
 type appendClientCreator struct {
 	tableCount int
 	readLock   string
-	it         *elletxn.MopIterator
-	mu         sync.Mutex
+	txnMode    string
+
+	it *elletxn.MopIterator
+	mu sync.Mutex
 }
 
 // NewClientCreator ...
-func NewClientCreator(tableCount int, readLock string) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock string, txnMode string) core.ClientCreator {
 	return &appendClientCreator{
 		tableCount: tableCount,
 		readLock:   readLock,
+		txnMode:    txnMode,
 		it:         elletxn.WrTxnWithDefaultOpts(),
 	}
 }
@@ -229,6 +243,7 @@ func (a *appendClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 	return &client{
 		tableCount: a.tableCount,
 		readLock:   a.readLock,
+		txnMode:    a.txnMode,
 		nextRequest: func() ellecore.Op {
 			a.mu.Lock()
 			defer a.mu.Unlock()

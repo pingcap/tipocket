@@ -1,0 +1,76 @@
+metadata:
+  generateName: tipocket-list-append-rep-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-list-append
+  arguments:
+    parameters:
+      - name: table-count
+        value: 7
+      - name: read-lock
+        value: "\"FOR UPDATE\""
+      - name: txn-mode
+        value: pessimistic
+      - name: ns
+        value: tipocket-list-append-rep
+      - name: purge
+        value: "true"
+      - name: repository
+        value: pingcap
+      - name: image_version
+        value: nightly
+      - name: storage_class
+        value: gp2
+      - name: nemesis
+        value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+      - name: client
+        value: "5"
+      - name: request_count
+        value: "10000"
+      - name: round
+        value: "1"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
+  templates:
+    - name: call-tipocket-list-append
+      steps:
+        - - name: call-tipocket-list-append
+            templateRef:
+              name: tipocket-list-append
+              template: tipocket-list-append
+            arguments:
+              parameters:
+                - name: table-count
+                  value: "{{workflow.parameters.table-count}}"
+                - name: read-lock
+                  value: "{{workflow.parameters.read-lock}}"
+                - name: txn-mode
+                  value: "{{workflow.parameters.txn-mode}}"
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: request_count
+                  value: "{{workflow.parameters.request_count}}"
+                - name: round
+                  value: "{{workflow.parameters.round}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
