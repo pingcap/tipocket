@@ -44,6 +44,14 @@ spec:
     templates:
       - name: call-tipocket-scbank
         steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
           - - name: call-tipocket-scbank
               templateRef:
                 name: tipocket-scbank

@@ -56,6 +56,14 @@ spec:
     templates:
       - name: tipocket-cdc-kafka-normal
         steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
           - - name: tipocket-cdc-kafka-normal
               templateRef:
                 name: tipocket-cdc
