@@ -38,6 +38,8 @@ spec:
             default: nightly
           - name: cdc_enable_kafka
             default: "false"
+          - name: cdc_kafka_consumer_image
+            default: "docker.io/pingcap/ticdc-kafka:nightly"
           - name: abtest_general_log
             default: "true"
           - name: binlog_sync_timeout
@@ -83,6 +85,7 @@ spec:
             -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
             -cdc.enable-kafka={{inputs.parameters.cdc_enable_kafka}} \
+            -cdc.kafka-consumer-image={{inputs.parameters.cdc_kafka_consumer_image}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general-log={{inputs.parameters.abtest_general_log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
