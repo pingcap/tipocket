@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	dataNum     = flag.Int("dataNum", 2000, "the number of data（the unit is 10 thoudstand)")
+	dataNum     = flag.Int("dataNum", 10000, "the number of data（the unit is 10 thoudstand)")
 	concurrency = flag.Int("concurrency", 400, "concurrency of worker")
 	batch       = flag.Int("batch", 100, "batch of insert sql")
 )

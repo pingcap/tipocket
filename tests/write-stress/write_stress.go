@@ -39,7 +39,7 @@ const (
 		TABLE_ID int(11) NOT NULL COMMENT '分库ID',
 		CONTRACT_NO varchar(128) NOT NULL COMMENT '借据号',
 		TERM_NO int(11) NOT NULL COMMENT '期次号',
-		NOUSE char(60) NOT NULL COMMENT '填充位',
+		NOUSE char(510) NOT NULL COMMENT '填充位',
 		
 		UNIQUE KEY TMP_JIEB_INSTMNT_DAILY_IDX1 (CONTRACT_NO, TERM_NO),
 		KEY TMP_JIEB_INSTMNT_DAILY_IDX2 (TABLE_ID, CONTRACT_NO)
@@ -161,7 +161,7 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
 	totalNum := c.DataNum * 10000
 	num := totalNum / c.Concurrency
-	str := make([]byte, 50)
+	str := make([]byte, 500)
 	rnd := rand.New(rand.NewSource(time.Now().Unix()))
 	for i := 0; i < num/c.Batch; i++ {
 		tx, err := db.Begin()
