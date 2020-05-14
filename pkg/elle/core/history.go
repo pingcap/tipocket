@@ -154,7 +154,7 @@ type Op struct {
 
 func (op Op) String() string {
 	var parts []string
-	parts = append(parts, fmt.Sprintf("{:type %s", op.Type))
+	parts = append(parts, fmt.Sprintf("{:type :%s", op.Type))
 	var mopParts []string
 	if op.Value != nil {
 		for _, mop := range *op.Value {
@@ -173,9 +173,9 @@ func (op Op) String() string {
 	}
 
 	if op.Error != "" {
-		parts = append(parts, fmt.Sprintf(":error [%s]", op.Error))
+		parts = append(parts, fmt.Sprintf(":error [\"%s\"]", op.Error))
 	}
-	return strings.Join(parts, " ") + "}"
+	return strings.Join(parts, ", ") + "}"
 }
 
 // ValueLength ...

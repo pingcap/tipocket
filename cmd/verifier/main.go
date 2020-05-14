@@ -27,10 +27,11 @@ import (
 	"github.com/pingcap/tipocket/pkg/model"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
+	listappend "github.com/pingcap/tipocket/tests/list_append"
 )
 
 var (
-	names = flag.String("names", "", "model names, separated by comma")
+	names = flag.String("names", "append", "model names, separated by comma")
 )
 
 func main() {
@@ -60,6 +61,8 @@ func main() {
 			//	s.Parser, s.Checker = tidb.NewSequentialParser(), tidb.NewSequentialChecker()
 			case "register":
 				s.Model, s.Parser, s.Checker = model.RegisterModel(), model.RegisterParser(), porcupine.Checker{}
+			case "append":
+				s.Model, s.Parser, s.Checker = nil, listappend.AppendParser{}, listappend.AppendChecker{}
 			case "":
 				continue
 			default:
