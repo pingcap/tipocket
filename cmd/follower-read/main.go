@@ -16,6 +16,7 @@ import (
 var (
 	dbname      = flag.String("dbname", "test", "name of database to test")
 	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
+	readClose   = flag.Bool("switch", false, "determine if close follower read")
 )
 
 func main() {
@@ -38,6 +39,7 @@ func createFollowerReadCmd(cfg *control.Config) {
 			Cfg: &follower.Config{
 				DBName:      *dbname,
 				Concurrency: *concurrency,
+				Switch:      *readClose,
 			},
 		},
 		Provisioner: cluster.NewK8sProvisioner(),

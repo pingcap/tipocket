@@ -23,6 +23,7 @@ type ClientCreator struct {
 type Config struct {
 	DBName      string
 	Concurrency int
+	Switch      bool
 }
 
 type follower struct {
@@ -237,6 +238,26 @@ func testSplitRegion(f *follower) {
 	region := 1000000
 	f.db.Exec("create table test_region(a int)")
 
+	if !f.Switch {
+		_, e := f.db.Exec("set @@tidb_replica_read = \"leader-and-follower\"")
+		if e != nil {
+			log.Fatal(e)
+		}
+
+		rows, err := f.db.Query("select @@tidb_replica_read")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var val string
+			rows.Scan(&val)
+			if val != "leader-and-follower" {
+				log.Fatalf("assert tidb_replica_read == leader-and-follower failed, current: %v", val)
+			}
+		}
+	}
+
 	// prepare some data
 	var wg sync.WaitGroup
 	for i := 0; i < 24; i++ {
@@ -295,7 +316,7 @@ func testSequence(ctx context.Context, f *follower) {
 	c1, _ := f.db.Conn(ctx)
 	c1.ExecContext(ctx, sql1)
 
-	var loop = 2000000000
+	var loop = 2000000
 	var mutex sync.Mutex
 	m := make(map[int]bool)
 
@@ -339,5 +360,5 @@ func testSequence(ctx context.Context, f *follower) {
 		}
 	}()
 	wg.Wait()
-	log.Infof("assert sum of sequence succeed")
+	log.Infof("testSequence finished, assert sum of sequence succeed")
 }
