@@ -158,8 +158,24 @@ func NewABTest(dsn1, dsn2 string, opt *Option, tiFlash bool) (*Executor, error) 
 	return &e, nil
 }
 
+var (
+	// I don't know why we need to New**Test multi times in
+	// `initCoreConnectionWithoutSchema`, `initCoreConnection` and `initSubConnection`.
+	// but in DM test, I think only one executor is enough.
+	dmExecutor    *Executor
+	newDMTestOnce sync.Once
+)
+
 // NewDMTest creates a DM test Executor.
 func NewDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
+	var err error
+	newDMTestOnce.Do(func() {
+		dmExecutor, err = newDMTest(dsn1, dsn2, dsn3, opt)
+	})
+	return dmExecutor, err
+}
+
+func newDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
 	var conn1LogPath, conn2LogPath, conn3LogPath, executorLogPath string
 	if opt.Log != "" {
 		conn1LogPath = path.Join(opt.Log, fmt.Sprintf("dm-conn1%s.log", opt.LogSuffix))

@@ -66,8 +66,8 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 			return nil, errors.Trace(err)
 		}
 	case "dm":
-		e, err = executor.NewDMTest(removeDSNSchema(c.cfg.DSN1), removeDSNSchema(c.cfg.DSN2), removeDSNSchema(c.cfg.DSN3),
-			c.generateExecutorOption(id))
+		// no `removeDSNSchema` used here
+		e, err = executor.NewDMTest(c.cfg.DSN1, c.cfg.DSN2, c.cfg.DSN3, c.generateExecutorOption(id))
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
