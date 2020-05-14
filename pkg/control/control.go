@@ -359,7 +359,7 @@ func (c *Controller) setUpClient() {
 		client := c.clients[i]
 		log.Infof("begin to set up db client for node %s", c.cfg.ClientNodes[i])
 		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, i); err != nil {
-			log.Fatalf("set up db client for node %s failed %v", c.cfg.ClientNodes[i], err)
+			log.Fatalf("set up db client for node %s failed: %v", c.cfg.ClientNodes[i], err)
 		}
 	})
 }
@@ -370,7 +370,7 @@ func (c *Controller) tearDownClient() {
 		client := c.clients[i]
 		log.Infof("begin to tear down db client for node %s", c.cfg.ClientNodes[i])
 		if err := client.TearDown(c.ctx, c.cfg.ClientNodes, i); err != nil {
-			log.Infof("tear down db client for node %s failed %v", c.cfg.ClientNodes[i], err)
+			log.Infof("tear down db client for node %s failed: %v", c.cfg.ClientNodes[i], err)
 		}
 	})
 }

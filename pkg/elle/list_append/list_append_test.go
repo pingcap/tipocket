@@ -120,15 +120,15 @@ func TestGraph(t *testing.T) {
 		checkResult := core.Check(graph, []core.Op{rxay1, ryax1, rx1ry1})
 		require.Equal(t, 1, len(checkResult.Sccs))
 		if !reflect.DeepEqual([]string{`Let:
-  T1 = {:type ok :value [[:r y nil] [:append x 1]]}
-  T2 = {:type ok :value [[:r x nil] [:append y 1]]}
+  T1 = {:type :ok, :value [[:r y nil] [:append x 1]]}
+  T2 = {:type :ok, :value [[:r x nil] [:append y 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of y, which T2 created by appending 1.
   - However, T2 < T1, because T2 observed the initial (nil) state of x, which T1 created by appending 1: a contradiction!`}, checkResult.Cycles) {
 			require.Equal(t, []string{`Let:
-  T1 = {:type ok :value [[:r x nil] [:append y 1]]}
-  T2 = {:type ok :value [[:r y nil] [:append x 1]]}
+  T1 = {:type :ok, :value [[:r x nil] [:append y 1]]}
+  T2 = {:type :ok, :value [[:r y nil] [:append x 1]]}
 
 Then:
   - T1 < T2, because T1 observed the initial (nil) state of x, which T2 created by appending 1.
@@ -162,7 +162,7 @@ Then:
 
 	if switches {
 		defer func() {
-			expect := "duplicate appends, op {:type invoke :value [[:append y 2] [:append x 1]] :index 1}, key: x, value: 1"
+			expect := "duplicate appends, op {:type :invoke, :value [[:append y 2] [:append x 1]], :index 1}, key: x, value: 1"
 			if r := recover(); r == nil || r.(string) != expect {
 				t.Fatalf("expect got panic %s", expect)
 			}
@@ -312,19 +312,19 @@ func TestChecker(t *testing.T) {
 						Circle: core.Circle{
 							Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
 						},
-						Steps: []core.Step{{wwExplainResult{
-							Key:       "x",
-							PreValue:  core.MopValueType(1),
-							Value:     core.MopValueType(2),
-							AMopIndex: 0,
-							BMopIndex: 0,
-						}}, {wwExplainResult{
-							Key:       "y",
-							PreValue:  core.MopValueType(2),
-							Value:     core.MopValueType(1),
-							AMopIndex: 1,
-							BMopIndex: 1,
-						}}},
+						Steps: []core.Step{{WWExplainResult(
+							"x",
+							core.MopValueType(1),
+							core.MopValueType(2),
+							0,
+							0,
+						)}, {WWExplainResult(
+							"y",
+							core.MopValueType(2),
+							core.MopValueType(1),
+							1,
+							1,
+						)}},
 						Typ: "G0",
 					},
 				},
@@ -486,18 +486,18 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t2, 1), withIndex(t1, 0), withIndex(t2, 1)},
 					},
-					Steps: []core.Step{{wrExplainResult{
-						Key:       "y",
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 1,
-					}}, {wwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(2),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{WRExplainResult(
+						"y",
+						core.MopValueType(1),
+						1,
+						1,
+					)}, {WWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(2),
+						0,
+						0,
+					)}},
 					Typ: "G1c",
 				}},
 			},
@@ -544,19 +544,19 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t2, 1), withIndex(t1, 0), withIndex(t2, 1)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 1,
-					}}, {wwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(2),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						1,
+					)}, {WWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(2),
+						0,
+						0,
+					)}},
 					Typ: "G-single",
 				}},
 			},
@@ -574,19 +574,19 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t2, 1), withIndex(t1, 0), withIndex(t2, 1)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 1,
-					}}, {wwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(2),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						1,
+					)}, {WWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(2),
+						0,
+						0,
+					)}},
 					Typ: "G-single",
 				}},
 			},
@@ -632,19 +632,19 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}, {rwExplainResult{
-						Key:       "x",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}, {RWExplainResult(
+						"x",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}},
 					Typ: "G2-item",
 				}},
 			},
@@ -662,19 +662,19 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}, {rwExplainResult{
-						Key:       "x",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}, {RWExplainResult(
+						"x",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}},
 					Typ: "G2-item",
 				}},
 			},
@@ -691,19 +691,19 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}, {rwExplainResult{
-						Key:       "x",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}, {RWExplainResult(
+						"x",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}},
 					Typ: "G2-item",
 				}},
 			},
@@ -746,13 +746,13 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{t2p, t1p, t2p},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(2),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}, {core.RealtimeExplainResult{
+					Steps: []core.Step{{RWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(2),
+						0,
+						0,
+					)}, {core.RealtimeExplainResult{
 						PreEnd:    t1p,
 						PostStart: t2,
 					}}},
@@ -786,18 +786,18 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t3, 2), withIndex(t1, 0), withIndex(t3, 2)},
 					},
-					Steps: []core.Step{{wrExplainResult{
-						Key:       "y",
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 1,
-					}}, {wwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(3),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{WRExplainResult(
+						"y",
+						core.MopValueType(1),
+						1,
+						1,
+					)}, {WWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(3),
+						0,
+						0,
+					)}},
 					Typ: "G1c",
 				}},
 			},
@@ -895,18 +895,18 @@ func TestChecker(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t2, 1), withIndex(t1, 0), withIndex(t2, 1)},
 					},
-					Steps: []core.Step{{wrExplainResult{
-						Key:       "y",
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 1,
-					}}, {wwExplainResult{
-						Key:       "x",
-						PreValue:  core.MopValueType(1),
-						Value:     core.MopValueType(2),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{WRExplainResult(
+						"y",
+						core.MopValueType(1),
+						1,
+						1,
+					)}, {WWExplainResult(
+						"x",
+						core.MopValueType(1),
+						core.MopValueType(2),
+						0,
+						0,
+					)}},
 					Typ: "G1c",
 				}},
 			},
@@ -955,19 +955,19 @@ func TestRepeatableRead(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{withIndex(t1, 0), withIndex(t2, 1), withIndex(t1, 0)},
 					},
-					Steps: []core.Step{{rwExplainResult{
-						Key:       "x",
-						PreValue:  initMagicNumber,
-						Value:     1,
-						AMopIndex: 0,
-						BMopIndex: 1,
-					}}, {rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 0,
-						BMopIndex: 1,
-					}}},
+					Steps: []core.Step{{RWExplainResult(
+						"x",
+						initMagicNumber,
+						1,
+						0,
+						1,
+					)}, {RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						0,
+						1,
+					)}},
 					Typ: "G2-item",
 				},
 			},
@@ -1000,29 +1000,29 @@ func TestGNonadjacent(t *testing.T) {
 					Circle: core.Circle{
 						Path: []core.Op{t1p, t2p, t3p, t4p, t1p},
 					},
-					Steps: []core.Step{{wrExplainResult{
-						Key:       "x",
-						Value:     1,
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}, {rwExplainResult{
-						Key:       "y",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}, {wrExplainResult{
-						Key:       "y",
-						Value:     core.MopValueType(1),
-						AMopIndex: 0,
-						BMopIndex: 0,
-					}}, {rwExplainResult{
-						Key:       "x",
-						PreValue:  initMagicNumber,
-						Value:     core.MopValueType(1),
-						AMopIndex: 1,
-						BMopIndex: 0,
-					}}},
+					Steps: []core.Step{{WRExplainResult(
+						"x",
+						1,
+						0,
+						0,
+					)}, {RWExplainResult(
+						"y",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}, {WRExplainResult(
+						"y",
+						core.MopValueType(1),
+						0,
+						0,
+					)}, {RWExplainResult(
+						"x",
+						initMagicNumber,
+						core.MopValueType(1),
+						1,
+						0,
+					)}},
 					Typ: "G-nonadjacent",
 				},
 			},
