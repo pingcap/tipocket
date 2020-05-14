@@ -6,7 +6,7 @@ spec:
   timezone: "Asia/Shanghai"
   startingDeadlineSeconds: 0
   workflowSpec:
-    entrypoint: call-tipocket-cdc-kafka
+    entrypoint: call-tipocket-cdc
     arguments:
       parameters:
         - name: ns
@@ -56,7 +56,7 @@ spec:
         - name: loki-password
           value: "admin"
     templates:
-      - name: tipocket-cdc-kafka
+      - name: call-tipocket-cdc
         steps:
           - - name: call-wait-cluster
               templateRef:
@@ -66,7 +66,7 @@ spec:
                 parameters:
                   - name: ns
                     value: "{{workflow.parameters.ns}}"
-          - - name: tipocket-cdc-kafka
+          - - name: call-tipocket-cdc
               templateRef:
                 name: tipocket-cdc
                 template: tipocket-cdc
