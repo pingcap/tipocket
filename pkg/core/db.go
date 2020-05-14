@@ -26,7 +26,7 @@ func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node cluster
 	return nil
 }
 
-// TearDown tears down the datase.
+// TearDown tears down the database.
 func (NoopDB) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
 	return nil
 }

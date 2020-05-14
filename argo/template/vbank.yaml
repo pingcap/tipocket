@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-vbank
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -38,6 +40,14 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "3"
+      outputs:
+        artifacts:
+          - name: case-logs
+            archiveLogs: true
+            path: /logs
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -52,7 +62,7 @@ spec:
           - |
             /bin/vbank \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
@@ -68,19 +78,4 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-      outputs:
-        artifacts:
-          - name: case-logs
-            archiveLogs: true
-            path: /logs
-            s3:
-              accessKeySecret:
-                key: accesskey
-                name: my-minio-cred
-              bucket: my-bucket
-              endpoint: minio:9000
-              key: "{{workflow.name}}/{{pod.name}}/case-logs.tar.gz"
-              insecure: true
-              secretKeySecret:
-                key: secretkey
-                name: my-minio-cred
+

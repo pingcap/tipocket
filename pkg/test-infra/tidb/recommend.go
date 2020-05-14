@@ -255,10 +255,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
-
-		// TODO(yeya24): There is a bug in the operator side so we can only set it
-		// manually https://github.com/pingcap/tidb-operator/issues/2219.
-		// Remove this after it fixes the bug.
 		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
 			Replication: &v1alpha1.PDReplicationConfig{
 				EnablePlacementRules: pointer.BoolPtr(true),

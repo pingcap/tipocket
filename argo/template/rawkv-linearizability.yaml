@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-rawkv-linearizability
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: image_version
@@ -36,6 +38,14 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "3"
+      outputs:
+        artifacts:
+          - name: case-logs
+            archiveLogs: true
+            path: /logs
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -50,7 +60,7 @@ spec:
           - |
             /bin/rawkv-linearizability \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -tidb-config={{inputs.parameters.tidb_config}} \
@@ -65,8 +75,3 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-      outputs:
-        artifacts:
-          - name: case-logs
-            archiveLogs: true
-            path: /logs

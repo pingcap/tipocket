@@ -23,7 +23,7 @@ type Client struct {
 }
 
 // NewClient creates a client to query loki.
-func NewClient(address, username, password string) *Client {
+func NewClient(startTime time.Time, address, username, password string) *Client {
 	if address == "" {
 		return nil
 	}
@@ -33,7 +33,7 @@ func NewClient(address, username, password string) *Client {
 			Username: username,
 			Password: password,
 		},
-		startTime: time.Now(),
+		startTime: startTime,
 	}
 }
 
@@ -41,17 +41,13 @@ func NewClient(address, username, password string) *Client {
 // to match the specific logs in loki. match is a string which you want to query
 // from loki, you can set isRegex to true to make it to be a regex match. nonMatch
 //  is a set of strings you don't want to match.
-func (c *Client) FetchPodLogs(ns, podName, match string, nonMatch []string, queryFrom, queryTo time.Time, isRegex bool) ([]string, error) {
+func (c *Client) FetchPodLogs(ns, podName, containerName, match string, nonMatch []string, queryFrom, queryTo time.Time, limit int, isRegex bool) ([]string, error) {
 	if ns == "" {
 		return nil, errors.New("namespace must be set")
 	}
 
 	if podName == "" {
 		return nil, errors.New("pod name must be set")
-	}
-
-	if match == "" {
-		return nil, errors.New("match query must be set")
 	}
 
 	if !queryFrom.Before(queryTo) {
@@ -72,8 +68,8 @@ func (c *Client) FetchPodLogs(ns, podName, match string, nonMatch []string, quer
 	}
 
 	// Format the query to loki.
-	query := fmt.Sprintf(`{instance="%s", namespace="%s"} %s"%s"`,
-		podName, ns, op, match)
+	query := fmt.Sprintf(`{instance="%s", container_name="%s", namespace="%s"} %s"%s"`,
+		podName, containerName, ns, op, match)
 
 	var nonEqual string
 	for _, v := range nonMatch {
@@ -81,7 +77,7 @@ func (c *Client) FetchPodLogs(ns, podName, match string, nonMatch []string, quer
 	}
 	query += nonEqual
 
-	res, err := c.cli.QueryRange(query, 1000, queryFrom, queryTo, logproto.BACKWARD, 15*time.Second, true)
+	res, err := c.cli.QueryRange(query, limit, queryFrom, queryTo, logproto.FORWARD, 1*time.Second, true)
 	if err != nil {
 		return nil, err
 	}

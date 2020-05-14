@@ -9,10 +9,12 @@ require (
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
 	github.com/go-sql-driver/mysql v1.4.1
+	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/uuid v1.1.1
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/mgechev/revive v1.0.2
+	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
 	github.com/pingcap/chaos-mesh v0.0.0-20200405033024-7a8795a92c55
@@ -31,6 +33,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0 // indirect
+	go.uber.org/zap v1.14.1
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	k8s.io/api v0.17.0

@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-rawkv-linearizability
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -22,17 +21,13 @@ spec:
         value: "20000"
       - name: round
         value: "100"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-rawkv-linearizability
       steps:
         - - name: call-tipocket-rawkv-linearizability
@@ -57,3 +52,9 @@ spec:
                   value: "{{workflow.parameters.request_count}}"
                 - name: round
                   value: "{{workflow.parameters.round}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

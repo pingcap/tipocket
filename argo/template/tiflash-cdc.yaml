@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-tiflash-cdc
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "true"
           - name: image_version
@@ -58,6 +60,11 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -71,7 +78,7 @@ spec:
           - |
             /bin/tiflash-cdc \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
             -tidb-image={{inputs.parameters.tidb_image}} \

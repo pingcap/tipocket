@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-txn-rand-pessimistic
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -26,6 +28,11 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -39,7 +46,7 @@ spec:
           - |
             /bin/txn-rand-pessimistic \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \

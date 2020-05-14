@@ -8,6 +8,8 @@ spec:
         parameters:
           - name: ns
             default: tipocket-sqllogic
+          - name: hub
+            default: "docker.io"
           - name: purge
             default: "false"
           - name: repository
@@ -24,6 +26,13 @@ spec:
             default: loki
           - name: loki-password
             default: admin
+          - name: tidb-replica-read
+            default: "leader"
+      outputs:
+        artifacts:
+          - name: tidb-logs
+            archiveLogs: true
+            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -37,7 +46,7 @@ spec:
           - |
             /bin/sqllogic \
             -namespace={{inputs.parameters.ns}} \
-            -hub=docker.io \
+            -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage_class}} \
             -image-version={{inputs.parameters.image_version}} \
@@ -47,4 +56,5 @@ spec:
             -d=sqllogictest-tipocket \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
+            -tidb-replica-read={{inputs.parameters.tidb-replica-read}}

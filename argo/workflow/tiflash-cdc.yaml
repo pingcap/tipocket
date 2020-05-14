@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-tiflash-cdc
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -41,7 +40,7 @@ spec:
       - name: abtest_general_log
         value: "true"
       - name: tiflash_image
-        value: ""
+        value: "v4.0.0-rc"
       - name: tiflash_replicas
         value: 2
       - name: cdc_hub
@@ -50,17 +49,13 @@ spec:
         value: "pingcap"
       - name: cdc_version
         value: "nightly"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-tiflash-cdc
       steps:
         - - name: call-tipocket-tiflash-cdc
@@ -113,3 +108,9 @@ spec:
                   value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"

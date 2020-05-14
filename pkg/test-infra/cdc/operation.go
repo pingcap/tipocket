@@ -25,6 +25,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,19 +37,28 @@ import (
 
 // Ops knows how to operate CDC cluster
 type Ops struct {
-	cli client.Client
-	cdc *CDC
-	ns  string
+	cli   client.Client
+	cdc   *CDC
+	kafka *Kafka
+	ns    string
 }
 
 // New creates cdc ops
 func New(ns, name string) *Ops {
-	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name)}
+	var kafka *Kafka
+	if fixture.Context.CDCConfig.EnableKafka {
+		kafka = newKafka(ns, name)
+	}
+	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name), kafka: kafka}
 }
 
 // Apply CDC cluster
 func (o *Ops) Apply() error {
 	if err := o.applyCDC(); err != nil {
+		return err
+	}
+
+	if err := o.applyKafka(); err != nil {
 		return err
 	}
 
@@ -81,13 +91,42 @@ func (o *Ops) applyCDC() error {
 		return err
 	}
 
-	if err := o.waitCDCReady(o.cdc.StatefulSet, 5*time.Minute); err != nil {
+	if err := o.waitServiceReady(o.cdc.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (o *Ops) waitCDCReady(st *appsv1.StatefulSet, timeout time.Duration) error {
+func (o *Ops) applyKafka() error {
+	if o.kafka == nil {
+		return nil
+	}
+	if err := util.ApplyObject(o.cli, o.kafka.Zookeeper.Service); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.kafka.Zookeeper.StatefulSet); err != nil {
+		return err
+	}
+	if err := o.waitServiceReady(o.kafka.Zookeeper.StatefulSet, 5*time.Minute); err != nil {
+		return err
+	}
+
+	if err := util.ApplyObject(o.cli, o.kafka.Service); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.kafka.StatefulSet); err != nil {
+		return err
+	}
+	if err := o.waitServiceReady(o.kafka.StatefulSet, 5*time.Minute); err != nil {
+		return err
+	}
+	if err := util.ApplyObject(o.cli, o.kafka.Job); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *Ops) waitServiceReady(st *appsv1.StatefulSet, timeout time.Duration) error {
 	local := st.DeepCopy()
 	log.Infof("Waiting up to %v for StatefulSet %s to have all replicas ready",
 		timeout, st.Name)

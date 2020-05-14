@@ -3,7 +3,6 @@ metadata:
   namespace: argo
 spec:
   entrypoint: call-tipocket-abtest
-  onExit: call-export-logs
   arguments:
     parameters:
       - name: ns
@@ -36,17 +35,13 @@ spec:
         value: "3"
       - name: abtest_general_log
         value: "true"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
   templates:
-    - name: call-export-logs
-      steps:
-        - - name: call-export-logs
-            templateRef:
-              name: export-logs
-              template: export-logs
-            arguments:
-              parameters:
-                - name: ns
-                  value: "{{workflow.parameters.ns}}"
     - name: call-tipocket-abtest
       steps:
         - - name: call-tipocket-abtest
@@ -85,3 +80,9 @@ spec:
                   value: "{{workflow.parameters.abtest_concurrency}}"
                 - name: abtest_general_log
                   value: "{{workflow.parameters.abtest_general_log}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
