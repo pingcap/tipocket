@@ -36,11 +36,24 @@ func preprocess(h core.History) (history core.History, appendIdx appendIdx, writ
 }
 
 type wwExplainResult struct {
+	Typ       core.DependType
 	Key       string
 	PreValue  core.MopValueType
 	Value     core.MopValueType
 	AMopIndex int
 	BMopIndex int
+}
+
+// WWExplainResult creates a wwExplainResult value
+func WWExplainResult(key string, preValue, value core.MopValueType, amopIndex, bmopIndex int) wwExplainResult {
+	return wwExplainResult{
+		Typ:       core.WWDepend,
+		Key:       key,
+		PreValue:  preValue,
+		Value:     value,
+		AMopIndex: amopIndex,
+		BMopIndex: bmopIndex,
+	}
 }
 
 func (w wwExplainResult) Type() core.DependType {
@@ -65,13 +78,13 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 			}
 			dep := wwMopDep(w.appendIdx, w.writeIdx, b, bmop)
 			if dep != nil && *dep == a {
-				return wwExplainResult{
-					Key:       k,
-					PreValue:  prev,
-					Value:     v,
-					AMopIndex: a.IndexOfMop(core.Append(k, prev.(int))),
-					BMopIndex: b.IndexOfMop(bmop),
-				}
+				return WWExplainResult(
+					k,
+					prev,
+					v,
+					a.IndexOfMop(core.Append(k, prev.(int))),
+					b.IndexOfMop(bmop),
+				)
 			}
 		}
 	}
@@ -112,10 +125,22 @@ func wwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 }
 
 type wrExplainResult struct {
+	Typ       core.DependType
 	Key       string
 	Value     core.MopValueType
 	AMopIndex int
 	BMopIndex int
+}
+
+// WRExplainResult creates a wrExplainResult
+func WRExplainResult(key string, value core.MopValueType, amopIndex, bmopIndex int) wrExplainResult {
+	return wrExplainResult{
+		Typ:       core.WRDepend,
+		Key:       key,
+		Value:     value,
+		AMopIndex: amopIndex,
+		BMopIndex: bmopIndex,
+	}
 }
 
 func (w wrExplainResult) Type() core.DependType {
@@ -141,12 +166,12 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 		}
 		writer := wrMopDep(w.writeIdx, b, mop)
 		if writer != nil && *writer == a {
-			return wrExplainResult{
-				Key:       k,
-				Value:     v[len(v)-1],
-				AMopIndex: a.IndexOfMop(core.Append(k, v[len(v)-1])),
-				BMopIndex: b.IndexOfMop(mop),
-			}
+			return WRExplainResult(
+				k,
+				v[len(v)-1],
+				a.IndexOfMop(core.Append(k, v[len(v)-1])),
+				b.IndexOfMop(mop),
+			)
 		}
 	}
 	return nil
@@ -185,11 +210,24 @@ func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 }
 
 type rwExplainResult struct {
+	Typ       core.DependType
 	Key       string
 	PreValue  core.MopValueType
 	Value     core.MopValueType
 	AMopIndex int
 	BMopIndex int
+}
+
+// RWExplainResult creates a rwExplainResult
+func RWExplainResult(key string, preValue, value core.MopValueType, amopIndex, bmopIndex int) rwExplainResult {
+	return rwExplainResult{
+		Typ:       core.RWDepend,
+		Key:       key,
+		PreValue:  preValue,
+		Value:     value,
+		AMopIndex: amopIndex,
+		BMopIndex: bmopIndex,
+	}
 }
 
 func (w rwExplainResult) Type() core.DependType {
@@ -233,13 +271,13 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 					}
 				}
 			}
-			return rwExplainResult{
-				Key:       k,
-				PreValue:  prev,
-				Value:     v,
-				AMopIndex: ai,
-				BMopIndex: i,
-			}
+			return RWExplainResult(
+				k,
+				prev,
+				v,
+				ai,
+				i,
+			)
 		}
 	}
 	return nil
