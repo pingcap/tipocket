@@ -70,8 +70,9 @@ func (l ClientCreator) Create(node types.ClientNode) core.Client {
 // life of a bank (or other company).
 type writestressClient struct {
 	*Config
-	db           *sql.DB
-	contract_ids [][]byte
+	db       *sql.DB
+	timeUnix int64
+	rnd      *rand.Rand
 }
 
 func (c *writestressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
@@ -124,23 +125,8 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 	defer func() {
 		log.Infof("test end...")
 	}()
-	totalNum := c.DataNum * 10000
-	c.contract_ids = make([][]byte, totalNum)
-	timeUnix := time.Now().Unix()
-	count := 0
-	for i := 0; i < totalNum; i++ {
-		// "abcd" + timestamp + count
-		c.contract_ids[i] = append(c.contract_ids[i], []byte("abcd")...)
-		tm := time.Unix(timeUnix, 0)
-		c.contract_ids[i] = append(c.contract_ids[i], tm.String()...)
-		c.contract_ids[i] = append(c.contract_ids[i], strconv.Itoa(count)...)
 
-		count++
-		if count%200 == 0 {
-			timeUnix++
-			count = 0
-		}
-	}
+	c.rnd = rand.New(rand.NewSource(time.Now().Unix()))
 
 	var wg sync.WaitGroup
 	for i := 0; i < c.Concurrency; i++ {
@@ -162,7 +148,16 @@ func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
 	totalNum := c.DataNum * 10000
 	num := totalNum / c.Concurrency
 	str := make([]byte, 250)
-	rnd := rand.New(rand.NewSource(time.Now().Unix()))
+
+	limit := 1000
+	if num < 100 {
+		limit = 1
+	} else if num < 1000 {
+		limit = 100
+	}
+	timeUnix := c.timeUnix + int64(pos*num/limit)
+	nextTimeUnix := c.timeUnix + int64((pos+1)*num/limit)
+	count := 0
 	for i := 0; i < num/c.Batch; i++ {
 		tx, err := db.Begin()
 		if err != nil {
@@ -178,12 +173,27 @@ func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
 			if n >= totalNum {
 				break
 			}
-			contract_id := c.contract_ids[n]
-			util.RandString(str, rnd)
+			// "abcd" + timestamp + count
+			contract_id := []byte("abcd")
+			tm := time.Unix(timeUnix, 0)
+			contract_id = append(contract_id, tm.String()...)
+			contract_id = append(contract_id, strconv.Itoa(count)...)
+			util.RandString(str, c.rnd)
 			if j != 0 {
 				query += ","
 			}
-			query += fmt.Sprintf(`(%v, "%v", %v, "%v")`, rnd.Uint32()%960+1, string(contract_id[:]), rnd.Uint32()%36+1, string(str[:]))
+
+			query += fmt.Sprintf(`(%v, "%v", %v, "%v")`, c.rnd.Uint32()%960+1, string(contract_id[:]), c.rnd.Uint32()%36+1, string(str[:]))
+
+			count++
+			if count%limit == 0 {
+				if timeUnix+1 == nextTimeUnix {
+					count++
+				} else {
+					timeUnix++
+					count = 0
+				}
+			}
 		}
 		//fmt.Println(query)
 		if _, err := tx.Exec(query); err != nil {
