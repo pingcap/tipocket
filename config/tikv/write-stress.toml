@@ -1,0 +1,3 @@
+[raftstore]
+apply-pool-size = 6
+store-pool-size = 6
