@@ -72,7 +72,6 @@ type writestressClient struct {
 	*Config
 	db       *sql.DB
 	timeUnix int64
-	rnd      *rand.Rand
 }
 
 func (c *writestressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
@@ -126,8 +125,6 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 		log.Infof("test end...")
 	}()
 
-	c.rnd = rand.New(rand.NewSource(time.Now().Unix()))
-
 	var wg sync.WaitGroup
 	for i := 0; i < c.Concurrency; i++ {
 		wg.Add(1)
@@ -145,6 +142,8 @@ func (c *writestressClient) Start(ctx context.Context, cfg interface{}, clientNo
 
 // ExecuteInsert is run case
 func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
+	rnd := rand.New(rand.NewSource(rand.Int63()))
+
 	totalNum := c.DataNum * 10000
 	num := totalNum / c.Concurrency
 	str := make([]byte, 250)
@@ -178,12 +177,12 @@ func (c *writestressClient) ExecuteInsert(db *sql.DB, pos int) error {
 			tm := time.Unix(timeUnix, 0)
 			contract_id = append(contract_id, tm.String()...)
 			contract_id = append(contract_id, strconv.Itoa(count)...)
-			util.RandString(str, c.rnd)
+			util.RandString(str, rnd)
 			if j != 0 {
 				query += ","
 			}
 
-			query += fmt.Sprintf(`(%v, "%v", %v, "%v")`, c.rnd.Uint32()%960+1, string(contract_id[:]), c.rnd.Uint32()%36+1, string(str[:]))
+			query += fmt.Sprintf(`(%v, "%v", %v, "%v")`, rnd.Uint32()%960+1, string(contract_id[:]), rnd.Uint32()%36+1, string(str[:]))
 
 			count++
 			if count%limit == 0 {
