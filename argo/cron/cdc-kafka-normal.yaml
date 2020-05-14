@@ -1,16 +1,16 @@
 metadata:
-  name: tipocket-cdc
+  name: tipocket-cdc-kafka
 spec:
   schedule: "0 */6 * * *"
   concurrencyPolicy: "Forbid"
   timezone: "Asia/Shanghai"
   startingDeadlineSeconds: 0
   workflowSpec:
-    entrypoint: call-tipocket-cdc
+    entrypoint: call-tipocket-cdc-kafka-normal
     arguments:
       parameters:
         - name: ns
-          value: tipocket-cdc
+          value: tipocket-cdc-kafka-normal
         - name: purge
           value: "true"
         - name: hub
@@ -28,7 +28,7 @@ spec:
         - name: storage_class
           value: gp2
         - name: nemesis
-          value: "random_kill,partition_one,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,subcritical_skews"
+          value: ""
         - name: run_time
           value: "12h"
         - name: tikv_config
@@ -40,7 +40,7 @@ spec:
         - name: cdc_version
           value: "master"
         - name: cdc_enable_kafka
-          value: "false"
+          value: "true"
         - name: abtest_general_log
           value: "true"
         - name: binlog_sync_timeout
@@ -54,7 +54,7 @@ spec:
         - name: loki-password
           value: "admin"
     templates:
-      - name: call-tipocket-cdc
+      - name: tipocket-cdc-kafka-normal
         steps:
           - - name: call-wait-cluster
               templateRef:
@@ -64,7 +64,7 @@ spec:
                 parameters:
                   - name: ns
                     value: "{{workflow.parameters.ns}}"
-          - - name: call-tipocket-cdc
+          - - name: tipocket-cdc-kafka-normal
               templateRef:
                 name: tipocket-cdc
                 template: tipocket-cdc
