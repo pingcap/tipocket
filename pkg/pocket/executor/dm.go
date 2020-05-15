@@ -17,8 +17,10 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ngaut/log"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pkg/pocket/util"
@@ -44,15 +46,17 @@ user = "root"
 port = %d
 `
 
+	sourceID1 := "source-1"
+	sourceID2 := "source-2"
 	mysql1 := e.opt.Cfg.ClientNodes[0]
 	mysql2 := e.opt.Cfg.ClientNodes[1]
-	source1 := fmt.Sprintf(sourceTemp, "source-1", mysql1.IP, mysql1.Port)
-	source2 := fmt.Sprintf(sourceTemp, "source-2", mysql2.IP, mysql2.Port)
+	source1 := fmt.Sprintf(sourceTemp, sourceID1, mysql1.IP, mysql1.Port)
+	source2 := fmt.Sprintf(sourceTemp, sourceID2, mysql2.IP, mysql2.Port)
 
 	master := e.opt.Cfg.ClientNodes[3] // the first DM-master node.
 	masterAddr := fmt.Sprintf("%s:%d", master.IP, master.Port)
 
-	log.Infof("start to create sources:\nmaster-addr:%s\nsource1:%s\nsource:%s", masterAddr, source1, source2)
+	log.Infof("create sources:\nmaster-addr:%s\nsource1:%s\n---\nsource2:%s", masterAddr, source1, source2)
 
 	// use HTTP API to create source.
 	client := dmutil.NewDMClient(http.DefaultClient, masterAddr)
@@ -61,6 +65,49 @@ port = %d
 	}
 	if err := client.CreateSource(source2); err != nil {
 		panic(fmt.Sprintf("fail to create source: %v", err))
+	}
+
+	taskSingleTemp := `
+name: "%s"
+task-mode: "all"
+
+target-database:
+  host: "%s"
+  port: %d
+  user: "root"
+
+mysql-instances:
+-
+  source-id: "%s"
+  black-white-list: "global"
+
+black-white-list:
+  global:
+    do-dbs: ["%s"]
+`
+
+	// use HTTP API to start task.
+	taskName := "dm-single"
+	tidb := e.opt.Cfg.ClientNodes[2]
+	task := fmt.Sprintf(taskSingleTemp, taskName, tidb.IP, tidb.Port, sourceID1, e.dbname)
+
+	log.Infof("start task:\nmaster-addr:%s\n%s", masterAddr, task)
+
+	if err := client.StartTask(task, 1); err != nil {
+		panic(fmt.Sprintf("fail to start task: %v", err))
+	}
+
+	// check task stage is `Running`.
+	err := wait.PollImmediate(5*time.Second, 30*time.Second, func() (bool, error) {
+		err := client.CheckTaskStage(taskName, "Running", 1)
+		if err != nil {
+			log.Errorf("fail to check task stage: %v", err)
+			return false, err
+		}
+		return true, nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("fail to check task stage: %v", err))
 	}
 }
 

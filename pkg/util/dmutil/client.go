@@ -59,11 +59,48 @@ func (c *Client) CreateSource(conf string) error {
 	}
 
 	// verify response content.
-	if strings.Count(res, `"result":true"`) != 2 {
-		if !strings.Contains(res, "already exists") {
-			return errors.New(fmt.Sprintf("invalid response %s", res))
+	ress := string(res)
+	if strings.Count(ress, `"result":true`) != 2 {
+		if !strings.Contains(ress, "already exists") {
+			return errors.New(fmt.Sprintf("`operate-source create` failed, %s", ress))
 		}
 	}
+	return nil
+}
 
+// StartTask does `start-task` operation.
+func (c *Client) StartTask(conf string, sourceCount int) error {
+	input := map[string]interface{}{
+		"task": conf,
+	}
+	data, err := json.Marshal(input)
+	if err != nil {
+		return err
+	}
+	res, err := c.c.Post(c.urlPrefix+"tasks", contentJSON, bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+
+	// verify response content.
+	ress := string(res)
+	if strings.Count(ress, `"result":true`) != sourceCount+1 {
+		return errors.New(fmt.Sprintf("`start-task` failed, %s", ress))
+	}
+	return nil
+}
+
+// CheckTaskStage checks task's current stage by `query-status`.
+func (c *Client) CheckTaskStage(task, stage string, sourceCount int) error {
+	res, err := c.c.Get(c.urlPrefix + "status/" + task)
+	if err != nil {
+		return err
+	}
+
+	// verify stage.
+	ress := string(res)
+	if strings.Count(ress, fmt.Sprintf(`"stage":"%s"`, stage)) != sourceCount {
+		return errors.New(fmt.Sprintf("check task stage failed, %s", ress))
+	}
 	return nil
 }

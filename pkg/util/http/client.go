@@ -37,40 +37,41 @@ func (c *Client) Get(url string) ([]byte, error) {
 }
 
 // Post sends a HTTP POST request to the specified URL.
-func (c *Client) Post(url string, bodyType string, body io.Reader) error {
+func (c *Client) Post(url string, bodyType string, body io.Reader) ([]byte, error) {
 	resp, err := c.httpRequest(url, http.MethodPost, bodyType, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
+
+	res, err := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		res, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.Wrap(err, "Read POST response failed")
+			return nil, errors.Wrap(err, "Read POST response failed")
 		}
-		return errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
+		return nil, errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
 	}
-	return nil
+	return res, nil
 }
 
 // Put sends a HTTP PUT request to the specified URL.
-func (c *Client) Put(url string, bodyType string, body io.Reader) (string, error) {
+func (c *Client) Put(url string, bodyType string, body io.Reader) ([]byte, error) {
 	resp, err := c.httpRequest(url, http.MethodPut, bodyType, body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "Read PUT response failed")
+		return nil, errors.Wrap(err, "Read PUT response failed")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
+		return nil, errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
 	}
 
-	return string(res), nil
+	return res, nil
 }
 
 // Delete sends a HTTP DELETE request to the specified URL.
