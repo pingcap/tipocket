@@ -230,7 +230,7 @@ func newDMTest(dsn1, dsn2, dsn3 string, opt *Option) (*Executor, error) {
 		conn3:      conn3,
 		ss:         sqlsmith.New(),
 		mode:       "dm",
-		SQLCh:      make(chan *types.SQL, 1),
+		SQLCh:      make(chan *types.SQL), // no buffer for the chan to ensure `execMutex` can really lock exec.
 		TxnReadyCh: make(chan struct{}, 1),
 		ErrCh:      make(chan error, 1),
 		dbname:     dbnameRegex.FindString(dsn1),

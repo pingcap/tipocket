@@ -252,12 +252,8 @@ SYNC:
 }
 
 func (c *Core) dmTestCompareData(delay bool) (bool, error) {
-	if delay {
-		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
-	}
-
 	// TODO(csuzhangxc): use `sync-diff-inspecotr` to compare data.
-	return true, nil
+	return c.dmTestSingleCompareData(delay)
 }
 
 func (c *Core) compareData(beganConnect *executor.Executor, schema [][5]string) (bool, error) {

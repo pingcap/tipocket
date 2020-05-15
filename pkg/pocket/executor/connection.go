@@ -47,6 +47,11 @@ func (e *Executor) GetConn2() *connection.Connection {
 	return e.conn2
 }
 
+// GetConn3 get connection of third connection.
+func (e *Executor) GetConn3() *connection.Connection {
+	return e.conn3
+}
+
 // ReConnect rebuild connection
 func (e *Executor) ReConnect() error {
 	switch e.mode {

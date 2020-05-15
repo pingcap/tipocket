@@ -22,6 +22,7 @@ import (
 	"github.com/ngaut/log"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/pingcap/tipocket/pkg/pocket/connection"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pkg/pocket/util"
 	"github.com/pingcap/tipocket/pkg/util/dmutil"
@@ -165,6 +166,59 @@ func (e *Executor) execDMTestStmt(sql string) error {
 		return err
 	}
 	return err1
+}
+
+func (e *Executor) DMSelectEqual(sql string, conn1, conn2 *connection.Connection) error {
+	var (
+		wg   sync.WaitGroup
+		res1 [][]*connection.QueryItem
+		res2 [][]*connection.QueryItem
+		err1 error
+		err2 error
+	)
+
+	wg.Add(2)
+	go func() {
+		res1, err1 = conn1.Select(sql)
+		wg.Done()
+	}()
+	go func() {
+		res2, err2 = conn2.Select(sql)
+		wg.Done()
+	}()
+	wg.Wait()
+
+	if err1 != nil {
+		return err1
+	} else if err2 != nil {
+		return err2
+	}
+
+	if len(res1) != len(res2) {
+		return util.WrapErrExactlyNotSame("row number not match res1: %d, res2: %d", len(res1), len(res2))
+	}
+	for index := range res1 {
+		var (
+			row1 = res1[index]
+			row2 = res2[index]
+		)
+
+		if len(row1) != len(row1) {
+			return util.WrapErrExactlyNotSame("column number not match res1: %d, res2: %d", len(res1), len(res2))
+		}
+
+		for rIndex := range row1 {
+			var (
+				item1 = row1[rIndex]
+				item2 = row2[rIndex]
+			)
+			if err := item1.MustSame(item2); err != nil {
+				return util.WrapErrExactlyNotSame("%s, row index %d, column index %d", err.Error(), index, rIndex)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (e *Executor) dmTestIfTxn() bool {
