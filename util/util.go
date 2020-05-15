@@ -215,9 +215,13 @@ func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
 	// Switch mode with probability 0.5.
 	if replicaRead != "leader" && rand.Float32() < 0.5 {
 		if getTiDBReplicaRead(job, db) == "leader" {
+			log.Infof("Change replica read to %v", replicaRead)
 			setTiDBReplicaRead(job, db, replicaRead)
 		} else {
+			log.Info("Change replica read to leader")
 			setTiDBReplicaRead(job, db, "leader")
 		}
+	} else {
+		log.Info("Do not change replica read")
 	}
 }
