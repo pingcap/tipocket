@@ -56,15 +56,23 @@ port = %d
 	master := e.opt.Cfg.ClientNodes[3] // the first DM-master node.
 	masterAddr := fmt.Sprintf("%s:%d", master.IP, master.Port)
 
-	log.Infof("create sources:\nmaster-addr:%s\nsource1:%s\n---\nsource2:%s", masterAddr, source1, source2)
+	log.Infof(`create sources:
+master-addr:%s
+
+source1:  ---
+%s
+
+source2:  ---
+%s
+`, masterAddr, source1, source2)
 
 	// use HTTP API to create source.
-	client := dmutil.NewDMClient(http.DefaultClient, masterAddr)
+	client := dmutil.NewDMClient(&http.Client{}, masterAddr)
 	if err := client.CreateSource(source1); err != nil {
-		panic(fmt.Sprintf("fail to create source: %v", err))
+		panic(fmt.Sprintf("fail to create source1: %v", err))
 	}
 	if err := client.CreateSource(source2); err != nil {
-		panic(fmt.Sprintf("fail to create source: %v", err))
+		panic(fmt.Sprintf("fail to create source2: %v", err))
 	}
 
 	taskSingleTemp := `
@@ -91,7 +99,9 @@ black-white-list:
 	tidb := e.opt.Cfg.ClientNodes[2]
 	task := fmt.Sprintf(taskSingleTemp, taskName, tidb.IP, tidb.Port, sourceID1, e.dbname)
 
-	log.Infof("start task:\nmaster-addr:%s\n%s", masterAddr, task)
+	log.Infof(`start task:
+master-addr:%s
+%s`, masterAddr, task)
 
 	if err := client.StartTask(task, 1); err != nil {
 		panic(fmt.Sprintf("fail to start task: %v", err))

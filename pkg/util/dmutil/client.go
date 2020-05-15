@@ -53,6 +53,7 @@ func (c *Client) CreateSource(conf string) error {
 	if err != nil {
 		return err
 	}
+	// sometimes may got 404 here, but I don't know why.
 	res, err := c.c.Put(c.urlPrefix+"sources", contentJSON, bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -85,7 +86,9 @@ func (c *Client) StartTask(conf string, sourceCount int) error {
 	// verify response content.
 	ress := string(res)
 	if strings.Count(ress, `"result":true`) != sourceCount+1 {
-		return errors.New(fmt.Sprintf("`start-task` failed, %s", ress))
+		if !strings.Contains(ress, "already exist") {
+			return errors.New(fmt.Sprintf("`start-task` failed, %s", ress))
+		}
 	}
 	return nil
 }

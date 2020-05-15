@@ -68,7 +68,7 @@ func (c *Client) Put(url string, bodyType string, body io.Reader) ([]byte, error
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
+		return nil, errors.New(fmt.Sprintf("PUT request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
 	}
 
 	return res, nil
