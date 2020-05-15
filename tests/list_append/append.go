@@ -92,6 +92,7 @@ func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 			Result: ellecore.Op{
 				Time:  time.Now(),
 				Type:  ellecore.OpTypeFail,
+				Value: request.Value,
 				Error: err.Error(),
 			},
 		}
