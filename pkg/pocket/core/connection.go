@@ -116,7 +116,12 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 			return nil, errors.Trace(err)
 		}
 	} else if mode == "dm" {
-		e, err = executor.NewDMTest(c.cfg.DSN1, c.cfg.DSN2, c.cfg.DSN3, c.generateExecutorOption(id), id == 0) // only start for core executor.
+		// only create (and start) one real executor.
+		if id == 0 {
+			e, err = executor.NewDMTest(c.cfg.DSN1, c.cfg.DSN2, c.cfg.DSN3, c.generateExecutorOption(id), true)
+		} else {
+			e = c.coreExec
+		}
 	}
 
 	return e, nil
