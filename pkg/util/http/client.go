@@ -53,6 +53,26 @@ func (c *Client) Post(url string, bodyType string, body io.Reader) error {
 	return nil
 }
 
+// Put sends a HTTP PUT request to the specified URL.
+func (c *Client) Put(url string, bodyType string, body io.Reader) (string, error) {
+	resp, err := c.httpRequest(url, http.MethodPut, bodyType, body)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	res, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "Read PUT response failed")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(fmt.Sprintf("POST request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
+	}
+
+	return string(res), nil
+}
+
 // Delete sends a HTTP DELETE request to the specified URL.
 func (c *Client) Delete(url string) error {
 	resp, err := c.httpRequest(url, http.MethodDelete, "", nil)

@@ -29,6 +29,7 @@ func (c *Core) generateExecutorOption(id int) *executor.Option {
 	}
 	opt := executor.Option{
 		ID:         id,
+		Cfg:        *c.cfg,
 		Log:        c.cfg.Options.Path,
 		LogSuffix:  suffix,
 		Stable:     c.cfg.Options.Stable,

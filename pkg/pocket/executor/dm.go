@@ -14,17 +14,53 @@
 package executor
 
 import (
+	"fmt"
+	"net/http"
 	"sync"
 
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 	"github.com/pingcap/tipocket/pkg/pocket/util"
+	"github.com/pingcap/tipocket/pkg/util/dmutil"
 )
 
 func (e *Executor) dmTest() {
+	// create source for DM upstream MySQL.
+	e.dmCreateSource()
 	for {
 		e.ErrCh <- e.execDMTestSQL(<-e.SQLCh)
+	}
+}
+
+func (e *Executor) dmCreateSource() {
+	sourceTemp := `
+source-id = "%s"
+enable-gtid = true
+
+[from]
+host = "%s"
+user = "root"
+port = %d
+`
+
+	mysql1 := e.opt.Cfg.ClientNodes[0]
+	mysql2 := e.opt.Cfg.ClientNodes[1]
+	source1 := fmt.Sprintf(sourceTemp, "source-1", mysql1.IP, mysql1.Port)
+	source2 := fmt.Sprintf(sourceTemp, "source-2", mysql2.IP, mysql2.Port)
+
+	master := e.opt.Cfg.ClientNodes[3] // the first DM-master node.
+	masterAddr := fmt.Sprintf("%s:%d", master.IP, master.Port)
+
+	log.Infof("start to create sources:\nmaster-addr:%s\nsource1:%s\nsource:%s", masterAddr, source1, source2)
+
+	// use HTTP API to create source.
+	client := dmutil.NewDMClient(http.DefaultClient, masterAddr)
+	if err := client.CreateSource(source1); err != nil {
+		panic(fmt.Sprintf("fail to create source: %v", err))
+	}
+	if err := client.CreateSource(source2); err != nil {
+		panic(fmt.Sprintf("fail to create source: %v", err))
 	}
 }
 

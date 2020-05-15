@@ -13,9 +13,12 @@
 
 package executor
 
+import "github.com/pingcap/tipocket/pkg/pocket/config"
+
 // Option struct
 type Option struct {
 	ID         int
+	Cfg        config.Config
 	Clear      bool
 	Log        string
 	LogSuffix  string
