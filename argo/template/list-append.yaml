@@ -85,5 +85,5 @@ spec:
             -round={{inputs.parameters.round}} \
             -request-count={{inputs.parameters.request_count}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}}
-
+            -loki-username={{inputs.parameters.loki-username}} \
+            -loki-password={{inputs.parameters.loki-password}}
