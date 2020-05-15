@@ -378,7 +378,7 @@ func newKafka(ns, name string) *Kafka {
 						Containers: []corev1.Container{
 							{
 								Name:            "consumer",
-								Image:           buildCDCImage("cdc-kafka-consumer"),
+								Image:           fixture.Context.CDCConfig.KafkaConsumerImage,
 								ImagePullPolicy: corev1.PullAlways,
 								Command: []string{
 									"/cdc_kafka_consumer",

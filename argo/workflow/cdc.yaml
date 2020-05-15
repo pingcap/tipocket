@@ -37,6 +37,8 @@ spec:
         value: "nightly"
       - name: cdc_enable_kafka
         value: "false"
+      - name: cdc_kafka_consumer_image
+        value: "docker.io/pingcap/ticdc-kafka:nightly"
       - name: abtest_general_log
         value: "true"
       - name: binlog_sync_timeout
@@ -90,6 +92,8 @@ spec:
                   value: "{{workflow.parameters.cdc_version}}"
                 - name: cdc_enable_kafka
                   value: "{{workflow.parameters.cdc_enable_kafka}}"
+                - name: cdc_kafka_consumer_image
+                  value: "{{workflow.parameters.cdc_kafka_consumer_image}}"
                 - name: abtest_general_log
                   value: "{{workflow.parameters.abtest_general_log}}"
                 - name: binlog_sync_timeout
