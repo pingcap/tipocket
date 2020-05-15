@@ -168,6 +168,7 @@ func (e *Executor) execDMTestStmt(sql string) error {
 	return err1
 }
 
+// DMSelectEqual check data equal by `SELECT`.
 func (e *Executor) DMSelectEqual(sql string, conn1, conn2 *connection.Connection) error {
 	var (
 		wg   sync.WaitGroup
