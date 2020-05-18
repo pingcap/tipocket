@@ -15,9 +15,7 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
-		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc follower-read write-stress
+build: write-stress
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go

@@ -17,29 +17,14 @@ import (
 	"github.com/pingcap/tipocket/util"
 )
 
-// Table schema comes from the bank of pufa `tmp_jieb_instmnt_daily`
-// CREATE TABLE `tmp_jieb_instmnt_daily` (
-//   `ID` bigint(20) DEFAULT NULL COMMENT '主键ID',
-//   `TABLE_ID` int(11) NOT NULL COMMENT '分库ID',
-//   `FILE_DATE` char(8) NOT NULL COMMENT '文件日期',
-//   `CONTRACT_NO` varchar(128) NOT NULL COMMENT '借据号',
-//   `SETTLE_DATE` char(8) NOT NULL COMMENT '减免会计日期',
-//   `TERM_NO` int(11) NOT NULL COMMENT '期次号',
-//
-//   `INPT_DATE` char(8) DEFAULT NULL COMMENT '录入日期',
-//   `INPT_TIME` varchar(20) DEFAULT NULL COMMENT '录入时间',
-//   `RCRD_ST_CODE` varchar(1) DEFAULT NULL COMMENT '记录状态代码',
-//   UNIQUE KEY `TMP_JIEB_INSTMNT_DAILY_IDX1` (`CONTRACT_NO`,`TERM_NO`),
-//   KEY `TMP_JIEB_INSTMNT_DAILY_IDX2` (`TABLE_ID`,`CONTRACT_NO`)
-// ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin/*!90000 SHARD_ROW_ID_BITS=5 PRE_SPLIT_REGIONS=5 */ COMMENT='借呗日终（分期）信息临时表';
 const (
 	stmtDrop   = `DROP TABLE IF EXISTS write_stress`
 	stmtCreate = `
 	CREATE TABLE write_stress (
-		TABLE_ID int(11) NOT NULL COMMENT '分库ID',
-		CONTRACT_NO varchar(128) NOT NULL COMMENT '借据号',
-		TERM_NO int(11) NOT NULL COMMENT '期次号',
-		NOUSE char(255) NOT NULL COMMENT '填充位',
+		TABLE_ID int(11) NOT NULL,
+		CONTRACT_NO varchar(128) NOT NULL,
+		TERM_NO int(11) NOT NULL,
+		NOUSE char(255) NOT NULL,
 		
 		UNIQUE KEY TMP_JIEB_INSTMNT_DAILY_IDX1 (CONTRACT_NO, TERM_NO),
 		KEY TMP_JIEB_INSTMNT_DAILY_IDX2 (TABLE_ID, CONTRACT_NO)
