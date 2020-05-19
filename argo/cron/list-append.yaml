@@ -42,6 +42,14 @@ spec:
     templates:
       - name: call-tipocket-list-append
         steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
           - - name: call-tipocket-list-append
               templateRef:
                 name: tipocket-list-append
