@@ -1,0 +1,68 @@
+metadata:
+  generateName: tipocket-titan-bank-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-bank
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-titan-bank
+      - name: purge
+        value: "true"
+      - name: image_version
+        value: release-4.0-nightly
+      - name: storage_class
+        value: local-storage
+      - name: nemesis
+        value: "short_kill_tikv_1node,mixed_tikv,shuffle-region-scheduler,kill_tikv_1node_5min"
+      - name: client
+        value: "5"
+      - name: request_count
+        value: "10000"
+      - name: round
+        value: "100"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
+      - name: tikv-config
+        value: "/config/tikv/titan-bank.toml"
+      - name: tikv-replicas
+        value: 5
+  templates:
+    - name: call-tipocket-bank
+      steps:
+        - - name: call-tipocket-bank
+            templateRef:
+              name: tipocket-bank
+              template: tipocket-bank
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image_version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage_class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: client
+                  value: "{{workflow.parameters.client}}"
+                - name: request_count
+                  value: "{{workflow.parameters.request_count}}"
+                - name: round
+                  value: "{{workflow.parameters.round}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv-config}}"
+                - name: tikv-replicas
+                  value: "{{workflow.parameters.tikv-replicas}}"
