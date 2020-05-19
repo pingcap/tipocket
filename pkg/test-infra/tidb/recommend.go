@@ -92,7 +92,10 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	return t
 }
 
-func buildImage(name, baseVersion, version string) string {
+func buildImage(name, baseVersion, image string) string {
+	if len(image) > 0 {
+		return image
+	}
 	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
@@ -101,11 +104,9 @@ func buildImage(name, baseVersion, version string) string {
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	if len(version) > 0 {
-		b.WriteString(version)
-	} else {
-		b.WriteString(baseVersion)
-	}
+
+	b.WriteString(baseVersion)
+
 	return b.String()
 }
 
@@ -132,7 +133,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImageVersion),
+						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
@@ -151,7 +152,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImageVersion),
+						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
@@ -175,7 +176,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImageVersion),
+						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage),
 					},
 				},
 			},
