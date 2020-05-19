@@ -47,13 +47,13 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 }
 
 // EnableTiFlash add TiFlash spec in TiDB cluster
-func (t *Recommendation) EnableTiFlash(version string, replicas int) {
+func (t *Recommendation) EnableTiFlash(image string, replicas int) {
 	if t.TidbCluster.Spec.TiFlash == nil {
 		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
 			Replicas:         int32(replicas),
 			MaxFailoverCount: pointer.Int32Ptr(0),
 			ComponentSpec: v1alpha1.ComponentSpec{
-				Image: buildImage("tiflash", "", version),
+				Image: buildImage("tiflash", "", image),
 			},
 			StorageClaims: []v1alpha1.StorageClaim{
 				{
@@ -255,7 +255,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	}
 
 	if clusterConfig.TiFlashReplicas > 0 {
-		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
+		r.EnableTiFlash(clusterConfig.TiFlashImage, clusterConfig.TiFlashReplicas)
 		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
 			Replication: &v1alpha1.PDReplicationConfig{
 				EnablePlacementRules: pointer.BoolPtr(true),

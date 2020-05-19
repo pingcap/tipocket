@@ -75,11 +75,11 @@ type fixtureContext struct {
 // TiDBClusterConfig ...
 type TiDBClusterConfig struct {
 	// image versions
-	ImageVersion        string
-	TiDBImage           string
-	TiKVImage           string
-	PDImage             string
-	TiFlashImageVersion string
+	ImageVersion string
+	TiDBImage    string
+	TiKVImage    string
+	PDImage      string
+	TiFlashImage string
 
 	// configurations
 	TiDBConfig string
@@ -224,7 +224,7 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBImage, "tidb-image", "", "tidb image")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVImage, "tikv-image", "", "tikv image")
 	flag.StringVar(&Context.TiDBClusterConfig.PDImage, "pd-image", "", "pd image")
-	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImageVersion, "tiflash-image", "v4.0.0-rc", "tiflash image version")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImage, "tiflash-image", "v4.0.0-rc", "tiflash image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
