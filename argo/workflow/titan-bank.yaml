@@ -12,7 +12,7 @@ spec:
       - name: image_version
         value: release-4.0-nightly
       - name: storage_class
-        value: local-storage
+        value: gp2
       - name: nemesis
         value: "short_kill_tikv_1node,mixed_tikv,shuffle-region-scheduler,kill_tikv_1node_5min"
       - name: client
@@ -62,7 +62,7 @@ spec:
                   value: "{{workflow.parameters.loki-username}}"
                 - name: loki-password
                   value: "{{workflow.parameters.loki-password}}"
-                - name: tikv-config
+                - name: tikv_config
                   value: "{{workflow.parameters.tikv-config}}"
                 - name: tikv-replicas
                   value: "{{workflow.parameters.tikv-replicas}}"
