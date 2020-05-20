@@ -9,13 +9,13 @@ spec:
         value: tipocket-txn-rand-pessimistic
       - name: purge
         value: "true"
-      - name: image_version
+      - name: image-version
         value: release-4.0-nightly
-      - name: storage_class
+      - name: storage-class
         value: gp2
       - name: nemesis
         value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
-      - name: run_time
+      - name: run-time
         value: "4h"
       - name: loki-addr
         value: "http://gateway.loki.svc"
@@ -36,14 +36,14 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
-                - name: run_time
-                  value: "{{workflow.parameters.run_time}}"
+                - name: run-time
+                  value: "{{workflow.parameters.run-time}}"
                 - name: loki-addr
                   value: "{{workflow.parameters.loki-addr}}"
                 - name: loki-username

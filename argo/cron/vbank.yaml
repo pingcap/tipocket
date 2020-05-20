@@ -15,15 +15,15 @@ spec:
           value: "true"
         - name: repository
           value: pingcap
-        - name: image_version
+        - name: image-version
           value: nightly
-        - name: storage_class
+        - name: storage-class
           value: gp2
         - name: nemesis
           value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
         - name: client
           value: "5"
-        - name: request_count
+        - name: request-count
           value: "20000"
         - name: round
           value: "100"
@@ -56,16 +56,16 @@ spec:
                     value: "{{workflow.parameters.purge}}"
                   - name: repository
                     value: "{{workflow.parameters.repository}}"
-                  - name: image_version
-                    value: "{{workflow.parameters.image_version}}"
-                  - name: storage_class
-                    value: "{{workflow.parameters.storage_class}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
                   - name: nemesis
                     value: "{{workflow.parameters.nemesis}}"
                   - name: client
                     value: "{{workflow.parameters.client}}"
-                  - name: request_count
-                    value: "{{workflow.parameters.request_count}}"
+                  - name: request-count
+                    value: "{{workflow.parameters.request-count}}"
                   - name: round
                     value: "{{workflow.parameters.round}}"
                   - name: loki-addr

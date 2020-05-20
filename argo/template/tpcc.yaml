@@ -14,13 +14,13 @@ spec:
             default: "false"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
+          - name: storage-class
             default: standard
           - name: client
             default: "100"
-          - name: request_count
+          - name: request-count
             default: "1000000"
           - name: round
             default: "10"
@@ -52,13 +52,13 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -client={{inputs.parameters.client}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \
-            -request-count={{inputs.parameters.request_count}} \
+            -request-count={{inputs.parameters.request-count}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
