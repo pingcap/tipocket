@@ -455,6 +455,7 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 	nemesis := core.GetNemesis(string(op.Type))
 	if nemesis == nil {
 		log.Errorf("nemesis %s is not registered", op.Type)
+		time.Sleep(30 * time.Second)
 		return
 	}
 	log.Infof("run nemesis %s...", op.String())
