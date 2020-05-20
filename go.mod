@@ -17,7 +17,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
-	github.com/pingcap/chaos-mesh v0.0.0-20200405033024-7a8795a92c55
+	github.com/pingcap/chaos-mesh v0.0.0-20200519114056-7201f6b64797
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36

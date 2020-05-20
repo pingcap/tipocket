@@ -254,3 +254,38 @@ type pumpConfigModel struct {
 func RenderPumpConfig(model *pumpConfigModel) (string, error) {
 	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }
+
+const (
+	ioChaosConfigTiKV = `name: chaosfs-tikv
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "tikv"
+template: sidecar-template
+arguments:
+  ContainerName: "tikv"
+  DataPath: "/var/lib/tikv/data"
+  MountPath: "/var/lib/tikv"
+  VolumeName: "tikv"`
+
+	ioChaosConfigPD = `name: chaosfs-pd
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "pd"
+template: sidecar-template
+arguments:
+  ContainerName: "pd"
+  DataPath: "/var/lib/pd/data"
+  MountPath: "/var/lib/pd"
+  VolumeName: "pd"`
+
+	ioChaosConfigTiFlash = `name: chaosfs-tiflash
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "tiflash"
+template: sidecar-template
+arguments:
+  ContainerName: "tiflash"
+  DataPath: "/data0/db"
+  MountPath: "/data0"
+  VolumeName: "data0"`
+)

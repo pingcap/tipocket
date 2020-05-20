@@ -147,6 +147,13 @@ func (o *Ops) Apply() error {
 	tm := o.tc.TidbMonitor
 	desired := tc.DeepCopy()
 
+	if len(o.tc.InjectionConfigMaps) > 0 {
+		log.Info("Apply IO Chaos configs")
+		if err := o.applyInjectionConfigMaps(); err != nil {
+			return err
+		}
+	}
+
 	log.Info("Apply tidb discovery")
 	if err := o.applyDiscovery(tc); err != nil {
 		return err
@@ -191,14 +198,14 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		if err != nil {
 			return false, err
 		}
-		err = o.cli.Get(context.TODO(), key, local)
-		if err != nil && errors.IsNotFound(err) {
-			return false, err
-		}
-		if err != nil {
+		if err = o.cli.Get(context.TODO(), key, local); err != nil {
+			if errors.IsNotFound(err) {
+				return false, err
+			}
 			log.Errorf("error getting TidbOps: %v", err)
 			return false, nil
 		}
+
 		if local.Status.PD.StatefulSet == nil {
 			return false, nil
 		}
@@ -222,6 +229,16 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		if tidbReady < tidbDesired {
 			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
 			return false, nil
+		}
+		if tc.Spec.TiFlash != nil {
+			if local.Status.TiFlash.StatefulSet == nil {
+				return false, nil
+			}
+			tiFlashReady, tiFlashDesired := local.Status.TiFlash.StatefulSet.ReadyReplicas, local.Spec.TiFlash.Replicas
+			if tiFlashReady < tiFlashDesired {
+				log.Infof("TiFlash do not have enough ready replicas, ready: %d, desired: %d", tiFlashReady, tiFlashDesired)
+				return false, nil
+			}
 		}
 		return true, nil
 	})
@@ -603,6 +620,19 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 		})
 	}
 	return nodes
+}
+
+func (o *Ops) applyInjectionConfigMaps() error {
+	for _, tc := range o.tc.InjectionConfigMaps {
+		des := tc.DeepCopy()
+		if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
+			tc.Data = des.Data
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getNodeIP(nodeList *corev1.NodeList) string {

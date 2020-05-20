@@ -32,6 +32,9 @@ type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
+
+	// ConfigMaps for IO Chaos injection
+	InjectionConfigMaps []*corev1.ConfigMap
 }
 
 // EnablePump ...
@@ -114,6 +117,7 @@ func buildImage(name, baseVersion, image string) string {
 func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	r := &Recommendation{
+		InjectionConfigMaps: make([]*corev1.ConfigMap, 0),
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -273,15 +277,36 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "tikv", ioChaosConfigTiKV))
 		case "delay_pd", "errno_pd", "mixed_pd":
 			r.TidbCluster.Spec.PD.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-pd",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "pd", ioChaosConfigPD))
 		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
 			r.TidbCluster.Spec.TiFlash.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "tiflash", ioChaosConfigTiFlash))
 		}
 	}
 	return r
+}
+
+func newIOChaosConfigMap(namespace, component, data string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "chaosfs-" + component,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/component": "webhook",
+			},
+		},
+		Data: map[string]string{
+			"chaosfs": data,
+		},
+	}
 }
