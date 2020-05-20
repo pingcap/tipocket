@@ -196,7 +196,6 @@ func (c *client) NextRequest() interface{} {
 }
 
 func (c *client) DumpState(_ context.Context) (interface{}, error) {
-	log.Printf("begin to create %d tables", c.tableCount)
 	for i := 0; i < c.tableCount; i++ {
 		if _, err := c.db.Exec(fmt.Sprintf("drop table if exists txn_%d", i)); err != nil {
 			return nil, err
@@ -213,7 +212,6 @@ func (c *client) DumpState(_ context.Context) (interface{}, error) {
 			}
 		}
 	}
-	log.Printf("create %d tables finished", c.tableCount)
 	return nil, nil
 }
 
