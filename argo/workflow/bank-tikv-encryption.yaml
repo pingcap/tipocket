@@ -1,0 +1,36 @@
+metadata:
+  generateName: tipocket-bank-tikv-encryption-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-scbank
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-bank-tikv-encryption
+      - name: purge
+        value: "true"
+      - name: image-version
+        value: release-4.0-nightly
+      - name: storage-class
+        value: gp2
+      - name: tikv-config
+        value: "/config/tikv/encryption.toml"
+  templates:
+    - name: call-tipocket-scbank
+      steps:
+        - - name: call-tipocket-scbank
+            templateRef:
+              name: tipocket-scbank
+              template: tipocket-scbank
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv_config}}"
