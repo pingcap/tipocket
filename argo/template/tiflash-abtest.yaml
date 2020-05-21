@@ -17,7 +17,7 @@ spec:
           - name: abtest_image-version
             value: latest
           - name: storage-class
-            default: standard
+            default: local-storage
           - name: nemesis
             default: ""
           - name: client

@@ -16,8 +16,14 @@ spec:
             default: pingcap
           - name: image-version
             default: nightly
+          - name: tidb-image
+            default: ""
+          - name: tikv-image
+            default: ""
+          - name: pd-image
+            default: ""
           - name: storage-class
-            default: standard
+            default: local-storage
           - name: client
             default: "100"
           - name: request-count
@@ -54,6 +60,9 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -client={{inputs.parameters.client}} \
             -nemesis={{inputs.parameters.nemesis}} \

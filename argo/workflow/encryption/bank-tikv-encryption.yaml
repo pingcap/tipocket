@@ -1,29 +1,29 @@
 metadata:
-  generateName: tipocket-tiflash-tikv-encryption-
+  generateName: tipocket-bank-tikv-encryption-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-tiflash-tikv-encryption
+  entrypoint: call-tipocket-scbank
   arguments:
     parameters:
       - name: ns
-        value: tipocket-tiflash-tikv-encryption
+        value: tipocket-bank-tikv-encryption
       - name: purge
         value: "true"
       - name: image-version
         value: release-4.0-nightly
       - name: storage-class
-        value: gp2
+        value: local-storage
       - name: nemesis
         value: "random_kill,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,mixed_tikv"
       - name: tikv-config
         value: "/config/tikv/encryption.toml"
   templates:
-    - name: call-tipocket-tiflash
+    - name: call-tipocket-scbank
       steps:
-        - - name: call-tipocket-tiflash
+        - - name: call-tipocket-scbank
             templateRef:
-              name: tipocket-tiflash
-              template: tipocket-tiflash
+              name: tipocket-scbank
+              template: tipocket-scbank
             arguments:
               parameters:
                 - name: ns
