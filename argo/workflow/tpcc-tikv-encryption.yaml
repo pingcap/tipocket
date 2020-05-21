@@ -13,6 +13,8 @@ spec:
         value: release-4.0-nightly
       - name: storage-class
         value: gp2
+      - name: nemesis
+        value: "random_kill,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,mixed_tikv"
       - name: tikv-config
         value: "/config/tikv/encryption.toml"
   templates:
@@ -32,5 +34,7 @@ spec:
                   value: "{{workflow.parameters.image_version}}"
                 - name: storage-class
                   value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
                 - name: tikv-config
                   value: "{{workflow.parameters.tikv_config}}"
