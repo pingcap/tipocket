@@ -28,6 +28,10 @@ spec:
             default: admin
           - name: tidb-replica-read
             default: "leader"
+          - name: case-addr
+            default: "https://github.com/mahjonp/sqllogictest/archive/tipocket.tar.gz"
+          - name: case-dir
+            default: "sqllogictest-tipocket"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -52,8 +56,8 @@ spec:
             -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -run-time={{inputs.parameters.run-time}} \
-            -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
-            -d=sqllogictest-tipocket \
+            -p={{inputs.parameters.case-addr}} \
+            -d={{inputs.parameters.case-dir}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
