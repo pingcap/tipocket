@@ -31,10 +31,10 @@ spec:
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
                 - name: image-version
-                  value: "{{workflow.parameters.image_version}}"
+                  value: "{{workflow.parameters.image-version}}"
                 - name: storage-class
-                  value: "{{workflow.parameters.storage_class}}"
+                  value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
                 - name: tikv-config
-                  value: "{{workflow.parameters.tikv_config}}"
+                  value: "{{workflow.parameters.tikv-config}}"

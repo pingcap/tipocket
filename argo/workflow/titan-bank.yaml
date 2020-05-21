@@ -12,7 +12,7 @@ spec:
       - name: image-version
         value: release-4.0-nightly
       - name: storage-class
-        value: local-storage
+        value: gp2
       - name: nemesis
         value: "short_kill_tikv_1node,mixed_tikv,shuffle-region-scheduler,kill_tikv_1node_5min"
       - name: client

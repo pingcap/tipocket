@@ -209,6 +209,13 @@ then
 	tail -f /dev/null
 fi
 
+# support for data-encryption
+if [[ "{{.MasterKey}}" != "" ]]
+then
+	echo "writing master key {{.MasterKey}} to /var/lib/tikv/master_key"
+	echo "{{.MasterKey}}" > /var/lib/tikv/master_key
+fi
+
 # Use HOSTNAME if POD_NAME is unset for backward compatibility.
 POD_NAME=${POD_NAME:-$HOSTNAME}
 ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
@@ -227,7 +234,8 @@ exec /tikv-server ${ARGS}
 
 // TiKVStartScriptModel ...
 type TiKVStartScriptModel struct {
-	DataDir string
+	DataDir   string
+	MasterKey string
 }
 
 // RenderTiKVStartScript ...
