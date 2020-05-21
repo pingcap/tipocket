@@ -46,6 +46,7 @@ const (
 	RW       Rel = "rw"
 	Process  Rel = "process"
 	Realtime Rel = "realtime"
+	ExtKey   Rel = "ext-key"
 	// Note: currently we don't support MonotonicKey
 	MonotonicKey Rel = "monotonic-key"
 )

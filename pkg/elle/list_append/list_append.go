@@ -27,7 +27,7 @@ type readIdx map[string]map[core.MopValueType][]core.Op
 func preprocess(h core.History) (history core.History, appendIdx appendIdx, writeIdx writeIdx, readIdx readIdx) {
 	verifyUniqueAppends(h)
 
-	history = filterOkOrInfoHistory(h)
+	history = core.FilterOkOrInfoHistory(h)
 	sortedValueResults := sortedValues(history)
 	appendIdx = appendIndex(sortedValueResults)
 	writeIdx = writeIndex(history)
@@ -351,7 +351,7 @@ func (g G1Conflict) String() string {
 // g1aCases finds aborted read cases
 func g1aCases(history core.History) GCaseTp {
 	failed := txn.FailedWrites(history)
-	okHistory := filterOkHistory(history)
+	okHistory := core.FilterOkHistory(history)
 	iter := txn.OpMops(okHistory)
 	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
@@ -383,7 +383,7 @@ func g1aCases(history core.History) GCaseTp {
 //  T1's final update to k
 func g1bCases(history core.History) GCaseTp {
 	inter := txn.IntermediateWrites(history)
-	okHistory := filterOkHistory(history)
+	okHistory := core.FilterOkHistory(history)
 	iter := txn.OpMops(okHistory)
 	var excepted = make([]core.Anomaly, 0)
 	for iter.HasNext() {
@@ -481,7 +481,7 @@ func opInternalCase(op core.Op) core.Anomaly {
 //                  like [1 2 3] or a postfix like ['... 3]}"
 func internalCases(history core.History) GCaseTp {
 	var tp GCaseTp
-	okHistory := filterOkHistory(history)
+	okHistory := core.FilterOkHistory(history)
 	for _, op := range okHistory {
 		res := opInternalCase(op)
 		if res != nil {
@@ -578,7 +578,7 @@ func Check(opts txn.Opts, history core.History) txn.CheckResult {
 	g1b := g1bCases(history)
 	internal := internalCases(history)
 	dirtyUpdate := dirtyUpdateCases(appendIndex(sortedValues(history)), history)
-	historyOKOrInfo := filterOkOrInfoHistory(history)
+	historyOKOrInfo := core.FilterOkOrInfoHistory(history)
 	dups := duplicates(historyOKOrInfo)
 	sortedValues := sortedValues(historyOKOrInfo)
 	incmpOrder := incompatibleOrders(sortedValues)

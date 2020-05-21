@@ -50,12 +50,25 @@ const (
 	MopTypeAll    MopType = "all"
 	MopTypeAppend MopType = "append"
 	MopTypeRead   MopType = "read"
+	MopTypeWrite  MopType = "write"
 )
 
 // Mop interface
 type Mop struct {
 	T MopType                `json:"type"`
 	M map[string]interface{} `json:"m"`
+}
+
+// Copy ...
+func (m Mop) Copy() Mop {
+	vals := make(map[string]interface{})
+	for k, v := range m.M {
+		vals[k] = v
+	}
+	return Mop{
+		T: m.T,
+		M: vals,
+	}
 }
 
 // IsAppend ...
@@ -66,6 +79,11 @@ func (m Mop) IsAppend() bool {
 // IsRead ...
 func (m Mop) IsRead() bool {
 	return m.T == MopTypeRead
+}
+
+// IsWrite ...
+func (m Mop) IsWrite() bool {
+	return m.T == MopTypeWrite
 }
 
 // GetMopType ...
@@ -96,16 +114,33 @@ func (m Mop) IsEqual(n Mop) bool {
 func (m Mop) String() string {
 	switch m.T {
 	case MopTypeRead:
-		key := m.M["key"].(string)
-		value := m.M["value"]
-		if value == nil {
-			return fmt.Sprintf("[:r %s nil]", key)
+		key, ok := m.M["key"]
+		if ok {
+			value := m.M["value"]
+			if value == nil {
+				return fmt.Sprintf("[:r %s nil]", key.(string))
+			}
+			return fmt.Sprintf("[:r %s %v]", key, value)
 		}
-		return fmt.Sprintf("[:r %s %v]", key, value)
+		var b strings.Builder
+		fmt.Fprint(&b, "[:r")
+		for k, v := range m.M {
+			fmt.Fprintf(&b, " %s %v", k, *v.(*int))
+		}
+		fmt.Fprint(&b, "]")
+		return b.String()
 	case MopTypeAppend:
 		key := m.M["key"].(string)
 		value := m.M["value"].(int)
 		return fmt.Sprintf("[:append %s %v]", key, value)
+	case MopTypeWrite:
+		var b strings.Builder
+		fmt.Fprint(&b, "[:w")
+		for k, v := range m.M {
+			fmt.Fprintf(&b, " %s %v", k, *v.(*int))
+		}
+		fmt.Fprint(&b, "]")
+		return b.String()
 	default:
 		panic("unreachable")
 	}
@@ -186,6 +221,11 @@ func (op Op) ValueLength() int {
 	return len(*op.Value)
 }
 
+func (op Op) WithType(tp OpType) Op {
+	op.Type = tp
+	return op
+}
+
 // History contains operations
 type History []Op
 
@@ -205,12 +245,12 @@ func (b SameKeyOpsByLength) Swap(i, j int) {
 }
 
 // AttachIndexIfNoExists add the index for history with it's number in array.
-func (h History) AttachIndexIfNoExists() {
-	if len(h) != 0 && h[0].Index.Present() {
+func (h *History) AttachIndexIfNoExists() {
+	if len(*h) != 0 && (*h)[0].Index.Present() {
 		return
 	}
-	for i := range h {
-		h[i].Index = IntOptional{i}
+	for i := range *h {
+		(*h)[i].Index = IntOptional{i}
 	}
 }
 
@@ -391,4 +431,14 @@ func (h History) GetKeys(t MopType) []string {
 	}
 
 	return keys
+}
+
+// KV struct
+type KV struct {
+	K string
+	V interface{}
+}
+
+func (kv KV) String() string {
+	return fmt.Sprintf("%s->%s", kv.K, kv.V)
 }

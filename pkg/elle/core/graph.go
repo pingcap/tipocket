@@ -1,6 +1,10 @@
 package core
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+	"strings"
+)
 
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
@@ -121,6 +125,7 @@ func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
 }
 
 // Link links two vertices relationship
+// create edge from v => succ
 func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	_, ok := g.Outs[v]
 	if !ok {
@@ -147,7 +152,7 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 			break
 		}
 	}
-	if haveRel == false {
+	if !haveRel {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
 
@@ -460,6 +465,39 @@ func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) inter
 	return dg, func(number interface{}) interface{} {
 		return numberToVertices[number]
 	}
+}
+
+func (v Vertex) String() string {
+	switch val := v.Value.(type) {
+	case string:
+		return val
+	case Op:
+		return val.String()
+	case KV:
+		return val.String()
+	default:
+		return "unknown type"
+	}
+}
+
+func (g DirectedGraph) String() string {
+	var b strings.Builder
+
+	fmt.Fprint(&b, "--- Outs ---\n")
+	for from, outs := range g.Outs {
+		for target, rels := range outs {
+			fmt.Fprintf(&b, "%s => %s | %+v\n", from.String(), target.String(), rels)
+		}
+	}
+
+	fmt.Fprint(&b, "--- Ins ---\n")
+	for target, froms := range g.Ins {
+		for _, from := range froms {
+			fmt.Fprintf(&b, "%s <= %s\n", target.String(), from.String())
+		}
+	}
+
+	return b.String()
 }
 
 // MapToDirectedGraph turns a sequence of [node, successors] map into a directed graph
