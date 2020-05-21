@@ -47,8 +47,7 @@ func (s *schedulerGenerator) schedule(nodes []clusterTypes.Node, duration time.D
 	return ops
 }
 
-type scheduler struct {
-}
+type scheduler struct{}
 
 func (s scheduler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))

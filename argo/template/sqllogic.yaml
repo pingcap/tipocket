@@ -14,11 +14,11 @@ spec:
             default: "false"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
+          - name: storage-class
             default: standard
-          - name: run_time
+          - name: run-time
             default: "8h"
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -48,10 +48,10 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
-            -run-time={{inputs.parameters.run_time}} \
+            -run-time={{inputs.parameters.run-time}} \
             -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
             -d=sqllogictest-tipocket \
             -loki-addr={{inputs.parameters.loki-addr}} \
