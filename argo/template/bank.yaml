@@ -55,6 +55,7 @@ spec:
         name: tipocket
         image: 'pingcap/tipocket:latest'
         imagePullPolicy: Always
+        workingDir: /logs
         command:
           - sh
           - '-c'
