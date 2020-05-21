@@ -1,0 +1,40 @@
+metadata:
+  generateName: tipocket-tiflash-tikv-encryption-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-tiflash-tikv-encryption
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-tiflash-tikv-encryption
+      - name: purge
+        value: "true"
+      - name: image-version
+        value: release-4.0-nightly
+      - name: storage-class
+        value: gp2
+      - name: nemesis
+        value: "random_kill,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,mixed_tikv"
+      - name: tikv-config
+        value: "/config/tikv/encryption.toml"
+  templates:
+    - name: call-tipocket-tiflash
+      steps:
+        - - name: call-tipocket-tiflash
+            templateRef:
+              name: tipocket-tiflash
+              template: tipocket-tiflash
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image_version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage_class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv_config}}"
