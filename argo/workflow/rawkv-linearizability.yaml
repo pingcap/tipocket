@@ -9,15 +9,15 @@ spec:
         value: tipocket-rawkv-linearizability
       - name: purge
         value: "true"
-      - name: image_version
+      - name: image-version
         value: release-4.0-nightly
-      - name: storage_class
+      - name: storage-class
         value: pd-ssd
       - name: nemesis
         value: "partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
       - name: client
         value: "5"
-      - name: request_count
+      - name: request-count
         value: "20000"
       - name: round
         value: "100"
@@ -40,16 +40,16 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
                 - name: client
                   value: "{{workflow.parameters.client}}"
-                - name: request_count
-                  value: "{{workflow.parameters.request_count}}"
+                - name: request-count
+                  value: "{{workflow.parameters.request-count}}"
                 - name: round
                   value: "{{workflow.parameters.round}}"
                 - name: loki-addr

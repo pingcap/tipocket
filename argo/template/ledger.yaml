@@ -14,13 +14,13 @@ spec:
             default: "false"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
+          - name: storage-class
             default: standard
           - name: nemesis
             default: ""
-          - name: run_time
+          - name: run-time
             default: "5h"
           - name: tikv-replicas
             default: "4"
@@ -50,11 +50,11 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
+            -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \

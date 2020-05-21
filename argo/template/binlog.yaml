@@ -14,21 +14,21 @@ spec:
             default: "false"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
+          - name: storage-class
             default: standard
           - name: nemesis
             default: ""
-          - name: run_time
+          - name: run-time
             default: "48h"
-          - name: relay_log
+          - name: relay-log
             default: "true"
-          - name: abtest_general_log
+          - name: abtest_general-log
             default: "true"
           - name: abtest_concurrency
             default: "3"
-          - name: binlog_sync_timeout
+          - name: binlog_sync-timeout
             default: "1h"
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -56,15 +56,15 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -relay-log={{inputs.parameters.relay_log}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -relay-log={{inputs.parameters.relay-log}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
-            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
-            -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
+            -abtest.general-log={{inputs.parameters.abtest_general-log}} \
+            -binlog.sync-timeout={{inputs.parameters.binlog_sync-timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

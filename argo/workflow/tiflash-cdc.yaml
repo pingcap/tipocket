@@ -9,39 +9,39 @@ spec:
         value: tipocket-tiflash-cdc
       - name: purge
         value: "true"
-      - name: image_version
+      - name: image-version
         value: release-4.0-nightly
-      - name: tidb_image
+      - name: tidb-image
         value: ""
-      - name: tikv_image
+      - name: tikv-image
         value: ""
-      - name: pd_image
+      - name: pd-image
         value: ""
-      - name: storage_class
+      - name: storage-class
         value: gp2
-      - name: abtest_version
+      - name: abtest_image-version
         value: release-4.0-nightly
       - name: nemesis
         value: ""
       - name: client
         value: "2"
-      - name: tidb_config
+      - name: tidb-config
         value: ""
-      - name: tikv_config
+      - name: tikv-config
         value: ""
-      - name: pd_config
+      - name: pd-config
         value: ""
-      - name: abtest_tidb_config
+      - name: abtest_tidb-config
         value: ""
-      - name: abtest_tikv_config
+      - name: abtest_tikv-config
         value: ""
-      - name: abtest_pd_config
+      - name: abtest_pd-config
         value: ""
-      - name: abtest_general_log
+      - name: abtest_general-log
         value: "true"
-      - name: tiflash_image
+      - name: tiflash-image
         value: "v4.0.0-rc"
-      - name: tiflash_replicas
+      - name: tiflash-replicas
         value: 2
       - name: cdc_hub
         value: "docker.io"
@@ -68,40 +68,40 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: tidb_image
-                  value: "{{workflow.parameters.tidb_image}}"
-                - name: tikv_image
-                  value: "{{workflow.parameters.tikv_image}}"
-                - name: pd_image
-                  value: "{{workflow.parameters.pd_image}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
-                - name: abtest_version
-                  value: "{{workflow.parameters.abtest_version}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
+                - name: abtest_image-version
+                  value: "{{workflow.parameters.abtest_image-version}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
                 - name: client
                   value: "{{workflow.parameters.client}}"
-                - name: tidb_config
-                  value: "{{workflow.parameters.tidb_config}}"
-                - name: tikv_config
-                  value: "{{workflow.parameters.tikv_config}}"
-                - name: pd_config
-                  value: "{{workflow.parameters.pd_config}}"
-                - name: abtest_tidb_config
-                  value: "{{workflow.parameters.abtest_tidb_config}}"
-                - name: abtest_tikv_config
-                  value: "{{workflow.parameters.abtest_tikv_config}}"
-                - name: abtest_pd_config
-                  value: "{{workflow.parameters.abtest_pd_config}}"
-                - name: abtest_general_log
-                  value: "{{workflow.parameters.abtest_general_log}}"
-                - name: tiflash_image
-                  value: "{{workflow.parameters.tiflash_image}}"
-                - name: tiflash_replicas
-                  value: "{{workflow.parameters.tiflash_replicas}}"
+                - name: tidb-config
+                  value: "{{workflow.parameters.tidb-config}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv-config}}"
+                - name: pd-config
+                  value: "{{workflow.parameters.pd-config}}"
+                - name: abtest_tidb-config
+                  value: "{{workflow.parameters.abtest_tidb-config}}"
+                - name: abtest_tikv-config
+                  value: "{{workflow.parameters.abtest_tikv-config}}"
+                - name: abtest_pd-config
+                  value: "{{workflow.parameters.abtest_pd-config}}"
+                - name: abtest_general-log
+                  value: "{{workflow.parameters.abtest_general-log}}"
+                - name: tiflash-image
+                  value: "{{workflow.parameters.tiflash-image}}"
+                - name: tiflash-replicas
+                  value: "{{workflow.parameters.tiflash-replicas}}"
                 - name: cdc_hub
                   value: "{{workflow.parameters.cdc_hub}}"
                 - name: cdc_repository
