@@ -14,15 +14,15 @@ spec:
             default: "true"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
-            default: standard
+          - name: storage-class
+            default: local-storage
           - name: nemesis
             default: "random_kill, partition_one, shuffle-leader-scheduler"
-          - name: run_time
+          - name: run-time
             default: "6h"
-          - name: tikv_config
+          - name: tikv-config
             default: ""
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -53,13 +53,13 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
+            -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \

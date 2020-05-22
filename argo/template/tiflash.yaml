@@ -14,17 +14,17 @@ spec:
             default: "false"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
-            default: standard
+          - name: storage-class
+            default: local-storage
           - name: nemesis
             default: ""
-          - name: tiflash_image
+          - name: tiflash-image
             default: ""
-          - name: tiflash_replicas
+          - name: tiflash-replicas
             default: 2
-          - name: run_time
+          - name: run-time
             default: "48h"
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -52,13 +52,13 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
-            -tiflash-image={{inputs.parameters.tiflash_image}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -tiflash-replicas={{inputs.parameters.tiflash-replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash-image}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

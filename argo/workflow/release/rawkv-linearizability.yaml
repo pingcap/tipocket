@@ -9,15 +9,25 @@ spec:
         value: tipocket-rawkv-linearizability
       - name: purge
         value: "true"
-      - name: image_version
+      - name: hub
+        value: "hub.pingcap.net"
+      - name: repository
+        value: pingcap
+      - name: image-version
         value: release-4.0-nightly
-      - name: storage_class
-        value: pd-ssd
+      - name: tidb-image
+        value: ""
+      - name: tikv-image
+        value: ""
+      - name: pd-image
+        value: ""
+      - name: storage-class
+        value: local-storage
       - name: nemesis
         value: "partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
       - name: client
         value: "5"
-      - name: request_count
+      - name: request-count
         value: "20000"
       - name: round
         value: "100"
@@ -40,16 +50,26 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
                 - name: client
                   value: "{{workflow.parameters.client}}"
-                - name: request_count
-                  value: "{{workflow.parameters.request_count}}"
+                - name: request-count
+                  value: "{{workflow.parameters.request-count}}"
                 - name: round
                   value: "{{workflow.parameters.round}}"
                 - name: loki-addr

@@ -12,35 +12,35 @@ spec:
             default: "docker.io"
           - name: purge
             default: "true"
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: abtest_version
+          - name: abtest_image-version
             value: latest
-          - name: storage_class
-            default: standard
+          - name: storage-class
+            default: local-storage
           - name: nemesis
             default: ""
           - name: client
             default: "2"
-          - name: run_time
+          - name: run-time
             default: "48h"
-          - name: tidb_config
+          - name: tidb-config
             default: ""
-          - name: tikv_config
+          - name: tikv-config
             default: ""
-          - name: pd_config
+          - name: pd-config
             default: ""
-          - name: abtest_tidb_config
+          - name: abtest_tidb-config
             default: ""
-          - name: abtest_tikv_config
+          - name: abtest_tikv-config
             default: ""
-          - name: abtest_pd_config
+          - name: abtest_pd-config
             default: ""
-          - name: abtest_general_log
+          - name: abtest_general-log
             default: "true"
-          - name: tiflash_image
+          - name: tiflash-image
             default: ""
-          - name: tiflash_replicas
+          - name: tiflash-replicas
             default: 2
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -67,22 +67,22 @@ spec:
             /bin/tiflash-abtest \
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
-            -abtest.image-version={{inputs.parameters.abtest_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
+            -abtest.image-version={{inputs.parameters.abtest_image-version}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -client={{inputs.parameters.client}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -tidb-config={{inputs.parameters.tidb_config}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -pd-config={{inputs.parameters.pd_config}} \
-            -abtest.tidb-config={{inputs.parameters.abtest_tidb_config}} \
-            -abtest.tikv-config={{inputs.parameters.abtest_tikv_config}} \
-            -abtest.pd-config={{inputs.parameters.abtest_pd_config}} \
-            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
-            -tiflash-replicas={{inputs.parameters.tiflash_replicas}} \
-            -tiflash-image={{inputs.parameters.tiflash_image}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -tidb-config={{inputs.parameters.tidb-config}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
+            -pd-config={{inputs.parameters.pd-config}} \
+            -abtest.tidb-config={{inputs.parameters.abtest_tidb-config}} \
+            -abtest.tikv-config={{inputs.parameters.abtest_tikv-config}} \
+            -abtest.pd-config={{inputs.parameters.abtest_pd-config}} \
+            -abtest.general-log={{inputs.parameters.abtest_general-log}} \
+            -tiflash-replicas={{inputs.parameters.tiflash-replicas}} \
+            -tiflash-image={{inputs.parameters.tiflash-image}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

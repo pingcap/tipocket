@@ -49,6 +49,8 @@ const (
 	tikvDataDir = "/var/lib/tikv/data"
 	pdDir       = "/var/lib/pd"
 	pdDataDir   = "/var/lib/pd/data"
+	// used for tikv data encryption
+	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
 
 	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
@@ -508,7 +510,7 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir}
+	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir, MasterKey: tikvEncryptionMasterKey}
 	if getIOChaosAnnotation(tc, "tikv") == "chaosfs-tikv" {
 		scriptModel.DataDir = tikvDataDir
 	}
