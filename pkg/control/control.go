@@ -538,7 +538,21 @@ func (c *Controller) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTyp
 				if err != nil {
 					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
 				} else if len(texts) > 0 {
-					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
+					panicLogs := "panic-logs"
+					file, err := os.OpenFile(path.Join(c.logPath, panicLogs),
+						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					if err != nil {
+						log.Fatal("failed to create panic logs file", err)
+					}
+					f, ok := c.podLogFiles.LoadOrStore(panicLogs, file)
+					if ok {
+						file.Close()
+					}
+					file = f.(*os.File)
+					content := fmt.Sprintf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
+					if _, err := file.WriteString(content); err != nil {
+						log.Fatal("fail to write logs to panic logs file", content, err)
+					}
 				}
 			}(n.Namespace, n.PodName, string(n.Component), nonMatch)
 		default:
