@@ -13,23 +13,17 @@ spec:
           value: tipocket-scbank
         - name: purge
           value: "true"
-        - name: image_version
+        - name: image-version
           value: release-4.0-nightly
-        - name: storage_class
-          value: gp2
+        - name: storage-class
+          value: local-storage
         - name: nemesis
           value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
-        - name: loki-addr
-          value: http://gateway.loki.svc
-        - name: loki-username
-          value: loki
-        - name: loki-password
-          value: admin
-        - name: tidb_config
+        - name: tidb-config
           value: ""
-        - name: tikv_config
+        - name: tikv-config
           value: ""
-        - name: pd_config
+        - name: pd-config
           value: ""
         - name: tikv-replicas
           value: "4"
@@ -62,18 +56,18 @@ spec:
                     value: "{{workflow.parameters.ns}}"
                   - name: purge
                     value: "{{workflow.parameters.purge}}"
-                  - name: image_version
-                    value: "{{workflow.parameters.image_version}}"
-                  - name: storage_class
-                    value: "{{workflow.parameters.storage_class}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
                   - name: nemesis
                     value: "{{workflow.parameters.nemesis}}"
-                  - name: tidb_config
-                    value: "{{workflow.parameters.tidb_config}}"
-                  - name: tikv_config
-                    value: "{{workflow.parameters.tikv_config}}"
-                  - name: pd_config
-                    value: "{{workflow.parameters.pd_config}}"
+                  - name: tidb-config
+                    value: "{{workflow.parameters.tidb-config}}"
+                  - name: tikv-config
+                    value: "{{workflow.parameters.tikv-config}}"
+                  - name: pd-config
+                    value: "{{workflow.parameters.pd-config}}"
                   - name: loki-addr
                     value: "{{workflow.parameters.loki-addr}}"
                   - name: loki-username
@@ -84,10 +78,3 @@ spec:
                     value: "{{workflow.parameters.tikv-replicas}}"
                   - name: tidb-replica-read
                     value: "{{workflow.parameters.tidb-replica-read}}"
-                  - name: loki-addr
-                    value: "{{workflow.parameters.loki-addr}}"
-                  - name: loki-username
-                    value: "{{workflow.parameters.loki-username}}"
-                  - name: loki-password
-                    value: "{{workflow.parameters.loki-password}}"
-

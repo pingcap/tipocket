@@ -76,11 +76,11 @@ type fixtureContext struct {
 // TiDBClusterConfig ...
 type TiDBClusterConfig struct {
 	// image versions
-	ImageVersion        string
-	TiDBImageVersion    string
-	TiKVImageVersion    string
-	PDImageVersion      string
-	TiFlashImageVersion string
+	ImageVersion string
+	TiDBImage    string
+	TiKVImage    string
+	PDImage      string
+	TiFlashImage string
 
 	// configurations
 	TiDBConfig string
@@ -224,10 +224,10 @@ func init() {
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.TiDBClusterConfig.ImageVersion, "image-version", "nightly", "image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiDBImageVersion, "tidb-image", "", "tidb image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiKVImageVersion, "tikv-image", "", "tikv image version")
-	flag.StringVar(&Context.TiDBClusterConfig.PDImageVersion, "pd-image", "", "pd image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImageVersion, "tiflash-image", "v4.0.0-rc", "tiflash image version")
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBImage, "tidb-image", "", "tidb image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVImage, "tikv-image", "", "tikv image")
+	flag.StringVar(&Context.TiDBClusterConfig.PDImage, "pd-image", "", "pd image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImage, "tiflash-image", "", "tiflash image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")

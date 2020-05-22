@@ -1,24 +1,34 @@
 metadata:
-  generateName: tipocket-bank-iochaos-
+  generateName: tipocket-vbank
   namespace: argo
 spec:
-  entrypoint: call-tipocket-bank
+  entrypoint: call-tipocket-vbank
   arguments:
     parameters:
       - name: ns
-        value: tipocket-bank-iochaos
+        value: tipocket-vbank
       - name: purge
         value: "true"
+      - name: hub
+        value: "hub.pingcap.net"
+      - name: repository
+        value: pingcap
       - name: image-version
         value: release-4.0-nightly
+      - name: tidb-image
+        value: ""
+      - name: tikv-image
+        value: ""
+      - name: pd-image
+        value: ""
       - name: storage-class
         value: local-storage
       - name: nemesis
-        value: "delay_tikv"
+        value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
       - name: client
         value: "5"
       - name: request-count
-        value: "10000"
+        value: "20000"
       - name: round
         value: "100"
       - name: loki-addr
@@ -28,20 +38,38 @@ spec:
       - name: loki-password
         value: "admin"
   templates:
-    - name: call-tipocket-bank
+    - name: call-tipocket-vbank
       steps:
-        - - name: call-tipocket-bank
+        - - name: call-wait-cluster
             templateRef:
-              name: tipocket-bank
-              template: tipocket-bank
+              name: wait-cluster
+              template: wait-cluster
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+        - - name: call-tipocket-vbank
+            templateRef:
+              name: tipocket-vbank
+              template: tipocket-vbank
             arguments:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
                 - name: image-version
                   value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
                 - name: storage-class
                   value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
