@@ -3,10 +3,11 @@ package testinfra
 import (
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/util/config"
-	"github.com/pingcap/tipocket/pkg/test-infra/dm"
-	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/dm"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
