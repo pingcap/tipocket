@@ -71,7 +71,6 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	}
 
 	cfg.Mode = p.Config.Mode
-	cfg.ClientNodes = clientNodes
 	cfg.DSN1 = makeDSN(clientNodes[0].Address())
 
 	// In the TiFlash case, there is only one client node.
@@ -81,6 +80,15 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	// In the DM case, there are 3 client nodes needed (2 for upstream MySQL and 1 for downstream TiDB).
 	if len(clientNodes) > 2 {
 		cfg.DSN3 = makeDSN(clientNodes[2].Address())
+	}
+
+	switch cfg.Mode {
+	case "dm":
+		err := dmCreateSourceTask(clientNodes)
+		if err != nil {
+			return err
+		}
+	default:
 	}
 
 	return pocketCore.New(cfg).Start(ctx)

@@ -19,7 +19,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/juju/errors"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 )
 
@@ -47,13 +46,12 @@ type Generator struct {
 
 // Config struct
 type Config struct {
-	Mode        string    `toml:"mode"`
-	DSN1        string    `toml:"dsn1"`
-	DSN2        string    `toml:"dsn2"`
-	DSN3        string    `toml:"dsn3"`
-	Options     Options   `toml:"options"`
-	Generator   Generator `toml:"generator"`
-	ClientNodes []clusterTypes.ClientNode
+	Mode      string    `toml:"mode"`
+	DSN1      string    `toml:"dsn1"`
+	DSN2      string    `toml:"dsn2"`
+	DSN3      string    `toml:"dsn3"`
+	Options   Options   `toml:"options"`
+	Generator Generator `toml:"generator"`
 }
 
 var initConfig = Config{
