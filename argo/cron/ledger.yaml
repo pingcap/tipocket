@@ -16,7 +16,7 @@ spec:
         - name: image-version
           value: release-4.0-nightly
         - name: storage-class
-          value: gp2
+          value: local-storage
         - name: nemesis
           value: ""
         - name: run-time

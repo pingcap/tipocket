@@ -17,7 +17,7 @@ spec:
           - name: image-version
             default: nightly
           - name: storage-class
-            default: standard
+            default: local-storage
           - name: run-time
             default: "8h"
           - name: loki-addr
@@ -54,6 +54,9 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -run-time={{inputs.parameters.run-time}} \
             -p={{inputs.parameters.case-addr}} \

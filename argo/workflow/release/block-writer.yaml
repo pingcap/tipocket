@@ -1,20 +1,34 @@
 metadata:
-  generateName: tipocket-sqllogic-
+  generateName: tipocket-block-writer-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-sqllogic
+  entrypoint: call-tipocket-block-writer
   arguments:
     parameters:
       - name: ns
-        value: tipocket-sqllogic
+        value: tipocket-block-writer
       - name: purge
         value: "true"
+      - name: hub
+        value: "hub.pingcap.net"
+      - name: repository
+        value: pingcap
+      - name: image-version
+        value: release-4.0-nightly
+      - name: tidb-image
+        value: ""
+      - name: tikv-image
+        value: ""
+      - name: pd-image
+        value: ""
       - name: image-version
         value: release-4.0-nightly
       - name: storage-class
-        value: gp2
+        value: local-storage
+      - name: nemesis
+        value: ""
       - name: run-time
-        value: "8h"
+        value: "60m"
       - name: loki-addr
         value: "http://gateway.loki.svc"
       - name: loki-username
@@ -22,22 +36,34 @@ spec:
       - name: loki-password
         value: "admin"
   templates:
-    - name: call-tipocket-sqllogic
+    - name: call-tipocket-block-writer
       steps:
-        - - name: call-tipocket-sqllogic
+        - - name: call-tipocket-block-writer
             templateRef:
-              name: tipocket-sqllogic
-              template: tipocket-sqllogic
+              name: tipocket-block-writer
+              template: tipocket-block-writer
             arguments:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
                 - name: image-version
                   value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
                 - name: storage-class
                   value: "{{workflow.parameters.storage-class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
                 - name: loki-addr

@@ -14,10 +14,16 @@ spec:
             default: "false"
           - name: image-version
             default: nightly
+          - name: tidb-image
+            default: ""
+          - name: tikv-image
+            default: ""
+          - name: pd-image
+            default: ""
           - name: repository
             default: pingcap
           - name: storage-class
-            default: standard
+            default: local-storage
           - name: run-time
             default: "5h"
           - name: nemesis
@@ -61,6 +67,9 @@ spec:
             -storage-class={{inputs.parameters.storage-class}} \
             -run-time={{inputs.parameters.run-time}} \
             -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -tidb-config={{inputs.parameters.tidb-config}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
