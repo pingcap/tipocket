@@ -1,65 +1,69 @@
 metadata:
-  generateName: tipocket-binlog-
+  generateName: tipocket-region-available-
   namespace: argo
 spec:
-  entrypoint: call-tipocket-binlog
+  entrypoint: call-tipocket-region-available
   arguments:
     parameters:
       - name: ns
-        value: tipocket-binlog
+        value: tipocket-region-available
       - name: purge
         value: "true"
+      - name: hub
+        value: "hub.pingcap.net"
+      - name: repository
+        value: pingcap
       - name: image-version
         value: release-4.0-nightly
+      - name: tidb-image
+        value: ""
+      - name: tikv-image
+        value: ""
+      - name: pd-image
+        value: ""
       - name: storage-class
         value: local-storage
       - name: nemesis
         value: ""
       - name: run-time
-        value: "60m"
-      - name: relay-log
-        value: "true"
-      - name: abtest_general-log
-        value: "true"
-      - name: binlog_sync-timeout
-        value: "1h"
-      - name: abtest_concurrency
-        value: "3"
+        value: "4h"
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: "http://loki.loki.svc"
       - name: loki-username
-        value: "loki"
+        value: ""
       - name: loki-password
-        value: "admin"
+        value: ""
   templates:
-    - name: call-tipocket-binlog
+    - name: call-tipocket-region-available
       steps:
-        - - name: call-tipocket-binlog
+        - - name: call-tipocket-region-available
             templateRef:
-              name: tipocket-binlog
-              template: tipocket-binlog
+              name: tipocket-region-available
+              template: tipocket-region-available
             arguments:
               parameters:
                 - name: ns
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
                 - name: image-version
                   value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
                 - name: storage-class
                   value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
-                - name: relay-log
-                  value: "{{workflow.parameters.relay-log}}"
-                - name: abtest_general-log
-                  value: "{{workflow.parameters.abtest_general-log}}"
-                - name: binlog_sync-timeout
-                  value: "{{workflow.parameters.binlog_sync-timeout}}"
-                - name: abtest_concurrency
-                  value: "{{workflow.parameters.abtest_concurrency}}"
                 - name: loki-addr
                   value: "{{workflow.parameters.loki-addr}}"
                 - name: loki-username

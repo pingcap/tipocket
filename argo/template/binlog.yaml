@@ -17,7 +17,7 @@ spec:
           - name: image-version
             default: nightly
           - name: storage-class
-            default: standard
+            default: local-storage
           - name: nemesis
             default: ""
           - name: run-time

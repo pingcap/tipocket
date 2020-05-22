@@ -12,7 +12,7 @@ spec:
       - name: image-version
         value: nightly
       - name: storage-class
-        value: gp2
+        value: local-storage
       - name: run-time
         value: "6h"
       - name: loki-addr

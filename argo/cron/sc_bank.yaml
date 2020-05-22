@@ -16,7 +16,7 @@ spec:
         - name: image-version
           value: release-4.0-nightly
         - name: storage-class
-          value: gp2
+          value: local-storage
         - name: nemesis
           value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
         - name: tidb-config
