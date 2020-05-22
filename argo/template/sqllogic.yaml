@@ -8,14 +8,20 @@ spec:
         parameters:
           - name: ns
             default: tipocket-sqllogic
-          - name: hub
-            default: "docker.io"
           - name: purge
             default: "false"
+          - name: hub
+            default: "docker.io"
           - name: repository
             default: pingcap
           - name: image-version
             default: nightly
+          - name: tidb-image
+            default: ""
+          - name: tikv-image
+            default: ""
+          - name: pd-image
+            default: ""
           - name: storage-class
             default: local-storage
           - name: run-time
