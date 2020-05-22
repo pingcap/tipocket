@@ -67,10 +67,10 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            - dm.mysql.version={{inputs.parameters.dm-mysql-version}} \
-            - dm.mysql.storage-size={{inputs.parameters.dm-mysql-storage-size}} \
-            - dm.mysql.enable-binlog={{inputs.parameters.dm-mysql-enable-binlog}} \
-            - dm.mysql.enable-gtid={{inputs.parameters.dm-mysql-enable-gtid}} \
-            - dm.version={{inputs.parameters.dm-version}} \
-            - dm.master-replicas={{inputs.parameters.dm-master-replicas}} \
-            - dm.worker-replicas={{inputs.parameters.dm-worker-replicas}}
+            -dm.mysql.version={{inputs.parameters.dm-mysql-version}} \
+            -dm.mysql.storage-size={{inputs.parameters.dm-mysql-storage-size}} \
+            -dm.mysql.enable-binlog={{inputs.parameters.dm-mysql-enable-binlog}} \
+            -dm.mysql.enable-gtid={{inputs.parameters.dm-mysql-enable-gtid}} \
+            -dm.version={{inputs.parameters.dm-version}} \
+            -dm.master-replicas={{inputs.parameters.dm-master-replicas}} \
+            -dm.worker-replicas={{inputs.parameters.dm-worker-replicas}}
