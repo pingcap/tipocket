@@ -32,6 +32,8 @@ const (
 	WRDepend DependType = "wr"
 	// RWDepend ...
 	RWDepend DependType = "rw"
+	// EXTKeyDepent ...
+	EXTKeyDepent DependType = "ext-key-depend"
 )
 
 // ExplainResult is an interface, contains rwExplainerResult, wwExplainerResult wr ExplainerResult etc

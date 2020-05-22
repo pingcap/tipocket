@@ -253,7 +253,6 @@ func (w *wrExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 	return fmt.Sprintf("%s read %v written by %s with value %s",
 		b, er.Key, a, er.Value,
 	)
-	return ""
 }
 
 // wwGraph analyzes write-write dependencies
@@ -279,18 +278,76 @@ func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 }
 
 type extKeyExplainer struct {
+	keyMap map[int]map[int]core.Rel
+}
+
+type extKeyExplainResult struct {
+	Typ         core.DependType
+	Key         string
+	Value       core.MopValueType
+	PrevValue   core.MopValueType
+	MopType     core.MopType
+	PrevMopType core.MopType
+}
+
+func (w extKeyExplainResult) Type() core.DependType {
+	return core.EXTKeyDepent
+}
+
+func (w *extKeyExplainer) insert(a, b int, key core.Rel) {
+	if _, ok := w.keyMap[a]; !ok {
+		w.keyMap[a] = make(map[int]core.Rel)
+	}
+	w.keyMap[a][b] = key
 }
 
 func (w *extKeyExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
-	return nil
+	rel := w.keyMap[a.Index.MustGet()][b.Index.MustGet()]
+	k := string(rel[8:])
+	r := extKeyExplainResult{
+		Typ: core.EXTKeyDepent,
+		Key: k,
+	}
+	for _, amop := range *a.Value {
+		if v, ok := amop.M[k]; ok {
+			vptr := v.(*int)
+			if vptr == nil {
+				continue
+			}
+			r.PrevValue = *vptr
+			r.PrevMopType = amop.T
+			break
+		}
+	}
+	for _, bmop := range *b.Value {
+		if v, ok := bmop.M[k]; ok {
+			vptr := v.(*int)
+			if vptr == nil {
+				continue
+			}
+			r.Value = *vptr
+			r.MopType = bmop.T
+			break
+		}
+	}
+	return r
 }
 
 func (w *extKeyExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
-	return ""
+	if result.Type() != core.EXTKeyDepent {
+		log.Fatalf("result type is not %s, type error", core.EXTKeyDepent)
+	}
+	er := result.(extKeyExplainResult)
+	return fmt.Sprintf("%s %s %v depend on %s %s %v",
+		b, er.MopType, er.Value, a, er.PrevMopType, er.PrevValue,
+	)
 }
 
 func extKeyGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	g := core.NewDirectedGraph()
+	explainer := extKeyExplainer{
+		keyMap: make(map[int]map[int]core.Rel),
+	}
 
 	sort.SliceStable(history, func(i, j int) bool {
 		return history[i].Index.MustGet() > history[j].Index.MustGet()
@@ -300,10 +357,12 @@ func extKeyGraph(history core.History) (core.Anomalies, *core.DirectedGraph, cor
 		if index == 0 {
 			continue
 		}
+		selfIndex := op.Index.MustGet()
 		ops := history[:index]
 	FIND:
 		for i := index - 1; i >= 0; i++ {
 			ext := extKeys(ops[i])
+			extIndex := ops[i].Index.MustGet()
 			selfExt := extKeys(op)
 			for k := range selfExt {
 				if _, ok := ext[k]; ok {
@@ -315,6 +374,7 @@ func extKeyGraph(history core.History) (core.Anomalies, *core.DirectedGraph, cor
 							relation := core.Rel(fmt.Sprintf("%s-%s", core.ExtKey, k))
 							g.Link(from, target, relation)
 							rs[relation] = struct{}{}
+							explainer.insert(selfIndex, extIndex, relation)
 						}
 					}
 					if outs, ok := g.Outs[target]; ok {
@@ -324,6 +384,7 @@ func extKeyGraph(history core.History) (core.Anomalies, *core.DirectedGraph, cor
 								if _, ok := rs[rel]; !ok {
 									g.Link(from, next, rel)
 									rs[rel] = struct{}{}
+									explainer.insert(selfIndex, next.Value.(core.Op).Index.MustGet(), rel)
 									break
 								}
 							}
@@ -335,5 +396,122 @@ func extKeyGraph(history core.History) (core.Anomalies, *core.DirectedGraph, cor
 		}
 	}
 
-	return nil, g, &extKeyExplainer{}
+	return nil, g, &explainer
+}
+
+// getKeys get all keys from an op
+func getKeys(op core.Op) []string {
+	var (
+		keys []string
+		dup  = make(map[string]struct{})
+	)
+	for _, mop := range *op.Value {
+		// don't infer crashed reads
+		// but infer crashed writes
+		if op.Type == core.OpTypeInfo && mop.IsRead() {
+			continue
+		}
+		for k := range mop.M {
+			if _, ok := dup[k]; !ok {
+				keys = append(keys, k)
+				dup[k] = struct{}{}
+			}
+		}
+	}
+	return keys
+}
+
+// getVersion starts by find first mop which read or write the given key
+// read  => version is the read value
+// write => go through the rest mops, version is the last value assigned to this key
+func getVersion(k string, op core.Op) *int {
+	var r *int
+	tp := core.MopTypeUnknown
+	for _, mop := range *op.Value {
+		if op.Type == core.OpTypeInfo && mop.IsRead() {
+			continue
+		}
+		if v, ok := mop.M[k]; ok {
+			if tp == core.MopTypeUnknown {
+				tp = mop.T
+				r = v.(*int)
+				if tp == core.MopTypeRead {
+					return r
+				}
+			}
+			if tp == core.MopTypeWrite && tp == mop.T {
+				r = v.(*int)
+			}
+		}
+	}
+	return r
+}
+
+// versionGraph runs based on realtime or process graph
+// case1
+// T1[wx1], T2[rx2wx3]
+// T1[T2] => 1 => [2]
+// case2
+// T1[wx1rx2], T2[wx3wx4]
+// T1[T2] => 2 => [4]
+// case3
+// T1[rx1], T2[wx2], T3[wx3], T4[rx4]
+// T1[T2, T2], T2[T4], T3[T4] => 1 => [2, 3], 2 => [4], 3 => [4]
+func versionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	g := core.NewDirectedGraph()
+	// var val *int
+	var find func(op core.Op) []core.Op
+	find = func(op core.Op) []core.Op {
+		var ops []core.Op
+		nexts, ok := graph.Outs[core.Vertex{Value: op}]
+		if !ok {
+			return ops
+		}
+		for vertex, rels := range nexts {
+			hasRel := false
+			for _, r := range rels {
+				if r == rel {
+					hasRel = true
+				}
+			}
+			if !hasRel {
+				continue
+			}
+			nextOp := vertex.Value.(core.Op)
+			if nextOp.Type == core.OpTypeOk ||
+				nextOp.Type == core.OpTypeInfo && nextOp.HasMopType(core.MopTypeWrite) {
+				ops = append(ops, nextOp)
+			} else {
+				ops = append(ops, find(nextOp)...)
+			}
+		}
+		return ops
+	}
+
+	for _, op := range core.FilterOkOrInfoHistory(history) {
+		var (
+			keys  = getKeys(op)
+			nexts = find(op)
+		)
+
+		for _, k := range keys {
+			selfV := getVersion(k, op)
+			if selfV == nil {
+				// should not be nill
+				panic("self version should not be nil")
+			}
+			for _, next := range nexts {
+				nextV := getVersion(k, next)
+				if nextV == nil {
+					continue
+				}
+				if *selfV == *nextV {
+					continue
+				}
+				g.Link(core.Vertex{Value: *selfV}, core.Vertex{Value: *nextV}, core.Rel("version-"+k))
+			}
+		}
+	}
+
+	return nil, g, nil
 }

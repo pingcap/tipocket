@@ -39,18 +39,20 @@ type MopType string
 
 // OpType enums
 const (
-	OpTypeInvoke OpType = "invoke"
-	OpTypeOk     OpType = "ok"
-	OpTypeFail   OpType = "fail"
-	OpTypeInfo   OpType = "info"
+	OpTypeInvoke  OpType = "invoke"
+	OpTypeOk      OpType = "ok"
+	OpTypeFail    OpType = "fail"
+	OpTypeInfo    OpType = "info"
+	OpTypeUnknown OpType = "unknown"
 )
 
 // MopType enums
 const (
-	MopTypeAll    MopType = "all"
-	MopTypeAppend MopType = "append"
-	MopTypeRead   MopType = "read"
-	MopTypeWrite  MopType = "write"
+	MopTypeAll     MopType = "all"
+	MopTypeAppend  MopType = "append"
+	MopTypeRead    MopType = "read"
+	MopTypeWrite   MopType = "write"
+	MopTypeUnknown MopType = "unknown"
 )
 
 // Mop interface
@@ -224,6 +226,15 @@ func (op Op) ValueLength() int {
 func (op Op) WithType(tp OpType) Op {
 	op.Type = tp
 	return op
+}
+
+func (op *Op) HasMopType(tp MopType) bool {
+	for _, mop := range *op.Value {
+		if mop.T == tp {
+			return true
+		}
+	}
+	return false
 }
 
 // History contains operations

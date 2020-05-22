@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -471,6 +472,8 @@ func (v Vertex) String() string {
 	switch val := v.Value.(type) {
 	case string:
 		return val
+	case int:
+		return strconv.Itoa(val)
 	case Op:
 		return val.String()
 	case KV:
