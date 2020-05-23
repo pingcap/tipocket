@@ -14,7 +14,6 @@
 package fixture
 
 // MySQLConfig is the configuration for a MySQL component.
-// TODO: enable binlog
 type MySQLConfig struct {
 	Version      string
 	StorageSize  string

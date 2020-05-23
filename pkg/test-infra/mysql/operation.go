@@ -125,10 +125,7 @@ func (o *Ops) applyMySQL() error {
 		return err
 	}
 
-	if err := o.waitMySQLReady(5 * time.Minute); err != nil {
-		return err
-	}
-	return nil
+	return o.waitMySQLReady(5 * time.Minute)
 }
 
 func (o *Ops) waitMySQLReady(timeout time.Duration) error {

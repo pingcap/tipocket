@@ -82,13 +82,11 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 		cfg.DSN3 = makeDSN(clientNodes[2].Address())
 	}
 
-	switch cfg.Mode {
-	case "dm":
+	if cfg.Mode == "dm" {
 		err := dmCreateSourceTask(clientNodes)
 		if err != nil {
 			return err
 		}
-	default:
 	}
 
 	return pocketCore.New(cfg).Start(ctx)
