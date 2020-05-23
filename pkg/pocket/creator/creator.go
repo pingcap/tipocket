@@ -77,6 +77,17 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	if len(clientNodes) > 1 {
 		cfg.DSN2 = makeDSN(clientNodes[1].Address())
 	}
+	// In the DM case, there are 3 client nodes needed (2 for upstream MySQL and 1 for downstream TiDB).
+	if len(clientNodes) > 2 {
+		cfg.DSN3 = makeDSN(clientNodes[2].Address())
+	}
+
+	if cfg.Mode == "dm" {
+		err := dmCreateSourceTask(clientNodes)
+		if err != nil {
+			return err
+		}
+	}
 
 	return pocketCore.New(cfg).Start(ctx)
 }
