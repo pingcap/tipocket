@@ -111,12 +111,10 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
-	k8sNodes, err := o.getK8sNodes()
+	ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 	if err != nil {
 		return clientNodes, err
-	}
-	ip := getNodeIP(k8sNodes)
-	if ip == "" {
+	} else if len(ips) == 0 {
 		return clientNodes, errors.New("k8s node not found")
 	}
 
@@ -127,7 +125,7 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	clientNodes = append(clientNodes, clusterTypes.ClientNode{
 		Namespace:   svc.ObjectMeta.Namespace,
 		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
-		IP:          ip,
+		IP:          ips[0], // compatible with the old code, can anyone FIXME?
 		Port:        getTiDBNodePort(svc),
 	})
 	return clientNodes, nil

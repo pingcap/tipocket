@@ -133,7 +133,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
-					Replicas:             3,
+					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
@@ -160,7 +160,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
-					Replicas: 2,
+					Replicas: int32(clusterConfig.TiDBReplicas),
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
