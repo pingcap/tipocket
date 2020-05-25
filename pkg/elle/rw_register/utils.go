@@ -2,6 +2,7 @@ package rwregister
 
 import (
 	"log"
+	"strings"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
@@ -173,4 +174,52 @@ func extKeys(op core.Op) map[string]struct{} {
 		}
 	}
 	return keys
+}
+
+func extReadKeys(op core.Op) map[string]int {
+	var (
+		res    = make(map[string]int)
+		ignore = make(map[string]int)
+	)
+
+	for _, mop := range *op.Value {
+		for k, v := range mop.M {
+			vptr := v.(*int)
+			if vptr == nil {
+				continue
+			}
+			_, ok := ignore[k]
+			if !ok && mop.IsRead() {
+				res[k] = *vptr
+			}
+			ignore[k] = *vptr
+		}
+	}
+
+	return res
+}
+
+func extWriteKeys(op core.Op) map[string]int {
+	var res = make(map[string]int)
+
+	for _, mop := range *op.Value {
+		for k, v := range mop.M {
+			vptr := v.(*int)
+			if vptr == nil {
+				continue
+			}
+			if mop.IsWrite() {
+				res[k] = *vptr
+			}
+		}
+	}
+
+	return res
+}
+
+func isExtIndexRel(rel core.Rel) (string, bool) {
+	if strings.HasPrefix(string(rel), string(core.ExtKey)) && len(rel) > 8 {
+		return string(rel[8:]), true
+	}
+	return "", false
 }

@@ -44,6 +44,14 @@ func (v Vertices) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
 }
 
+func NewVerticesFromOp(items []Op) Vertices {
+	var vertices Vertices
+	for _, item := range items {
+		vertices = append(vertices, Vertex{Value: item})
+	}
+	return vertices
+}
+
 // Rels type aliases []Rel
 type Rels []Rel
 
@@ -195,6 +203,13 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
 		}
+	}
+}
+
+// UnLinkSelfEdges unlinks edges from a to a
+func (g *DirectedGraph) UnLinkSelfEdges(xs []Vertex) {
+	for _, x := range xs {
+		g.UnLink(x, x)
 	}
 }
 

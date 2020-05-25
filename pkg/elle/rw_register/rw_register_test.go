@@ -361,3 +361,68 @@ func TestVersionGraph(t *testing.T) {
 	_, r11, _ := versionGraph(core.Realtime, history11, g11)
 	require.Equal(t, expect11, r11)
 }
+
+func TestVersionGraph2TransactionGraph(t *testing.T) {
+	// empty
+	version1 := core.NewDirectedGraph()
+	var history1 core.History
+	expect1 := core.NewDirectedGraph()
+	require.Equal(t, expect1, versionGraph2TransactionGraph("x", history1, version1))
+
+	// rr
+	version2 := core.NewDirectedGraph()
+	version2.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Rel("ext-key-x"))
+	version2.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Rel("ext-key-x"))
+	history2 := core.History{
+		MustParseOp("rx1"),
+		MustParseOp("rx2"),
+	}
+	expect2 := core.NewDirectedGraph()
+	require.Equal(t, expect2, versionGraph2TransactionGraph("x", history2, version2))
+
+	// wr
+	version3 := core.NewDirectedGraph()
+	version3.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Rel("ext-key-x"))
+	version3.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Rel("ext-key-x"))
+	history3 := core.History{
+		MustParseOp("wx1"),
+		MustParseOp("rx1"),
+	}
+	expect3 := core.NewDirectedGraph()
+	require.Equal(t, expect3, versionGraph2TransactionGraph("x", history3, version3))
+
+	// ww
+	version4 := core.NewDirectedGraph()
+	version4.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Rel("ext-key-x"))
+	version4.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Rel("ext-key-x"))
+	history4 := core.History{
+		MustParseOp("wx1"),
+		MustParseOp("wx2"),
+	}
+	expect4 := core.NewDirectedGraph()
+	expect4.Link(core.Vertex{Value: history4[0]}, core.Vertex{Value: history4[1]}, core.WW)
+	require.Equal(t, expect4, versionGraph2TransactionGraph("x", history4, version4))
+
+	// rw
+	version5 := core.NewDirectedGraph()
+	version5.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Rel("ext-key-x"))
+	version5.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Rel("ext-key-x"))
+	history5 := core.History{
+		MustParseOp("rx1"),
+		MustParseOp("wx2"),
+	}
+	expect5 := core.NewDirectedGraph()
+	expect5.Link(core.Vertex{Value: history5[0]}, core.Vertex{Value: history5[1]}, core.RW)
+	require.Equal(t, expect5, versionGraph2TransactionGraph("x", history5, version5))
+
+	// ignores internal writes/reads
+	version6 := core.NewDirectedGraph()
+	version6.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Rel("ext-key-x"))
+	version6.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Rel("ext-key-x"))
+	history6 := core.History{
+		MustParseOp("wx1wx2"),
+		MustParseOp("rx2rx3"),
+	}
+	expect6 := core.NewDirectedGraph()
+	require.Equal(t, expect6, versionGraph2TransactionGraph("x", history6, version6))
+}

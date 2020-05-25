@@ -515,3 +515,70 @@ func versionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph)
 
 	return nil, g, nil
 }
+
+func extIndex(fn func(op core.Op) map[string]int, history core.History) map[string]map[int][]core.Op {
+	res := make(map[string]map[int][]core.Op)
+
+	okHistory := core.FilterOkHistory(history)
+	for _, op := range okHistory {
+		extKV := fn(op)
+		for k, v := range extKV {
+			if _, ok := res[k]; !ok {
+				res[k] = make(map[int][]core.Op)
+			}
+			if _, ok := res[k][v]; !ok {
+				res[k][v] = make([]core.Op, 0)
+			}
+			res[k][v] = append(res[k][v], op)
+		}
+	}
+
+	return res
+}
+
+func versionGraph2TransactionGraph(key string, history core.History, versionGraph *core.DirectedGraph) *core.DirectedGraph {
+	var (
+		extReadIndex  = extIndex(extReadKeys, history)
+		extWriteIndex = extIndex(extWriteKeys, history)
+		g             = core.NewDirectedGraph()
+	)
+
+	for from, nexts := range versionGraph.Outs {
+		v1 := from.Value.(int)
+		for next, rels := range nexts {
+			v2 := next.Value.(int)
+			for _, rel := range rels {
+				k, has := isExtIndexRel(rel)
+				if !has || k != key {
+					continue
+				}
+				kReads, ok := extReadIndex[key]
+				if !ok {
+					kReads = make(map[int][]core.Op)
+				}
+				kWrites, ok := extWriteIndex[key]
+				if !ok {
+					kWrites = make(map[int][]core.Op)
+				}
+				v1Reads, ok := kReads[v1]
+				if !ok {
+					v1Reads = make([]core.Op, 0)
+				}
+				v1Writes, ok := kWrites[v1]
+				if !ok {
+					v1Writes = make([]core.Op, 0)
+				}
+				v2Writes, ok := kWrites[v2]
+				if !ok {
+					v2Writes = make([]core.Op, 0)
+				}
+				g.LinkAllToAll(core.NewVerticesFromOp(v1Writes), core.NewVerticesFromOp(v2Writes), core.WW)
+				g.LinkAllToAll(core.NewVerticesFromOp(v1Reads), core.NewVerticesFromOp(v2Writes), core.RW)
+				all := append(v1Reads, append(v1Writes, v2Writes...)...)
+				g.UnLinkSelfEdges(core.NewVerticesFromOp(all))
+			}
+		}
+	}
+
+	return g
+}
