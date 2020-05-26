@@ -21,8 +21,6 @@ spec:
         value: ""
       - name: pd-image
         value: ""
-      - name: image-version
-        value: release-4.0-nightly
       - name: storage-class
         value: local-storage
       - name: nemesis

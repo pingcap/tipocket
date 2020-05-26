@@ -8,10 +8,10 @@ spec:
         parameters:
           - name: ns
             default: tipocket-scbank2
-          - name: hub
-            default: "docker.io"
           - name: purge
             default: "false"
+          - name: hub
+            default: "docker.io"
           - name: repository
             default: pingcap
           - name: image-version
