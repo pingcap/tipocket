@@ -75,7 +75,7 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            -seq_loop={{inputs.parameters.seq-loop}} \
-            -insert_num={{inputs.parameters.insert-num}} \
-            -split_region_range={{inputs.parameters.split-range}}
+            -seq-loop={{inputs.parameters.seq-loop}} \
+            -insert-num={{inputs.parameters.insert-num}} \
+            -split-region-range={{inputs.parameters.split-range}}
             -switch={{inputs.parameters.switch}}

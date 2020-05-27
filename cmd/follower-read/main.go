@@ -17,9 +17,9 @@ var (
 	dbname           = flag.String("dbname", "test", "name of database to test")
 	concurrency      = flag.Int("concurrency", 200, "concurrency worker count")
 	readClose        = flag.Bool("switch", false, "determine if close follower read")
-	seqLoop          = flag.Int("seq_loop", 100000, "number of sequence loop")
-	splitRegionRange = flag.Int("split_region_range", 1000000, "split region range")
-	insertNum        = flag.Int("insert_num", 100000, "insert item each loop")
+	seqLoop          = flag.Int("seq-loop", 100000, "number of sequence loop")
+	splitRegionRange = flag.Int("split-region-range", 1000000, "split region range")
+	insertNum        = flag.Int("insert-num", 100000, "insert item each loop")
 )
 
 func main() {
