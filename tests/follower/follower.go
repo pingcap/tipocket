@@ -22,9 +22,12 @@ type ClientCreator struct {
 
 // Config for follower read test
 type Config struct {
-	DBName      string
-	Concurrency int
-	Switch      bool
+	DBName           string
+	Concurrency      int
+	Switch           bool
+	SeqLoop          int
+	SplitRegionRange int
+	InsertNum        int
 }
 
 type follower struct {
@@ -236,11 +239,12 @@ func testGlobal(f *follower) {
 }
 
 func testSplitRegion(f *follower) {
-	region := 1000000
+	region := f.SplitRegionRange
+	insertnum := f.InsertNum
 	f.db.Exec("create table test_region(a int)")
 
 	if !f.Switch {
-		_, e := f.db.Exec("set @@tidb_replica_read = \"leader-and-follower\"")
+		_, e := f.db.Exec("set @@tidb_replica_read = \"follower\"")
 		if e != nil {
 			log.Fatal(e)
 		}
@@ -253,19 +257,19 @@ func testSplitRegion(f *follower) {
 		for rows.Next() {
 			var val string
 			rows.Scan(&val)
-			if val != "leader-and-follower" {
-				log.Fatalf("assert tidb_replica_read == leader-and-follower failed, current: %v", val)
+			if val != "follower" {
+				log.Fatalf("assert tidb_replica_read == follower failed, current: %v", val)
 			}
 		}
 	}
 
 	// prepare some data
 	var wg sync.WaitGroup
-	for i := 0; i < 24; i++ {
+	for i := 0; i < 16; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := 0; i < 10000; i++ {
+			for i := 0; i < insertnum; i++ {
 				_, e := f.db.Exec(fmt.Sprintf("insert into test_region (a) values (%v)", rand.Intn(region)))
 				if e != nil {
 					log.Fatal(e)
@@ -275,22 +279,22 @@ func testSplitRegion(f *follower) {
 	}
 
 	// split region
-	time.Sleep(1 * time.Minute)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		time.Sleep(5 * time.Minute)
 		for {
 			_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions 360;", region))
 			if e != nil {
 				log.Fatal(e)
 			}
 			log.Infof("Split region done")
-			time.Sleep(2 * time.Minute)
+			time.Sleep(5 * time.Minute)
 		}
 	}()
 
 	// read
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Minute)
 	for i := 0; i < 64; i++ {
 		wg.Add(1)
 		go func() {
@@ -317,7 +321,6 @@ func testSequence(ctx context.Context, f *follower) {
 	c1, _ := f.db.Conn(ctx)
 	c1.ExecContext(ctx, sql1)
 
-	var loop = 2000000
 	var mutex sync.Mutex
 	m := make(map[int]bool)
 
@@ -327,7 +330,7 @@ func testSequence(ctx context.Context, f *follower) {
 	go func() {
 		defer wg.Done()
 		var num int
-		for i := 0; i < loop; i++ {
+		for i := 0; i < f.SeqLoop; i++ {
 			if err := c0.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
 				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}
@@ -345,7 +348,7 @@ func testSequence(ctx context.Context, f *follower) {
 	go func() {
 		defer wg.Done()
 		var num int
-		for i := 0; i < loop; i++ {
+		for i := 0; i < f.SeqLoop; i++ {
 			if err := c1.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
 				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}
