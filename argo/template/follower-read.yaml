@@ -36,6 +36,8 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "5"
+          - name: switch
+            default: "false"
           - name: seq-loop
             default: "100000"
           - name: insert-num
@@ -73,6 +75,7 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            -seq-loop={{inputs.parameters.seq-loop}} \
-            -insert-num={{inputs.parameters.insert-num}} \
-            -split-range={{inputs.parameters.split-range}}
+            -seq_loop={{inputs.parameters.seq-loop}} \
+            -insert_num={{inputs.parameters.insert-num}} \
+            -split_region_range={{inputs.parameters.split-range}}
+            -switch={{inputs.parameters.switch}}

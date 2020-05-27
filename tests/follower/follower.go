@@ -248,7 +248,6 @@ func testSplitRegion(f *follower) {
 		if e != nil {
 			log.Fatal(e)
 		}
-
 		rows, err := f.db.Query("select @@tidb_replica_read")
 		if err != nil {
 			log.Fatal(err)
@@ -260,7 +259,26 @@ func testSplitRegion(f *follower) {
 			if val != "follower" {
 				log.Fatalf("assert tidb_replica_read == follower failed, current: %v", val)
 			}
+			log.Info("testSplitRegion in follower mode")
 		}
+	} else {
+		_, e := f.db.Exec("set @@tidb_replica_read = \"leader\"")
+		if e != nil {
+			log.Fatal(e)
+		}
+		rows, err := f.db.Query("select @@tidb_replica_read")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var val string
+			rows.Scan(&val)
+			if val != "leader" {
+				log.Fatalf("assert tidb_replica_read == leader failed, current: %v", val)
+			}
+		}
+		log.Info("testSplitRegion in leader mode")
 	}
 
 	// prepare some data
