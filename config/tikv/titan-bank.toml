@@ -1,0 +1,14 @@
+[rocksdb.titan]
+enabled = true
+max-background-gc = 3  # default 1
+
+[rocksdb.defaultcf]
+write-buffer-size = "512KB"  # default 128MB
+level0-file-num-compaction-trigger = 1  # default 1
+max-bytes-for-level-base = "2MB"  # default 512, write-buffer-size * 4
+max-bytes-for-level-multiplier = 2
+
+
+[rocksdb.defaultcf.titan]
+min-blob-size = "1B"  # default 1KB
+discardable-ratio = 0.1

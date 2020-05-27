@@ -60,6 +60,10 @@ func FindPort(podName, component string, containers []corev1.Container) int32 {
 		priorityPort = 20160
 	} else if component == string(clusterTypes.TiDB) {
 		priorityPort = 4000
+	} else if component == string(clusterTypes.DM) {
+		priorityPort = 8261
+	} else if component == string(clusterTypes.MySQL) {
+		priorityPort = 3306
 	}
 
 	for _, port := range ports {
@@ -111,4 +115,32 @@ func BuildBinlogImage(name string) string {
 	b.WriteString(":")
 	b.WriteString(version)
 	return b.String()
+}
+
+// GetNodeIPs gets the IPs (or addresses) for nodes.
+func GetNodeIPs(cli client.Client, namespace string, labels map[string]string) ([]string, error) {
+	var ips []string
+	pods := &corev1.PodList{}
+	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+		return ips, err
+	}
+
+	for _, item := range pods.Items {
+		ips = append(ips, item.Status.HostIP)
+	}
+	return ips, nil
+}
+
+// GetServiceByMeta gets the service by its meta.
+func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, error) {
+	clone := svc.DeepCopy()
+	key, err := client.ObjectKeyFromObject(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cli.Get(context.Background(), key, clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
 }

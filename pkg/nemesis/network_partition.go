@@ -82,7 +82,7 @@ func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cl
 			},
 		},
 		Direction: chaosv1alpha1.Both,
-		Target: chaosv1alpha1.PartitionTarget{
+		Target: &chaosv1alpha1.Target{
 			TargetSelector: chaosv1alpha1.SelectorSpec{
 				Pods: map[string][]string{
 					partTwoNS: extractPodNames(partTwo),

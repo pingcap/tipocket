@@ -9,11 +9,11 @@ spec:
         value: tipocket-bank2-replica-read
       - name: purge
         value: "true"
-      - name: image_version
+      - name: image-version
         value: nightly
-      - name: storage_class
-        value: gp2
-      - name: run_time
+      - name: storage-class
+        value: local-storage
+      - name: run-time
         value: "6h"
       - name: loki-addr
         value: "http://gateway.loki.svc"
@@ -38,12 +38,12 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
-                - name: run_time
-                  value: "{{workflow.parameters.run_time}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
+                - name: run-time
+                  value: "{{workflow.parameters.run-time}}"
                 - name: loki-addr
                   value: "{{workflow.parameters.loki-addr}}"
                 - name: loki-username

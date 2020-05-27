@@ -26,6 +26,8 @@ func (e *Executor) IfTxn() bool {
 		return e.singleTestIfTxn()
 	case "abtest":
 		return e.abTestIfTxn()
+	case "dm":
+		return e.dmTestIfTxn()
 	}
 	panic("unhandled switch")
 }
@@ -43,6 +45,11 @@ func (e *Executor) GetConn1() *connection.Connection {
 // GetConn2 get connection of second connection
 func (e *Executor) GetConn2() *connection.Connection {
 	return e.conn2
+}
+
+// GetConn3 get connection of third connection.
+func (e *Executor) GetConn3() *connection.Connection {
+	return e.conn3
 }
 
 // ReConnect rebuild connection
@@ -83,7 +90,7 @@ func (e *Executor) Exec(sql string) error {
 			return err
 		}
 		return e.conn1.Commit()
-	case "abtest":
+	case "abtest", "dm":
 		if err := e.conn1.Exec(sql); err != nil {
 			return err
 		}
@@ -104,7 +111,7 @@ func (e *Executor) ExecIgnoreErr(sql string) {
 	case "single":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
-	case "abtest", "binlog":
+	case "abtest", "binlog", "dm":
 		_ = e.conn1.Exec(sql)
 		_ = e.conn1.Commit()
 		_ = e.conn2.Exec(sql)

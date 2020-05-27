@@ -60,6 +60,7 @@ type fixtureContext struct {
 	TiDBClusterConfig        TiDBClusterConfig
 	BinlogConfig             BinlogConfig
 	CDCConfig                CDCConfig
+	DMConfig                 DMConfig
 	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
 	// Loki
@@ -75,11 +76,11 @@ type fixtureContext struct {
 // TiDBClusterConfig ...
 type TiDBClusterConfig struct {
 	// image versions
-	ImageVersion        string
-	TiDBImageVersion    string
-	TiKVImageVersion    string
-	PDImageVersion      string
-	TiFlashImageVersion string
+	ImageVersion string
+	TiDBImage    string
+	TiKVImage    string
+	PDImage      string
+	TiFlashImage string
 
 	// configurations
 	TiDBConfig string
@@ -87,7 +88,9 @@ type TiDBClusterConfig struct {
 	PDConfig   string
 
 	// replicas
+	TiDBReplicas    int
 	TiKVReplicas    int
+	PDReplicas      int
 	TiFlashReplicas int
 }
 
@@ -221,15 +224,17 @@ func init() {
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.TiDBClusterConfig.ImageVersion, "image-version", "nightly", "image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiDBImageVersion, "tidb-image", "", "tidb image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiKVImageVersion, "tikv-image", "", "tikv image version")
-	flag.StringVar(&Context.TiDBClusterConfig.PDImageVersion, "pd-image", "", "pd image version")
-	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImageVersion, "tiflash-image", "v4.0.0-rc", "tiflash image version")
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBImage, "tidb-image", "", "tidb image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVImage, "tikv-image", "", "tikv image")
+	flag.StringVar(&Context.TiDBClusterConfig.PDImage, "pd-image", "", "pd image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImage, "tiflash-image", "", "tiflash image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.IntVar(&Context.TiDBClusterConfig.TiDBReplicas, "tidb-replicas", 2, "number of tidb replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
+	flag.IntVar(&Context.TiDBClusterConfig.PDReplicas, "pd-replicas", 3, "number of pd replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiFlashReplicas, "tiflash-replicas", 0, "number of tiflash replicas, set 0 to disable tiflash")
 
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
@@ -251,6 +256,14 @@ func init() {
 	flag.StringVar(&Context.CDCConfig.KafkaConsumerImage, "cdc.kafka-consumer-image", "docker.io/pingcap/ticdc-kafka:nightly", "the kafka consumer image to use when kafka is enabled")
 	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
 	flag.StringVar(&Context.CDCConfig.Timezone, "cdc.timezone", "UTC", "timezone of cdc cluster, default UTC")
+
+	flag.StringVar(&Context.DMConfig.MySQLConf.Version, "dm.mysql.version", "5.7", "MySQL version used in DM-pocket")
+	flag.StringVar(&Context.DMConfig.MySQLConf.StorageSize, "dm.mysql.storage-size", "10Gi", "request storage size for MySQL")
+	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableBinlog, "dm.mysql.enable-binlog", false, "enable binlog for MySQL")
+	flag.BoolVar(&Context.DMConfig.MySQLConf.EnableGTID, "dm.mysql.enable-gtid", false, "enable GTID for MySQL")
+	flag.StringVar(&Context.DMConfig.DMVersion, "dm.version", "nightly", "image version for DM")
+	flag.IntVar(&Context.DMConfig.MasterReplica, "dm.master-replicas", 3, "number of DM-master replicas")
+	flag.IntVar(&Context.DMConfig.WorkerReplica, "dm.worker-replicas", 3, "number of DM-worker replicas")
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
