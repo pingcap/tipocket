@@ -36,6 +36,12 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "5"
+          - name: seq-loop
+            default: "100000"
+          - name: insert-num
+            default: "100000"
+          - name: split-range
+            default: "1000000"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -66,4 +72,7 @@ spec:
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
+            -seq-loop={{inputs.parameters.seq-loop}} \
+            -insert-num={{inputs.parameters.insert-num}} \
+            -split-range={{inputs.parameters.split-range}}

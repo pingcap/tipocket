@@ -14,9 +14,12 @@ import (
 )
 
 var (
-	dbname      = flag.String("dbname", "test", "name of database to test")
-	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
-	readClose   = flag.Bool("switch", false, "determine if close follower read")
+	dbname           = flag.String("dbname", "test", "name of database to test")
+	concurrency      = flag.Int("concurrency", 200, "concurrency worker count")
+	readClose        = flag.Bool("switch", false, "determine if close follower read")
+	seqLoop          = flag.Int("seq_loop", 100000, "number of sequence loop")
+	splitRegionRange = flag.Int("split_region_range", 1000000, "split region range")
+	insertNum        = flag.Int("insert_num", 100000, "insert item each loop")
 )
 
 func main() {
@@ -37,9 +40,12 @@ func createFollowerReadCmd(cfg *control.Config) {
 		Config: cfg,
 		ClientCreator: follower.ClientCreator{
 			Cfg: &follower.Config{
-				DBName:      *dbname,
-				Concurrency: *concurrency,
-				Switch:      *readClose,
+				DBName:           *dbname,
+				Concurrency:      *concurrency,
+				Switch:           *readClose,
+				SeqLoop:          *seqLoop,
+				SplitRegionRange: *splitRegionRange,
+				InsertNum:        *insertNum,
 			},
 		},
 		Provisioner: cluster.NewK8sProvisioner(),
