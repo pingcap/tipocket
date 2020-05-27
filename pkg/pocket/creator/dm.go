@@ -206,6 +206,7 @@ func dmSyncDiffSingleTask(ctx context.Context, mysqlDB, tidbDB *sql.DB, schema s
 			Sample:           100,
 			CheckThreadCount: 1,
 			UseChecksum:      true,
+			IgnoreDataCheck:  true, // MySQL 8.0.17 has removed width specification for integer data types, with can't be compared correctly now.
 			TiDBStatsSource:  targetTable,
 			CpDB:             tidbDB,
 		}
