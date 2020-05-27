@@ -85,6 +85,7 @@ mysql-instances:
 -
   source-id: "%s"
   black-white-list: "global"
+  syncer-thread: 64
 
 black-white-list:
   global:
@@ -156,7 +157,7 @@ func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval t
 			}
 
 			pCore.ExecLock()
-			err := wait.PollImmediate(30*time.Second, 5*time.Minute, func() (done bool, err error) {
+			err := wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (done bool, err error) { // TiDB may be too far behind.
 				if err2 := dmSyncDiffSingleTask(ctx, mysql1DB, tidbDB, schema); err2 != nil {
 					log.Errorf("fail to diff data for single source task, %v", err2)
 					return false, nil
@@ -206,7 +207,6 @@ func dmSyncDiffSingleTask(ctx context.Context, mysqlDB, tidbDB *sql.DB, schema s
 			Sample:           100,
 			CheckThreadCount: 1,
 			UseChecksum:      true,
-			IgnoreDataCheck:  true, // MySQL 8.0.17 has removed width specification for integer data types, with can't be compared correctly now.
 			TiDBStatsSource:  targetTable,
 			CpDB:             tidbDB,
 		}
