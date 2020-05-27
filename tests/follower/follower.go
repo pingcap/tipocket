@@ -28,6 +28,7 @@ type Config struct {
 	SeqLoop          int
 	SplitRegionRange int
 	InsertNum        int
+	EnableSplit      bool
 }
 
 type follower struct {
@@ -243,7 +244,7 @@ func testSplitRegion(f *follower) {
 	insertnum := f.InsertNum
 	f.db.Exec("create table test_region(a int)")
 
-	if !f.Switch {
+	if f.Switch {
 		_, e := f.db.Exec("set @@tidb_replica_read = \"follower\"")
 		if e != nil {
 			log.Fatal(e)
@@ -297,28 +298,36 @@ func testSplitRegion(f *follower) {
 	}
 
 	// split region
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(5 * time.Minute)
-		for {
-			_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions 360;", region))
-			if e != nil {
-				log.Fatal(e)
-			}
-			log.Infof("Split region done")
+	if f.EnableSplit {
+		var regionMax = 300
+		log.Info("Enable split")
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			time.Sleep(5 * time.Minute)
-		}
-	}()
+			for {
+				_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions %v;", region, regionMax))
+				if e != nil {
+					log.Fatal(e)
+				}
+				log.Infof("Split region done")
+				regionMax += 200
+				if regionMax > 9000 {
+					break
+				}
+				time.Sleep(2 * time.Minute)
+			}
+		}()
+	}
 
 	// read
 	time.Sleep(3 * time.Minute)
-	for i := 0; i < 64; i++ {
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for {
-				_, e := f.db.Exec("select * from test_region")
+				_, e := f.db.Exec("select count(*) from test_region")
 				if e != nil {
 					log.Fatal(e)
 				}

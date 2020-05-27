@@ -36,7 +36,9 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "5"
-          - name: switch
+          - name: enable-follower
+            default: "true"
+          - name: enable-split
             default: "false"
           - name: seq-loop
             default: "100000"
@@ -78,4 +80,5 @@ spec:
             -seq-loop={{inputs.parameters.seq-loop}} \
             -insert-num={{inputs.parameters.insert-num}} \
             -split-region-range={{inputs.parameters.split-range}}
-            -switch={{inputs.parameters.switch}}
+            -enable-follower={{inputs.parameters.enable-follower}}
+            -enable-split={{inputs.parameters.enable-split}}
