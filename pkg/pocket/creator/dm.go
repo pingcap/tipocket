@@ -14,15 +14,20 @@
 package creator
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
+	"github.com/pingcap/tidb-tools/pkg/dbutil"
+	"github.com/pingcap/tidb-tools/pkg/diff"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	pocketCore "github.com/pingcap/tipocket/pkg/pocket/core"
 	"github.com/pingcap/tipocket/pkg/util/dmutil"
 )
 
@@ -111,6 +116,114 @@ master-addr:%s
 	})
 	if err != nil {
 		return errors.Errorf("fail to check task stage: %v", err)
+	}
+
+	return nil
+}
+
+// dmSyncDiffData uses sync-diff-inspector to check data between downstream and upstream for DM tasks.
+func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval time.Duration, clientNodes []clusterTypes.ClientNode) error {
+	schema := "pocket" // we always use `pocket` as the DB name now, see `makeDSN`.
+	mysql1 := clientNodes[0]
+	tidb := clientNodes[2]
+	mysql1Cfg := dbutil.DBConfig{
+		Host:   mysql1.IP,
+		Port:   int(mysql1.Port),
+		User:   "root",
+		Schema: schema,
+	}
+	tidbCfg := dbutil.DBConfig{
+		Host:   tidb.IP,
+		Port:   int(tidb.Port),
+		User:   "root",
+		Schema: schema,
+	}
+	mysql1DB, err := dbutil.OpenDB(mysql1Cfg)
+	if err != nil {
+		return err
+	}
+	tidbDB, err := dbutil.OpenDB(tidbCfg)
+	if err != nil {
+		return err
+	}
+
+	go func() { // no wait for it to return
+		for range time.Tick(checkInterval) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			pCore.ExecLock()
+			err := wait.PollImmediate(30*time.Second, 5*time.Minute, func() (done bool, err error) {
+				if err2 := dmSyncDiffSingleTask(ctx, mysql1DB, tidbDB, schema); err2 != nil {
+					log.Errorf("fail to diff data for single source task, %v", err)
+					return false, nil
+				}
+				return true, nil
+			})
+			if err != nil {
+				log.Fatalf("fail to diff data for single source task, %v", err)
+			}
+			log.Info("consistency check pass for DM single source task")
+			pCore.ExecUnlock()
+		}
+	}()
+	return nil
+}
+
+// dmSyncDiffSingleTask checks data for the single source task.
+func dmSyncDiffSingleTask(ctx context.Context, mysqlDB, tidbDB *sql.DB, schema string) error {
+	log.Infof("ready to compare data for the single source task")
+	// get all tables.
+	tables, err := dbutil.GetTables(ctx, mysqlDB, schema)
+	if err != nil {
+		return errors.Errorf("fail to get tables for schema %s, %v", schema, err)
+	}
+
+	for _, table := range tables {
+		sourceTables := []*diff.TableInstance{
+			{
+				Conn:       mysqlDB,
+				Schema:     schema,
+				Table:      table,
+				InstanceID: "source-1",
+			},
+		}
+
+		targetTable := &diff.TableInstance{
+			Conn:       tidbDB,
+			Schema:     schema,
+			Table:      table,
+			InstanceID: "target",
+		}
+
+		td := &diff.TableDiff{
+			SourceTables:     sourceTables,
+			TargetTable:      targetTable,
+			ChunkSize:        1000,
+			Sample:           100,
+			CheckThreadCount: 1,
+			UseChecksum:      true,
+			TiDBStatsSource:  targetTable,
+			CpDB:             tidbDB,
+		}
+
+		structEqual, dataEqual, err := td.Equal(ctx, func(dml string) error {
+			fmt.Println("fix SQL:", dml) // output to stdout
+			return nil
+		})
+
+		if errors.Cause(err) == context.Canceled || errors.Cause(err) == context.DeadlineExceeded {
+			return nil
+		}
+		if !structEqual {
+			return errors.Errorf("different struct for table %s", table)
+		} else if !dataEqual {
+			return errors.Errorf("different data for table %s", table)
+		}
+		log.Infof("struct and data are equal for table %s", table)
 	}
 
 	return nil
