@@ -158,7 +158,7 @@ func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval t
 			pCore.ExecLock()
 			err := wait.PollImmediate(30*time.Second, 5*time.Minute, func() (done bool, err error) {
 				if err2 := dmSyncDiffSingleTask(ctx, mysql1DB, tidbDB, schema); err2 != nil {
-					log.Errorf("fail to diff data for single source task, %v", err)
+					log.Errorf("fail to diff data for single source task, %v", err2)
 					return false, nil
 				}
 				return true, nil
