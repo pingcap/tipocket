@@ -180,6 +180,9 @@ func dmSyncDiffSingleTask(ctx context.Context, mysqlDB, tidbDB *sql.DB, schema s
 	// get all tables.
 	tables, err := dbutil.GetTables(ctx, mysqlDB, schema)
 	if err != nil {
+		if errors.Cause(err) == context.Canceled || errors.Cause(err) == context.DeadlineExceeded {
+			return nil
+		}
 		return errors.Errorf("fail to get tables for schema %s, %v", schema, err)
 	}
 
