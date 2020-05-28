@@ -79,6 +79,6 @@ spec:
             -loki-password={{inputs.parameters.loki-password}} \
             -seq-loop={{inputs.parameters.seq-loop}} \
             -insert-num={{inputs.parameters.insert-num}} \
-            -split-region-range={{inputs.parameters.split-range}}
-            -enable-follower={{inputs.parameters.enable-follower}}
+            -split-region-range={{inputs.parameters.split-range}} \
+            -enable-follower={{inputs.parameters.enable-follower}} \
             -enable-split={{inputs.parameters.enable-split}}

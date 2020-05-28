@@ -311,11 +311,11 @@ func testSplitRegion(f *follower) {
 					log.Fatal(e)
 				}
 				log.Infof("Split region done")
-				regionMax += 200
-				if regionMax > 9000 {
+				regionMax += 50
+				if regionMax >= 1000 {
 					break
 				}
-				time.Sleep(2 * time.Minute)
+				time.Sleep(1 * time.Minute)
 			}
 		}()
 	}
