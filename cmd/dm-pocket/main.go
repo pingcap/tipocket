@@ -16,8 +16,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net/http"
-	_ "net/http/pprof"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -34,11 +32,6 @@ var (
 
 func main() {
 	flag.Parse()
-
-	go func() {
-		http.ListenAndServe(":8080", nil) // for pprof
-	}()
-
 	cfg := control.Config{
 		Mode:        control.ModeSelfScheduled,
 		ClientCount: 1,
