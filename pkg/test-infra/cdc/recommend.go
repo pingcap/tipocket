@@ -15,8 +15,6 @@ package cdc
 
 import (
 	"fmt"
-	"strings"
-
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +22,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // CDC defines the configuration for running on Kubernetes
@@ -110,7 +109,7 @@ func newCDC(ns, name string) *CDC {
 										ContainerPort: 8300,
 									},
 								},
-								Image:           buildCDCImage("ticdc"),
+								Image:           util.BuildImage("ticdc", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.CDCConfig.Image),
 								ImagePullPolicy: corev1.PullAlways,
 								VolumeMounts:    []corev1.VolumeMount{logVol},
 							},
@@ -153,7 +152,7 @@ func newCDC(ns, name string) *CDC {
 						Containers: []corev1.Container{
 							{
 								Name:            "cdc-cli",
-								Image:           buildCDCImage("ticdc"),
+								Image:           util.BuildImage("ticdc", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.CDCConfig.Image),
 								ImagePullPolicy: corev1.PullAlways,
 								Command: []string{
 									"/cdc",
@@ -396,29 +395,4 @@ func newKafka(ns, name string) *Kafka {
 		},
 		Zookeeper: newZookeeper(ns, name),
 	}
-}
-
-func buildCDCImage(name string) string {
-	var (
-		b                strings.Builder
-		dockerRepository = fixture.Context.CDCConfig.DockerRepository
-		hubAddress       = fixture.Context.CDCConfig.HubAddress
-		version          = fixture.Context.CDCConfig.CDCVersion
-	)
-
-	if hubAddress == "" {
-		hubAddress = fixture.Context.HubAddress
-	}
-	if hubAddress != "" {
-		fmt.Fprintf(&b, "%s/", hubAddress)
-	}
-	if dockerRepository == "" {
-		dockerRepository = fixture.Context.DockerRepository
-	}
-	b.WriteString(dockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	b.WriteString(version)
-	return b.String()
 }

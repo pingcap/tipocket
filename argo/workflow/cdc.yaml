@@ -29,10 +29,6 @@ spec:
         value: "12h"
       - name: tikv-config
         value: ""
-      - name: cdc_hub
-        value: "docker.io"
-      - name: cdc_repository
-        value: "pingcap"
       - name: cdc_version
         value: "nightly"
       - name: cdc_enable-kafka
@@ -84,10 +80,6 @@ spec:
                   value: "{{workflow.parameters.run-time}}"
                 - name: tikv-config
                   value: "{{workflow.parameters.tikv-config}}"
-                - name: cdc_hub
-                  value: "{{workflow.parameters.cdc_hub}}"
-                - name: cdc_repository
-                  value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
                 - name: cdc_enable-kafka

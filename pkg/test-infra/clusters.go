@@ -167,7 +167,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: util.BuildBinlogImage("tidb-binlog"),
+			Image: util.BuildImage("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image),
 		},
 		GenericConfig: config.GenericConfig{
 			Config: map[string]interface{}{},
