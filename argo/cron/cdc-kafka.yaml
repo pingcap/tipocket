@@ -22,7 +22,7 @@ spec:
         - name: tidb-image
           value: ""
         - name: tikv-image
-          value: "c3219bb"
+          value: ""
         - name: pd-image
           value: ""
         - name: storage-class
