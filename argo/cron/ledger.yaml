@@ -20,7 +20,7 @@ spec:
         - name: nemesis
           value: ""
         - name: run-time
-          value: "60m"
+          value: "120m"
         - name: loki-addr
           value: "http://gateway.loki.svc"
         - name: loki-username

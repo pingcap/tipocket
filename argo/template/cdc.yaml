@@ -30,10 +30,6 @@ spec:
             default: "48h"
           - name: tikv-config
             default: ""
-          - name: cdc_hub
-            default: docker.io
-          - name: cdc_repository
-            default: pingcap
           - name: cdc_version
             default: nightly
           - name: cdc_enable-kafka
@@ -81,8 +77,6 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
-            -cdc.hub={{inputs.parameters.cdc_hub}} \
-            -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
             -cdc.enable-kafka={{inputs.parameters.cdc_enable-kafka}} \
             -cdc.kafka-consumer-image={{inputs.parameters.cdc_kafka-consumer-image}} \
