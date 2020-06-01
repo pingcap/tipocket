@@ -75,13 +75,20 @@ func (c *titanClient) DumpState(ctx context.Context) (interface{}, error) {
 
 func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
 	for {
+		start := []byte(fmt.Sprintf("v%03d", 1))
+		end := []byte(fmt.Sprintf("v%03d", 101))
+		err := c.cli.DeleteRange(ctx, start, end)
+		if err != nil {
+			log.Fatalf("delete range %v - %v failed: %v", start, end, err)
+		}
+
 		for i := 1; i <= 100; i++ {
 			rnd := rand.New(rand.NewSource(time.Now().Unix()))
 			keyHashMap := make(map[string]uint32)
 			hashs := make(map[uint32]struct{})
 
 			for j := 0; j <= 40000; j++ {
-				key := fmt.Sprintf("v%3dj%5d", i, j)
+				key := fmt.Sprintf("v%03dj%05d", i, j)
 				vallen := 0
 				if j%2 == 0 {
 					vallen = 30 * 1024
@@ -104,12 +111,10 @@ func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []
 				}
 
 				if j != 0 && j%1000 == 0 {
-					for k := j - 1000; k < j; k++ {
-						if k%5 == 0 {
-							err = c.cli.Delete(ctx, []byte(key))
-							if err != nil {
-								log.Fatalf("delete key %v failed: %v", key, err)
-							}
+					for k := j - 1000; k < j; k+=5 {
+						err = c.cli.Delete(ctx, []byte(fmt.Sprintf("v%03dj%05d", i, k)))
+						if err != nil {
+							log.Fatalf("delete key %v failed: %v", key, err)
 						}
 					}
 				}
@@ -118,8 +123,8 @@ func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []
 			var keys [][]byte
 			var values [][]byte
 			var err error
-			start := []byte(fmt.Sprintf("v%3dj%5d", i, 0))
-			end := []byte(fmt.Sprintf("v%3dj%5d", i, 40000))
+			start := []byte(fmt.Sprintf("v%03dj%05d", i, 0))
+			end := []byte(fmt.Sprintf("v%03dj%05d", i, 40000))
 			if rnd.Int31()%2 == 0 {
 				keys, values, err = c.cli.Scan(ctx, start, end, 40000)
 			} else {
@@ -149,11 +154,11 @@ func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []
 			default:
 			}
 
-			start = []byte(fmt.Sprintf("v%3d", i))
-			end = []byte(fmt.Sprintf("%v3d", i+1))
+			start = []byte(fmt.Sprintf("v%03d", i))
+			end = []byte(fmt.Sprintf("v%03d", i+1))
 			err = c.cli.DeleteRange(ctx, start, end)
 			if err != nil {
-				log.Fatalf("delete range %v - %v failed: %v", err)
+				log.Fatalf("delete range %v - %v failed: %v", start, end, err)
 			}
 		}
 	}
