@@ -111,7 +111,7 @@ func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []
 				}
 
 				if j != 0 && j%1000 == 0 {
-					for k := j - 1000; k < j; k+=5 {
+					for k := j - 1000; k < j; k += 5 {
 						err = c.cli.Delete(ctx, []byte(fmt.Sprintf("v%03dj%05d", i, k)))
 						if err != nil {
 							log.Fatalf("delete key %v failed: %v", key, err)
