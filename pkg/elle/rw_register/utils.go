@@ -223,3 +223,84 @@ func isExtIndexRel(rel core.Rel) (string, bool) {
 	}
 	return "", false
 }
+
+func preProcessHistory(history core.History) core.History {
+	history = core.FilterOutNemesisHistory(history)
+	history.AttachIndexIfNoExists()
+	return history
+}
+
+type pairData struct {
+	k         string
+	prevValue int
+	value     int
+}
+
+func explainPairData(a, b core.PathType, aTp, bTp core.MopType) *pairData {
+	for _, bmop := range *b.Value {
+		if bmop.T != bTp {
+			continue
+		}
+		for _, amop := range *b.Value {
+			if amop.T != aTp {
+				continue
+			}
+			for bk, bval := range bmop.M {
+				bvptr := bval.(*int)
+				if bvptr == nil {
+					continue
+				}
+				for ak, aval := range amop.M {
+					if ak != bk {
+						continue
+					}
+					avptr := aval.(*int)
+					if avptr == nil {
+						continue
+					}
+					if *avptr == *bvptr {
+						return &pairData{
+							k:         bk,
+							prevValue: *avptr,
+							value:     *bvptr,
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// explainOpDeps
+// Given version graphs, a function extracting a map of keys to values from op
+// A, and also from op B, and a pair of operations A and B, returns a map (or
+// nil) explaining why A precedes B.
+func explainOpDeps(graphs map[string]*core.DirectedGraph,
+	extA func(op core.Op) map[string]int, a core.Op,
+	extB func(op core.Op) map[string]int, b core.Op) (string, int, int) {
+	var (
+		akvs = extA(a)
+		bkvs = extB(b)
+	)
+	for k, aval := range akvs {
+		graph, ok := graphs[k]
+		if !ok {
+			continue
+		}
+		bval, ok := bkvs[k]
+		if !ok {
+			continue
+		}
+		outs, ok := graph.Outs[core.Vertex{Value: aval}]
+		if !ok {
+			continue
+		}
+		for out := range outs {
+			if out.Value.(int) == bval {
+				return k, aval, bval
+			}
+		}
+	}
+	return "", initMagicNumber, initMagicNumber
+}

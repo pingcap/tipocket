@@ -39,8 +39,8 @@ func (c CheckResult) Error() string {
 //  :consistency-models, a set of additional :anomalies, an analyzer function,
 //  and a history. Analyzes the history and yields the analysis, plus an anomaly
 //  map like {:G1c [...]}.
-func Cycles(analyzer core.Analyzer, history core.History) core.CheckResult {
-	checkedResult := core.Check(analyzer, history)
+func Cycles(analyzer core.Analyzer, history core.History, opts ...interface{}) core.CheckResult {
+	checkedResult := core.Check(analyzer, history, opts...)
 	cases := CycleCases(checkedResult.Graph, checkedResult.Explainer, checkedResult.Sccs)
 	for k, v := range cases {
 		checkedResult.Anomalies[k] = v

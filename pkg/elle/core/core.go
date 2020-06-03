@@ -40,14 +40,16 @@ func (r RelSet) Append(rels map[Rel]struct{}) (rs RelSet) {
 
 // Rel enums
 const (
-	Empty    Rel = ""
-	WW       Rel = "ww"
-	WR       Rel = "wr"
-	RW       Rel = "rw"
-	Process  Rel = "process"
-	Realtime Rel = "realtime"
-	ExtKey   Rel = "ext-key"
-	Version  Rel = "version"
+	Empty        Rel = ""
+	WW           Rel = "ww"
+	WR           Rel = "wr"
+	RW           Rel = "rw"
+	Process      Rel = "process"
+	Realtime     Rel = "realtime"
+	ExtKey       Rel = "ext-key"
+	Version      Rel = "version"
+	InitialState Rel = "initial-state"
+	WFR          Rel = "write-follow-read"
 	// Note: currently we don't support MonotonicKey
 	MonotonicKey Rel = "monotonic-key"
 )
@@ -88,7 +90,7 @@ func (a Anomalies) Keys() (keys []string) {
 }
 
 // Analyzer is a function which takes a history and returns a {:graph, :explainer, :anomalies} map; e.g. realtime-graph.
-type Analyzer func(history History) (Anomalies, *DirectedGraph, DataExplainer)
+type Analyzer func(history History, opts ...interface{}) (Anomalies, *DirectedGraph, DataExplainer)
 
 // PathType type aliases Op
 type PathType = Op
@@ -130,7 +132,7 @@ type Step struct {
 }
 
 // RealtimeGraph analyzes real-time.
-func RealtimeGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
+func RealtimeGraph(history History, _ ...interface{}) (Anomalies, *DirectedGraph, DataExplainer) {
 	realtimeGraph := NewDirectedGraph()
 
 	pair := make(map[Op]Op)
@@ -226,7 +228,7 @@ func ProcessOrder(history History, process int) *DirectedGraph {
 }
 
 // ProcessGraph analyzes process
-func ProcessGraph(history History) (Anomalies, *DirectedGraph, DataExplainer) {
+func ProcessGraph(history History, _ ...interface{}) (Anomalies, *DirectedGraph, DataExplainer) {
 	var (
 		okHistory = history.FilterType(OpTypeOk)
 		processes = map[int]struct{}{}
@@ -319,8 +321,8 @@ type CheckResult struct {
 }
 
 // Check receives analyzer and a history, returns a map of {graph, explainer, cycles, sccs, anomalies}
-func Check(analyzer Analyzer, history History) CheckResult {
-	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history)
+func Check(analyzer Analyzer, history History, opts ...interface{}) CheckResult {
+	g, explainer, circles, sccs, anomalies := checkHelper(analyzer, history, opts...)
 	WriteCycles(CycleExplainer{}, explainer, "", "", circles)
 	return CheckResult{
 		Graph:     *g,
@@ -332,9 +334,9 @@ func Check(analyzer Analyzer, history History) CheckResult {
 }
 
 // checkHelper is `check-` in original code.
-func checkHelper(analyzer Analyzer, history History) (*DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
+func checkHelper(analyzer Analyzer, history History, opts ...interface{}) (*DirectedGraph, DataExplainer, []string, []SCC, Anomalies) {
 	// The sample program will first remove nemesis, but we will not leave nemesis here.
-	anomalies, g, exp := analyzer(history)
+	anomalies, g, exp := analyzer(history, opts...)
 	sccs := g.StronglyConnectedComponents()
 	var cycles []string
 	for _, scc := range sccs {

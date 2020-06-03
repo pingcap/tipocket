@@ -17,6 +17,8 @@ func TestExtWriteKeys(t *testing.T) {
 	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("wx1rx1")))
 	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("rx1wx1")))
 	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("rx1wx1ry2")))
+	require.Equal(t, map[string]int{"x": 2}, extWriteKeys(MustParseOp("wx1wx2")))
+	require.Equal(t, map[string]int{"x": 3}, extWriteKeys(MustParseOp("rx1wx1wx2wx3")))
 }
 
 func TestIsExtIndexRel(t *testing.T) {

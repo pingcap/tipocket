@@ -58,3 +58,16 @@ func MustParseOp(opStr string) core.Op {
 
 	return op
 }
+
+func Pair(op core.Op) (core.Op, core.Op) {
+	invoke := op.Copy()
+	invoke.Type = core.OpTypeInvoke
+	for index, mop := range *invoke.Value {
+		if mop.IsRead() {
+			for k := range mop.M {
+				(*invoke.Value)[index].M[k] = nil
+			}
+		}
+	}
+	return invoke, op
+}

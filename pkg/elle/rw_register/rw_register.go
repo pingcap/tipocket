@@ -6,7 +6,14 @@ import (
 	"sort"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
+	"github.com/pingcap/tipocket/pkg/elle/txn"
 )
+
+type GraphOption struct {
+	LinearizableKeys bool //Uses realtime order
+	SequentialKeys   bool // Uses process order
+	WfrKeys          bool // Assumes writes follow reads in a txn
+}
 
 // key -> v -> Op
 type writeIdx map[string]map[int]core.Op
@@ -194,7 +201,7 @@ type wrExplainResult struct {
 // WRExplainResult creates a wrExplainResult
 func WRExplainResult(key string, value core.MopValueType) wrExplainResult {
 	return wrExplainResult{
-		Typ:   core.RWDepend,
+		Typ:   core.WRDepend,
 		Key:   key,
 		Value: value,
 	}
@@ -205,43 +212,20 @@ func (w wrExplainResult) Type() core.DependType {
 }
 
 // wwExplainer explains write-write dependencies
-type wrExplainer struct {
-	writeIdx
-	readIdx
-}
+type wrExplainer struct{}
 
 func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
-	for _, bmop := range *b.Value {
-		if !bmop.IsRead() {
-			continue
-		}
-		for _, amop := range *b.Value {
-			if !amop.IsWrite() {
-				continue
-			}
-			for bk, bval := range bmop.M {
-				bvptr := bval.(*int)
-				if bvptr == nil {
-					continue
-				}
-				for ak, aval := range amop.M {
-					if ak != bk {
-						continue
-					}
-					avptr := aval.(*int)
-					if avptr == nil {
-						continue
-					}
-					if *avptr == *bvptr {
-						return WRExplainResult(
-							bk,
-							*avptr,
-						)
-					}
-				}
-			}
+	var (
+		writes = extWriteKeys(a)
+		reads  = extReadKeys(b)
+	)
+
+	for k, wv := range writes {
+		if rv, ok := reads[k]; ok && wv == rv {
+			return WRExplainResult(k, wv)
 		}
 	}
+
 	return nil
 }
 
@@ -256,25 +240,38 @@ func (w *wrExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 }
 
 // wwGraph analyzes write-write dependencies
-func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
-	history, writeIdx, readIdx := preprocess(history)
-	g := core.NewDirectedGraph()
+func wrGraph(history core.History, _ ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	history = core.FilterOkHistory(history)
+	var (
+		extReadIndex  = extIndex(extReadKeys, history)
+		extWriteIndex = extIndex(extWriteKeys, history)
+		g             = core.NewDirectedGraph()
+	)
 
-	for _, op := range history {
-		for _, mop := range *op.Value {
-			if !mop.IsRead() {
+	for k, rvals := range extReadIndex {
+		for v, rops := range rvals {
+			wvals, ok := extWriteIndex[k]
+			if !ok {
 				continue
 			}
-			deps := wrMopDep(writeIdx, op, mop)
-			for dep := range deps {
-				g.Link(core.Vertex{Value: dep}, core.Vertex{Value: op}, core.WR)
+			wops, ok := wvals[v]
+			if !ok {
+				continue
+			}
+			if len(wops) == 0 {
+				continue
+			}
+			if len(wops) == 1 {
+				var reads []core.Vertex
+				for _, rop := range rops {
+					reads = append(reads, core.Vertex{Value: rop})
+				}
+				g.LinkToAll(core.Vertex{Value: wops[0]}, reads, core.WR)
 			}
 		}
 	}
-	return nil, g, &wrExplainer{
-		writeIdx: writeIdx,
-		readIdx:  readIdx,
-	}
+
+	return nil, g, &wrExplainer{}
 }
 
 type extKeyExplainer struct {
@@ -291,7 +288,7 @@ type extKeyExplainResult struct {
 }
 
 func (w extKeyExplainResult) Type() core.DependType {
-	return core.EXTKeyDepent
+	return core.EXTKeyDepend
 }
 
 func (w *extKeyExplainer) insert(a, b int, key core.Rel) {
@@ -305,7 +302,7 @@ func (w *extKeyExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult
 	rel := w.keyMap[a.Index.MustGet()][b.Index.MustGet()]
 	k := string(rel[8:])
 	r := extKeyExplainResult{
-		Typ: core.EXTKeyDepent,
+		Typ: core.EXTKeyDepend,
 		Key: k,
 	}
 	for _, amop := range *a.Value {
@@ -334,8 +331,8 @@ func (w *extKeyExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult
 }
 
 func (w *extKeyExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
-	if result.Type() != core.EXTKeyDepent {
-		log.Fatalf("result type is not %s, type error", core.EXTKeyDepent)
+	if result.Type() != core.EXTKeyDepend {
+		log.Fatalf("result type is not %s, type error", core.EXTKeyDepend)
 	}
 	er := result.(extKeyExplainResult)
 	return fmt.Sprintf("%s %s %v depend on %s %s %v",
@@ -447,7 +444,7 @@ func getVersion(k string, op core.Op) *int {
 	return r
 }
 
-// versionGraph runs based on realtime or process graph
+// transactionGraph2VersionGraph runs based on realtime or process graph
 // case1
 // T1[wx1], T2[rx2wx3]
 // T1[T2] => 1 => [2]
@@ -457,8 +454,8 @@ func getVersion(k string, op core.Op) *int {
 // case3
 // T1[rx1], T2[wx2], T3[wx3], T4[rx4]
 // T1[T2, T2], T2[T4], T3[T4] => 1 => [2, 3], 2 => [4], 3 => [4]
-func versionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
-	g := core.NewDirectedGraph()
+func transactionGraph2VersionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph) map[string]*core.DirectedGraph {
+	gs := make(map[string]*core.DirectedGraph)
 	// var val *int
 	var find func(op core.Op) []core.Op
 	find = func(op core.Op) []core.Op {
@@ -495,6 +492,11 @@ func versionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph)
 		)
 
 		for _, k := range keys {
+			g, ok := gs[k]
+			if !ok {
+				g = core.NewDirectedGraph()
+				gs[k] = g
+			}
 			selfV := getVersion(k, op)
 			if selfV == nil {
 				// should not be nill
@@ -508,12 +510,156 @@ func versionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph)
 				if *selfV == *nextV {
 					continue
 				}
-				g.Link(core.Vertex{Value: *selfV}, core.Vertex{Value: *nextV}, core.Rel("version-"+k))
+				g.Link(core.Vertex{Value: *selfV}, core.Vertex{Value: *nextV}, rel)
 			}
 		}
 	}
 
-	return nil, g, nil
+	return gs
+}
+
+// func cyclicVersionCases(versionGraph *core.DirectedGraph) []{}
+
+func initialStateVersionGraphs(history core.History) map[string]*core.DirectedGraph {
+	// vgs := make(map[string]*core.DirectedGraph)
+
+	// this will make the graph not empty
+	// comment it
+	// for _, op := range history {
+	// 	if op.Type == core.OpTypeFail || op.Type == core.OpTypeInvoke {
+	// 		continue
+	// 	}
+	// 	kvs := extWriteKeys(op)
+	// 	if op.Type == core.OpTypeOk {
+	// 		for k, v := range extReadKeys(op) {
+	// 			kvs[k] = v
+	// 		}
+	// 	}
+	// 	for k, v := range kvs {
+	// 		if _, ok := vgs[k]; !ok {
+	// 			vgs[k] = core.NewDirectedGraph()
+	// 		}
+	// 		vgs[k].Link(core.Vertex{Value: nil}, core.Vertex{Value: v}, core.InitialState)
+	// 	}
+	// }
+
+	// return vgs
+
+	return make(map[string]*core.DirectedGraph)
+}
+
+func wfrVersionGraphs(history core.History) map[string]*core.DirectedGraph {
+	vgs := make(map[string]*core.DirectedGraph)
+	for _, op := range history {
+		var (
+			reads  = extReadKeys(op)
+			writes = extWriteKeys(op)
+		)
+		for k, r := range reads {
+			w, ok := writes[k]
+			if !ok {
+				continue
+			}
+			if _, ok := vgs[k]; !ok {
+				vgs[k] = core.NewDirectedGraph()
+			}
+			vgs[k].Link(core.Vertex{Value: r}, core.Vertex{Value: w}, core.WFR)
+		}
+	}
+	return vgs
+}
+
+func sequentialKeysGraphs(history core.History) map[string]*core.DirectedGraph {
+	_, graph, _ := core.ProcessGraph(history)
+	return transactionGraph2VersionGraph(core.Process, history, graph)
+}
+
+func linearizableKeysGraphs(history core.History) map[string]*core.DirectedGraph {
+	_, graph, _ := core.RealtimeGraph(history)
+	return transactionGraph2VersionGraph(core.Realtime, history, graph)
+}
+
+func mergeGraphs(g1s, g2s map[string]*core.DirectedGraph, with func(...*core.DirectedGraph) *core.DirectedGraph) map[string]*core.DirectedGraph {
+	gs := make(map[string]*core.DirectedGraph)
+	for k, g1 := range g1s {
+		if g2, ok := g2s[k]; ok {
+			gs[k] = with(g1, g2)
+		} else {
+			gs[k] = g1
+		}
+	}
+	for k, g2 := range g2s {
+		if _, ok := gs[k]; !ok {
+			gs[k] = g2
+		}
+	}
+	return gs
+}
+
+func cyclicVersionCases(versionGraphs map[string]*core.DirectedGraph) core.Anomalies {
+	var cases core.Anomalies
+	for _, graph := range versionGraphs {
+		cycleCases := txn.CycleCases(*graph, core.NewCombineExplainer([]core.DataExplainer{
+			&wwExplainer{versionGraphs: versionGraphs},
+			&rwExplainer{versionGraphs: versionGraphs},
+		}), graph.StronglyConnectedComponents())
+		cases.Merge(cycleCases)
+	}
+	return cases
+}
+
+func versionGraphs(history core.History, opts ...interface{}) (core.Anomalies, []string, map[string]*core.DirectedGraph) {
+	opt := opts[0].(GraphOption)
+
+	type analyzer struct {
+		source   string
+		analyzer func(history core.History) map[string]*core.DirectedGraph
+	}
+
+	analyzers := []analyzer{
+		{
+			source:   "initial-state-version-graphs",
+			analyzer: initialStateVersionGraphs,
+		},
+	}
+
+	if opt.LinearizableKeys {
+		analyzers = append(analyzers, analyzer{
+			source:   "wfr-version-graphs",
+			analyzer: wfrVersionGraphs,
+		})
+	}
+	if opt.SequentialKeys {
+		analyzers = append(analyzers, analyzer{
+			source:   "sequential-keys-graphs",
+			analyzer: sequentialKeysGraphs,
+		})
+	}
+	if opt.WfrKeys {
+		analyzers = append(analyzers, analyzer{
+			source:   "linearizable-keys-graphs",
+			analyzer: linearizableKeysGraphs,
+		})
+	}
+
+	var (
+		anomalies core.Anomalies
+		sources   []string
+		gs        = make(map[string]*core.DirectedGraph)
+	)
+	for _, a := range analyzers {
+		nextGs := mergeGraphs(gs, a.analyzer(history), core.DigraphUnion)
+		cs := cyclicVersionCases(nextGs)
+		if cs != nil {
+			// circles = append(circles, cs...)
+			anomalies.Merge(cs)
+		} else {
+			sources = append(sources, a.source)
+			gs = nextGs
+		}
+	}
+
+	return anomalies, sources, gs
 }
 
 func extIndex(fn func(op core.Op) map[string]int, history core.History) map[string]map[int][]core.Op {
@@ -544,41 +690,180 @@ func versionGraph2TransactionGraph(key string, history core.History, versionGrap
 	)
 
 	for from, nexts := range versionGraph.Outs {
+		if from.Value == nil {
+			continue
+		}
 		v1 := from.Value.(int)
-		for next, rels := range nexts {
-			v2 := next.Value.(int)
-			for _, rel := range rels {
-				k, has := isExtIndexRel(rel)
-				if !has || k != key {
-					continue
-				}
-				kReads, ok := extReadIndex[key]
-				if !ok {
-					kReads = make(map[int][]core.Op)
-				}
-				kWrites, ok := extWriteIndex[key]
-				if !ok {
-					kWrites = make(map[int][]core.Op)
-				}
-				v1Reads, ok := kReads[v1]
-				if !ok {
-					v1Reads = make([]core.Op, 0)
-				}
-				v1Writes, ok := kWrites[v1]
-				if !ok {
-					v1Writes = make([]core.Op, 0)
-				}
-				v2Writes, ok := kWrites[v2]
-				if !ok {
-					v2Writes = make([]core.Op, 0)
-				}
-				g.LinkAllToAll(core.NewVerticesFromOp(v1Writes), core.NewVerticesFromOp(v2Writes), core.WW)
-				g.LinkAllToAll(core.NewVerticesFromOp(v1Reads), core.NewVerticesFromOp(v2Writes), core.RW)
-				all := append(v1Reads, append(v1Writes, v2Writes...)...)
-				g.UnLinkSelfEdges(core.NewVerticesFromOp(all))
+		for next := range nexts {
+			if next.Value == nil {
+				continue
 			}
+			v2 := next.Value.(int)
+			kReads, ok := extReadIndex[key]
+			if !ok {
+				kReads = make(map[int][]core.Op)
+			}
+			kWrites, ok := extWriteIndex[key]
+			if !ok {
+				kWrites = make(map[int][]core.Op)
+			}
+			v1Reads, ok := kReads[v1]
+			if !ok {
+				v1Reads = make([]core.Op, 0)
+			}
+			v1Writes, ok := kWrites[v1]
+			if !ok {
+				v1Writes = make([]core.Op, 0)
+			}
+			v2Writes, ok := kWrites[v2]
+			if !ok {
+				v2Writes = make([]core.Op, 0)
+			}
+			g.LinkAllToAll(core.NewVerticesFromOp(v1Writes), core.NewVerticesFromOp(v2Writes), core.WW)
+			g.LinkAllToAll(core.NewVerticesFromOp(v1Reads), core.NewVerticesFromOp(v2Writes), core.RW)
+			all := append(v1Reads, append(v1Writes, v2Writes...)...)
+			g.UnLinkSelfEdges(core.NewVerticesFromOp(all))
 		}
 	}
 
 	return g
+}
+
+func versionGraphs2TransactionGraph(history core.History, graphs map[string]*core.DirectedGraph) *core.DirectedGraph {
+	var gs []*core.DirectedGraph
+	for k, g := range graphs {
+		gs = append(gs, versionGraph2TransactionGraph(k, history, g))
+	}
+	return core.DigraphUnion(gs...)
+}
+
+type wwExplainResult struct {
+	Typ       core.DependType
+	key       string
+	prevValue interface{}
+	value     interface{}
+}
+
+// WWExplainResult creates a wwExplainResult
+func WWExplainResult(key string, prevValue, value core.MopValueType) wwExplainResult {
+	return wwExplainResult{
+		Typ:       core.WWDepend,
+		key:       key,
+		prevValue: prevValue,
+		value:     value,
+	}
+}
+
+func (wwExplainResult) Type() core.DependType {
+	return core.WWDepend
+}
+
+// wwExplainer explains write-write dependencies
+type wwExplainer struct {
+	versionGraphs map[string]*core.DirectedGraph
+}
+
+func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
+	// if pair := explainPairData(a, b, core.MopTypeWrite, core.MopTypeWrite); pair != nil {
+	// 	return WWExplainResult(pair.k, pair.prevValue, pair.value)
+	// }
+	k, prev, v := explainOpDeps(w.versionGraphs, extWriteKeys, a, extWriteKeys, b)
+	if prev != initMagicNumber && v != initMagicNumber {
+		return WWExplainResult(k, prev, v)
+	}
+	return nil
+}
+
+func (w *wwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
+	if result.Type() != core.WWDepend {
+		log.Fatalf("result type is not %s, type error", core.WWDepend)
+	}
+	er := result.(wwExplainResult)
+	return fmt.Sprintf("%s written %v with value %s written by %s with value %s",
+		b, er.key, er.prevValue, a, er.value,
+	)
+}
+
+type rwExplainResult struct {
+	Typ       core.DependType
+	key       string
+	prevValue interface{}
+	value     interface{}
+}
+
+// RWExplainResult creates a rwExplainResult
+func RWExplainResult(key string, prevValue, value core.MopValueType) rwExplainResult {
+	return rwExplainResult{
+		Typ:       core.RWDepend,
+		key:       key,
+		prevValue: prevValue,
+		value:     value,
+	}
+}
+
+func (rwExplainResult) Type() core.DependType {
+	return core.RWDepend
+}
+
+// wwExplainer explains write-write dependencies
+type rwExplainer struct {
+	versionGraphs map[string]*core.DirectedGraph
+}
+
+func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
+	// if pair := explainPairData(a, b, core.MopTypeWrite, core.MopTypeWrite); pair != nil {
+	// 	return RWExplainResult(pair.k, pair.prevValue, pair.value)
+	// }
+
+	k, prev, v := explainOpDeps(r.versionGraphs, extReadKeys, a, extWriteKeys, b)
+	if prev != initMagicNumber && v != initMagicNumber {
+		return RWExplainResult(k, prev, v)
+	}
+	return nil
+}
+
+func (w *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
+	if result.Type() != core.RWDepend {
+		log.Fatalf("result type is not %s, type error", core.RWDepend)
+	}
+	er := result.(wwExplainResult)
+	return fmt.Sprintf("%s read %v with value %s written by %s with value %s",
+		b, er.key, er.prevValue, a, er.value,
+	)
+}
+
+func WWRWGraph(history core.History, opts ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	anomalies, _, versionGraphs := versionGraphs(history, opts...)
+	txnGraph := versionGraphs2TransactionGraph(history, versionGraphs)
+	return anomalies, txnGraph, core.NewCombineExplainer([]core.DataExplainer{
+		&wwExplainer{versionGraphs: versionGraphs},
+		&rwExplainer{versionGraphs: versionGraphs},
+	})
+}
+
+// graph combines wwGraph, wrGraph and rwGraph
+func graph(history core.History, opts ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	return core.Combine(wrGraph, WWRWGraph)(history, opts...)
+}
+
+// Check checks append and read history for list_append
+func Check(opts txn.Opts, history core.History, graphOpt GraphOption) txn.CheckResult {
+	history = preProcessHistory(history)
+	g1a := g1aCases(history)
+	g1b := g1bCases(history)
+	var analyzer core.Analyzer = graph
+	additionalGraphs := txn.AdditionalGraphs(opts)
+	if len(additionalGraphs) != 0 {
+		analyzer = core.Combine(append([]core.Analyzer{analyzer}, additionalGraphs...)...)
+	}
+
+	checkResult := txn.Cycles(analyzer, history, graphOpt)
+	anomalies := checkResult.Anomalies
+	if len(g1a) != 0 {
+		anomalies["G1a"] = g1a
+	}
+	if len(g1b) != 0 {
+		anomalies["G1b"] = g1b
+	}
+	return txn.ResultMap(opts, anomalies)
 }

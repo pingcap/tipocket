@@ -32,8 +32,10 @@ const (
 	WRDepend DependType = "wr"
 	// RWDepend ...
 	RWDepend DependType = "rw"
-	// EXTKeyDepent ...
-	EXTKeyDepent DependType = "ext-key-depend"
+	// EXTKeyDepend ...
+	EXTKeyDepend DependType = "ext-key-depend"
+	// G1cDepend
+	G1cDepend DependType = "G1c"
 )
 
 // ExplainResult is an interface, contains rwExplainerResult, wwExplainerResult wr ExplainerResult etc
@@ -74,13 +76,13 @@ func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 strin
 
 // Combine composes multiple analyzers
 func Combine(analyzers ...Analyzer) Analyzer {
-	return func(history History) (anomalies Anomalies, graph *DirectedGraph, explainer DataExplainer) {
+	return func(history History, opts ...interface{}) (anomalies Anomalies, graph *DirectedGraph, explainer DataExplainer) {
 		ca := make(Anomalies)
 		cg := NewDirectedGraph()
 		var ce []DataExplainer
 
 		for _, analyzer := range analyzers {
-			a, g, e := analyzer(history)
+			a, g, e := analyzer(history, opts...)
 			if g == nil {
 				panic("got a nil graph")
 			}

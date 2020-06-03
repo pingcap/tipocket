@@ -72,3 +72,43 @@ func TestOp(t *testing.T) {
 	}
 	require.Equal(t, expect, op)
 }
+
+func TestPair(t *testing.T) {
+	invoke, op := Pair(MustParseOp("wx1rx2"))
+	expectOp := core.Op{
+		Type: core.OpTypeOk,
+		Value: &[]core.Mop{
+			{
+				T: core.MopTypeWrite,
+				M: map[string]interface{}{
+					"x": IntPtr(1),
+				},
+			},
+			{
+				T: core.MopTypeRead,
+				M: map[string]interface{}{
+					"x": IntPtr(2),
+				},
+			},
+		},
+	}
+	expectInvoke := core.Op{
+		Type: core.OpTypeInvoke,
+		Value: &[]core.Mop{
+			{
+				T: core.MopTypeWrite,
+				M: map[string]interface{}{
+					"x": IntPtr(1),
+				},
+			},
+			{
+				T: core.MopTypeRead,
+				M: map[string]interface{}{
+					"x": nil,
+				},
+			},
+		},
+	}
+	require.Equal(t, expectOp, op)
+	require.Equal(t, expectInvoke, invoke)
+}

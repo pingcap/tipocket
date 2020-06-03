@@ -102,7 +102,7 @@ func (w *wwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 }
 
 // wwGraph analyzes write-write dependencies
-func wwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+func wwGraph(history core.History, _ ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	history, appendIdx, writeIdx, readIdx := preprocess(history)
 	g := core.NewDirectedGraph()
 
@@ -188,7 +188,7 @@ func (w *wrExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 }
 
 // wrGraph analyzes write-read dependencies
-func wrGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+func wrGraph(history core.History, _ ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	history, appendIdx, writeIdx, readIdx := preprocess(history)
 	g := core.NewDirectedGraph()
 	for _, op := range history {
@@ -300,7 +300,7 @@ func (r *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 }
 
 // rwGraph analyzes read-write anti-dependencies
-func rwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+func rwGraph(history core.History, _ ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	history, appendIdx, writeIdx, readIdx := preprocess(history)
 	g := core.NewDirectedGraph()
 
@@ -325,8 +325,9 @@ func rwGraph(history core.History) (core.Anomalies, *core.DirectedGraph, core.Da
 }
 
 // graph combines wwGraph, wrGraph and rwGraph
-func graph(history core.History) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
-	return core.Combine(wwGraph, wrGraph, rwGraph)(history)
+func graph(history core.History, _ ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
+	a, b, c := core.Combine(wwGraph, wrGraph, rwGraph)(history)
+	return a, b, c
 }
 
 // GCaseTp type aliases []core.Anomaly

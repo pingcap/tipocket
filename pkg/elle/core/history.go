@@ -189,6 +189,17 @@ type Op struct {
 	Error   string      `json:"error,omitempty"`
 }
 
+// Copy ...
+func (op Op) Copy() Op {
+	newOp := op
+	mops := make([]Mop, len(*op.Value))
+	newOp.Value = &mops
+	for index, mop := range *op.Value {
+		(*newOp.Value)[index] = mop.Copy()
+	}
+	return newOp
+}
+
 func (op Op) String() string {
 	var parts []string
 	parts = append(parts, fmt.Sprintf("{:type :%s", op.Type))
@@ -225,6 +236,16 @@ func (op Op) ValueLength() int {
 
 func (op Op) WithType(tp OpType) Op {
 	op.Type = tp
+	return op
+}
+
+func (op Op) WithProcess(p interface{}) Op {
+	op.Process = IntOptional{value: p}
+	return op
+}
+
+func (op Op) WithIndex(i interface{}) Op {
+	op.Index = IntOptional{value: i}
 	return op
 }
 
