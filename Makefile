@@ -103,6 +103,9 @@ dm-pocket:
 follower-read:
 	$(GOBUILD) $(GOMOD) -o bin/follower-read cmd/follower-read/*.go
 
+titan:
+	$(GOBUILD) $(GOMOD) -o bin/titan cmd/titan/*.go
+
 fmt: groupimports
 	go fmt ./...
 
