@@ -58,11 +58,11 @@ func (l *ClientCreator) Create(node types.ClientNode) core.Client {
 }
 
 // SetUp set up sqllogicClient
-func (c *sqllogicClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *sqllogicClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
-	node := nodes[idx]
+	node := clientNodes[idx]
 	c.ip, c.port = node.IP, node.Port
 	dbDSN := fmt.Sprintf("root:@tcp(%s:%d)/%s", node.IP, node.Port, c.DbName)
 	db, err := util.OpenDB(dbDSN, 1)

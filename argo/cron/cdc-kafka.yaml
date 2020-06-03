@@ -1,7 +1,7 @@
 metadata:
   name: tipocket-cdc-kafka
 spec:
-  schedule: "0 */6 * * *"
+  schedule: "0 7 * * *"
   concurrencyPolicy: "Forbid"
   timezone: "Asia/Shanghai"
   startingDeadlineSeconds: 0
@@ -34,7 +34,7 @@ spec:
         - name: tikv-config
           value: ""
         - name: cdc_version
-          value: "master"
+          value: ""
         - name: cdc_enable-kafka
           value: "true"
         - name: cdc_kafka-consumer-image

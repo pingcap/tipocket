@@ -44,10 +44,10 @@ type pessimisticClient struct {
 	hongbaoDB         *sql.DB
 }
 
-func (c *pessimisticClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *pessimisticClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	var (
 		err           error
-		node          = nodes[idx]
+		node          = clientNodes[idx]
 		dsn           = fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
 		randTxnDBName = c.cfg.PessimisticClientConfig.DBName
 		hongbaoDBName = c.cfg.HongbaoClientConfig.DBName

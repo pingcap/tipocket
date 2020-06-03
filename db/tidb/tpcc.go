@@ -25,10 +25,10 @@ type tpccClient struct {
 	workloadCtx context.Context
 }
 
-func (t *tpccClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (t *tpccClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
 	var (
 		err  error
-		node = nodes[idx]
+		node = clientNodes[idx]
 	)
 	t.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {

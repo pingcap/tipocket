@@ -79,6 +79,14 @@ func (clientNode ClientNode) String() string {
 	return fmt.Sprintf("%s %s:%d", clientNode.ClusterName, clientNode.IP, clientNode.Port)
 }
 
+// Cluster interface
+type Cluster interface {
+	Apply() error
+	Delete() error
+	GetNodes() ([]Node, error)
+	GetClientNodes() ([]ClientNode, error)
+}
+
 // ClusterSpecs is a cluster specification
 type ClusterSpecs struct {
 	Cluster     Cluster

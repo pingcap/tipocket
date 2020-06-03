@@ -94,7 +94,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		sctx,
 		suit.Config,
 		suit.ClientCreator,
-		suit.NemesisGens,
+		core.NewNemesisGenerators(suit.NemesisGens),
 		suit.ClientRequestGen,
 		suit.VerifySuit,
 		lokiCli,

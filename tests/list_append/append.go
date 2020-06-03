@@ -44,7 +44,7 @@ type client struct {
 	nextRequest func() ellecore.Op
 }
 
-func (c *client) SetUp(_ context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *client) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
 	var err error
 	txnMode := c.txnMode
 	if txnMode == "mixed" {
@@ -59,7 +59,7 @@ func (c *client) SetUp(_ context.Context, nodes []clusterTypes.ClientNode, idx i
 		return fmt.Errorf("illegal txn_mode value: %s", txnMode)
 	}
 
-	node := nodes[idx]
+	node := clientNodes[idx]
 	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
