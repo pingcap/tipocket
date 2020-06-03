@@ -25,6 +25,19 @@ type k8sNemesisClient struct {
 	cli *Chaos
 }
 
+func shuffleIndices(n int) []int {
+	indices := make([]int, n)
+	for i := 0; i < n; i++ {
+		indices[i] = i
+	}
+	for i := len(indices) - 1; i > 0; i-- {
+		j := rand.Intn(i + 1)
+		indices[i], indices[j] = indices[j], indices[i]
+	}
+
+	return indices
+}
+
 func init() {
 	// most kinds of nemesis depends on chaos-mesh or tidb-operator
 	if tests.TestClient.Cli != nil {
@@ -40,17 +53,4 @@ func init() {
 	}
 	core.RegisterNemesis(scheduler{})
 	core.RegisterNemesis(newLeaderShuffler())
-}
-
-func shuffleIndices(n int) []int {
-	indices := make([]int, n)
-	for i := 0; i < n; i++ {
-		indices[i] = i
-	}
-	for i := len(indices) - 1; i > 0; i-- {
-		j := rand.Intn(i + 1)
-		indices[i], indices[j] = indices[j], indices[i]
-	}
-
-	return indices
 }

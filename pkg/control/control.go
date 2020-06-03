@@ -39,7 +39,10 @@ type Controller struct {
 
 	clients []core.Client
 
-	nemesisGenerators      []core.NemesisGenerator
+	// protect nemesisGenerators' reading and updating
+	sync.RWMutex
+	nemesisGenerators core.NemesisGenerators
+
 	clientRequestGenerator func(ctx context.Context,
 		client core.Client,
 		node clusterTypes.ClientNode,
@@ -68,7 +71,7 @@ func NewController(
 	ctx context.Context,
 	cfg *Config,
 	clientCreator core.ClientCreator,
-	nemesisGenerators []core.NemesisGenerator,
+	nemesisGenerators core.NemesisGenerators,
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	lokiCli *loki.Client,
@@ -204,7 +207,14 @@ func (c *Controller) RunWithNemesisSequential() {
 	c.setUpClient()
 	c.collectLogs()
 ENTRY:
-	for _, g := range c.nemesisGenerators {
+	for {
+		c.RLock()
+		g := c.nemesisGenerators.Next()
+		c.RUnlock()
+
+		if g == nil {
+			log.Fatal("empty nemesis generator")
+		}
 		for round := 1; round <= c.cfg.RunRound; round++ {
 			log.Infof("nemesis[%s] round %d start...", g.Name(), round)
 
@@ -305,6 +315,12 @@ func (c *Controller) RunSelfScheduled() {
 	c.tearDownDB()
 }
 
+func (c *Controller) updateNemesisGenerators(gs core.NemesisGenerators) {
+	c.Lock()
+	defer c.Unlock()
+	c.nemesisGenerators = gs
+}
+
 func (c *Controller) syncClientExec(f func(i int)) {
 	var wg sync.WaitGroup
 	n := len(c.cfg.ClientNodes)
@@ -400,30 +416,33 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 }
 
 func (c *Controller) dispatchNemesis(ctx context.Context) {
-	if len(c.nemesisGenerators) == 0 {
-		return
-	}
-LOOP:
 	for {
-		for _, gen := range c.nemesisGenerators {
-			select {
-			case <-ctx.Done():
-				break LOOP
-			default:
-			}
-			var (
-				ops = gen.Generate(c.cfg.Nodes)
-				g   errgroup.Group
-			)
-			for i := 0; i < len(ops); i++ {
-				op := ops[i]
-				g.Go(func() error {
-					c.onNemesis(ctx, op)
-					return nil
-				})
-			}
-			_ = g.Wait()
+		select {
+		case <-ctx.Done():
+			break
+		default:
 		}
+
+		c.RLock()
+		gen := c.nemesisGenerators.Next()
+		c.RUnlock()
+
+		if gen == nil {
+			time.Sleep(time.Minute)
+			continue
+		}
+		var (
+			ops = gen.Generate(c.cfg.Nodes)
+			g   errgroup.Group
+		)
+		for i := 0; i < len(ops); i++ {
+			op := ops[i]
+			g.Go(func() error {
+				c.onNemesis(ctx, op)
+				return nil
+			})
+		}
+		_ = g.Wait()
 	}
 }
 
@@ -464,9 +483,16 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 		// because we cannot ensure the nemesis wasn't injected, so we also will try to recover it later.
 		log.Errorf("run nemesis %s failed: %v", op.String(), err)
 	}
-	select {
-	case <-time.After(op.RunTime):
-	case <-ctx.Done():
+	if op.RecoveryCh != nil {
+		select {
+		case <-op.RecoveryCh:
+		case <-ctx.Done():
+		}
+	} else {
+		select {
+		case <-time.After(op.RunTime):
+		case <-ctx.Done():
+		}
 	}
 	log.Infof("recover nemesis %s...", op.String())
 	err := util.RunWithRetry(ctx, 3, 10*time.Second, func() error {

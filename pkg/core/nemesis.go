@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
@@ -73,7 +74,12 @@ type NemesisOperation struct {
 	Node        *clusterTypes.Node // Nemesis target node, optional if it affects
 	InvokeArgs  []interface{}      // Nemesis invoke args
 	RecoverArgs []interface{}      // Nemesis recover args
-	RunTime     time.Duration      // Nemesis duration time
+
+	// We have two approaches to trigger recovery
+	// 1. through `RunTime`
+	// 2. through `RecoveryCh`
+	RunTime    time.Duration      // Nemesis duration time
+	RecoveryCh <-chan interface{} // Nemesis recovery trigger
 }
 
 // String ...
@@ -111,4 +117,54 @@ func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOpe
 // Name ...
 func (d DelayNemesisGenerator) Name() string {
 	return d.Gen.Name()
+}
+
+// NemesisGenerators is a NemesisGenerator iterator
+type NemesisGenerators interface {
+	Next() NemesisGenerator
+}
+
+// ImmutableNemesisGenerators is a wrapper of []NemesisGenerator
+type ImmutableNemesisGenerators struct {
+	idx        int
+	generators []NemesisGenerator
+}
+
+func (i *ImmutableNemesisGenerators) Next() NemesisGenerator {
+	i.idx = i.idx % len(i.generators)
+	gen := i.generators[i.idx]
+	i.idx += 1
+	return gen
+}
+
+// NewNemesisGenerators ...
+func NewNemesisGenerators(gens []NemesisGenerator) NemesisGenerators {
+	return &ImmutableNemesisGenerators{
+		idx:        0,
+		generators: gens,
+	}
+}
+
+type MutableNemesisGenerators struct {
+	sync.RWMutex
+	gen NemesisGenerator
+}
+
+func (m *MutableNemesisGenerators) Next() NemesisGenerator {
+	m.RLock()
+	defer m.RUnlock()
+	return m.gen
+}
+
+func (m *MutableNemesisGenerators) Set(gen NemesisGenerator) {
+	m.Lock()
+	defer m.Unlock()
+	m.gen = gen
+}
+
+// NewMutableNemesisGenerators ...
+func NewMutableNemesisGenerators(init NemesisGenerator) NemesisGenerators {
+	return &MutableNemesisGenerators{
+		gen: init,
+	}
 }
