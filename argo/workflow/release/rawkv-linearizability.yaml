@@ -10,7 +10,7 @@ spec:
       - name: purge
         value: "true"
       - name: hub
-        value: "hub.pingcap.net"
+        value: "docker.io"
       - name: repository
         value: pingcap
       - name: image-version

@@ -28,7 +28,7 @@ spec:
       - name: run-time
         value: "4h"
       - name: loki-addr
-        value: "http://loki.loki.svc"
+        value: "http://gateway.loki.svc"
       - name: loki-username
         value: ""
       - name: loki-password
