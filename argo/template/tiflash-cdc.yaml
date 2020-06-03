@@ -48,10 +48,6 @@ spec:
             default: ""
           - name: tiflash-replicas
             default: 2
-          - name: cdc_hub
-            default: docker.io
-          - name: cdc_repository
-            default: pingcap
           - name: cdc_version
             default: nightly
           - name: loki-addr
@@ -98,8 +94,6 @@ spec:
             -abtest.general-log={{inputs.parameters.abtest_general-log}} \
             -tiflash-replicas={{inputs.parameters.tiflash-replicas}} \
             -tiflash-image={{inputs.parameters.tiflash-image}} \
-            -cdc.hub={{inputs.parameters.cdc_hub}} \
-            -cdc.repository={{inputs.parameters.cdc_repository}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \

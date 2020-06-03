@@ -82,14 +82,21 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 		cfg.DSN3 = makeDSN(clientNodes[2].Address())
 	}
 
+	pCore := pocketCore.New(cfg)
+
 	if cfg.Mode == "dm" {
 		err := dmCreateSourceTask(clientNodes)
 		if err != nil {
 			return err
 		}
+
+		err = dmSyncDiffData(ctx, pCore, cfg.Options.CheckDuration.Duration, clientNodes)
+		if err != nil {
+			return err
+		}
 	}
 
-	return pocketCore.New(cfg).Start(ctx)
+	return pCore.Start(ctx)
 }
 
 func makeDSN(address string) string {

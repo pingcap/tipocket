@@ -36,6 +36,10 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "5"
+          - name: enable-follower
+            default: "true"
+          - name: enable-split
+            default: "false"
           - name: seq-loop
             default: "100000"
           - name: insert-num
@@ -75,4 +79,6 @@ spec:
             -loki-password={{inputs.parameters.loki-password}} \
             -seq-loop={{inputs.parameters.seq-loop}} \
             -insert-num={{inputs.parameters.insert-num}} \
-            -split-range={{inputs.parameters.split-range}}
+            -split-region-range={{inputs.parameters.split-range}} \
+            -enable-follower={{inputs.parameters.enable-follower}} \
+            -enable-split={{inputs.parameters.enable-split}}

@@ -43,10 +43,6 @@ spec:
         value: "v4.0.0-rc"
       - name: tiflash-replicas
         value: 2
-      - name: cdc_hub
-        value: "docker.io"
-      - name: cdc_repository
-        value: "pingcap"
       - name: cdc_version
         value: "nightly"
       - name: loki-addr
@@ -102,10 +98,6 @@ spec:
                   value: "{{workflow.parameters.tiflash-image}}"
                 - name: tiflash-replicas
                   value: "{{workflow.parameters.tiflash-replicas}}"
-                - name: cdc_hub
-                  value: "{{workflow.parameters.cdc_hub}}"
-                - name: cdc_repository
-                  value: "{{workflow.parameters.cdc_repository}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
                 - name: loki-addr

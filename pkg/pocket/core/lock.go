@@ -24,3 +24,13 @@ func (c *Core) Unlock() {
 	c.ifLock = false
 	c.mutex.Unlock()
 }
+
+// ExecLock wrap execMutex.Lock.
+func (c *Core) ExecLock() {
+	c.execMutex.Lock()
+}
+
+// ExecUnlock wrap execMutex.Unlock.
+func (c *Core) ExecUnlock() {
+	c.execMutex.Unlock()
+}

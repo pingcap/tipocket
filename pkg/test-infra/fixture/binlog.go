@@ -17,7 +17,7 @@ import "time"
 
 // BinlogConfig for binlog component
 type BinlogConfig struct {
-	BinlogVersion  string
+	Image          string
 	EnableRelayLog bool
 	SyncTimeout    time.Duration
 }
