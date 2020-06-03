@@ -33,11 +33,11 @@ type titanClient struct {
 }
 
 // SetUp implements the core.Client interface.
-func (c *titanClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *titanClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	log.Infof("setup client %v start", idx)
 
-	clusterName := nodes[0].ClusterName
-	ns := nodes[0].Namespace
+	clusterName := clientNodes[0].ClusterName
+	ns := clientNodes[0].Namespace
 	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
 	if len(pdAddrs) == 0 {
 		return errors.New("No pd node found")
