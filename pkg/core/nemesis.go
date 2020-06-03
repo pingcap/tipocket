@@ -130,6 +130,7 @@ type ImmutableNemesisGenerators struct {
 	generators []NemesisGenerator
 }
 
+// Next ...
 func (i *ImmutableNemesisGenerators) Next() NemesisGenerator {
 	i.idx = i.idx % len(i.generators)
 	gen := i.generators[i.idx]
@@ -145,17 +146,20 @@ func NewNemesisGenerators(gens []NemesisGenerator) NemesisGenerators {
 	}
 }
 
+// MutableNemesisGenerators can be used to interact between client and control
 type MutableNemesisGenerators struct {
 	sync.RWMutex
 	gen NemesisGenerator
 }
 
+// Next ...
 func (m *MutableNemesisGenerators) Next() NemesisGenerator {
 	m.RLock()
 	defer m.RUnlock()
 	return m.gen
 }
 
+// Set ...
 func (m *MutableNemesisGenerators) Set(gen NemesisGenerator) {
 	m.Lock()
 	defer m.Unlock()

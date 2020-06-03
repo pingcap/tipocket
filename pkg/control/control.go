@@ -315,6 +315,7 @@ func (c *Controller) RunSelfScheduled() {
 	c.tearDownDB()
 }
 
+// UpdateNemesisGenerators updates nemesis generators
 func (c *Controller) UpdateNemesisGenerators(gs core.NemesisGenerators) {
 	c.Lock()
 	defer c.Unlock()
