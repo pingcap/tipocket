@@ -155,12 +155,12 @@ type rawkvClient struct {
 }
 
 // SetUp implements the core.Client interface.
-func (c *rawkvClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *rawkvClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
 	log.Printf("setup client %v start", idx)
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	clusterName := nodes[0].ClusterName
-	ns := nodes[0].Namespace
+	clusterName := clientNodes[0].ClusterName
+	ns := clientNodes[0].Namespace
 	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
 	//pdAddrs := []string{"127.0.0.1:2379"}
 	if len(pdAddrs) == 0 {

@@ -48,13 +48,13 @@ type stressClient struct {
 	replicaRead      string
 }
 
-func (c *stressClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *stressClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	// only prepare data through the first TiDB
 	if idx != 0 {
 		return nil
 	}
 
-	node := nodes[idx]
+	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
 
 	log.Info("[stressClient] Initializing...")

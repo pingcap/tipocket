@@ -35,7 +35,7 @@ func (p PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
 }
 
 // SetUp sets up the client.
-func (PocketClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (PocketClient) SetUp(ctx context.Context, _ []clusterTypes.Node, _ []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 

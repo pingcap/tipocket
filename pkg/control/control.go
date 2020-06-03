@@ -283,7 +283,7 @@ func (c *Controller) RunSelfScheduled() {
 	var (
 		nemesisWg     sync.WaitGroup
 		g             errgroup.Group
-		nCtx, nCancel = context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
+		nCtx, nCancel = context.WithTimeout(context.WithValue(c.ctx, "control", c), c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	)
 	nemesisWg.Add(1)
 	go func() {
@@ -315,7 +315,7 @@ func (c *Controller) RunSelfScheduled() {
 	c.tearDownDB()
 }
 
-func (c *Controller) updateNemesisGenerators(gs core.NemesisGenerators) {
+func (c *Controller) UpdateNemesisGenerators(gs core.NemesisGenerators) {
 	c.Lock()
 	defer c.Unlock()
 	c.nemesisGenerators = gs
@@ -375,7 +375,8 @@ func (c *Controller) setUpClient() {
 	c.syncClientExec(func(i int) {
 		client := c.clients[i]
 		log.Infof("begin to set up db client for node %s", c.cfg.ClientNodes[i])
-		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, i); err != nil {
+		ctx := context.WithValue(c.ctx, "control", c)
+		if err := client.SetUp(ctx, c.cfg.Nodes, c.cfg.ClientNodes, i); err != nil {
 			log.Fatalf("set up db client for node %s failed: %v", c.cfg.ClientNodes[i], err)
 		}
 	})
