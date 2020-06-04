@@ -22,9 +22,6 @@ import (
 
 	// register nemesis
 	_ "github.com/pingcap/tipocket/pkg/nemesis"
-
-	// register tidb
-	_ "github.com/pingcap/tipocket/db/tidb"
 )
 
 var (
@@ -209,12 +206,12 @@ func (c *Controller) RunWithNemesisSequential() {
 ENTRY:
 	for {
 		c.RLock()
-		g := c.nemesisGenerators.Next()
+		gen := c.nemesisGenerators
 		c.RUnlock()
-
-		if g == nil {
-			log.Fatal("empty nemesis generator")
+		if !gen.HasNext() {
+			break
 		}
+		g := gen.Next()
 		for round := 1; round <= c.cfg.RunRound; round++ {
 			log.Infof("nemesis[%s] round %d start...", g.Name(), round)
 
@@ -418,22 +415,23 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 }
 
 func (c *Controller) dispatchNemesis(ctx context.Context) {
+loop:
 	for {
 		select {
 		case <-ctx.Done():
-			break
+			break loop
 		default:
 		}
-
 		c.RLock()
-		gen := c.nemesisGenerators.Next()
+		gens := c.nemesisGenerators
 		c.RUnlock()
 
-		if gen == nil {
-			time.Sleep(time.Minute)
+		if !gens.HasNext() {
+			time.Sleep(time.Second)
 			continue
 		}
 		var (
+			gen = gens.Next()
 			ops = gen.Generate(c.cfg.Nodes)
 			g   errgroup.Group
 		)
@@ -485,11 +483,9 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 		// because we cannot ensure the nemesis wasn't injected, so we also will try to recover it later.
 		log.Errorf("run nemesis %s failed: %v", op.String(), err)
 	}
-	if op.RecoveryCh != nil {
-		select {
-		case <-op.RecoveryCh:
-		case <-ctx.Done():
-		}
+
+	if op.NemesisControl != nil {
+		op.NemesisControl.WaitForRollback(ctx)
 	} else {
 		select {
 		case <-time.After(op.RunTime):
