@@ -107,23 +107,22 @@ func NewKillGenerator(name string) core.NemesisGenerator {
 
 // coordinationKillGenerator can be used to testing multi data center
 type coordinationKillGenerator struct {
-	nodes          []clusterTypes.Node
-	coordinationCh chan interface{}
+	nodes   []clusterTypes.Node
+	control *core.NemesisControl
 }
 
 func (t *coordinationKillGenerator) Generate(_ []clusterTypes.Node) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	for i := 0; i < len(t.nodes); i++ {
 		ops = append(ops, &core.NemesisOperation{
-			Type:        core.PodFailure,
-			Node:        &t.nodes[i],
-			InvokeArgs:  nil,
-			RecoverArgs: nil,
-			RecoveryCh:  t.coordinationCh,
+			Type:           core.PodFailure,
+			Node:           &t.nodes[i],
+			InvokeArgs:     nil,
+			RecoverArgs:    nil,
+			NemesisControl: t.control,
 		})
 	}
-	// notifies the coordination peer that nemesis prepare to inject
-	t.coordinationCh <- struct{}{}
+	t.control.WaitForStart()
 	return ops
 }
 
@@ -132,8 +131,9 @@ func (t *coordinationKillGenerator) Name() string {
 }
 
 // NewCoordinationKillGenerator ...
-func NewCoordinationKillGenerator(nodes []clusterTypes.Node, coordinationCh chan interface{}) core.NemesisGenerator {
-	return &coordinationKillGenerator{nodes: nodes, coordinationCh: coordinationCh}
+func NewCoordinationKillGenerator(nodes []clusterTypes.Node) (core.NemesisGenerator, *core.NemesisControl) {
+	control := &core.NemesisControl{}
+	return &coordinationKillGenerator{nodes: nodes, control: control}, control
 }
 
 // kill implements Nemesis
