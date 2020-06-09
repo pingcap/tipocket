@@ -5,9 +5,10 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
-	"github.com/stretchr/testify/require"
 )
 
 func TestInternalCase(t *testing.T) {
@@ -88,6 +89,7 @@ func TestWRGraph(t *testing.T) {
 	_, g1, _ := wrGraph(case1)
 	require.Equal(t, expect1, g1)
 
+	// write and read
 	case2 := core.History{
 		MustParseOp("wx0"),
 		MustParseOp("rx0"),
@@ -97,6 +99,7 @@ func TestWRGraph(t *testing.T) {
 	_, g2, _ := wrGraph(case2)
 	require.Equal(t, expect2, g2)
 
+	// chain on one register
 	case3 := core.History{
 		MustParseOp("rx0wx1"),
 		MustParseOp("rx1wx0"),
@@ -107,6 +110,7 @@ func TestWRGraph(t *testing.T) {
 	_, g3, _ := wrGraph(case3)
 	require.Equal(t, expect3, g3)
 
+	// chain across two registers
 	case4 := core.History{
 		MustParseOp("rx0wy1"),
 		MustParseOp("ry1wx0"),
@@ -117,6 +121,7 @@ func TestWRGraph(t *testing.T) {
 	_, g4, _ := wrGraph(case4)
 	require.Equal(t, expect4, g4)
 
+	// write skew
 	case5 := core.History{
 		MustParseOp("rx0ry0wx1"),
 		MustParseOp("rx0ry0wy1"),
@@ -124,14 +129,6 @@ func TestWRGraph(t *testing.T) {
 	expect5 := core.NewDirectedGraph()
 	_, g5, _ := wrGraph(case5)
 	require.Equal(t, expect5, g5)
-
-	case6 := core.History{
-		MustParseOp("wx1ry1"),
-		MustParseOp("wy1rx1"),
-	}
-	expect6 := core.NewDirectedGraph()
-	_, g6, _ := wrGraph(case6)
-	require.Equal(t, expect6, g6)
 }
 
 func TestExtKeyGraph(t *testing.T) {
