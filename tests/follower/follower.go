@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
@@ -21,9 +22,13 @@ type ClientCreator struct {
 
 // Config for follower read test
 type Config struct {
-	DBName      string
-	Concurrency int
-	Switch      bool
+	DBName           string
+	Concurrency      int
+	Switch           bool
+	SeqLoop          int
+	SplitRegionRange int
+	InsertNum        int
+	EnableSplit      bool
 }
 
 type follower struct {
@@ -43,13 +48,13 @@ func (l ClientCreator) Create(node types.ClientNode) core.Client {
 }
 
 // SetUp
-func (f *follower) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (f *follower) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
 
 	var err error
-	node := nodes[idx]
+	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, f.DBName)
 
 	log.Infof("start to init...")
@@ -235,15 +240,15 @@ func testGlobal(f *follower) {
 }
 
 func testSplitRegion(f *follower) {
-	region := 1000000
+	region := f.SplitRegionRange
+	insertnum := f.InsertNum
 	f.db.Exec("create table test_region(a int)")
 
-	if !f.Switch {
-		_, e := f.db.Exec("set @@tidb_replica_read = \"leader-and-follower\"")
+	if f.Switch {
+		_, e := f.db.Exec("set @@tidb_replica_read = \"follower\"")
 		if e != nil {
 			log.Fatal(e)
 		}
-
 		rows, err := f.db.Query("select @@tidb_replica_read")
 		if err != nil {
 			log.Fatal(err)
@@ -252,19 +257,38 @@ func testSplitRegion(f *follower) {
 		for rows.Next() {
 			var val string
 			rows.Scan(&val)
-			if val != "leader-and-follower" {
-				log.Fatalf("assert tidb_replica_read == leader-and-follower failed, current: %v", val)
+			if val != "follower" {
+				log.Fatalf("assert tidb_replica_read == follower failed, current: %v", val)
+			}
+			log.Info("testSplitRegion in follower mode")
+		}
+	} else {
+		_, e := f.db.Exec("set @@tidb_replica_read = \"leader\"")
+		if e != nil {
+			log.Fatal(e)
+		}
+		rows, err := f.db.Query("select @@tidb_replica_read")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var val string
+			rows.Scan(&val)
+			if val != "leader" {
+				log.Fatalf("assert tidb_replica_read == leader failed, current: %v", val)
 			}
 		}
+		log.Info("testSplitRegion in leader mode")
 	}
 
 	// prepare some data
 	var wg sync.WaitGroup
-	for i := 0; i < 24; i++ {
+	for i := 0; i < 16; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for i := 0; i < 10000; i++ {
+			for i := 0; i < insertnum; i++ {
 				_, e := f.db.Exec(fmt.Sprintf("insert into test_region (a) values (%v)", rand.Intn(region)))
 				if e != nil {
 					log.Fatal(e)
@@ -274,28 +298,36 @@ func testSplitRegion(f *follower) {
 	}
 
 	// split region
-	time.Sleep(1 * time.Minute)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions 360;", region))
-			if e != nil {
-				log.Fatal(e)
+	if f.EnableSplit {
+		var regionMax = 300
+		log.Info("Enable split")
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			time.Sleep(5 * time.Minute)
+			for {
+				_, e := f.db.Exec(fmt.Sprintf("split table test_region between (0) and (%v) regions %v;", region, regionMax))
+				if e != nil {
+					log.Fatal(e)
+				}
+				log.Infof("Split region done")
+				regionMax += 50
+				if regionMax >= 1000 {
+					break
+				}
+				time.Sleep(1 * time.Minute)
 			}
-			log.Infof("Split region done")
-			time.Sleep(2 * time.Minute)
-		}
-	}()
+		}()
+	}
 
 	// read
-	time.Sleep(10 * time.Second)
-	for i := 0; i < 64; i++ {
+	time.Sleep(3 * time.Minute)
+	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for {
-				_, e := f.db.Exec("select * from test_region")
+				_, e := f.db.Exec("select count(*) from test_region")
 				if e != nil {
 					log.Fatal(e)
 				}
@@ -316,7 +348,6 @@ func testSequence(ctx context.Context, f *follower) {
 	c1, _ := f.db.Conn(ctx)
 	c1.ExecContext(ctx, sql1)
 
-	var loop = 2000000
 	var mutex sync.Mutex
 	m := make(map[int]bool)
 
@@ -326,7 +357,7 @@ func testSequence(ctx context.Context, f *follower) {
 	go func() {
 		defer wg.Done()
 		var num int
-		for i := 0; i < loop; i++ {
+		for i := 0; i < f.SeqLoop; i++ {
 			if err := c0.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
 				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}
@@ -344,7 +375,7 @@ func testSequence(ctx context.Context, f *follower) {
 	go func() {
 		defer wg.Done()
 		var num int
-		for i := 0; i < loop; i++ {
+		for i := 0; i < f.SeqLoop; i++ {
 			if err := c1.QueryRowContext(ctx, "SELECT nextval(seq)").Scan(&num); err != nil {
 				log.Fatalf("SELECT nextval(seq) fail: %v", err)
 			}

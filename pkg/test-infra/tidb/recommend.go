@@ -18,13 +18,13 @@ import (
 	"strings"
 
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Recommendation ...
@@ -32,6 +32,9 @@ type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
+
+	// ConfigMaps for IO Chaos injection
+	InjectionConfigMaps []*corev1.ConfigMap
 }
 
 // EnablePump ...
@@ -47,13 +50,14 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 }
 
 // EnableTiFlash add TiFlash spec in TiDB cluster
-func (t *Recommendation) EnableTiFlash(version string, replicas int) {
+func (t *Recommendation) EnableTiFlash(config fixture.TiDBClusterConfig) {
+	tag, fullImage, replicas := config.ImageVersion, config.TiFlashImage, config.TiFlashReplicas
 	if t.TidbCluster.Spec.TiFlash == nil {
 		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
 			Replicas:         int32(replicas),
 			MaxFailoverCount: pointer.Int32Ptr(0),
 			ComponentSpec: v1alpha1.ComponentSpec{
-				Image: buildImage("tiflash", "", version),
+				Image: util.BuildImage("tiflash", tag, fullImage),
 			},
 			StorageClaims: []v1alpha1.StorageClaim{
 				{
@@ -92,27 +96,11 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 	return t
 }
 
-func buildImage(name, baseVersion, version string) string {
-	var b strings.Builder
-	if fixture.Context.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
-	}
-	b.WriteString(fixture.Context.DockerRepository)
-	b.WriteString("/")
-	b.WriteString(name)
-	b.WriteString(":")
-	if len(version) > 0 {
-		b.WriteString(version)
-	} else {
-		b.WriteString(baseVersion)
-	}
-	return b.String()
-}
-
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	r := &Recommendation{
+		InjectionConfigMaps: make([]*corev1.ConfigMap, 0),
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -128,11 +116,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
 				PD: v1alpha1.PDSpec{
-					Replicas:             3,
+					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImageVersion),
+						Image: util.BuildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
 					},
 				},
 				TiKV: v1alpha1.TiKVSpec{
@@ -151,11 +139,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImageVersion),
+						Image: util.BuildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage),
 					},
 				},
 				TiDB: v1alpha1.TiDBSpec{
-					Replicas: 2,
+					Replicas: int32(clusterConfig.TiDBReplicas),
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
@@ -175,7 +163,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: buildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImageVersion),
+						Image: util.BuildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage),
 					},
 				},
 			},
@@ -254,7 +242,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	}
 
 	if clusterConfig.TiFlashReplicas > 0 {
-		r.EnableTiFlash(clusterConfig.TiFlashImageVersion, clusterConfig.TiFlashReplicas)
+		r.EnableTiFlash(clusterConfig)
 		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
 			Replication: &v1alpha1.PDReplicationConfig{
 				EnablePlacementRules: pointer.BoolPtr(true),
@@ -272,15 +260,36 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "tikv", ioChaosConfigTiKV))
 		case "delay_pd", "errno_pd", "mixed_pd":
 			r.TidbCluster.Spec.PD.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-pd",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "pd", ioChaosConfigPD))
 		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
 			r.TidbCluster.Spec.TiFlash.Annotations = map[string]string{
 				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
 			}
+			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
+				newIOChaosConfigMap(r.Namespace, "tiflash", ioChaosConfigTiFlash))
 		}
 	}
 	return r
+}
+
+func newIOChaosConfigMap(namespace, component, data string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "chaosfs-" + component,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/component": "webhook",
+			},
+		},
+		Data: map[string]string{
+			"chaosfs": data,
+		},
+	}
 }

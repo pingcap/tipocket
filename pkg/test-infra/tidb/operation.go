@@ -49,6 +49,8 @@ const (
 	tikvDataDir = "/var/lib/tikv/data"
 	pdDir       = "/var/lib/pd"
 	pdDataDir   = "/var/lib/pd/data"
+	// used for tikv data encryption
+	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
 
 	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
@@ -109,12 +111,10 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	var clientNodes []clusterTypes.ClientNode
 
-	k8sNodes, err := o.getK8sNodes()
+	ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 	if err != nil {
 		return clientNodes, err
-	}
-	ip := getNodeIP(k8sNodes)
-	if ip == "" {
+	} else if len(ips) == 0 {
 		return clientNodes, errors.New("k8s node not found")
 	}
 
@@ -125,7 +125,7 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	clientNodes = append(clientNodes, clusterTypes.ClientNode{
 		Namespace:   svc.ObjectMeta.Namespace,
 		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
-		IP:          ip,
+		IP:          ips[0], // compatible with the old code, can anyone FIXME?
 		Port:        getTiDBNodePort(svc),
 	})
 	return clientNodes, nil
@@ -146,6 +146,13 @@ func (o *Ops) Apply() error {
 	tc := o.tc.TidbCluster
 	tm := o.tc.TidbMonitor
 	desired := tc.DeepCopy()
+
+	if len(o.tc.InjectionConfigMaps) > 0 {
+		log.Info("Apply IO Chaos configs")
+		if err := o.applyInjectionConfigMaps(); err != nil {
+			return err
+		}
+	}
 
 	log.Info("Apply tidb discovery")
 	if err := o.applyDiscovery(tc); err != nil {
@@ -191,14 +198,14 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		if err != nil {
 			return false, err
 		}
-		err = o.cli.Get(context.TODO(), key, local)
-		if err != nil && errors.IsNotFound(err) {
-			return false, err
-		}
-		if err != nil {
+		if err = o.cli.Get(context.TODO(), key, local); err != nil {
+			if errors.IsNotFound(err) {
+				return false, err
+			}
 			log.Errorf("error getting TidbOps: %v", err)
 			return false, nil
 		}
+
 		if local.Status.PD.StatefulSet == nil {
 			return false, nil
 		}
@@ -222,6 +229,16 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		if tidbReady < tidbDesired {
 			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
 			return false, nil
+		}
+		if tc.Spec.TiFlash != nil {
+			if local.Status.TiFlash.StatefulSet == nil {
+				return false, nil
+			}
+			tiFlashReady, tiFlashDesired := local.Status.TiFlash.StatefulSet.ReadyReplicas, local.Spec.TiFlash.Replicas
+			if tiFlashReady < tiFlashDesired {
+				log.Infof("TiFlash do not have enough ready replicas, ready: %d, desired: %d", tiFlashReady, tiFlashDesired)
+				return false, nil
+			}
 		}
 		return true, nil
 	})
@@ -491,7 +508,7 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir}
+	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir, MasterKey: tikvEncryptionMasterKey}
 	if getIOChaosAnnotation(tc, "tikv") == "chaosfs-tikv" {
 		scriptModel.DataDir = tikvDataDir
 	}
@@ -603,6 +620,19 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 		})
 	}
 	return nodes
+}
+
+func (o *Ops) applyInjectionConfigMaps() error {
+	for _, tc := range o.tc.InjectionConfigMaps {
+		des := tc.DeepCopy()
+		if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
+			tc.Data = des.Data
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func getNodeIP(nodeList *corev1.NodeList) string {

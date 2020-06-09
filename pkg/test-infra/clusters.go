@@ -6,6 +6,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
 
+	"github.com/pingcap/tipocket/pkg/test-infra/dm"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -164,7 +167,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: util.BuildBinlogImage("tidb-binlog"),
+			Image: util.BuildImage("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image),
 		},
 		GenericConfig: config.GenericConfig{
 			Config: map[string]interface{}{},
@@ -175,6 +178,17 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		NewGroupCluster(up, tidb.New(namespace, name+"-downstream", conf)),
 		binlog.New(namespace, name),
 	)
+}
+
+// NewDMCluster creates two upstream MySQL instances and a downstream TiDB cluster with DM.
+func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+	up1 := mysql.New(namespace, name+"-mysql1", dmConf.MySQLConf)
+	up2 := mysql.New(namespace, name+"-mysql2", dmConf.MySQLConf)
+	down := tidb.New(namespace, name+"-tidb", tidbConf)
+
+	return NewCompositeCluster(
+		up1, up2, down,
+		dm.New(namespace, name+"-dm", dmConf))
 }
 
 // NewABTestCluster creates two TiDB clusters to do AB Test

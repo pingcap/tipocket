@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/uber-go/atomic"
+
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
@@ -67,13 +69,91 @@ func GetNemesis(name string) Nemesis {
 	return nemesises[name]
 }
 
+const (
+	waitForStart   = 1
+	enableStart    = 2
+	starting       = 3
+	enableRollback = 4
+)
+
+// NemesisControl is used to operate nemesis between the control side and test client side
+type NemesisControl struct {
+	// 0: wait for start
+	// 1: enable start
+	// 2: starting
+	// 3: enable rollback
+	s atomic.Int32
+}
+
+// WaitForStart is used on control side to wait for enabling start nemesis
+func (n *NemesisControl) WaitForStart() {
+	// init state
+	n.s.Store(waitForStart)
+	for {
+		if n.s.CAS(enableStart, starting) {
+			return
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+// WaitForRollback is used on control side to wait for enabling rollback nemesis
+func (n *NemesisControl) WaitForRollback(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if n.s.Load() == enableRollback {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+// Start is used on client side to enable control side starting nemesis
+func (n *NemesisControl) Start(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if n.s.CAS(waitForStart, enableStart) {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
+// Rollback is used on client side to enable control side rollbacking nemesis
+func (n *NemesisControl) Rollback(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if n.s.CAS(starting, enableRollback) {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
 // NemesisOperation is nemesis operation used in control.
 type NemesisOperation struct {
 	Type        ChaosKind          // Nemesis name
 	Node        *clusterTypes.Node // Nemesis target node, optional if it affects
 	InvokeArgs  []interface{}      // Nemesis invoke args
 	RecoverArgs []interface{}      // Nemesis recover args
-	RunTime     time.Duration      // Nemesis duration time
+
+	// We have two approaches to trigger recovery
+	// 1. through `RunTime`
+	// 2. through `NemesisControl` WaitForRollback
+	RunTime        time.Duration   // Nemesis duration time
+	NemesisControl *NemesisControl // Nemesis recovery signal
 }
 
 // String ...
@@ -111,4 +191,60 @@ func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOpe
 // Name ...
 func (d DelayNemesisGenerator) Name() string {
 	return d.Gen.Name()
+}
+
+// NemesisGenerators is a NemesisGenerator iterator
+type NemesisGenerators interface {
+	Next() NemesisGenerator
+	HasNext() bool
+}
+
+// nemesisGenerators is a wrapper of []NemesisGenerator
+type nemesisGenerators struct {
+	idx        int
+	generators []NemesisGenerator
+}
+
+func (i *nemesisGenerators) HasNext() bool {
+	return i.idx < len(i.generators)
+}
+
+// Next ...
+func (i *nemesisGenerators) Next() NemesisGenerator {
+	gen := i.generators[i.idx]
+	i.idx += 1
+	return gen
+}
+
+// NewNemesisGenerators ...
+func NewNemesisGenerators(gens []NemesisGenerator) NemesisGenerators {
+	return &nemesisGenerators{
+		idx:        0,
+		generators: gens,
+	}
+}
+
+// OneRoundNemesisGenerators is easier than nemesisGenerators, and suitable in cases that need to interact between client and control
+type OneRoundNemesisGenerators struct {
+	gen     NemesisGenerator
+	hasNext bool
+}
+
+// HasNext ...
+func (m *OneRoundNemesisGenerators) HasNext() bool {
+	return m.hasNext
+}
+
+// Next ...
+func (m *OneRoundNemesisGenerators) Next() NemesisGenerator {
+	m.hasNext = false
+	return m.gen
+}
+
+// NewOneRoundNemesisGenerators ...
+func NewOneRoundNemesisGenerators(gen NemesisGenerator) NemesisGenerators {
+	return &OneRoundNemesisGenerators{
+		gen:     gen,
+		hasNext: true,
+	}
 }

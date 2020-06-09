@@ -65,6 +65,12 @@ func (c *Core) initConnectionWithoutSchema(id int) (*executor.Executor, error) {
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
+	case "dm":
+		e, err = executor.NewDMTest(removeDSNSchema(c.cfg.DSN1), removeDSNSchema(c.cfg.DSN2),
+			removeDSNSchema(c.cfg.DSN3), c.generateExecutorOption(id), false) // do not start the Executor.
+		if err != nil {
+			return nil, errors.Trace(err)
+		}
 	default:
 		return nil, errors.Errorf("unhandled mode, %s", c.cfg.Mode)
 	}
@@ -90,6 +96,8 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		} else {
 			mode = "single"
 		}
+	case "dm":
+		mode = "dm"
 	}
 
 	if strings.HasPrefix(c.cfg.Mode, "tiflash") {
@@ -105,6 +113,13 @@ func (c *Core) initConnection(id int) (*executor.Executor, error) {
 		e, err = executor.NewABTest(c.cfg.DSN1, c.cfg.DSN2, c.generateExecutorOption(id), tiFlash)
 		if err != nil {
 			return nil, errors.Trace(err)
+		}
+	} else if mode == "dm" {
+		// only create (and start) one real executor.
+		if id == 0 {
+			e, err = executor.NewDMTest(c.cfg.DSN1, c.cfg.DSN2, c.cfg.DSN3, c.generateExecutorOption(id), true)
+		} else {
+			e = c.coreExec
 		}
 	}
 

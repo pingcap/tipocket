@@ -17,7 +17,7 @@ type UnknownResponse interface {
 // You should define your own client for your database.
 type Client interface {
 	// SetUp sets up the client.
-	SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error
+	SetUp(ctx context.Context, nodes []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error
 	// TearDown tears down the client.
 	TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error
 	// Invoke invokes a request to the database.
@@ -54,7 +54,7 @@ type noopClient struct {
 }
 
 // SetUp sets up the client.
-func (noopClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (noopClient) SetUp(ctx context.Context, _ []clusterTypes.Node, _ []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 

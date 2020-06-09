@@ -2,6 +2,7 @@ package nemesis
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -98,48 +99,41 @@ func killNodes(nodes []clusterTypes.Node, n int, component *clusterTypes.Compone
 	return ops
 }
 
-func filterComponent(nodes []clusterTypes.Node, component clusterTypes.Component) []clusterTypes.Node {
-	var componentNodes []clusterTypes.Node
-
-	for _, node := range nodes {
-		if node.Component == component {
-			componentNodes = append(componentNodes, node)
-		}
-	}
-
-	return componentNodes
-}
-
-func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node {
-	var (
-		leader string
-		err    error
-		result []clusterTypes.Node
-	)
-	for _, node := range nodes {
-		if node.Component == clusterTypes.PD {
-			if leader == "" && node.Client != nil {
-				leader, _, err = node.PDMember()
-				if err != nil {
-					log.Fatalf("find pd members occurred an error: %+v", err)
-				}
-			}
-			if ifLeader && node.PodName == leader {
-				return []clusterTypes.Node{node}
-			}
-			if !ifLeader && node.PodName != leader {
-				result = append(result, node)
-			}
-		}
-	}
-
-	return result
-}
-
 // NewKillGenerator creates a generator.
 // Name is random_kill, minor_kill, major_kill, and all_kill.
 func NewKillGenerator(name string) core.NemesisGenerator {
 	return killGenerator{name: name}
+}
+
+// coordinationKillGenerator can be used to testing multi data center
+type coordinationKillGenerator struct {
+	nodes   []clusterTypes.Node
+	control *core.NemesisControl
+}
+
+func (t *coordinationKillGenerator) Generate(_ []clusterTypes.Node) []*core.NemesisOperation {
+	var ops []*core.NemesisOperation
+	for i := 0; i < len(t.nodes); i++ {
+		ops = append(ops, &core.NemesisOperation{
+			Type:           core.PodFailure,
+			Node:           &t.nodes[i],
+			InvokeArgs:     nil,
+			RecoverArgs:    nil,
+			NemesisControl: t.control,
+		})
+	}
+	t.control.WaitForStart()
+	return ops
+}
+
+func (t *coordinationKillGenerator) Name() string {
+	return fmt.Sprintf("kill-with-coordination")
+}
+
+// NewCoordinationKillGenerator ...
+func NewCoordinationKillGenerator(nodes []clusterTypes.Node) (core.NemesisGenerator, *core.NemesisControl) {
+	control := &core.NemesisControl{}
+	return &coordinationKillGenerator{nodes: nodes, control: control}, control
 }
 
 // kill implements Nemesis
@@ -181,4 +175,42 @@ func buildPodFailureChaos(ns string, chaosNs string, name string) chaosv1alpha1.
 			Mode:   chaosv1alpha1.OnePodMode,
 		},
 	}
+}
+
+func filterComponent(nodes []clusterTypes.Node, component clusterTypes.Component) []clusterTypes.Node {
+	var componentNodes []clusterTypes.Node
+
+	for _, node := range nodes {
+		if node.Component == component {
+			componentNodes = append(componentNodes, node)
+		}
+	}
+
+	return componentNodes
+}
+
+func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node {
+	var (
+		leader string
+		err    error
+		result []clusterTypes.Node
+	)
+	for _, node := range nodes {
+		if node.Component == clusterTypes.PD {
+			if leader == "" && node.Client != nil {
+				leader, _, err = node.PDMember()
+				if err != nil {
+					log.Fatalf("find pd members occurred an error: %+v", err)
+				}
+			}
+			if ifLeader && node.PodName == leader {
+				return []clusterTypes.Node{node}
+			}
+			if !ifLeader && node.PodName != leader {
+				result = append(result, node)
+			}
+		}
+	}
+
+	return result
 }

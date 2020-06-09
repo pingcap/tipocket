@@ -117,7 +117,7 @@ func newDrainer(ns, name string) *Drainer {
 						Containers: []corev1.Container{
 							{
 								Name:            "drainer",
-								Image:           util.BuildBinlogImage("tidb-binlog"),
+								Image:           util.BuildImage("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image),
 								ImagePullPolicy: "IfNotPresent",
 								Command: []string{
 									"/bin/sh",

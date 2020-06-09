@@ -35,7 +35,7 @@ func (p PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
 }
 
 // SetUp sets up the client.
-func (PocketClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (PocketClient) SetUp(ctx context.Context, _ []clusterTypes.Node, _ []clusterTypes.ClientNode, idx int) error {
 	return nil
 }
 
@@ -77,8 +77,26 @@ func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cl
 	if len(clientNodes) > 1 {
 		cfg.DSN2 = makeDSN(clientNodes[1].Address())
 	}
+	// In the DM case, there are 3 client nodes needed (2 for upstream MySQL and 1 for downstream TiDB).
+	if len(clientNodes) > 2 {
+		cfg.DSN3 = makeDSN(clientNodes[2].Address())
+	}
 
-	return pocketCore.New(cfg).Start(ctx)
+	pCore := pocketCore.New(cfg)
+
+	if cfg.Mode == "dm" {
+		err := dmCreateSourceTask(clientNodes)
+		if err != nil {
+			return err
+		}
+
+		err = dmSyncDiffData(ctx, pCore, cfg.Options.CheckDuration.Duration, clientNodes)
+		if err != nil {
+			return err
+		}
+	}
+
+	return pCore.Start(ctx)
 }
 
 func makeDSN(address string) string {

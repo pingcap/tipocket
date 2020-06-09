@@ -209,11 +209,19 @@ then
 	tail -f /dev/null
 fi
 
+# support for data-encryption
+if [[ "{{.MasterKey}}" != "" ]]
+then
+	echo "writing master key {{.MasterKey}} to /var/lib/tikv/master_key"
+	echo "{{.MasterKey}}" > /var/lib/tikv/master_key
+fi
+
 # Use HOSTNAME if POD_NAME is unset for backward compatibility.
 POD_NAME=${POD_NAME:-$HOSTNAME}
 ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --advertise-addr=${POD_NAME}.${HEADLESS_SERVICE_NAME}.${NAMESPACE}.svc:20160 \
 --addr=0.0.0.0:20160 \
+--advertise-status-addr=${POD_NAME}.${HEADLESS_SERVICE_NAME}.${NAMESPACE}.svc:20180 \
 --status-addr=0.0.0.0:20180 \
 --data-dir={{.DataDir}} \
 --capacity=${CAPACITY} \
@@ -227,7 +235,8 @@ exec /tikv-server ${ARGS}
 
 // TiKVStartScriptModel ...
 type TiKVStartScriptModel struct {
-	DataDir string
+	DataDir   string
+	MasterKey string
 }
 
 // RenderTiKVStartScript ...
@@ -254,3 +263,38 @@ type pumpConfigModel struct {
 func RenderPumpConfig(model *pumpConfigModel) (string, error) {
 	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }
+
+const (
+	ioChaosConfigTiKV = `name: chaosfs-tikv
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "tikv"
+template: sidecar-template
+arguments:
+  ContainerName: "tikv"
+  DataPath: "/var/lib/tikv/data"
+  MountPath: "/var/lib/tikv"
+  VolumeName: "tikv"`
+
+	ioChaosConfigPD = `name: chaosfs-pd
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "pd"
+template: sidecar-template
+arguments:
+  ContainerName: "pd"
+  DataPath: "/var/lib/pd/data"
+  MountPath: "/var/lib/pd"
+  VolumeName: "pd"`
+
+	ioChaosConfigTiFlash = `name: chaosfs-tiflash
+selector:
+  labelSelectors:
+    "app.kubernetes.io/component": "tiflash"
+template: sidecar-template
+arguments:
+  ContainerName: "tiflash"
+  DataPath: "/data0/db"
+  MountPath: "/data0"
+  VolumeName: "data0"`
+)

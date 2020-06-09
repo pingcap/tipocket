@@ -57,13 +57,13 @@ func (l ClientCreator) Create(node types.ClientNode) core.Client {
 	}
 }
 
-func (c *ondupClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *ondupClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
 
 	var err error
-	node := nodes[idx]
+	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.DBName)
 
 	log.Infof("start to init...")

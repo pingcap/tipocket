@@ -60,6 +60,10 @@ func FindPort(podName, component string, containers []corev1.Container) int32 {
 		priorityPort = 20160
 	} else if component == string(clusterTypes.TiDB) {
 		priorityPort = 4000
+	} else if component == string(clusterTypes.DM) {
+		priorityPort = 8261
+	} else if component == string(clusterTypes.MySQL) {
+		priorityPort = 3306
 	}
 
 	for _, port := range ports {
@@ -91,24 +95,49 @@ func ApplyObject(client client.Client, object runtime.Object) error {
 	return nil
 }
 
-// BuildBinlogImage returns the binlog image name
-func BuildBinlogImage(name string) string {
-	var (
-		b       strings.Builder
-		version = fixture.Context.TiDBClusterConfig.ImageVersion
-	)
-
-	if fixture.Context.BinlogConfig.BinlogVersion != "" {
-		version = fixture.Context.BinlogConfig.BinlogVersion
+// BuildImage builds a image URL: ${fixture.Context.HubAddress}/${fixture.Context.DockerRepository}/$name:$tag
+// or returns the fullImageIfNotEmpty if it's not empty
+func BuildImage(name, tag, fullImageIfNotEmpty string) string {
+	if len(fullImageIfNotEmpty) > 0 {
+		return fullImageIfNotEmpty
 	}
+	var b strings.Builder
 	if fixture.Context.HubAddress != "" {
 		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
 	}
-
 	b.WriteString(fixture.Context.DockerRepository)
 	b.WriteString("/")
 	b.WriteString(name)
 	b.WriteString(":")
-	b.WriteString(version)
+	b.WriteString(tag)
+
 	return b.String()
+}
+
+// GetNodeIPs gets the IPs (or addresses) for nodes.
+func GetNodeIPs(cli client.Client, namespace string, labels map[string]string) ([]string, error) {
+	var ips []string
+	pods := &corev1.PodList{}
+	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+		return ips, err
+	}
+
+	for _, item := range pods.Items {
+		ips = append(ips, item.Status.HostIP)
+	}
+	return ips, nil
+}
+
+// GetServiceByMeta gets the service by its meta.
+func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, error) {
+	clone := svc.DeepCopy()
+	key, err := client.ObjectKeyFromObject(clone)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := cli.Get(context.Background(), key, clone); err != nil {
+		return nil, err
+	}
+	return clone, nil
 }

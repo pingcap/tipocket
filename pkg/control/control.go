@@ -22,9 +22,6 @@ import (
 
 	// register nemesis
 	_ "github.com/pingcap/tipocket/pkg/nemesis"
-
-	// register tidb
-	_ "github.com/pingcap/tipocket/db/tidb"
 )
 
 var (
@@ -39,7 +36,10 @@ type Controller struct {
 
 	clients []core.Client
 
-	nemesisGenerators      []core.NemesisGenerator
+	// protect nemesisGenerators' reading and updating
+	sync.RWMutex
+	nemesisGenerators core.NemesisGenerators
+
 	clientRequestGenerator func(ctx context.Context,
 		client core.Client,
 		node clusterTypes.ClientNode,
@@ -68,7 +68,7 @@ func NewController(
 	ctx context.Context,
 	cfg *Config,
 	clientCreator core.ClientCreator,
-	nemesisGenerators []core.NemesisGenerator,
+	nemesisGenerators core.NemesisGenerators,
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	lokiCli *loki.Client,
@@ -204,7 +204,14 @@ func (c *Controller) RunWithNemesisSequential() {
 	c.setUpClient()
 	c.collectLogs()
 ENTRY:
-	for _, g := range c.nemesisGenerators {
+	for {
+		c.RLock()
+		gen := c.nemesisGenerators
+		c.RUnlock()
+		if !gen.HasNext() {
+			break
+		}
+		g := gen.Next()
 		for round := 1; round <= c.cfg.RunRound; round++ {
 			log.Infof("nemesis[%s] round %d start...", g.Name(), round)
 
@@ -273,7 +280,7 @@ func (c *Controller) RunSelfScheduled() {
 	var (
 		nemesisWg     sync.WaitGroup
 		g             errgroup.Group
-		nCtx, nCancel = context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
+		nCtx, nCancel = context.WithTimeout(context.WithValue(c.ctx, "control", c), c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	)
 	nemesisWg.Add(1)
 	go func() {
@@ -287,8 +294,9 @@ func (c *Controller) RunSelfScheduled() {
 			break
 		}
 		client := c.clients[i]
+		ii := i
 		g.Go(func() error {
-			log.Infof("run client %d...", i)
+			log.Infof("run client %d...", ii)
 			return client.Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
@@ -302,6 +310,13 @@ func (c *Controller) RunSelfScheduled() {
 
 	c.tearDownClient()
 	c.tearDownDB()
+}
+
+// UpdateNemesisGenerators updates nemesis generators
+func (c *Controller) UpdateNemesisGenerators(gs core.NemesisGenerators) {
+	c.Lock()
+	defer c.Unlock()
+	c.nemesisGenerators = gs
 }
 
 func (c *Controller) syncClientExec(f func(i int)) {
@@ -358,7 +373,8 @@ func (c *Controller) setUpClient() {
 	c.syncClientExec(func(i int) {
 		client := c.clients[i]
 		log.Infof("begin to set up db client for node %s", c.cfg.ClientNodes[i])
-		if err := client.SetUp(c.ctx, c.cfg.ClientNodes, i); err != nil {
+		ctx := context.WithValue(c.ctx, "control", c)
+		if err := client.SetUp(ctx, c.cfg.Nodes, c.cfg.ClientNodes, i); err != nil {
 			log.Fatalf("set up db client for node %s failed: %v", c.cfg.ClientNodes[i], err)
 		}
 	})
@@ -399,30 +415,34 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 }
 
 func (c *Controller) dispatchNemesis(ctx context.Context) {
-	if len(c.nemesisGenerators) == 0 {
-		return
-	}
-LOOP:
+loop:
 	for {
-		for _, gen := range c.nemesisGenerators {
-			select {
-			case <-ctx.Done():
-				break LOOP
-			default:
-			}
-			var (
-				ops = gen.Generate(c.cfg.Nodes)
-				g   errgroup.Group
-			)
-			for i := 0; i < len(ops); i++ {
-				op := ops[i]
-				g.Go(func() error {
-					c.onNemesis(ctx, op)
-					return nil
-				})
-			}
-			_ = g.Wait()
+		select {
+		case <-ctx.Done():
+			break loop
+		default:
 		}
+		c.RLock()
+		gens := c.nemesisGenerators
+		c.RUnlock()
+
+		if !gens.HasNext() {
+			time.Sleep(time.Second)
+			continue
+		}
+		var (
+			gen = gens.Next()
+			ops = gen.Generate(c.cfg.Nodes)
+			g   errgroup.Group
+		)
+		for i := 0; i < len(ops); i++ {
+			op := ops[i]
+			g.Go(func() error {
+				c.onNemesis(ctx, op)
+				return nil
+			})
+		}
+		_ = g.Wait()
 	}
 }
 
@@ -455,6 +475,7 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 	nemesis := core.GetNemesis(string(op.Type))
 	if nemesis == nil {
 		log.Errorf("nemesis %s is not registered", op.Type)
+		time.Sleep(30 * time.Second)
 		return
 	}
 	log.Infof("run nemesis %s...", op.String())
@@ -462,9 +483,14 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 		// because we cannot ensure the nemesis wasn't injected, so we also will try to recover it later.
 		log.Errorf("run nemesis %s failed: %v", op.String(), err)
 	}
-	select {
-	case <-time.After(op.RunTime):
-	case <-ctx.Done():
+
+	if op.NemesisControl != nil {
+		op.NemesisControl.WaitForRollback(ctx)
+	} else {
+		select {
+		case <-time.After(op.RunTime):
+		case <-ctx.Done():
+		}
 	}
 	log.Infof("recover nemesis %s...", op.String())
 	err := util.RunWithRetry(ctx, 3, 10*time.Second, func() error {
@@ -537,7 +563,21 @@ func (c *Controller) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTyp
 				if err != nil {
 					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
 				} else if len(texts) > 0 {
-					log.Fatalf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
+					panicLogs := "panic-logs"
+					file, err := os.OpenFile(path.Join(c.logPath, panicLogs),
+						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					if err != nil {
+						log.Fatal("failed to create panic logs file", err)
+					}
+					f, ok := c.podLogFiles.LoadOrStore(panicLogs, file)
+					if ok {
+						file.Close()
+					}
+					file = f.(*os.File)
+					content := fmt.Sprintf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
+					if _, err := file.WriteString(content); err != nil {
+						log.Fatal("fail to write logs to panic logs file", content, err)
+					}
 				}
 			}(n.Namespace, n.PodName, string(n.Component), nonMatch)
 		default:

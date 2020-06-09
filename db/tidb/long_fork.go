@@ -77,9 +77,9 @@ func lfKey2Table(tableCount int, key uint64) string {
 	return fmt.Sprintf("txn_lf_%d", hash%tableCount)
 }
 
-func (c *longForkClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *longForkClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	node := nodes[idx]
+	node := clientNodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func (c *longForkClient) SetUp(ctx context.Context, nodes []clusterTypes.ClientN
 	db.SetMaxIdleConns(1 + c.tableCount)
 
 	// Do SetUp in the first node
-	if node != nodes[0] {
+	if node != clientNodes[0] {
 		return nil
 	}
 
