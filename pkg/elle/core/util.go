@@ -1,5 +1,6 @@
 package core
 
+// FilterOkOrInfoHistory ...
 func FilterOkOrInfoHistory(history History) History {
 	var h History
 	for _, op := range history {
@@ -10,6 +11,7 @@ func FilterOkOrInfoHistory(history History) History {
 	return h
 }
 
+// FilterOutNemesisHistory ...
 func FilterOutNemesisHistory(history History) History {
 	var h History
 	for _, op := range history {
@@ -21,6 +23,7 @@ func FilterOutNemesisHistory(history History) History {
 	return h
 }
 
+// FilterOkHistory ...
 func FilterOkHistory(history History) History {
 	var h History
 	for _, v := range history {
@@ -31,6 +34,7 @@ func FilterOkHistory(history History) History {
 	return h
 }
 
+// FilterFailedHistory ...
 func FilterFailedHistory(history History) History {
 	var h History
 	for _, v := range history {

@@ -263,6 +263,7 @@ func set(slice []string) []string {
 	return res
 }
 
+// Set export set
 func Set(slice []string) []string {
 	return set(slice)
 }

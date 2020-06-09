@@ -248,21 +248,25 @@ func (op Op) ValueLength() int {
 	return len(*op.Value)
 }
 
+// WithType ...
 func (op Op) WithType(tp OpType) Op {
 	op.Type = tp
 	return op
 }
 
+// WithProcess ...
 func (op Op) WithProcess(p interface{}) Op {
 	op.Process = IntOptional{value: p}
 	return op
 }
 
+// WithIndex ...
 func (op Op) WithIndex(i interface{}) Op {
 	op.Index = IntOptional{value: i}
 	return op
 }
 
+// HasMopType ...
 func (op *Op) HasMopType(tp MopType) bool {
 	for _, mop := range *op.Value {
 		if mop.T == tp {

@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/elle/txn"
 )
 
+// GraphOption ...
 type GraphOption struct {
 	LinearizableKeys bool //Uses realtime order
 	SequentialKeys   bool // Uses process order
@@ -730,23 +731,23 @@ func versionGraph2TransactionGraph(key string, history core.History, versionGrap
 				continue
 			}
 			v2 := next.Value.(int)
-			kReads, ok := extReadIndex[key]
+			keyReads, ok := extReadIndex[key]
 			if !ok {
-				kReads = make(map[int][]core.Op)
+				keyReads = make(map[int][]core.Op)
 			}
-			kWrites, ok := extWriteIndex[key]
+			keyWrites, ok := extWriteIndex[key]
 			if !ok {
-				kWrites = make(map[int][]core.Op)
+				keyWrites = make(map[int][]core.Op)
 			}
-			v1Reads, ok := kReads[v1]
+			v1Reads, ok := keyReads[v1]
 			if !ok {
 				v1Reads = make([]core.Op, 0)
 			}
-			v1Writes, ok := kWrites[v1]
+			v1Writes, ok := keyWrites[v1]
 			if !ok {
 				v1Writes = make([]core.Op, 0)
 			}
-			v2Writes, ok := kWrites[v2]
+			v2Writes, ok := keyWrites[v2]
 			if !ok {
 				v2Writes = make([]core.Op, 0)
 			}
@@ -849,7 +850,7 @@ func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	return nil
 }
 
-func (w *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
+func (*rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) string {
 	if result.Type() != core.RWDepend {
 		log.Fatalf("result type is not %s, type error", core.RWDepend)
 	}
@@ -859,6 +860,7 @@ func (w *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 	)
 }
 
+// WWRWGraph ...
 func WWRWGraph(history core.History, opts ...interface{}) (core.Anomalies, *core.DirectedGraph, core.DataExplainer) {
 	anomalies, _, versionGraphs := versionGraphs(history, opts...)
 	txnGraph := versionGraphs2TransactionGraph(history, versionGraphs)

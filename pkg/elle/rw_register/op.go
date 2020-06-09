@@ -16,6 +16,7 @@ func IntPtr(i int) *int {
 	return &i
 }
 
+// MustParseOp ...
 func MustParseOp(opStr string) core.Op {
 	op := core.Op{
 		Type:  core.OpTypeOk,
@@ -61,6 +62,7 @@ func MustParseOp(opStr string) core.Op {
 	return op
 }
 
+// Pair ...
 func Pair(op core.Op) (core.Op, core.Op) {
 	invoke := op.Copy()
 	invoke.Type = core.OpTypeInvoke

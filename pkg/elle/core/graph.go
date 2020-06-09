@@ -44,6 +44,7 @@ func (v Vertices) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
 }
 
+// NewVerticesFromOp ...
 func NewVerticesFromOp(items []Op) Vertices {
 	var vertices Vertices
 	for _, item := range items {

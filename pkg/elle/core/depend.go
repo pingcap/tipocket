@@ -34,11 +34,11 @@ const (
 	RWDepend DependType = "rw"
 	// EXTKeyDepend ...
 	EXTKeyDepend DependType = "ext-key-depend"
-	// G1cDepend
+	// G1cDepend ...
 	G1cDepend DependType = "G1c"
-	// G2Item
+	// G2Item ...
 	G2Item DependType = "G2-item"
-	// GSingle
+	// GSingle ...
 	GSingle DependType = "G-single"
 )
 
