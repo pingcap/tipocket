@@ -1,6 +1,8 @@
 package rwregister
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
@@ -704,7 +706,7 @@ func TestChecker(t *testing.T) {
 		}, history, GraphOption{}))
 	}
 	// G2-item
-	if !switches {
+	if switches {
 		var (
 			t1, t1Ok = Pair(MustParseOp("rx1ry1").WithProcess(0))
 			t2, t2Ok = Pair(MustParseOp("rx1wy2").WithProcess(1))
@@ -718,35 +720,37 @@ func TestChecker(t *testing.T) {
 		}, check(txn.Opts{
 			ConsistencyModels: []string{"read-committed"},
 			Anomalies:         []string{},
-		}, history, GraphOption{}))
+		}, history, GraphOption{
+			LinearizableKeys: true,
+		}))
 
 		// But repeatable read will!
 		expectRR := txn.CheckResult{
 			Valid:        false,
 			AnomalyTypes: []string{"G2-item"},
 			Anomalies: core.Anomalies{
-				"G2": []core.Anomaly{
+				"G2-item": []core.Anomaly{
 					core.CycleExplainerResult{
 						Circle: core.Circle{
 							Path: []core.PathType{
-								t2Ok.WithIndex(5),
 								t3Ok.WithIndex(4),
 								t2Ok.WithIndex(5),
+								t3Ok.WithIndex(4),
 							},
 						},
 						Steps: []core.Step{
 							{
-								Result: RWExplainResult("x", core.MopValueType(1), core.MopValueType(2)),
-							},
-							{
 								Result: RWExplainResult("y", core.MopValueType(1), core.MopValueType(2)),
 							},
+							{
+								Result: RWExplainResult("x", core.MopValueType(1), core.MopValueType(2)),
+							},
 						},
-						Typ: core.G1cDepend,
+						Typ: core.G2Item,
 					},
 				},
 			},
-			Not: []string{"serializable"},
+			Not: []string{"repeatable-read"},
 		}
 		require.Equal(t, expectRR, check(txn.Opts{
 			ConsistencyModels: []string{},
@@ -754,6 +758,165 @@ func TestChecker(t *testing.T) {
 		}, history, GraphOption{
 			LinearizableKeys: true,
 		}))
+	}
+	// internal
+	if switches {
+		t1 := MustParseOp("rx1rx2")
+		history := core.History{t1}
+		expect := txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"empty-transaction-graph", "internal"},
+			Anomalies: core.Anomalies{
+				"internal": []core.Anomaly{
+					InternalConflict{
+						Op:       t1.WithIndex(0),
+						Mop:      (*t1.Value)[1],
+						Expected: (*t1.Value)[0],
+					},
+				},
+				"empty-transaction-graph": []core.Anomaly{},
+			},
+			Not: []string{"read-atomic"},
+		}
+		require.Equal(t, expect, check(txn.Opts{
+			ConsistencyModels: []string{},
+			Anomalies:         []string{"internal"},
+		}, history, GraphOption{}))
+	}
+	// initial state
+	if switches {
+		var (
+			t1, t1Ok = Pair(MustParseOp("rx_ry1").WithProcess(0))
+			t2, t2Ok = Pair(MustParseOp("wy1wx2").WithProcess(0))
+			history  = core.History{t1, t2, t2Ok, t1Ok}
+		)
+		history.AttachIndexIfNoExists()
+		fmt.Println(t1, t1Ok)
+		fmt.Println(t2, t2Ok)
+		expect := txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G-single"},
+			Anomalies: core.Anomalies{
+				"G-single": []core.Anomaly{
+					core.CycleExplainerResult{
+						Circle: core.Circle{
+							Path: []core.PathType{
+								t1Ok.WithIndex(3),
+								t2Ok.WithIndex(2),
+								t1Ok.WithIndex(3),
+							},
+						},
+						Steps: []core.Step{
+							{
+								Result: rwExplainResult{
+									Typ:       core.RWDepend,
+									key:       "x",
+									prevValue: initMagicNumber,
+									value:     2,
+								},
+							},
+							{
+								Result: wrExplainResult{
+									Typ:   core.WRDepend,
+									Key:   "y",
+									Value: 1,
+								},
+							},
+						},
+						Typ: core.GSingle,
+					},
+				},
+			},
+			Not: []string{"consistent-view"},
+		}
+		require.Equal(t, expect, check(txn.Opts{
+			ConsistencyModels: []string{"serializable"},
+			Anomalies:         []string{},
+		}, history, GraphOption{}))
+	}
+	// wfr
+	if switches {
+		var (
+			t1      = MustParseOp("ry1wx1wy2")
+			t2      = MustParseOp("rx1ry1")
+			history = core.History{t1, t2}
+		)
+		expect := txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"G-single"},
+			Anomalies: core.Anomalies{
+				"G-single": []core.Anomaly{
+					core.CycleExplainerResult{
+						Circle: core.Circle{
+							Path: []core.PathType{
+								t2.WithIndex(1),
+								t1.WithIndex(0),
+								t2.WithIndex(1),
+							},
+						},
+						Steps: []core.Step{
+							{
+								Result: rwExplainResult{
+									Typ:       core.RWDepend,
+									key:       "y",
+									prevValue: 1,
+									value:     2,
+								},
+							},
+							{
+								Result: wrExplainResult{
+									Typ:   core.WRDepend,
+									Key:   "x",
+									Value: 1,
+								},
+							},
+						},
+						Typ: core.GSingle,
+					},
+				},
+			},
+			Not: []string{"consistent-view"},
+		}
+		require.Equal(t, expect, check(txn.Opts{
+			ConsistencyModels: []string{"serializable"},
+			Anomalies:         []string{},
+		}, history, GraphOption{
+			WfrKeys: true,
+		}))
+	}
+	// cyclic version order
+	if switches {
+		var (
+			t1, t1Ok = Pair(MustParseOp("wx1").WithProcess(0))
+			t2, t2Ok = Pair(MustParseOp("wx2").WithProcess(0))
+			t3, t3Ok = Pair(MustParseOp("rx1").WithProcess(0))
+			history  = core.History{t1, t1Ok, t2, t2Ok, t3, t3Ok}
+		)
+		expect := txn.CheckResult{
+			Valid:        false,
+			AnomalyTypes: []string{"cyclic-versions"},
+			Anomalies: core.Anomalies{
+				"cyclic-versions": []core.Anomaly{
+					cyclicVersion{
+						key: "x",
+						scc: []int{1, 2},
+						sources: []string{
+							"initial-state",
+							"process",
+						},
+					},
+				},
+			},
+			Not: []string{"read-uncommitted"},
+		}
+		actual := check(txn.Opts{
+			ConsistencyModels: []string{"read-committed"},
+			Anomalies:         []string{},
+		}, history, GraphOption{
+			SequentialKeys: true,
+		})
+		sort.Ints(actual.Anomalies["cyclic-versions"][0].(cyclicVersion).scc)
+		require.Equal(t, expect, actual)
 	}
 }
 

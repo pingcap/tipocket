@@ -127,7 +127,14 @@ func (m Mop) String() string {
 		var b strings.Builder
 		fmt.Fprint(&b, "[:r")
 		for k, v := range m.M {
-			fmt.Fprintf(&b, " %s %v", k, *v.(*int))
+			switch v := v.(type) {
+			case *int:
+				if v == nil {
+					fmt.Fprintf(&b, " %s %v", k, nil)
+				} else {
+					fmt.Fprintf(&b, " %s %v", k, *v)
+				}
+			}
 		}
 		fmt.Fprint(&b, "]")
 		return b.String()
@@ -139,7 +146,14 @@ func (m Mop) String() string {
 		var b strings.Builder
 		fmt.Fprint(&b, "[:w")
 		for k, v := range m.M {
-			fmt.Fprintf(&b, " %s %v", k, *v.(*int))
+			switch v := v.(type) {
+			case *int:
+				if v == nil {
+					fmt.Fprintf(&b, " %s %v", k, nil)
+				} else {
+					fmt.Fprintf(&b, " %s %v", k, *v)
+				}
+			}
 		}
 		fmt.Fprint(&b, "]")
 		return b.String()

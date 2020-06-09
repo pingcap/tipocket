@@ -518,39 +518,36 @@ func transactionGraph2VersionGraph(rel core.Rel, history core.History, graph *co
 	return gs
 }
 
-// func cyclicVersionCases(versionGraph *core.DirectedGraph) []{}
-
 func initialStateVersionGraphs(history core.History) map[string]*core.DirectedGraph {
-	// vgs := make(map[string]*core.DirectedGraph)
+	vgs := make(map[string]*core.DirectedGraph)
 
-	// this will make the graph not empty
-	// comment it
-	// for _, op := range history {
-	// 	if op.Type == core.OpTypeFail || op.Type == core.OpTypeInvoke {
-	// 		continue
-	// 	}
-	// 	kvs := extWriteKeys(op)
-	// 	if op.Type == core.OpTypeOk {
-	// 		for k, v := range extReadKeys(op) {
-	// 			kvs[k] = v
-	// 		}
-	// 	}
-	// 	for k, v := range kvs {
-	// 		if _, ok := vgs[k]; !ok {
-	// 			vgs[k] = core.NewDirectedGraph()
-	// 		}
-	// 		vgs[k].Link(core.Vertex{Value: nil}, core.Vertex{Value: v}, core.InitialState)
-	// 	}
-	// }
+	for _, op := range history {
+		if op.Type == core.OpTypeFail || op.Type == core.OpTypeInvoke {
+			continue
+		}
+		kvs := extWriteKeys(op)
+		if op.Type == core.OpTypeOk {
+			for k, v := range extReadKeys(op) {
+				kvs[k] = v
+			}
+		}
+		for k, v := range kvs {
+			if _, ok := vgs[k]; !ok {
+				vgs[k] = core.NewDirectedGraph()
+			}
+			init := core.Vertex{Value: initMagicNumber}
+			if _, ok := vgs[k].Outs[init]; !ok {
+				vgs[k].Link(init, core.Vertex{Value: v}, core.InitialState)
+			}
+		}
+	}
 
-	// return vgs
-
-	return make(map[string]*core.DirectedGraph)
+	return vgs
 }
 
 func wfrVersionGraphs(history core.History) map[string]*core.DirectedGraph {
 	vgs := make(map[string]*core.DirectedGraph)
-	for _, op := range history {
+	for _, op := range core.FilterOkHistory(history) {
 		var (
 			reads  = extReadKeys(op)
 			writes = extWriteKeys(op)
@@ -596,14 +593,48 @@ func mergeGraphs(g1s, g2s map[string]*core.DirectedGraph, with func(...*core.Dir
 	return gs
 }
 
+type cyclicVersion struct {
+	key     string
+	scc     []int
+	sources []string
+}
+
+func (cyclicVersion) IAnomaly() {}
+
+// String ...
+func (c cyclicVersion) String() string {
+	return fmt.Sprintf("(cyclicVersion) key: %s, scc: %v, sources: %v",
+		c.key, c.scc, c.sources)
+}
+
 func cyclicVersionCases(versionGraphs map[string]*core.DirectedGraph) core.Anomalies {
-	var cases core.Anomalies
-	for _, graph := range versionGraphs {
-		cycleCases := txn.CycleCases(*graph, core.NewCombineExplainer([]core.DataExplainer{
-			&wwExplainer{versionGraphs: versionGraphs},
-			&rwExplainer{versionGraphs: versionGraphs},
-		}), graph.StronglyConnectedComponents())
-		cases.Merge(cycleCases)
+	cases := make(core.Anomalies)
+
+	for key, graph := range versionGraphs {
+		var sources []string
+		for _, outs := range graph.Outs {
+			for _, rels := range outs {
+				for _, rel := range rels {
+					sources = append(sources, string(rel))
+				}
+			}
+		}
+		sources = core.Set(sources)
+		sort.Strings(sources)
+		for _, scc := range graph.StronglyConnectedComponents() {
+			var iscc []int
+			for _, v := range scc.Vertices {
+				iscc = append(iscc, v.Value.(int))
+			}
+			cycleCase := cyclicVersion{
+				key:     key,
+				scc:     iscc,
+				sources: sources,
+			}
+			cases.Merge(core.Anomalies{
+				"cyclic-versions": []core.Anomaly{cycleCase},
+			})
+		}
 	}
 	return cases
 }
@@ -625,8 +656,8 @@ func versionGraphs(history core.History, opts ...interface{}) (core.Anomalies, [
 
 	if opt.LinearizableKeys {
 		analyzers = append(analyzers, analyzer{
-			source:   "wfr-version-graphs",
-			analyzer: wfrVersionGraphs,
+			source:   "linearizable-keys-graphs",
+			analyzer: linearizableKeysGraphs,
 		})
 	}
 	if opt.SequentialKeys {
@@ -637,21 +668,21 @@ func versionGraphs(history core.History, opts ...interface{}) (core.Anomalies, [
 	}
 	if opt.WfrKeys {
 		analyzers = append(analyzers, analyzer{
-			source:   "linearizable-keys-graphs",
-			analyzer: linearizableKeysGraphs,
+			source:   "wfr-version-graphs",
+			analyzer: wfrVersionGraphs,
 		})
 	}
 
 	var (
-		anomalies core.Anomalies
+		anomalies = make(core.Anomalies)
 		sources   []string
 		gs        = make(map[string]*core.DirectedGraph)
 	)
 	for _, a := range analyzers {
 		nextGs := mergeGraphs(gs, a.analyzer(history), core.DigraphUnion)
+
 		cs := cyclicVersionCases(nextGs)
-		if cs != nil {
-			// circles = append(circles, cs...)
+		if len(cs) != 0 {
 			anomalies.Merge(cs)
 		} else {
 			sources = append(sources, a.source)
@@ -811,12 +842,8 @@ type rwExplainer struct {
 }
 
 func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
-	// if pair := explainPairData(a, b, core.MopTypeWrite, core.MopTypeWrite); pair != nil {
-	// 	return RWExplainResult(pair.k, pair.prevValue, pair.value)
-	// }
-
 	k, prev, v := explainOpDeps(r.versionGraphs, extReadKeys, a, extWriteKeys, b)
-	if prev != initMagicNumber && v != initMagicNumber {
+	if prev != initMagicNumber || v != initMagicNumber {
 		return RWExplainResult(k, prev, v)
 	}
 	return nil
@@ -826,7 +853,7 @@ func (w *rwExplainer) RenderExplanation(result core.ExplainResult, a, b string) 
 	if result.Type() != core.RWDepend {
 		log.Fatalf("result type is not %s, type error", core.RWDepend)
 	}
-	er := result.(wwExplainResult)
+	er := result.(rwExplainResult)
 	return fmt.Sprintf("%s read %v with value %s written by %s with value %s",
 		b, er.key, er.prevValue, a, er.value,
 	)
@@ -851,6 +878,7 @@ func Check(opts txn.Opts, history core.History, graphOpt GraphOption) txn.CheckR
 	history = preProcessHistory(history)
 	g1a := g1aCases(history)
 	g1b := g1bCases(history)
+	internal := internal(history)
 	var analyzer core.Analyzer = graph
 	additionalGraphs := txn.AdditionalGraphs(opts)
 	if len(additionalGraphs) != 0 {
@@ -864,6 +892,9 @@ func Check(opts txn.Opts, history core.History, graphOpt GraphOption) txn.CheckR
 	}
 	if len(g1b) != 0 {
 		anomalies["G1b"] = g1b
+	}
+	if len(internal) != 0 {
+		anomalies["internal"] = internal
 	}
 	return txn.ResultMap(opts, anomalies)
 }

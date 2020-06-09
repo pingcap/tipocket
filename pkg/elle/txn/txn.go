@@ -79,7 +79,6 @@ func CycleCasesInScc(graph core.DirectedGraph, filterGraph FilterGraphFn, explai
 			runtimeGraph = &graph
 		}
 		var cycle *core.Circle
-		cycle = nil
 		if v.With != nil {
 			c := core.FindCycleWith(runtimeGraph, scc, v.With)
 			cycle = core.NewCircle(c)

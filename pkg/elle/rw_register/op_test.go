@@ -24,14 +24,13 @@ func TestOp(t *testing.T) {
 	require.Equal(t, expect, op)
 
 	op = MustParseOp("rx_")
-	var inil *int
 	expect = core.Op{
 		Type: core.OpTypeOk,
 		Value: &[]core.Mop{
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": inil,
+					"x": IntPtr(initMagicNumber),
 				},
 			},
 		},
@@ -66,6 +65,26 @@ func TestOp(t *testing.T) {
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
 					"x": IntPtr(2),
+				},
+			},
+		},
+	}
+	require.Equal(t, expect, op)
+
+	op = MustParseOp("rx_ry1")
+	expect = core.Op{
+		Type: core.OpTypeOk,
+		Value: &[]core.Mop{
+			{
+				T: core.MopTypeRead,
+				M: map[string]interface{}{
+					"x": IntPtr(initMagicNumber),
+				},
+			},
+			{
+				T: core.MopTypeRead,
+				M: map[string]interface{}{
+					"y": IntPtr(1),
 				},
 			},
 		},

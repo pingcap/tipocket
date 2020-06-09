@@ -47,6 +47,8 @@ func MustParseOp(opStr string) core.Op {
 				panic(err)
 			}
 			mopVal = &mopValInt
+		} else {
+			mopVal = IntPtr(initMagicNumber)
 		}
 		*op.Value = append(*op.Value, core.Mop{
 			T: mopType,

@@ -65,7 +65,11 @@ type Anomalies map[string][]Anomaly
 // Merge merges another anomalies
 func (a Anomalies) Merge(another Anomalies) {
 	for key, value := range another {
-		a[key] = value
+		if _, ok := a[key]; !ok {
+			a[key] = value
+		} else {
+			a[key] = append(a[key], value...)
+		}
 	}
 }
 

@@ -36,6 +36,10 @@ const (
 	EXTKeyDepend DependType = "ext-key-depend"
 	// G1cDepend
 	G1cDepend DependType = "G1c"
+	// G2Item
+	G2Item DependType = "G2-item"
+	// GSingle
+	GSingle DependType = "G-single"
 )
 
 // ExplainResult is an interface, contains rwExplainerResult, wwExplainerResult wr ExplainerResult etc
