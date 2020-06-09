@@ -10,34 +10,6 @@ import (
 
 const initMagicNumber = -1919810
 
-// previouslyWriteElement returns:
-// * nil if mop is not an write mop
-// * or initMagicNumber if mop write the initial value of that key
-// * otherwise return the previous MopValueType value
-// func previouslyWriteElement(writeIndex writeIdx, op core.Op, mop core.Mop) core.MopValueType {
-// 	if !mop.IsWrite() {
-// 		return nil
-// 	}
-// 	k := mop.GetKey()
-// 	v := mop.GetValue().(int)
-// 	appendSeq := appendIndex[k]
-// 	index := -1
-// 	for i := range appendSeq {
-// 		if appendSeq[i] == v {
-// 			index = i
-// 			break
-// 		}
-// 	}
-// 	// we don't found the value mop appended on appendIdx
-// 	if index < 0 {
-// 		return nil
-// 	}
-// 	if index > 0 {
-// 		return appendIndex[k][index-1]
-// 	}
-// 	return initMagicNumber
-// }
-
 // Takes a history of txns made up of appends and reads, and checks to make
 //  sure that every invoke writes a value to a key chose a unique value.
 func verifyUniqueWrites(history core.History) {
