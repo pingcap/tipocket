@@ -297,7 +297,7 @@ func TestInternalCases(t *testing.T) {
 }
 
 func TestChecker(t *testing.T) {
-	var switches = false
+	var switches = true
 	// G0
 	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)

@@ -207,7 +207,7 @@ func (c CycleExplainerWrapper) ExplainCycle(pairExplainer core.DataExplainer, ci
 	return core.CycleExplainerResult{
 		Circle: ex.Circle,
 		Steps:  ex.Steps,
-		Typ:    core.DependType(fmt.Sprintf("%s%s", dataDepType, subtype)),
+		Typ:    fmt.Sprintf("%s%s", dataDepType, subtype),
 	}
 }
 

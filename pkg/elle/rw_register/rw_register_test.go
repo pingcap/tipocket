@@ -131,57 +131,6 @@ func TestWRGraph(t *testing.T) {
 	require.Equal(t, expect5, g5)
 }
 
-func TestExtKeyGraph(t *testing.T) {
-	case1 := core.History{
-		MustParseOp("rx1"),
-		MustParseOp("rx2"),
-	}
-	case1.AttachIndexIfNoExists()
-	expect1 := core.NewDirectedGraph()
-	expect1.LinkToAll(core.Vertex{Value: case1[0]}, []core.Vertex{
-		core.Vertex{Value: case1[1]},
-	}, core.Rel("ext-key-x"))
-	_, g1, _ := extKeyGraph(case1)
-	require.Equal(t, expect1, g1)
-
-	case2 := core.History{
-		MustParseOp("wx1"),
-		MustParseOp("wx2"),
-		MustParseOp("wx3"),
-		MustParseOp("wx4"),
-	}
-	case2.AttachIndexIfNoExists()
-	expect2 := core.NewDirectedGraph()
-	expect2.LinkToAll(core.Vertex{Value: case2[2]}, []core.Vertex{
-		core.Vertex{Value: case2[3]},
-	}, core.Rel("ext-key-x"))
-	expect2.LinkToAll(core.Vertex{Value: case2[1]}, []core.Vertex{
-		core.Vertex{Value: case2[2]},
-	}, core.Rel("ext-key-x"))
-	expect2.LinkToAll(core.Vertex{Value: case2[0]}, []core.Vertex{
-		core.Vertex{Value: case2[1]},
-	}, core.Rel("ext-key-x"))
-	_, g2, _ := extKeyGraph(case2)
-	require.Equal(t, expect2, g2)
-
-	case3 := core.History{
-		MustParseOp("wx1"),
-		MustParseOp("wx2wy2"),
-		MustParseOp("wy3wz3"),
-		MustParseOp("wz4"),
-	}
-	case3.AttachIndexIfNoExists()
-	expect3 := core.NewDirectedGraph()
-	expect3.Link(core.Vertex{Value: case3[2]}, core.Vertex{Value: case3[3]}, core.Rel("ext-key-z"))
-	expect3.Link(core.Vertex{Value: case3[1]}, core.Vertex{Value: case3[2]}, core.Rel("ext-key-y"))
-	expect3.Link(core.Vertex{Value: case3[1]}, core.Vertex{Value: case3[2]}, core.Rel("ext-key-z"))
-	expect3.Link(core.Vertex{Value: case3[0]}, core.Vertex{Value: case3[1]}, core.Rel("ext-key-x"))
-	expect3.Link(core.Vertex{Value: case3[0]}, core.Vertex{Value: case3[1]}, core.Rel("ext-key-y"))
-	expect3.Link(core.Vertex{Value: case3[0]}, core.Vertex{Value: case3[2]}, core.Rel("ext-key-z"))
-	_, g3, _ := extKeyGraph(case3)
-	require.Equal(t, expect3, g3)
-}
-
 func TestGetKeys(t *testing.T) {
 	require.Equal(t, getKeys(MustParseOp("wx1")), []string{"x"})
 	require.Equal(t, getKeys(MustParseOp("wx1wy2wz3")), []string{"x", "y", "z"})
@@ -642,7 +591,7 @@ func TestChecker(t *testing.T) {
 						Result: WRExplainResult("y", core.MopValueType(1)),
 					},
 				},
-				Typ: core.G1cDepend,
+				Typ: "G1c",
 			}
 		)
 
@@ -743,7 +692,7 @@ func TestChecker(t *testing.T) {
 								Result: RWExplainResult("x", core.MopValueType(1), core.MopValueType(2)),
 							},
 						},
-						Typ: core.G2Item,
+						Typ: "G2-item",
 					},
 				},
 			},
@@ -820,7 +769,7 @@ func TestChecker(t *testing.T) {
 								},
 							},
 						},
-						Typ: core.GSingle,
+						Typ: "G-single",
 					},
 				},
 			},
@@ -868,7 +817,7 @@ func TestChecker(t *testing.T) {
 								},
 							},
 						},
-						Typ: core.GSingle,
+						Typ: "G-single",
 					},
 				},
 			},

@@ -32,14 +32,6 @@ const (
 	WRDepend DependType = "wr"
 	// RWDepend ...
 	RWDepend DependType = "rw"
-	// EXTKeyDepend ...
-	EXTKeyDepend DependType = "ext-key-depend"
-	// G1cDepend ...
-	G1cDepend DependType = "G1c"
-	// G2Item ...
-	G2Item DependType = "G2-item"
-	// GSingle ...
-	GSingle DependType = "G-single"
 )
 
 // ExplainResult is an interface, contains rwExplainerResult, wwExplainerResult wr ExplainerResult etc
@@ -201,7 +193,7 @@ func (e MonotonicKeyExplainer) RenderExplanation(result ExplainResult, preName, 
 type CycleExplainerResult struct {
 	Circle Circle
 	Steps  []Step
-	Typ    DependType
+	Typ    string
 }
 
 // IAnomaly ...
@@ -213,7 +205,7 @@ func (c CycleExplainerResult) String() string {
 }
 
 // Type ...
-func (c CycleExplainerResult) Type() DependType {
+func (c CycleExplainerResult) Type() string {
 	return c.Typ
 }
 
