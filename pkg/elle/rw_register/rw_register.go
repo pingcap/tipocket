@@ -56,7 +56,7 @@ func internalOp(op core.Op) core.Anomaly {
 			for k, v := range mop.M {
 				vprt := v.(*int)
 				if vprt == nil {
-					continue
+					panic("should not be nil read")
 				}
 				if prev, ok := dataMap[k]; !ok {
 					dataMap[k] = *vprt
