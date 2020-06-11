@@ -16,7 +16,7 @@ func TestOp(t *testing.T) {
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": IntPtr(1),
+					"x": NewInt(1),
 				},
 			},
 		},
@@ -30,7 +30,7 @@ func TestOp(t *testing.T) {
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": IntPtr(initMagicNumber),
+					"x": NewNil(),
 				},
 			},
 		},
@@ -44,7 +44,7 @@ func TestOp(t *testing.T) {
 			{
 				T: core.MopTypeWrite,
 				M: map[string]interface{}{
-					"x": IntPtr(1),
+					"x": NewInt(1),
 				},
 			},
 		},
@@ -58,13 +58,13 @@ func TestOp(t *testing.T) {
 			{
 				T: core.MopTypeWrite,
 				M: map[string]interface{}{
-					"x": IntPtr(1),
+					"x": NewInt(1),
 				},
 			},
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": IntPtr(2),
+					"x": NewInt(2),
 				},
 			},
 		},
@@ -78,13 +78,13 @@ func TestOp(t *testing.T) {
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": IntPtr(initMagicNumber),
+					"x": NewNil(),
 				},
 			},
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"y": IntPtr(1),
+					"y": NewInt(1),
 				},
 			},
 		},
@@ -100,13 +100,13 @@ func TestPair(t *testing.T) {
 			{
 				T: core.MopTypeWrite,
 				M: map[string]interface{}{
-					"x": IntPtr(1),
+					"x": NewInt(1),
 				},
 			},
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": IntPtr(2),
+					"x": NewInt(2),
 				},
 			},
 		},
@@ -117,13 +117,13 @@ func TestPair(t *testing.T) {
 			{
 				T: core.MopTypeWrite,
 				M: map[string]interface{}{
-					"x": IntPtr(1),
+					"x": NewInt(1),
 				},
 			},
 			{
 				T: core.MopTypeRead,
 				M: map[string]interface{}{
-					"x": nil,
+					"x": NewNil(),
 				},
 			},
 		},

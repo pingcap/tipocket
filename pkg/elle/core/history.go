@@ -295,12 +295,12 @@ func (b SameKeyOpsByLength) Swap(i, j int) {
 }
 
 // AttachIndexIfNoExists add the index for history with it's number in array.
-func (h *History) AttachIndexIfNoExists() {
-	if len(*h) != 0 && (*h)[0].Index.Present() {
+func (h History) AttachIndexIfNoExists() {
+	if len(h) != 0 && h[0].Index.Present() {
 		return
 	}
-	for i := range *h {
-		(*h)[i].Index = IntOptional{i}
+	for i := range h {
+		h[i].Index = IntOptional{i}
 	}
 }
 

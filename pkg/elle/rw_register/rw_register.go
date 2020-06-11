@@ -16,12 +16,6 @@ type GraphOption struct {
 	WfrKeys          bool // Assumes writes follow reads in a txn
 }
 
-// key -> v -> Op
-type writeIdx map[string]map[int]core.Op
-
-// key -> {v1 -> [Op1, Op2, Op3...], v2 -> [Op4, Op5...]}
-type readIdx map[string]map[int][]core.Op
-
 // GCaseTp type aliases []core.Anomaly
 type GCaseTp []core.Anomaly
 
@@ -41,29 +35,31 @@ func (i InternalConflict) String() string {
 }
 
 func internalOp(op core.Op) core.Anomaly {
-	dataMap := make(map[string]int)
+	dataMap := make(map[string]Int)
+
 	for _, mop := range *op.Value {
 		if mop.IsWrite() {
 			for k, v := range mop.M {
-				vprt := v.(*int)
-				if vprt == nil {
+				vint := v.(Int)
+				if vint.IsNil {
 					panic("write value should not be nil")
 				}
-				dataMap[k] = *vprt
+				dataMap[k] = vint
 			}
 		}
 		if mop.IsRead() {
 			for k, v := range mop.M {
-				vprt := v.(*int)
-				if vprt == nil {
-					panic("should not be nil read")
+				vint := v.(Int)
+				if vint.IsNil {
+					// skip failed read
+					continue
 				}
 				if prev, ok := dataMap[k]; !ok {
-					dataMap[k] = *vprt
+					dataMap[k] = vint
 				} else {
-					if prev != *vprt {
+					if !prev.Eq(vint) {
 						expected := mop.Copy()
-						expected.M[k] = &prev
+						expected.M[k] = prev
 						return InternalConflict{
 							Op:       op,
 							Mop:      mop,
@@ -113,11 +109,11 @@ func g1aCases(history core.History) GCaseTp {
 		for _, mop := range *op.Value {
 			if mop.IsWrite() {
 				for k, v := range mop.M {
-					vprt := v.(*int)
-					if vprt == nil {
+					vint := v.(Int)
+					if vint.IsNil {
 						panic("write value should not be nil")
 					}
-					failedMap[core.KV{K: k, V: *vprt}] = op
+					failedMap[core.KV{K: k, V: vint}] = op
 				}
 			}
 		}
@@ -127,11 +123,12 @@ func g1aCases(history core.History) GCaseTp {
 		for _, mop := range *op.Value {
 			if mop.IsRead() {
 				for k, v := range mop.M {
-					vprt := v.(*int)
-					if vprt == nil {
+					vprt := v.(Int)
+					// skip failed reads
+					if vprt.IsNil {
 						continue
 					}
-					if failedOp, ok := failedMap[core.KV{K: k, V: *vprt}]; ok {
+					if failedOp, ok := failedMap[core.KV{K: k, V: vprt}]; ok {
 						anomalies = append(anomalies, G1Conflict{
 							Op:      op,
 							Mop:     mop,
@@ -152,18 +149,18 @@ func g1bCases(history core.History) GCaseTp {
 	var anomalies []core.Anomaly
 
 	for _, op := range core.FilterOkHistory(history) {
-		valMap := make(map[string]int)
+		valMap := make(map[string]Int)
 		for _, mop := range *op.Value {
 			if mop.IsWrite() {
 				for k, v := range mop.M {
-					vprt := v.(*int)
-					if vprt == nil {
+					vprt := v.(Int)
+					if vprt.IsNil {
 						panic("write value should not be nil")
 					}
 					if old, ok := valMap[k]; ok {
 						interMap[core.KV{K: k, V: old}] = op
 					}
-					valMap[k] = *vprt
+					valMap[k] = vprt
 				}
 			}
 		}
@@ -173,11 +170,12 @@ func g1bCases(history core.History) GCaseTp {
 		for _, mop := range *op.Value {
 			if mop.IsRead() {
 				for k, v := range mop.M {
-					vprt := v.(*int)
-					if vprt == nil {
+					vprt := v.(Int)
+					// skip failed reads
+					if vprt.IsNil {
 						continue
 					}
-					if interOp, ok := interMap[core.KV{K: k, V: *vprt}]; ok && op != interOp {
+					if interOp, ok := interMap[core.KV{K: k, V: vprt}]; ok && op != interOp {
 						anomalies = append(anomalies, G1Conflict{
 							Op:      op,
 							Mop:     mop,
@@ -222,7 +220,7 @@ func (w *wrExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	)
 
 	for k, wv := range writes {
-		if rv, ok := reads[k]; ok && wv == rv {
+		if rv, ok := reads[k]; ok && rv.Eq(wv) {
 			return WRExplainResult(k, wv)
 		}
 	}
@@ -300,8 +298,8 @@ func getKeys(op core.Op) []string {
 // getVersion starts by find first mop which read or write the given key
 // read  => version is the read value
 // write => go through the rest mops, version is the last value assigned to this key
-func getVersion(k string, op core.Op) *int {
-	var r *int
+func getVersion(k string, op core.Op) Int {
+	r := NewNil()
 	tp := core.MopTypeUnknown
 	for _, mop := range *op.Value {
 		if op.Type == core.OpTypeInfo && mop.IsRead() {
@@ -310,20 +308,20 @@ func getVersion(k string, op core.Op) *int {
 		if v, ok := mop.M[k]; ok {
 			if tp == core.MopTypeUnknown {
 				tp = mop.T
-				r = v.(*int)
+				r = v.(Int)
 				if tp == core.MopTypeRead {
 					return r
 				}
 			}
 			if tp == core.MopTypeWrite && tp == mop.T {
-				r = v.(*int)
+				r = v.(Int)
 			}
 		}
 	}
 	return r
 }
 
-// transactionGraph2VersionGraph runs based on realtime or process graph
+// transactionGraph2VersionGraphs runs based on realtime or process graph
 // case1
 // T1[wx1], T2[rx2wx3]
 // T1[T2] => 1 => [2]
@@ -333,11 +331,11 @@ func getVersion(k string, op core.Op) *int {
 // case3
 // T1[rx1], T2[wx2], T3[wx3], T4[rx4]
 // T1[T2, T2], T2[T4], T3[T4] => 1 => [2, 3], 2 => [4], 3 => [4]
-func transactionGraph2VersionGraph(rel core.Rel, history core.History, graph *core.DirectedGraph) map[string]*core.DirectedGraph {
+func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *core.DirectedGraph) map[string]*core.DirectedGraph {
 	gs := make(map[string]*core.DirectedGraph)
 	// var val *int
-	var find func(op core.Op) []core.Op
-	find = func(op core.Op) []core.Op {
+	var find func(key string, op core.Op) []core.Op
+	find = func(key string, op core.Op) []core.Op {
 		var ops []core.Op
 		nexts, ok := graph.Outs[core.Vertex{Value: op}]
 		if !ok {
@@ -354,42 +352,60 @@ func transactionGraph2VersionGraph(rel core.Rel, history core.History, graph *co
 				continue
 			}
 			nextOp := vertex.Value.(core.Op)
-			if nextOp.Type == core.OpTypeOk ||
-				nextOp.Type == core.OpTypeInfo && nextOp.HasMopType(core.MopTypeWrite) {
+			stopNext := false
+		LOOP:
+			for _, mop := range *nextOp.Value {
+				if mop.IsWrite() && (nextOp.Type == core.OpTypeOk || nextOp.Type == core.OpTypeInfo) {
+					for k := range mop.M {
+						if k == key {
+							stopNext = true
+							break LOOP
+						}
+					}
+				}
+				if mop.IsRead() && nextOp.Type == core.OpTypeOk {
+					for k := range mop.M {
+						if k == key {
+							stopNext = true
+							break LOOP
+						}
+					}
+				}
+			}
+
+			if stopNext {
 				ops = append(ops, nextOp)
 			} else {
-				ops = append(ops, find(nextOp)...)
+				ops = append(ops, find(key, nextOp)...)
 			}
 		}
 		return ops
 	}
 
 	for _, op := range core.FilterOkOrInfoHistory(history) {
-		var (
-			keys  = getKeys(op)
-			nexts = find(op)
-		)
+		keys := getKeys(op)
 
 		for _, k := range keys {
+			nexts := find(k, op)
 			g, ok := gs[k]
 			if !ok {
 				g = core.NewDirectedGraph()
 				gs[k] = g
 			}
 			selfV := getVersion(k, op)
-			if selfV == nil {
+			if selfV.IsNil {
 				// should not be nill
 				panic("self version should not be nil")
 			}
 			for _, next := range nexts {
 				nextV := getVersion(k, next)
-				if nextV == nil {
+				if nextV.IsNil {
 					continue
 				}
-				if *selfV == *nextV {
+				if selfV.Eq(nextV) {
 					continue
 				}
-				g.Link(core.Vertex{Value: *selfV}, core.Vertex{Value: *nextV}, rel)
+				g.Link(core.Vertex{Value: selfV}, core.Vertex{Value: nextV}, rel)
 			}
 		}
 	}
@@ -414,7 +430,7 @@ func initialStateVersionGraphs(history core.History) map[string]*core.DirectedGr
 			if _, ok := vgs[k]; !ok {
 				vgs[k] = core.NewDirectedGraph()
 			}
-			init := core.Vertex{Value: initMagicNumber}
+			init := core.Vertex{Value: NewNil()}
 			if _, ok := vgs[k].Outs[init]; !ok {
 				vgs[k].Link(init, core.Vertex{Value: v}, core.InitialState)
 			}
@@ -447,12 +463,12 @@ func wfrVersionGraphs(history core.History) map[string]*core.DirectedGraph {
 
 func sequentialKeysGraphs(history core.History) map[string]*core.DirectedGraph {
 	_, graph, _ := core.ProcessGraph(history)
-	return transactionGraph2VersionGraph(core.Process, history, graph)
+	return transactionGraph2VersionGraphs(core.Process, history, graph)
 }
 
 func linearizableKeysGraphs(history core.History) map[string]*core.DirectedGraph {
 	_, graph, _ := core.RealtimeGraph(history)
-	return transactionGraph2VersionGraph(core.Realtime, history, graph)
+	return transactionGraph2VersionGraphs(core.Realtime, history, graph)
 }
 
 func mergeGraphs(g1s, g2s map[string]*core.DirectedGraph, with func(...*core.DirectedGraph) *core.DirectedGraph) map[string]*core.DirectedGraph {
@@ -474,7 +490,7 @@ func mergeGraphs(g1s, g2s map[string]*core.DirectedGraph, with func(...*core.Dir
 
 type cyclicVersion struct {
 	key     string
-	scc     []int
+	scc     []Int
 	sources []string
 }
 
@@ -501,9 +517,9 @@ func cyclicVersionCases(versionGraphs map[string]*core.DirectedGraph) core.Anoma
 		sources = core.Set(sources)
 		sort.Strings(sources)
 		for _, scc := range graph.StronglyConnectedComponents() {
-			var iscc []int
+			var iscc []Int
 			for _, v := range scc.Vertices {
-				iscc = append(iscc, v.Value.(int))
+				iscc = append(iscc, v.Value.(Int))
 			}
 			cycleCase := cyclicVersion{
 				key:     key,
@@ -572,15 +588,15 @@ func versionGraphs(history core.History, opts ...interface{}) (core.Anomalies, [
 	return anomalies, sources, gs
 }
 
-func extIndex(fn func(op core.Op) map[string]int, history core.History) map[string]map[int][]core.Op {
-	res := make(map[string]map[int][]core.Op)
+func extIndex(fn func(op core.Op) map[string]Int, history core.History) map[string]map[Int][]core.Op {
+	res := make(map[string]map[Int][]core.Op)
 
 	okHistory := core.FilterOkHistory(history)
 	for _, op := range okHistory {
 		extKV := fn(op)
 		for k, v := range extKV {
 			if _, ok := res[k]; !ok {
-				res[k] = make(map[int][]core.Op)
+				res[k] = make(map[Int][]core.Op)
 			}
 			if _, ok := res[k][v]; !ok {
 				res[k][v] = make([]core.Op, 0)
@@ -600,22 +616,16 @@ func versionGraph2TransactionGraph(key string, history core.History, versionGrap
 	)
 
 	for from, nexts := range versionGraph.Outs {
-		if from.Value == nil {
-			continue
-		}
-		v1 := from.Value.(int)
+		v1 := from.Value.(Int)
 		for next := range nexts {
-			if next.Value == nil {
-				continue
-			}
-			v2 := next.Value.(int)
+			v2 := next.Value.(Int)
 			keyReads, ok := extReadIndex[key]
 			if !ok {
-				keyReads = make(map[int][]core.Op)
+				keyReads = make(map[Int][]core.Op)
 			}
 			keyWrites, ok := extWriteIndex[key]
 			if !ok {
-				keyWrites = make(map[int][]core.Op)
+				keyWrites = make(map[Int][]core.Op)
 			}
 			v1Reads, ok := keyReads[v1]
 			if !ok {
@@ -678,7 +688,7 @@ func (w *wwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	// 	return WWExplainResult(pair.k, pair.prevValue, pair.value)
 	// }
 	k, prev, v := explainOpDeps(w.versionGraphs, extWriteKeys, a, extWriteKeys, b)
-	if prev != initMagicNumber && v != initMagicNumber {
+	if !prev.IsNil && !v.IsNil {
 		return WWExplainResult(k, prev, v)
 	}
 	return nil
@@ -722,7 +732,7 @@ type rwExplainer struct {
 
 func (r *rwExplainer) ExplainPairData(a, b core.PathType) core.ExplainResult {
 	k, prev, v := explainOpDeps(r.versionGraphs, extReadKeys, a, extWriteKeys, b)
-	if prev != initMagicNumber || v != initMagicNumber {
+	if !prev.IsNil || !v.IsNil {
 		return RWExplainResult(k, prev, v)
 	}
 	return nil

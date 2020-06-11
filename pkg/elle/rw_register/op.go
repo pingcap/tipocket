@@ -11,6 +11,47 @@ var (
 	opPattern = regexp.MustCompile(`([rw])([a-zA-Z])([0-9_]+)(.*)`)
 )
 
+type Int struct {
+	IsNil bool
+	Val   int
+}
+
+// NewInt
+func NewInt(v int) Int {
+	return Int{
+		IsNil: false,
+		Val:   v,
+	}
+}
+
+// NewNil
+func NewNil() Int {
+	return Int{
+		IsNil: true,
+		Val:   0,
+	}
+}
+
+func (i Int) String() string {
+	if i.IsNil {
+		return "nil"
+	}
+	return strconv.Itoa(i.Val)
+}
+
+// Eq ...
+func (self Int) Eq(another Int) bool {
+	return self.IsNil == another.IsNil && self.Val == another.Val
+}
+
+// EqNotNil will get false for nil
+func (self Int) EqNotNil(another Int) bool {
+	if self.IsNil || another.IsNil {
+		return false
+	}
+	return self.Val == another.Val
+}
+
 // IntPtr copy int and return its pointer
 func IntPtr(i int) *int {
 	return &i
@@ -41,15 +82,15 @@ func MustParseOp(opStr string) core.Op {
 		default:
 			panic("unreachable")
 		}
-		var mopVal *int
+		var mopVal Int
 		if opMatch[3] != "_" {
 			mopValInt, err := strconv.Atoi(opMatch[3])
 			if err != nil {
 				panic(err)
 			}
-			mopVal = &mopValInt
+			mopVal = NewInt(mopValInt)
 		} else {
-			mopVal = IntPtr(initMagicNumber)
+			mopVal = NewNil()
 		}
 		*op.Value = append(*op.Value, core.Mop{
 			T: mopType,
@@ -69,7 +110,7 @@ func Pair(op core.Op) (core.Op, core.Op) {
 	for index, mop := range *invoke.Value {
 		if mop.IsRead() {
 			for k := range mop.M {
-				(*invoke.Value)[index].M[k] = nil
+				(*invoke.Value)[index].M[k] = NewNil()
 			}
 		}
 	}

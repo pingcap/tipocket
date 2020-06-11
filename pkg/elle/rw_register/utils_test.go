@@ -9,17 +9,17 @@ import (
 )
 
 func TestExtReadKeys(t *testing.T) {
-	require.Equal(t, map[string]int{}, extReadKeys(MustParseOp("wx1rx1")))
-	require.Equal(t, map[string]int{"x": 1}, extReadKeys(MustParseOp("rx1wx1")))
-	require.Equal(t, map[string]int{"x": 1, "y": 2}, extReadKeys(MustParseOp("rx1wx1ry2")))
+	require.Equal(t, map[string]Int{}, extReadKeys(MustParseOp("wx1rx1")))
+	require.Equal(t, map[string]Int{"x": NewInt(1)}, extReadKeys(MustParseOp("rx1wx1")))
+	require.Equal(t, map[string]Int{"x": NewInt(1), "y": NewInt(2)}, extReadKeys(MustParseOp("rx1wx1ry2")))
 }
 
 func TestExtWriteKeys(t *testing.T) {
-	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("wx1rx1")))
-	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("rx1wx1")))
-	require.Equal(t, map[string]int{"x": 1}, extWriteKeys(MustParseOp("rx1wx1ry2")))
-	require.Equal(t, map[string]int{"x": 2}, extWriteKeys(MustParseOp("wx1wx2")))
-	require.Equal(t, map[string]int{"x": 3}, extWriteKeys(MustParseOp("rx1wx1wx2wx3")))
+	require.Equal(t, map[string]Int{"x": NewInt(1)}, extWriteKeys(MustParseOp("wx1rx1")))
+	require.Equal(t, map[string]Int{"x": NewInt(1)}, extWriteKeys(MustParseOp("rx1wx1")))
+	require.Equal(t, map[string]Int{"x": NewInt(1)}, extWriteKeys(MustParseOp("rx1wx1ry2")))
+	require.Equal(t, map[string]Int{"x": NewInt(2)}, extWriteKeys(MustParseOp("wx1wx2")))
+	require.Equal(t, map[string]Int{"x": NewInt(3)}, extWriteKeys(MustParseOp("rx1wx1wx2wx3")))
 }
 
 func TestIsExtIndexRel(t *testing.T) {

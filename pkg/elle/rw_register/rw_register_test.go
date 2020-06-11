@@ -2,7 +2,6 @@ package rwregister
 
 import (
 	"fmt"
-	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,7 @@ func TestInternalCase(t *testing.T) {
 
 	mop := (*op2.Value)[2]
 	expectedMop := mop.Copy()
-	expectedMop.M["x"] = IntPtr(2)
+	expectedMop.M["x"] = NewInt(2)
 	conflict := InternalConflict{
 		Op:       op2,
 		Mop:      mop,
@@ -138,12 +137,12 @@ func TestGetKeys(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
-	require.Equal(t, *getVersion("x", MustParseOp("wx1wx2wx3")), 3)
-	require.Equal(t, *getVersion("x", MustParseOp("wx1wx2wx3wy1wy2")), 3)
-	require.Equal(t, *getVersion("y", MustParseOp("wx1wx2wx3wy1wy2")), 2)
-	require.Equal(t, *getVersion("x", MustParseOp("rx1rx2wx3wx4wx5wy1wy2ry2ry3")), 1)
-	require.Equal(t, *getVersion("y", MustParseOp("rx1rx2wx3wx4wx5wy1wy2ry3")), 2)
-	require.Equal(t, *getVersion("y", MustParseOp("rx1rx2wx3wx4wx5ry1wy2wy3")), 1)
+	require.Equal(t, getVersion("x", MustParseOp("wx1wx2wx3")), NewInt(3))
+	require.Equal(t, getVersion("x", MustParseOp("wx1wx2wx3wy1wy2")), NewInt(3))
+	require.Equal(t, getVersion("y", MustParseOp("wx1wx2wx3wy1wy2")), NewInt(2))
+	require.Equal(t, getVersion("x", MustParseOp("rx1rx2wx3wx4wx5wy1wy2ry2ry3")), NewInt(1))
+	require.Equal(t, getVersion("y", MustParseOp("rx1rx2wx3wx4wx5wy1wy2ry3")), NewInt(2))
+	require.Equal(t, getVersion("y", MustParseOp("rx1rx2wx3wx4wx5ry1wy2wy3")), NewInt(1))
 }
 
 func TestVersionGraph(t *testing.T) {
@@ -153,13 +152,13 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("wx2"),
 	}
 	expect1x := core.NewDirectedGraph()
-	expect1x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Realtime)
+	expect1x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.Realtime)
 	expect1 := map[string]*core.DirectedGraph{
 		"x": expect1x,
 	}
 	g1 := core.NewDirectedGraph()
 	g1.Link(core.Vertex{Value: history1[0]}, core.Vertex{Value: history1[1]}, core.Realtime)
-	r1 := transactionGraph2VersionGraph(core.Realtime, history1, g1)
+	r1 := transactionGraph2VersionGraphs(core.Realtime, history1, g1)
 	require.Equal(t, expect1, r1)
 
 	// fork-join
@@ -170,10 +169,10 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("rx4"),
 	}
 	expect2x := core.NewDirectedGraph()
-	expect2x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.Realtime)
-	expect2x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 3}, core.Realtime)
-	expect2x.Link(core.Vertex{Value: 2}, core.Vertex{Value: 4}, core.Realtime)
-	expect2x.Link(core.Vertex{Value: 3}, core.Vertex{Value: 4}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(3)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
 	expect2 := map[string]*core.DirectedGraph{
 		"x": expect2x,
 	}
@@ -182,7 +181,7 @@ func TestVersionGraph(t *testing.T) {
 	g2.Link(core.Vertex{Value: history2[0]}, core.Vertex{Value: history2[2]}, core.Realtime)
 	g2.Link(core.Vertex{Value: history2[1]}, core.Vertex{Value: history2[3]}, core.Realtime)
 	g2.Link(core.Vertex{Value: history2[2]}, core.Vertex{Value: history2[3]}, core.Realtime)
-	r2 := transactionGraph2VersionGraph(core.Realtime, history2, g2)
+	r2 := transactionGraph2VersionGraphs(core.Realtime, history2, g2)
 	require.Equal(t, expect2, r2)
 
 	// external ww
@@ -191,13 +190,13 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("wx3wx4rx5"),
 	}
 	expect3x := core.NewDirectedGraph()
-	expect3x.Link(core.Vertex{Value: 2}, core.Vertex{Value: 4}, core.Realtime)
+	expect3x.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
 	expect3 := map[string]*core.DirectedGraph{
 		"x": expect3x,
 	}
 	g3 := core.NewDirectedGraph()
 	g3.Link(core.Vertex{Value: history3[0]}, core.Vertex{Value: history3[1]}, core.Realtime)
-	r3 := transactionGraph2VersionGraph(core.Realtime, history3, g3)
+	r3 := transactionGraph2VersionGraphs(core.Realtime, history3, g3)
 	require.Equal(t, expect3, r3)
 
 	// external wr
@@ -206,13 +205,13 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("rx3rx4wx5"),
 	}
 	expect4x := core.NewDirectedGraph()
-	expect4x.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.Realtime)
+	expect4x.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
 	expect4 := map[string]*core.DirectedGraph{
 		"x": expect4x,
 	}
 	g4 := core.NewDirectedGraph()
 	g4.Link(core.Vertex{Value: history4[0]}, core.Vertex{Value: history4[1]}, core.Realtime)
-	r4 := transactionGraph2VersionGraph(core.Realtime, history4, g4)
+	r4 := transactionGraph2VersionGraphs(core.Realtime, history4, g4)
 	require.Equal(t, expect4, r4)
 
 	// external rw
@@ -221,13 +220,13 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("wx3wx4rx5"),
 	}
 	expect5x := core.NewDirectedGraph()
-	expect5x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 4}, core.Realtime)
+	expect5x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
 	expect5 := map[string]*core.DirectedGraph{
 		"x": expect5x,
 	}
 	g5 := core.NewDirectedGraph()
 	g5.Link(core.Vertex{Value: history5[0]}, core.Vertex{Value: history5[1]}, core.Realtime)
-	r5 := transactionGraph2VersionGraph(core.Realtime, history5, g5)
+	r5 := transactionGraph2VersionGraphs(core.Realtime, history5, g5)
 	require.Equal(t, expect5, r5)
 
 	// external rr
@@ -236,13 +235,13 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("rx3rx4wx5"),
 	}
 	expect6x := core.NewDirectedGraph()
-	expect6x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 3}, core.Realtime)
+	expect6x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
 	expect6 := map[string]*core.DirectedGraph{
 		"x": expect6x,
 	}
 	g6 := core.NewDirectedGraph()
 	g6.Link(core.Vertex{Value: history6[0]}, core.Vertex{Value: history6[1]}, core.Realtime)
-	r6 := transactionGraph2VersionGraph(core.Realtime, history6, g6)
+	r6 := transactionGraph2VersionGraphs(core.Realtime, history6, g6)
 	require.Equal(t, expect6, r6)
 
 	// don't infer v1 -> v1 deps
@@ -255,7 +254,7 @@ func TestVersionGraph(t *testing.T) {
 	}
 	g7 := core.NewDirectedGraph()
 	g7.Link(core.Vertex{Value: history7[0]}, core.Vertex{Value: history7[1]}, core.Realtime)
-	r7 := transactionGraph2VersionGraph(core.Realtime, history7, g7)
+	r7 := transactionGraph2VersionGraphs(core.Realtime, history7, g7)
 	require.Equal(t, expect7, r7)
 
 	// don't infer deps on failed or crashed reads
@@ -276,7 +275,7 @@ func TestVersionGraph(t *testing.T) {
 	g8.Link(core.Vertex{Value: history8[0]}, core.Vertex{Value: history8[2]}, core.Realtime)
 	g8.Link(core.Vertex{Value: history8[3]}, core.Vertex{Value: history8[4]}, core.Realtime)
 	g8.Link(core.Vertex{Value: history8[5]}, core.Vertex{Value: history8[6]}, core.Realtime)
-	r8 := transactionGraph2VersionGraph(core.Realtime, history8, g8)
+	r8 := transactionGraph2VersionGraphs(core.Realtime, history8, g8)
 	require.Equal(t, expect8, r8)
 
 	// don't infer deps on failed writes, but do infer crashed
@@ -290,8 +289,8 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("rx9"),
 	}
 	expect9x := core.NewDirectedGraph()
-	expect9x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 4}, core.Realtime)
-	expect9x.Link(core.Vertex{Value: 8}, core.Vertex{Value: 9}, core.Realtime)
+	expect9x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
+	expect9x.Link(core.Vertex{Value: NewInt(8)}, core.Vertex{Value: NewInt(9)}, core.Realtime)
 	expect9 := map[string]*core.DirectedGraph{
 		"x": expect9x,
 	}
@@ -300,7 +299,7 @@ func TestVersionGraph(t *testing.T) {
 	g9.Link(core.Vertex{Value: history9[0]}, core.Vertex{Value: history9[2]}, core.Realtime)
 	g9.Link(core.Vertex{Value: history9[3]}, core.Vertex{Value: history9[4]}, core.Realtime)
 	g9.Link(core.Vertex{Value: history9[5]}, core.Vertex{Value: history9[6]}, core.Realtime)
-	r9 := transactionGraph2VersionGraph(core.Realtime, history9, g9)
+	r9 := transactionGraph2VersionGraphs(core.Realtime, history9, g9)
 	require.Equal(t, expect9, r9)
 
 	// see through failed/crashed ops
@@ -314,8 +313,8 @@ func TestVersionGraph(t *testing.T) {
 	}
 	expect10x := core.NewDirectedGraph()
 	expect10y := core.NewDirectedGraph()
-	expect10x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 3}, core.Realtime)
-	expect10y.Link(core.Vertex{Value: 1}, core.Vertex{Value: 3}, core.Realtime)
+	expect10x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
+	expect10y.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
 	expect10 := map[string]*core.DirectedGraph{
 		"x": expect10x,
 		"y": expect10y,
@@ -329,7 +328,7 @@ func TestVersionGraph(t *testing.T) {
 		{Value: history10[4]},
 		{Value: history10[5]},
 	}, core.Realtime)
-	r10 := transactionGraph2VersionGraph(core.Realtime, history10, g10)
+	r10 := transactionGraph2VersionGraphs(core.Realtime, history10, g10)
 	require.Equal(t, expect10, r10)
 
 	// see through seq. failed/crashed ops
@@ -340,7 +339,7 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("wx3"),
 	}
 	expect11x := core.NewDirectedGraph()
-	expect11x.Link(core.Vertex{Value: 1}, core.Vertex{Value: 3}, core.Realtime)
+	expect11x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
 	expect11 := map[string]*core.DirectedGraph{
 		"x": expect11x,
 	}
@@ -348,11 +347,33 @@ func TestVersionGraph(t *testing.T) {
 	g11.Link(core.Vertex{Value: history11[0]}, core.Vertex{Value: history11[1]}, core.Realtime)
 	g11.Link(core.Vertex{Value: history11[1]}, core.Vertex{Value: history11[2]}, core.Realtime)
 	g11.Link(core.Vertex{Value: history11[2]}, core.Vertex{Value: history11[3]}, core.Realtime)
-	r11 := transactionGraph2VersionGraph(core.Realtime, history11, g11)
+	r11 := transactionGraph2VersionGraphs(core.Realtime, history11, g11)
 	require.Equal(t, expect11, r11)
+
+	// see through other keys
+	history12 := core.History{
+		MustParseOp("wx1"),
+		MustParseOp("wx2"),
+		MustParseOp("wy2"),
+		MustParseOp("wx3"),
+	}
+	expect12x := core.NewDirectedGraph()
+	expect12x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.Realtime)
+	expect12x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
+	expect12 := map[string]*core.DirectedGraph{
+		"x": expect12x,
+		"y": core.NewDirectedGraph(),
+	}
+	g12 := core.NewDirectedGraph()
+	g12.Link(core.Vertex{Value: history12[0]}, core.Vertex{Value: history12[1]}, core.Realtime)
+	g12.Link(core.Vertex{Value: history12[0]}, core.Vertex{Value: history12[2]}, core.Realtime)
+	g12.Link(core.Vertex{Value: history12[2]}, core.Vertex{Value: history12[3]}, core.Realtime)
+	r12 := transactionGraph2VersionGraphs(core.Realtime, history12, g12)
+	fmt.Println(r12)
+	require.Equal(t, expect12, r12)
 }
 
-func TestVersionGraph2TransactionGraph(t *testing.T) {
+func TestVersionGraphs2TransactionGraph(t *testing.T) {
 	// empty
 	versions1 := map[string]*core.DirectedGraph{
 		"x": core.NewDirectedGraph(),
@@ -363,8 +384,8 @@ func TestVersionGraph2TransactionGraph(t *testing.T) {
 
 	// rr
 	version2 := core.NewDirectedGraph()
-	version2.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.ExtKey)
-	version2.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.ExtKey)
+	version2.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.ExtKey)
+	version2.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.ExtKey)
 	versions2 := map[string]*core.DirectedGraph{
 		"x": version2,
 	}
@@ -377,8 +398,8 @@ func TestVersionGraph2TransactionGraph(t *testing.T) {
 
 	// wr
 	version3 := core.NewDirectedGraph()
-	version3.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.ExtKey)
-	version3.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.ExtKey)
+	version3.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.ExtKey)
+	version3.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.ExtKey)
 	versions3 := map[string]*core.DirectedGraph{
 		"x": version3,
 	}
@@ -391,8 +412,8 @@ func TestVersionGraph2TransactionGraph(t *testing.T) {
 
 	// ww
 	version4 := core.NewDirectedGraph()
-	version4.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.ExtKey)
-	version4.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.ExtKey)
+	version4.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.ExtKey)
+	version4.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.ExtKey)
 	versions4 := map[string]*core.DirectedGraph{
 		"x": version4,
 	}
@@ -406,8 +427,8 @@ func TestVersionGraph2TransactionGraph(t *testing.T) {
 
 	// rw
 	version5 := core.NewDirectedGraph()
-	version5.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.ExtKey)
-	version5.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.ExtKey)
+	version5.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.ExtKey)
+	version5.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.ExtKey)
 	versions5 := map[string]*core.DirectedGraph{
 		"x": version5,
 	}
@@ -421,8 +442,8 @@ func TestVersionGraph2TransactionGraph(t *testing.T) {
 
 	// ignores internal writes/reads
 	version6 := core.NewDirectedGraph()
-	version6.Link(core.Vertex{Value: 1}, core.Vertex{Value: 2}, core.ExtKey)
-	version6.Link(core.Vertex{Value: 2}, core.Vertex{Value: 3}, core.ExtKey)
+	version6.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.ExtKey)
+	version6.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(3)}, core.ExtKey)
 	versions6 := map[string]*core.DirectedGraph{
 		"x": version6,
 	}
@@ -477,10 +498,10 @@ func TestChecker(t *testing.T) {
 						},
 						Steps: []core.Step{
 							{
-								Result: WWExplainResult("x", core.MopValueType(1), core.MopValueType(2)),
+								Result: WWExplainResult("x", core.MopValueType(NewInt(1)), core.MopValueType(NewInt(2))),
 							},
 							{
-								Result: WWExplainResult("y", core.MopValueType(1), core.MopValueType(2)),
+								Result: WWExplainResult("y", core.MopValueType(NewInt(1)), core.MopValueType(NewInt(2))),
 							},
 						},
 						Typ: "G0",
@@ -585,10 +606,10 @@ func TestChecker(t *testing.T) {
 				},
 				Steps: []core.Step{
 					{
-						Result: WRExplainResult("x", core.MopValueType(1)),
+						Result: WRExplainResult("x", core.MopValueType(NewInt(1))),
 					},
 					{
-						Result: WRExplainResult("y", core.MopValueType(1)),
+						Result: WRExplainResult("y", core.MopValueType(NewInt(1))),
 					},
 				},
 				Typ: "G1c",
@@ -686,10 +707,10 @@ func TestChecker(t *testing.T) {
 						},
 						Steps: []core.Step{
 							{
-								Result: RWExplainResult("y", core.MopValueType(1), core.MopValueType(2)),
+								Result: RWExplainResult("y", core.MopValueType(NewInt(1)), core.MopValueType(NewInt(2))),
 							},
 							{
-								Result: RWExplainResult("x", core.MopValueType(1), core.MopValueType(2)),
+								Result: RWExplainResult("x", core.MopValueType(NewInt(1)), core.MopValueType(NewInt(2))),
 							},
 						},
 						Typ: "G2-item",
@@ -737,8 +758,6 @@ func TestChecker(t *testing.T) {
 			history  = core.History{t1, t2, t2Ok, t1Ok}
 		)
 		history.AttachIndexIfNoExists()
-		fmt.Println(t1, t1Ok)
-		fmt.Println(t2, t2Ok)
 		expect := txn.CheckResult{
 			Valid:        false,
 			AnomalyTypes: []string{"G-single"},
@@ -757,15 +776,15 @@ func TestChecker(t *testing.T) {
 								Result: rwExplainResult{
 									Typ:       core.RWDepend,
 									key:       "x",
-									prevValue: initMagicNumber,
-									value:     2,
+									prevValue: NewNil(),
+									value:     NewInt(2),
 								},
 							},
 							{
 								Result: wrExplainResult{
 									Typ:   core.WRDepend,
 									Key:   "y",
-									Value: 1,
+									Value: NewInt(1),
 								},
 							},
 						},
@@ -805,15 +824,15 @@ func TestChecker(t *testing.T) {
 								Result: rwExplainResult{
 									Typ:       core.RWDepend,
 									key:       "y",
-									prevValue: 1,
-									value:     2,
+									prevValue: NewInt(1),
+									value:     NewInt(2),
 								},
 							},
 							{
 								Result: wrExplainResult{
 									Typ:   core.WRDepend,
 									Key:   "x",
-									Value: 1,
+									Value: NewInt(1),
 								},
 							},
 						},
@@ -845,7 +864,7 @@ func TestChecker(t *testing.T) {
 				"cyclic-versions": []core.Anomaly{
 					cyclicVersion{
 						key: "x",
-						scc: []int{1, 2},
+						scc: []Int{NewInt(1), NewInt(2)},
 						sources: []string{
 							"initial-state",
 							"process",
@@ -861,7 +880,7 @@ func TestChecker(t *testing.T) {
 		}, history, GraphOption{
 			SequentialKeys: true,
 		})
-		sort.Ints(actual.Anomalies["cyclic-versions"][0].(cyclicVersion).scc)
+		rotate(actual.Anomalies["cyclic-versions"][0].(cyclicVersion).scc)
 		require.Equal(t, expect, actual)
 	}
 }
@@ -876,4 +895,53 @@ func withIndex(op core.Op, index int) core.Op {
 	o := op
 	o.Index.Set(index)
 	return o
+}
+
+func rotate(scc []Int) {
+	if len(scc) <= 1 {
+		return
+	}
+	start := 0
+	least := scc[0]
+	for i, k := range scc {
+		if (k.IsNil && !least.IsNil) || (!k.IsNil && !least.IsNil && k.Val < least.Val) {
+			start = i
+			least = k
+		}
+	}
+	if start == 0 {
+		return
+	}
+
+	l := len(scc)
+	orderedSCC := make([]Int, start)
+	for i := 0; i < start; i++ {
+		orderedSCC[i] = scc[i]
+	}
+	for i := 0; i < l-start; i++ {
+		scc[i] = scc[i+start]
+	}
+	for i := 0; i < start; i++ {
+		scc[l-start+i] = orderedSCC[i]
+	}
+}
+
+func TestRotate(t *testing.T) {
+	var (
+		i1   = NewInt(1)
+		i2   = NewInt(2)
+		i3   = NewInt(3)
+		i4   = NewInt(4)
+		i5   = NewInt(5)
+		i6   = NewInt(6)
+		inil = NewNil()
+	)
+
+	scc1 := []Int{i2, i4, i1, i3, i6}
+	rotate(scc1)
+	require.Equal(t, []Int{i1, i3, i6, i2, i4}, scc1)
+
+	scc2 := []Int{i5, inil, i1, i2, i6}
+	rotate(scc2)
+	require.Equal(t, []Int{inil, i1, i2, i6, i5}, scc2)
 }
