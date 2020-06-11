@@ -259,13 +259,14 @@ func wrGraph(history core.History, _ ...interface{}) (core.Anomalies, *core.Dire
 			}
 			if len(wops) == 0 {
 				continue
-			}
-			if len(wops) == 1 {
+			} else if len(wops) == 1 {
 				var reads []core.Vertex
 				for _, rop := range rops {
 					reads = append(reads, core.Vertex{Value: rop})
 				}
 				g.LinkToAll(core.Vertex{Value: wops[0]}, reads, core.WR)
+			} else {
+				panic("multi ext write keys")
 			}
 		}
 	}
@@ -448,6 +449,9 @@ func wfrVersionGraphs(history core.History) map[string]*core.DirectedGraph {
 			writes = extWriteKeys(op)
 		)
 		for k, r := range reads {
+			if r.IsNil {
+				continue
+			}
 			w, ok := writes[k]
 			if !ok {
 				continue
