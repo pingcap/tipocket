@@ -500,6 +500,7 @@ func (v Vertex) String() string {
 	}
 }
 
+// CallMethod calls function by reflect
 func CallMethod(i interface{}, methodName string) interface{} {
 	var (
 		ptr         reflect.Value

@@ -11,12 +11,13 @@ var (
 	opPattern = regexp.MustCompile(`([rw])([a-zA-Z])([0-9_]+)(.*)`)
 )
 
+// Int can be an int value or nil
 type Int struct {
 	IsNil bool
 	Val   int
 }
 
-// NewInt
+// NewInt creates Int with int value
 func NewInt(v int) Int {
 	return Int{
 		IsNil: false,
@@ -24,7 +25,7 @@ func NewInt(v int) Int {
 	}
 }
 
-// NewNil
+// NewNil creates Int with nil value
 func NewNil() Int {
 	return Int{
 		IsNil: true,
@@ -40,16 +41,16 @@ func (i Int) String() string {
 }
 
 // Eq ...
-func (self Int) Eq(another Int) bool {
-	return self.IsNil == another.IsNil && self.Val == another.Val
+func (i Int) Eq(another Int) bool {
+	return i.IsNil == another.IsNil && i.Val == another.Val
 }
 
 // EqNotNil will get false for nil
-func (self Int) EqNotNil(another Int) bool {
-	if self.IsNil || another.IsNil {
+func (i Int) EqNotNil(another Int) bool {
+	if i.IsNil || another.IsNil {
 		return false
 	}
-	return self.Val == another.Val
+	return i.Val == another.Val
 }
 
 // IntPtr copy int and return its pointer
