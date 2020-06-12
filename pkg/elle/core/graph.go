@@ -1,6 +1,11 @@
 package core
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+)
 
 // Edge is a intermediate representation of edge on DirectedGraph
 type Edge struct {
@@ -37,6 +42,15 @@ func (v Vertices) Less(i, j int) bool {
 // Swap ...
 func (v Vertices) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
+}
+
+// NewVerticesFromOp ...
+func NewVerticesFromOp(items []Op) Vertices {
+	var vertices Vertices
+	for _, item := range items {
+		vertices = append(vertices, Vertex{Value: item})
+	}
+	return vertices
 }
 
 // Rels type aliases []Rel
@@ -121,6 +135,7 @@ func (g *DirectedGraph) Edges(a, b Vertex) []Edge {
 }
 
 // Link links two vertices relationship
+// create edge from v => succ
 func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 	_, ok := g.Outs[v]
 	if !ok {
@@ -147,7 +162,7 @@ func (g *DirectedGraph) Link(v Vertex, succ Vertex, rel Rel) {
 			break
 		}
 	}
-	if haveRel == false {
+	if !haveRel {
 		g.Outs[v][succ] = append(g.Outs[v][succ], rel)
 	}
 
@@ -189,6 +204,13 @@ func (g *DirectedGraph) UnLink(a, b Vertex) {
 			g.Ins[b] = append(g.Ins[b][:id], g.Ins[b][id+1:]...)
 			break
 		}
+	}
+}
+
+// UnLinkSelfEdges unlinks edges from a to a
+func (g *DirectedGraph) UnLinkSelfEdges(xs []Vertex) {
+	for _, x := range xs {
+		g.UnLink(x, x)
 	}
 }
 
@@ -460,6 +482,40 @@ func (g *DirectedGraph) RenumberGraph() (*DirectedGraph, func(interface{}) inter
 	return dg, func(number interface{}) interface{} {
 		return numberToVertices[number]
 	}
+}
+
+func (v Vertex) String() string {
+	switch val := v.Value.(type) {
+	case string:
+		return val
+	case int:
+		return strconv.Itoa(val)
+	default:
+		if val, ok := val.(fmt.Stringer); ok {
+			return val.String()
+		}
+		return "unknown type"
+	}
+}
+
+func (g DirectedGraph) String() string {
+	var b strings.Builder
+
+	fmt.Fprint(&b, "--- Outs ---\n")
+	for from, outs := range g.Outs {
+		for target, rels := range outs {
+			fmt.Fprintf(&b, "%s => %s | %+v\n", from.String(), target.String(), rels)
+		}
+	}
+
+	fmt.Fprint(&b, "--- Ins ---\n")
+	for target, froms := range g.Ins {
+		for _, from := range froms {
+			fmt.Fprintf(&b, "%s <= %s\n", target.String(), from.String())
+		}
+	}
+
+	return b.String()
 }
 
 // MapToDirectedGraph turns a sequence of [node, successors] map into a directed graph
