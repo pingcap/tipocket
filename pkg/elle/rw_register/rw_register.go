@@ -337,6 +337,9 @@ func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *c
 	cache := make(map[string]map[core.Op][]core.Op)
 	var find func(key string, op core.Op) []core.Op
 	find = func(key string, op core.Op) []core.Op {
+		if _, ok := cache[key]; !ok {
+			cache[key] = make(map[core.Op][]core.Op)
+		}
 		if ops, ok := cache[key][op]; ok {
 			return ops
 		}
@@ -389,13 +392,10 @@ func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *c
 		return ops
 	}
 
-	for _, op := range core.ReverseHistory(core.FilterOkOrInfoHistory(history)) {
+	for _, op := range core.FilterOkOrInfoHistory(history) {
 		keys := getKeys(op)
 
 		for _, k := range keys {
-			if _, ok := cache[k]; !ok {
-				cache[k] = make(map[core.Op][]core.Op)
-			}
 			nexts := find(k, op)
 			g, ok := gs[k]
 			if !ok {

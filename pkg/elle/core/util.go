@@ -44,14 +44,3 @@ func FilterFailedHistory(history History) History {
 	}
 	return h
 }
-
-// ReverseHistory clone a history and return it in reverse
-func ReverseHistory(history History) History {
-	h := make(History, len(history))
-	copy(h, history)
-	l := len(h)
-	for i := 0; i < l/2; i++ {
-		h[i], h[l-i-1] = h[l-i-1], h[i]
-	}
-	return h
-}
