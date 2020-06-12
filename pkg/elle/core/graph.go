@@ -490,12 +490,11 @@ func (v Vertex) String() string {
 		return val
 	case int:
 		return strconv.Itoa(val)
-	case Op:
-		return val.String()
-	case KVEntity:
-		return val.String()
 	default:
-		return val.(fmt.Stringer).String()
+		if val, ok := val.(fmt.Stringer); ok {
+			return val.String()
+		}
+		return "unknown type"
 	}
 }
 
