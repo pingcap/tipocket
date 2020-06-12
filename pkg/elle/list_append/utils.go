@@ -434,40 +434,9 @@ func min(a, b int) int {
 }
 
 func preProcessHistory(history core.History) core.History {
-	history = filterOutNemesisHistory(history)
+	history = core.FilterOutNemesisHistory(history)
 	history.AttachIndexIfNoExists()
 	return history
-}
-
-func filterOkOrInfoHistory(history core.History) core.History {
-	var h core.History
-	for _, op := range history {
-		if op.Type == core.OpTypeOk || op.Type == core.OpTypeInfo {
-			h = append(h, op)
-		}
-	}
-	return h
-}
-
-func filterOutNemesisHistory(history core.History) core.History {
-	var h core.History
-	for _, op := range history {
-		if op.Process.Present() && op.Process.MustGet() == core.NemesisProcessMagicNumber {
-			continue
-		}
-		h = append(h, op)
-	}
-	return h
-}
-
-func filterOkHistory(history core.History) core.History {
-	var h core.History
-	for _, v := range history {
-		if v.Type == core.OpTypeOk {
-			h = append(h, v)
-		}
-	}
-	return h
 }
 
 func isReadRecordEqual(a []int, b []int) bool {

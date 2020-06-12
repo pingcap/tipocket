@@ -72,13 +72,13 @@ func (c *CombinedExplainer) RenderExplanation(result ExplainResult, p1, p2 strin
 
 // Combine composes multiple analyzers
 func Combine(analyzers ...Analyzer) Analyzer {
-	return func(history History) (anomalies Anomalies, graph *DirectedGraph, explainer DataExplainer) {
+	return func(history History, opts ...interface{}) (anomalies Anomalies, graph *DirectedGraph, explainer DataExplainer) {
 		ca := make(Anomalies)
 		cg := NewDirectedGraph()
 		var ce []DataExplainer
 
 		for _, analyzer := range analyzers {
-			a, g, e := analyzer(history)
+			a, g, e := analyzer(history, opts...)
 			if g == nil {
 				panic("got a nil graph")
 			}
@@ -193,7 +193,7 @@ func (e MonotonicKeyExplainer) RenderExplanation(result ExplainResult, preName, 
 type CycleExplainerResult struct {
 	Circle Circle
 	Steps  []Step
-	Typ    DependType
+	Typ    string
 }
 
 // IAnomaly ...
@@ -205,7 +205,7 @@ func (c CycleExplainerResult) String() string {
 }
 
 // Type ...
-func (c CycleExplainerResult) Type() DependType {
+func (c CycleExplainerResult) Type() string {
 	return c.Typ
 }
 
