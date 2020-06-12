@@ -66,17 +66,24 @@ func (o *Ops) Delete() error {
 	return nil
 }
 
-// GetNodes returns DM (DM-master) nodes.
+// GetNodes returns DM (DM-master & DM-worker) nodes.
 func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
-	pods := &corev1.PodList{}
-	if err := o.cli.List(context.Background(), pods,
+	podsMaster := &corev1.PodList{}
+	if err := o.cli.List(context.Background(), podsMaster,
 		client.InNamespace(o.dm.StsMaster.ObjectMeta.Namespace),
 		client.MatchingLabels(o.dm.StsMaster.ObjectMeta.Labels)); err != nil {
 		return []clusterTypes.Node{}, err
 	}
 
-	nodes := make([]clusterTypes.Node, 0, len(pods.Items))
-	for _, pod := range pods.Items {
+	podsWorker := &corev1.PodList{}
+	if err := o.cli.List(context.Background(), podsWorker,
+		client.InNamespace(o.dm.StsMaster.ObjectMeta.Namespace),
+		client.MatchingLabels(o.dm.StsWorker.ObjectMeta.Labels)); err != nil {
+		return []clusterTypes.Node{}, err
+	}
+
+	nodes := make([]clusterTypes.Node, 0, len(podsMaster.Items)+len(podsWorker.Items))
+	for _, pod := range podsMaster.Items {
 		nodes = append(nodes, clusterTypes.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			PodName:   pod.ObjectMeta.Name,
@@ -85,6 +92,16 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 			Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.DM), pod.Spec.Containers),
 		})
 	}
+	for _, pod := range podsWorker.Items {
+		nodes = append(nodes, clusterTypes.Node{
+			Namespace: pod.ObjectMeta.Namespace,
+			PodName:   pod.ObjectMeta.Name,
+			IP:        pod.Status.PodIP,
+			Component: clusterTypes.DM,
+			Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.DM), pod.Spec.Containers),
+		})
+	}
+
 	return nodes, nil
 }
 
