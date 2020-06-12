@@ -16,12 +16,14 @@ package main
 import (
 	"context"
 	"flag"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
+	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
@@ -42,6 +44,9 @@ func main() {
 	pocketConfig.Options.Serialize = false
 	pocketConfig.Options.Path = fixture.Context.DMConfig.LogPath
 	pocketConfig.Options.Concurrency = 1
+	pocketConfig.Options.CheckDuration = types.Duration{
+		Duration: 10 * time.Second, // less data in one check round to ensure downstream can catchup upstream.
+	}
 	c := fixture.Context
 	suit := util.Suit{
 		Config:      &cfg,

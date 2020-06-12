@@ -158,6 +158,11 @@ func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval t
 
 			pCore.ExecLock()
 			err := wait.PollImmediate(1*time.Minute, 10*time.Minute, func() (done bool, err error) { // TiDB may be too far behind.
+				select {
+				case <-ctx.Done():
+					return true, nil // return `nil` if context is done.
+				default:
+				}
 				if err2 := dmSyncDiffSingleTask(ctx, mysql1DB, tidbDB, schema); err2 != nil {
 					log.Errorf("fail to diff data for single source task, %v", err2)
 					return false, nil
@@ -167,7 +172,7 @@ func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval t
 			if err != nil {
 				log.Fatalf("fail to diff data for single source task, %v", err)
 			}
-			log.Info("consistency check pass for DM single source task")
+			log.Info("consistency check pass for DM single source task", ctx.Err())
 			pCore.ExecUnlock()
 		}
 	}()
