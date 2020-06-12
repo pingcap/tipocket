@@ -335,7 +335,6 @@ func getVersion(k string, op core.Op) Int {
 func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *core.DirectedGraph) map[string]*core.DirectedGraph {
 	gs := make(map[string]*core.DirectedGraph)
 	cache := make(map[string]map[core.Op][]core.Op)
-	// var val *int
 	var find func(key string, op core.Op) []core.Op
 	find = func(key string, op core.Op) []core.Op {
 		if ops, ok := cache[key][op]; ok {
