@@ -483,7 +483,7 @@ func (h History) GetKeys(t MopType) []string {
 	return keys
 }
 
-// KV struct
+// KVEntity struct
 type KVEntity struct {
 	K string
 	V interface{}
