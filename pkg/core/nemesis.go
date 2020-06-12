@@ -197,6 +197,8 @@ func (d DelayNemesisGenerator) Name() string {
 type NemesisGenerators interface {
 	Next() NemesisGenerator
 	HasNext() bool
+	// Reset resets iterator, return false if it cannot be reset
+	Reset() bool
 }
 
 // nemesisGenerators is a wrapper of []NemesisGenerator
@@ -214,6 +216,12 @@ func (i *nemesisGenerators) Next() NemesisGenerator {
 	gen := i.generators[i.idx]
 	i.idx += 1
 	return gen
+}
+
+// Reset reset if it could
+func (i *nemesisGenerators) Reset() bool {
+	i.idx = 0
+	return true
 }
 
 // NewNemesisGenerators ...
@@ -239,6 +247,11 @@ func (m *OneRoundNemesisGenerators) HasNext() bool {
 func (m *OneRoundNemesisGenerators) Next() NemesisGenerator {
 	m.hasNext = false
 	return m.gen
+}
+
+// Reset just returns false because we forbid reset for OneRoundNemesisGenerators
+func (m *OneRoundNemesisGenerators) Reset() bool {
+	return false
 }
 
 // NewOneRoundNemesisGenerators ...

@@ -427,7 +427,9 @@ loop:
 		c.RUnlock()
 
 		if !gens.HasNext() {
-			time.Sleep(time.Second)
+			if !gens.Reset() {
+				time.Sleep(time.Second)
+			}
 			continue
 		}
 		var (
