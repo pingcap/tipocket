@@ -271,7 +271,8 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	switch name {
 	case "random_kill", "all_kill", "minor_kill", "major_kill",
 		"kill_tikv_1node_5min", "kill_tikv_2node_5min",
-		"kill_pd_leader_5min", "kill_pd_nonleader_5min":
+		"kill_pd_leader_5min", "kill_pd_nonleader_5min",
+		"kill_dm_1node":
 		g = nemesis.NewKillGenerator(name)
 	case "short_kill_tikv_1node", "short_kill_pd_leader", "short_kill_tiflash_1node":
 		g = nemesis.NewContainerKillGenerator(name)

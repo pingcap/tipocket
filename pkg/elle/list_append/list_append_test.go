@@ -15,12 +15,14 @@ import (
 func TestWWGraph(t *testing.T) {
 	t1 := mustParseOp(`{:type :ok, :value [[:append x 1]]}`)
 	t2 := mustParseOp(`{:type :ok, :value [[:append x 2]]}`)
-	t3 := mustParseOp(`{:type :ok, :value [[:r x [1 2]]]}`)
+	t3 := mustParseOp(`{:type :ok, :value [[:append x 3]]}`)
+	t4 := mustParseOp(`{:type :ok, :value [[:r x [1 2 3]]]}`)
 
-	_, g, _ := wwGraph([]core.Op{t1, t2, t3})
+	_, g, _ := wwGraph([]core.Op{t1, t2, t3, t4})
 
 	expect := core.NewDirectedGraph()
 	expect.Link(core.Vertex{Value: t1}, core.Vertex{Value: t2}, core.WW)
+	expect.Link(core.Vertex{Value: t2}, core.Vertex{Value: t3}, core.WW)
 
 	require.Equal(t, expect, g)
 }
@@ -295,7 +297,7 @@ func TestInternalCases(t *testing.T) {
 }
 
 func TestChecker(t *testing.T) {
-	var switches = false
+	var switches = true
 	// G0
 	if switches {
 		t1 := mustParseOp(`{:type :ok, :value [[:append x 1] [:append y 1]]}`)

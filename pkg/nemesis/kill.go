@@ -66,6 +66,10 @@ func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperat
 		duration = chaosDurationFiveMin
 		cmp := clusterTypes.TiFlash
 		component = &cmp
+	case "kill_dm_1node":
+		n = 1
+		cmp := clusterTypes.DM
+		component = &cmp
 	default:
 		n = 1
 	}

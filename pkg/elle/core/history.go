@@ -39,23 +39,38 @@ type MopType string
 
 // OpType enums
 const (
-	OpTypeInvoke OpType = "invoke"
-	OpTypeOk     OpType = "ok"
-	OpTypeFail   OpType = "fail"
-	OpTypeInfo   OpType = "info"
+	OpTypeInvoke  OpType = "invoke"
+	OpTypeOk      OpType = "ok"
+	OpTypeFail    OpType = "fail"
+	OpTypeInfo    OpType = "info"
+	OpTypeUnknown OpType = "unknown"
 )
 
 // MopType enums
 const (
-	MopTypeAll    MopType = "all"
-	MopTypeAppend MopType = "append"
-	MopTypeRead   MopType = "read"
+	MopTypeAll     MopType = "all"
+	MopTypeAppend  MopType = "append"
+	MopTypeRead    MopType = "read"
+	MopTypeWrite   MopType = "write"
+	MopTypeUnknown MopType = "unknown"
 )
 
 // Mop interface
 type Mop struct {
 	T MopType                `json:"type"`
 	M map[string]interface{} `json:"m"`
+}
+
+// Copy ...
+func (m Mop) Copy() Mop {
+	vals := make(map[string]interface{})
+	for k, v := range m.M {
+		vals[k] = v
+	}
+	return Mop{
+		T: m.T,
+		M: vals,
+	}
 }
 
 // IsAppend ...
@@ -66,6 +81,11 @@ func (m Mop) IsAppend() bool {
 // IsRead ...
 func (m Mop) IsRead() bool {
 	return m.T == MopTypeRead
+}
+
+// IsWrite ...
+func (m Mop) IsWrite() bool {
+	return m.T == MopTypeWrite
 }
 
 // GetMopType ...
@@ -96,16 +116,47 @@ func (m Mop) IsEqual(n Mop) bool {
 func (m Mop) String() string {
 	switch m.T {
 	case MopTypeRead:
-		key := m.M["key"].(string)
-		value := m.M["value"]
-		if value == nil {
-			return fmt.Sprintf("[:r %s nil]", key)
+		key, ok := m.M["key"]
+		if ok {
+			value := m.M["value"]
+			if value == nil {
+				return fmt.Sprintf("[:r %s nil]", key.(string))
+			}
+			return fmt.Sprintf("[:r %s %v]", key, value)
 		}
-		return fmt.Sprintf("[:r %s %v]", key, value)
+		var b strings.Builder
+		fmt.Fprint(&b, "[:r")
+		for k, v := range m.M {
+			switch v := v.(type) {
+			case *int:
+				if v == nil {
+					fmt.Fprintf(&b, " %s %v", k, nil)
+				} else {
+					fmt.Fprintf(&b, " %s %v", k, *v)
+				}
+			}
+		}
+		fmt.Fprint(&b, "]")
+		return b.String()
 	case MopTypeAppend:
 		key := m.M["key"].(string)
 		value := m.M["value"].(int)
 		return fmt.Sprintf("[:append %s %v]", key, value)
+	case MopTypeWrite:
+		var b strings.Builder
+		fmt.Fprint(&b, "[:w")
+		for k, v := range m.M {
+			switch v := v.(type) {
+			case *int:
+				if v == nil {
+					fmt.Fprintf(&b, " %s %v", k, nil)
+				} else {
+					fmt.Fprintf(&b, " %s %v", k, *v)
+				}
+			}
+		}
+		fmt.Fprint(&b, "]")
+		return b.String()
 	default:
 		panic("unreachable")
 	}
@@ -152,6 +203,17 @@ type Op struct {
 	Error   string      `json:"error,omitempty"`
 }
 
+// Copy ...
+func (op Op) Copy() Op {
+	newOp := op
+	mops := make([]Mop, len(*op.Value))
+	newOp.Value = &mops
+	for index, mop := range *op.Value {
+		(*newOp.Value)[index] = mop.Copy()
+	}
+	return newOp
+}
+
 func (op Op) String() string {
 	var parts []string
 	parts = append(parts, fmt.Sprintf("{:type :%s", op.Type))
@@ -184,6 +246,34 @@ func (op Op) ValueLength() int {
 		return 0
 	}
 	return len(*op.Value)
+}
+
+// WithType ...
+func (op Op) WithType(tp OpType) Op {
+	op.Type = tp
+	return op
+}
+
+// WithProcess ...
+func (op Op) WithProcess(p interface{}) Op {
+	op.Process = IntOptional{value: p}
+	return op
+}
+
+// WithIndex ...
+func (op Op) WithIndex(i interface{}) Op {
+	op.Index = IntOptional{value: i}
+	return op
+}
+
+// HasMopType ...
+func (op *Op) HasMopType(tp MopType) bool {
+	for _, mop := range *op.Value {
+		if mop.T == tp {
+			return true
+		}
+	}
+	return false
 }
 
 // History contains operations
@@ -391,4 +481,14 @@ func (h History) GetKeys(t MopType) []string {
 	}
 
 	return keys
+}
+
+// KVEntity struct
+type KVEntity struct {
+	K string
+	V interface{}
+}
+
+func (kv KVEntity) String() string {
+	return fmt.Sprintf("%s->%s", kv.K, kv.V)
 }
