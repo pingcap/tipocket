@@ -102,7 +102,7 @@ func (g G1Conflict) String() string {
 }
 
 func g1aCases(history core.History) GCaseTp {
-	failedMap := make(map[core.KV]core.Op)
+	failedMap := make(map[core.KVEntity]core.Op)
 	var anomalies []core.Anomaly
 
 	for _, op := range core.FilterFailedHistory(history) {
@@ -113,7 +113,7 @@ func g1aCases(history core.History) GCaseTp {
 					if vint.IsNil {
 						panic("write value should not be nil")
 					}
-					failedMap[core.KV{K: k, V: vint}] = op
+					failedMap[core.KVEntity{K: k, V: vint}] = op
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func g1aCases(history core.History) GCaseTp {
 					if vprt.IsNil {
 						continue
 					}
-					if failedOp, ok := failedMap[core.KV{K: k, V: vprt}]; ok {
+					if failedOp, ok := failedMap[core.KVEntity{K: k, V: vprt}]; ok {
 						anomalies = append(anomalies, G1Conflict{
 							Op:      op,
 							Mop:     mop,
@@ -145,7 +145,7 @@ func g1aCases(history core.History) GCaseTp {
 }
 
 func g1bCases(history core.History) GCaseTp {
-	interMap := make(map[core.KV]core.Op)
+	interMap := make(map[core.KVEntity]core.Op)
 	var anomalies []core.Anomaly
 
 	for _, op := range core.FilterOkHistory(history) {
@@ -158,7 +158,7 @@ func g1bCases(history core.History) GCaseTp {
 						panic("write value should not be nil")
 					}
 					if old, ok := valMap[k]; ok {
-						interMap[core.KV{K: k, V: old}] = op
+						interMap[core.KVEntity{K: k, V: old}] = op
 					}
 					valMap[k] = vprt
 				}
@@ -175,7 +175,7 @@ func g1bCases(history core.History) GCaseTp {
 					if vprt.IsNil {
 						continue
 					}
-					if interOp, ok := interMap[core.KV{K: k, V: vprt}]; ok && op != interOp {
+					if interOp, ok := interMap[core.KVEntity{K: k, V: vprt}]; ok && op != interOp {
 						anomalies = append(anomalies, G1Conflict{
 							Op:      op,
 							Mop:     mop,
@@ -334,9 +334,13 @@ func getVersion(k string, op core.Op) Int {
 // T1[T2, T2], T2[T4], T3[T4] => 1 => [2, 3], 2 => [4], 3 => [4]
 func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *core.DirectedGraph) map[string]*core.DirectedGraph {
 	gs := make(map[string]*core.DirectedGraph)
+	cache := make(map[string]map[core.Op][]core.Op)
 	// var val *int
 	var find func(key string, op core.Op) []core.Op
 	find = func(key string, op core.Op) []core.Op {
+		if ops, ok := cache[key][op]; ok {
+			return ops
+		}
 		var ops []core.Op
 		nexts, ok := graph.Outs[core.Vertex{Value: op}]
 		if !ok {
@@ -375,18 +379,24 @@ func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *c
 			}
 
 			if stopNext {
+				cache[key][op] = []core.Op{nextOp}
 				ops = append(ops, nextOp)
 			} else {
-				ops = append(ops, find(key, nextOp)...)
+				nextOps := find(key, nextOp)
+				cache[key][op] = nextOps
+				ops = append(ops, nextOps...)
 			}
 		}
 		return ops
 	}
 
-	for _, op := range core.FilterOkOrInfoHistory(history) {
+	for _, op := range core.ReverseHistory(core.FilterOkOrInfoHistory(history)) {
 		keys := getKeys(op)
 
 		for _, k := range keys {
+			if _, ok := cache[k]; !ok {
+				cache[k] = make(map[core.Op][]core.Op)
+			}
 			nexts := find(k, op)
 			g, ok := gs[k]
 			if !ok {

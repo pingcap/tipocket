@@ -169,10 +169,10 @@ func TestVersionGraph(t *testing.T) {
 		MustParseOp("rx4"),
 	}
 	expect2x := core.NewDirectedGraph()
-	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.Realtime)
-	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
-	expect2x.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
 	expect2x.Link(core.Vertex{Value: NewInt(3)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(2)}, core.Vertex{Value: NewInt(4)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(3)}, core.Realtime)
+	expect2x.Link(core.Vertex{Value: NewInt(1)}, core.Vertex{Value: NewInt(2)}, core.Realtime)
 	expect2 := map[string]*core.DirectedGraph{
 		"x": expect2x,
 	}

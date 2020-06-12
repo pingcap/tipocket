@@ -484,11 +484,11 @@ func (h History) GetKeys(t MopType) []string {
 }
 
 // KV struct
-type KV struct {
+type KVEntity struct {
 	K string
 	V interface{}
 }
 
-func (kv KV) String() string {
+func (kv KVEntity) String() string {
 	return fmt.Sprintf("%s->%s", kv.K, kv.V)
 }
