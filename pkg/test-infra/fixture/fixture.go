@@ -71,6 +71,8 @@ type fixtureContext struct {
 	pprofAddr  string
 	EnableHint bool
 	LogPath    string
+	// Plugins
+	LeakCheckEatFile string
 }
 
 // TiDBClusterConfig ...
@@ -270,6 +272,8 @@ func init() {
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 
 	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
+
+	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "/resources/leak/eat.txt", "leak check eat file path")
 
 	log.SetHighlighting(false)
 	go func() {
