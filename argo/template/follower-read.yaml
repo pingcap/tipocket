@@ -14,13 +14,13 @@ spec:
             default: "true"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
-            default: standard
+          - name: storage-class
+            default: local-storage
           - name: nemesis
             default: "random_kill, partition_one, shuffle-leader-scheduler"
-          - name: run_time
+          - name: run-time
             default: "6h"
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -28,14 +28,24 @@ spec:
             default: loki
           - name: loki-password
             default: admin
-          - name: tidb_config
+          - name: tidb-config
             default: ""
-          - name: tikv_config
+          - name: tikv-config
             default: ""
-          - name: pd_config
+          - name: pd-config
             default: ""
           - name: tikv-replicas
             default: "5"
+          - name: enable-follower
+            default: "true"
+          - name: enable-split
+            default: "false"
+          - name: seq-loop
+            default: "100000"
+          - name: insert-num
+            default: "100000"
+          - name: split-range
+            default: "1000000"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -55,15 +65,20 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
-            -tidb-config={{inputs.parameters.tidb_config}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -pd-config={{inputs.parameters.pd_config}} \
+            -tidb-config={{inputs.parameters.tidb-config}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
+            -pd-config={{inputs.parameters.pd-config}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
+            -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
+            -seq-loop={{inputs.parameters.seq-loop}} \
+            -insert-num={{inputs.parameters.insert-num}} \
+            -split-region-range={{inputs.parameters.split-range}} \
+            -enable-follower={{inputs.parameters.enable-follower}} \
+            -enable-split={{inputs.parameters.enable-split}}

@@ -263,6 +263,11 @@ func set(slice []string) []string {
 	return res
 }
 
+// Set export set
+func Set(slice []string) []string {
+	return set(slice)
+}
+
 // stringSlice casts []Vertex to []string
 func stringSlice(vs []Vertex) (res []string) {
 	for _, v := range vs {

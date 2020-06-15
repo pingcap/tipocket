@@ -1,0 +1,6 @@
+[security.encryption]
+data-encryption-method = "aes128-ctr"
+
+[security.encryption.master-key]
+type = "file"
+path = "/var/lib/tikv/master_key"

@@ -21,10 +21,14 @@ const (
 	Drainer Component = "drainer"
 	// CDC Component identifier
 	CDC Component = "cdc"
+	// DM Component identifier
+	DM Component = "dm"
 	// Monitor Component identifier
 	Monitor Component = "monitor"
 	// TiFlash Component identifier
 	TiFlash Component = "tiflash"
+	// MySQL Component identifier
+	MySQL Component = "mysql"
 	// Unknown component identifier
 	Unknown Component = "unknown"
 )
@@ -72,7 +76,15 @@ func (clientNode ClientNode) Address() string {
 
 // String ...
 func (clientNode ClientNode) String() string {
-	return fmt.Sprintf("%s %s:%d", clientNode.Namespace, clientNode.IP, clientNode.Port)
+	return fmt.Sprintf("%s %s:%d", clientNode.ClusterName, clientNode.IP, clientNode.Port)
+}
+
+// Cluster interface
+type Cluster interface {
+	Apply() error
+	Delete() error
+	GetNodes() ([]Node, error)
+	GetClientNodes() ([]ClientNode, error)
 }
 
 // ClusterSpecs is a cluster specification

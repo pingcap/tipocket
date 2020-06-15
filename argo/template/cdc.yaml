@@ -14,31 +14,31 @@ spec:
             default: "docker.io"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: tidb_image
+          - name: tidb-image
             default: ""
-          - name: tikv_image
+          - name: tikv-image
             default: ""
-          - name: pd_image
+          - name: pd-image
             default: ""
-          - name: storage_class
-            default: standard
+          - name: storage-class
+            default: local-storage
           - name: nemesis
             default: ""
-          - name: run_time
+          - name: run-time
             default: "48h"
-          - name: tikv_config
+          - name: tikv-config
             default: ""
-          - name: cdc_hub
-            default: docker.io
-          - name: cdc_repository
-            default: pingcap
           - name: cdc_version
             default: nightly
-          - name: abtest_general_log
+          - name: cdc_enable-kafka
+            default: "false"
+          - name: cdc_kafka-consumer-image
+            default: "docker.io/pingcap/ticdc-kafka:nightly"
+          - name: abtest_general-log
             default: "true"
-          - name: binlog_sync_timeout
+          - name: binlog_sync-timeout
             default: "1h"
           - name: abtest_concurrency
             default: "3"
@@ -68,21 +68,21 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
-            -tidb-image={{inputs.parameters.tidb_image}} \
-            -tikv-image={{inputs.parameters.tikv_image}} \
-            -pd-image={{inputs.parameters.pd_image}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -cdc.hub={{inputs.parameters.cdc_hub}} \
-            -cdc.repository={{inputs.parameters.cdc_repository}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
             -cdc.version={{inputs.parameters.cdc_version}} \
+            -cdc.enable-kafka={{inputs.parameters.cdc_enable-kafka}} \
+            -cdc.kafka-consumer-image={{inputs.parameters.cdc_kafka-consumer-image}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
-            -abtest.general-log={{inputs.parameters.abtest_general_log}} \
-            -binlog.sync-timeout={{inputs.parameters.binlog_sync_timeout}} \
+            -abtest.general-log={{inputs.parameters.abtest_general-log}} \
+            -binlog.sync-timeout={{inputs.parameters.binlog_sync-timeout}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}

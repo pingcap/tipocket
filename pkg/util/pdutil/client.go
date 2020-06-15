@@ -62,10 +62,8 @@ func (p *Client) AddScheduler(schedulerName string) error {
 	if err != nil {
 		return err
 	}
-	if err := p.c.Post(p.pdAddr+schedulersPrefix, "application/json", bytes.NewBuffer(data)); err != nil {
-		return err
-	}
-	return nil
+	_, err = p.c.Post(p.pdAddr+schedulersPrefix, "application/json", bytes.NewBuffer(data))
+	return err
 }
 
 // RemoveScheduler removes the specified scheduler from PD.
@@ -123,7 +121,8 @@ func (p *Client) Operators(input map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	return p.c.Post(p.pdAddr+operatorsPrefix, contentJSON, bytes.NewBuffer(body))
+	_, err = p.c.Post(p.pdAddr+operatorsPrefix, contentJSON, bytes.NewBuffer(body))
+	return err
 }
 
 // GetSiblingRegions gets the siblings' region info.

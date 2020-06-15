@@ -37,14 +37,14 @@ ServiceAccount:      default
 Status:              Pending
 Created:             Sat Mar 21 13:24:31 -0400 (1 second ago)
 Parameters:          
-  image_version:     latest
-  storage_class:     pd-ssd
+  image-version:     latest
+  storage-class:     pd-ssd
 ```
 
 ### Submit a new workflow with parameter overwritten
 
 ```bash
-argo submit workflow/bank.yaml -p image_version=nightly -n argo
+argo submit workflow/bank.yaml -p image-version=nightly -n argo
 
 Name:                tipocket-bank-xqnm2
 Namespace:           argo
@@ -52,8 +52,8 @@ ServiceAccount:      default
 Status:              Pending
 Created:             Sat Mar 21 13:32:55 -0400 (now)
 Parameters:          
-  image_version:     nightly
-  storage_class:     pd-ssd
+  image-version:     nightly
+  storage-class:     pd-ssd
 ```
 
 ### Submit a new template

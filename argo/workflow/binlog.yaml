@@ -9,19 +9,19 @@ spec:
         value: tipocket-binlog
       - name: purge
         value: "true"
-      - name: image_version
+      - name: image-version
         value: release-4.0-nightly
-      - name: storage_class
-        value: gp2
+      - name: storage-class
+        value: local-storage
       - name: nemesis
         value: ""
-      - name: run_time
+      - name: run-time
         value: "60m"
-      - name: relay_log
+      - name: relay-log
         value: "true"
-      - name: abtest_general_log
+      - name: abtest_general-log
         value: "true"
-      - name: binlog_sync_timeout
+      - name: binlog_sync-timeout
         value: "1h"
       - name: abtest_concurrency
         value: "3"
@@ -44,20 +44,20 @@ spec:
                   value: "{{workflow.parameters.ns}}"
                 - name: purge
                   value: "{{workflow.parameters.purge}}"
-                - name: image_version
-                  value: "{{workflow.parameters.image_version}}"
-                - name: storage_class
-                  value: "{{workflow.parameters.storage_class}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
-                - name: run_time
-                  value: "{{workflow.parameters.run_time}}"
-                - name: relay_log
-                  value: "{{workflow.parameters.relay_log}}"
-                - name: abtest_general_log
-                  value: "{{workflow.parameters.abtest_general_log}}"
-                - name: binlog_sync_timeout
-                  value: "{{workflow.parameters.binlog_sync_timeout}}"
+                - name: run-time
+                  value: "{{workflow.parameters.run-time}}"
+                - name: relay-log
+                  value: "{{workflow.parameters.relay-log}}"
+                - name: abtest_general-log
+                  value: "{{workflow.parameters.abtest_general-log}}"
+                - name: binlog_sync-timeout
+                  value: "{{workflow.parameters.binlog_sync-timeout}}"
                 - name: abtest_concurrency
                   value: "{{workflow.parameters.abtest_concurrency}}"
                 - name: loki-addr

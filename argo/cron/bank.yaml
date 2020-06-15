@@ -13,15 +13,15 @@ spec:
           value: tipocket-bank
         - name: purge
           value: "true"
-        - name: image_version
-          value: release-4.0-nightly
-        - name: storage_class
-          value: gp2
+        - name: image-version
+          value: nightly
+        - name: storage-class
+          value: local-storage
         - name: nemesis
           value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
         - name: client
           value: "5"
-        - name: request_count
+        - name: request-count
           value: "20000"
         - name: round
           value: "100"
@@ -34,6 +34,14 @@ spec:
     templates:
       - name: call-tipocket-bank
         steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
           - - name: call-tipocket-bank
               templateRef:
                 name: tipocket-bank
@@ -44,16 +52,16 @@ spec:
                     value: "{{workflow.parameters.ns}}"
                   - name: purge
                     value: "{{workflow.parameters.purge}}"
-                  - name: image_version
-                    value: "{{workflow.parameters.image_version}}"
-                  - name: storage_class
-                    value: "{{workflow.parameters.storage_class}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
                   - name: nemesis
                     value: "{{workflow.parameters.nemesis}}"
                   - name: client
                     value: "{{workflow.parameters.client}}"
-                  - name: request_count
-                    value: "{{workflow.parameters.request_count}}"
+                  - name: request-count
+                    value: "{{workflow.parameters.request-count}}"
                   - name: round
                     value: "{{workflow.parameters.round}}"
                   - name: loki-addr

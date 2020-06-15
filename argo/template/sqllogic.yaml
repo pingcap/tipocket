@@ -8,17 +8,23 @@ spec:
         parameters:
           - name: ns
             default: tipocket-sqllogic
-          - name: hub
-            default: "docker.io"
           - name: purge
             default: "false"
+          - name: hub
+            default: "docker.io"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
-            default: standard
-          - name: run_time
+          - name: tidb-image
+            default: ""
+          - name: tikv-image
+            default: ""
+          - name: pd-image
+            default: ""
+          - name: storage-class
+            default: local-storage
+          - name: run-time
             default: "8h"
           - name: loki-addr
             default: http://gateway.loki.svc
@@ -28,6 +34,10 @@ spec:
             default: admin
           - name: tidb-replica-read
             default: "leader"
+          - name: case-addr
+            default: "https://github.com/mahjonp/sqllogictest/archive/tipocket.tar.gz"
+          - name: case-dir
+            default: "sqllogictest-tipocket"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -48,12 +58,15 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -p=https://codeload.github.com/mahjonp/sqllogictest/zip/tipocket \
-            -d=sqllogictest-tipocket \
+            -run-time={{inputs.parameters.run-time}} \
+            -p={{inputs.parameters.case-addr}} \
+            -d={{inputs.parameters.case-dir}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \

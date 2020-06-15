@@ -8,17 +8,23 @@ spec:
         parameters:
           - name: ns
             default: tipocket-scbank2
-          - name: hub
-            default: "docker.io"
           - name: purge
             default: "false"
+          - name: hub
+            default: "docker.io"
           - name: repository
             default: pingcap
-          - name: image_version
+          - name: image-version
             default: nightly
-          - name: storage_class
-            default: standard
-          - name: run_time
+          - name: tidb-image
+            default: ""
+          - name: tikv-image
+            default: ""
+          - name: pd-image
+            default: ""
+          - name: storage-class
+            default: local-storage
+          - name: run-time
             default: "5h"
           - name: nemesis
             default: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
@@ -28,11 +34,11 @@ spec:
             default: loki
           - name: loki-password
             default: admin
-          - name: tidb_config
+          - name: tidb-config
             default: ""
-          - name: tikv_config
+          - name: tikv-config
             default: ""
-          - name: pd_config
+          - name: pd-config
             default: ""
           - name: tikv-replicas
             default: "3"
@@ -58,13 +64,16 @@ spec:
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
-            -storage-class={{inputs.parameters.storage_class}} \
-            -run-time={{inputs.parameters.run_time}} \
-            -image-version={{inputs.parameters.image_version}} \
+            -storage-class={{inputs.parameters.storage-class}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -image-version={{inputs.parameters.image-version}} \
+            -tidb-image={{inputs.parameters.tidb-image}} \
+            -tikv-image={{inputs.parameters.tikv-image}} \
+            -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
-            -tidb-config={{inputs.parameters.tidb_config}} \
-            -tikv-config={{inputs.parameters.tikv_config}} \
-            -pd-config={{inputs.parameters.pd_config}} \
+            -tidb-config={{inputs.parameters.tidb-config}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
+            -pd-config={{inputs.parameters.pd-config}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -loki-addr={{inputs.parameters.loki-addr}} \

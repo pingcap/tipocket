@@ -10,3 +10,5 @@ test-infra/vendor
 
 # bank log files
 history.log*
+
+*.swp

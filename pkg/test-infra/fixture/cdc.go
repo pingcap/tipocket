@@ -15,11 +15,10 @@ package fixture
 
 // CDCConfig for binlog component
 type CDCConfig struct {
-	CDCVersion       string
-	DockerRepository string
-	HubAddress       string
-	LogPath          string
-	EnableKafka      bool
-	LogLevel         string
-	Timezone         string
+	Image              string
+	LogPath            string
+	EnableKafka        bool
+	KafkaConsumerImage string
+	LogLevel           string
+	Timezone           string
 }

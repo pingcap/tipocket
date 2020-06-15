@@ -25,20 +25,6 @@ type k8sNemesisClient struct {
 	cli *Chaos
 }
 
-func init() {
-	client := k8sNemesisClient{New(tests.TestClient.Cli)}
-	core.RegisterNemesis(kill{client})
-	core.RegisterNemesis(podKill{client})
-	core.RegisterNemesis(containerKill{client})
-	core.RegisterNemesis(networkPartition{client})
-	core.RegisterNemesis(netem{client})
-	core.RegisterNemesis(scaling{client})
-	core.RegisterNemesis(timeChaos{client})
-	core.RegisterNemesis(scheduler{})
-	core.RegisterNemesis(newLeaderShuffler())
-	core.RegisterNemesis(iochaos{client})
-}
-
 func shuffleIndices(n int) []int {
 	indices := make([]int, n)
 	for i := 0; i < n; i++ {
@@ -50,4 +36,21 @@ func shuffleIndices(n int) []int {
 	}
 
 	return indices
+}
+
+func init() {
+	// most kinds of nemesis depends on chaos-mesh or tidb-operator
+	if tests.TestClient.Cli != nil {
+		client := k8sNemesisClient{New(tests.TestClient.Cli)}
+		core.RegisterNemesis(kill{client})
+		core.RegisterNemesis(podKill{client})
+		core.RegisterNemesis(containerKill{client})
+		core.RegisterNemesis(networkPartition{client})
+		core.RegisterNemesis(netem{client})
+		core.RegisterNemesis(timeChaos{client})
+		core.RegisterNemesis(iochaos{client})
+		core.RegisterNemesis(scaling{client})
+	}
+	core.RegisterNemesis(scheduler{})
+	core.RegisterNemesis(newLeaderShuffler())
 }
