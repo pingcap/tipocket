@@ -50,6 +50,8 @@ type Suit struct {
 	VerifySuit verify.Suit
 	// cluster definition
 	ClusterDefs clusterTypes.Cluster
+	// Plugins
+	Plugins []control.Plugin
 }
 
 // Run runs the suit.
@@ -90,6 +92,9 @@ func (suit *Suit) Run(ctx context.Context) {
 			fixture.Context.LokiUsername, fixture.Context.LokiPassword)
 	}
 
+	// set plugins
+	suit.setDefaultPlugins()
+
 	c := control.NewController(
 		sctx,
 		suit.Config,
@@ -97,6 +102,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		core.NewNemesisGenerators(suit.NemesisGens),
 		suit.ClientRequestGen,
 		suit.VerifySuit,
+		suit.Plugins,
 		lokiCli,
 		fixture.Context.LogPath,
 	)
@@ -121,6 +127,16 @@ func (suit *Suit) Run(ctx context.Context) {
 	log.Printf("tear down cluster...")
 	if err := suit.Provisioner.TearDown(context.TODO(), clusterSpec); err != nil {
 		log.Printf("Provisioner tear down failed: %+v", err)
+	}
+}
+
+func (suit *Suit) setDefaultPlugins() {
+	var defaultPlugins = []control.Plugin{
+		&control.PanicCheck{},
+		&control.LeakCheck{},
+	}
+	if len(suit.Plugins) == 0 {
+		suit.Plugins = defaultPlugins
 	}
 }
 
