@@ -21,6 +21,7 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
 	"github.com/pingcap/tipocket/pkg/pocket/pkg/types"
@@ -47,6 +48,15 @@ func main() {
 	pocketConfig.Options.CheckDuration = types.Duration{
 		Duration: 10 * time.Second, // less data in one check round to ensure downstream can catchup upstream.
 	}
+
+	var waitWarmUpNemesisGens []core.NemesisGenerator
+	for _, gen := range util.ParseNemesisGenerators(fixture.Context.Nemesis) {
+		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
+			Gen:   gen,
+			Delay: time.Minute * time.Duration(2),
+		})
+	}
+
 	c := fixture.Context
 	suit := util.Suit{
 		Config:      &cfg,
@@ -58,7 +68,7 @@ func main() {
 				Config:     pocketConfig,
 			},
 		},
-		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
 		ClusterDefs:      test_infra.NewDMCluster(c.Namespace, c.Namespace, c.DMConfig, c.TiDBClusterConfig),
 	}
