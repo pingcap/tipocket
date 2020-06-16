@@ -96,7 +96,8 @@ func MustParseOp(opStr string) core.Op {
 		*op.Value = append(*op.Value, core.Mop{
 			T: mopType,
 			M: map[string]interface{}{
-				mopKey: mopVal,
+				"key":   mopKey,
+				"value": mopVal,
 			},
 		})
 	}
@@ -108,11 +109,9 @@ func MustParseOp(opStr string) core.Op {
 func Pair(op core.Op) (core.Op, core.Op) {
 	invoke := op.Copy()
 	invoke.Type = core.OpTypeInvoke
-	for index, mop := range *invoke.Value {
+	for _, mop := range *invoke.Value {
 		if mop.IsRead() {
-			for k := range mop.M {
-				(*invoke.Value)[index].M[k] = NewNil()
-			}
+			mop.M["value"] = NewNil()
 		}
 	}
 	return invoke, op

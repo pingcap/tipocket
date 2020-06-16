@@ -20,7 +20,8 @@ func TestInternalCase(t *testing.T) {
 
 	mop := (*op2.Value)[2]
 	expectedMop := mop.Copy()
-	expectedMop.M["x"] = NewInt(2)
+	expectedMop.M["key"] = "x"
+	expectedMop.M["value"] = NewInt(2)
 	conflict := InternalConflict{
 		Op:       op2,
 		Mop:      mop,
