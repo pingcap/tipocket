@@ -218,6 +218,8 @@ fi
 
 # Use HOSTNAME if POD_NAME is unset for backward compatibility.
 POD_NAME=${POD_NAME:-$HOSTNAME}
+# Use for multiple data center testing
+DC_ID=$(expr $(echo $POD_NAME | grep -Eo '[0-9]+$') / {{.DataCenter}})
 ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --advertise-addr=${POD_NAME}.${HEADLESS_SERVICE_NAME}.${NAMESPACE}.svc:20160 \
 --addr=0.0.0.0:20160 \
@@ -225,7 +227,8 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --status-addr=0.0.0.0:20180 \
 --data-dir={{.DataDir}} \
 --capacity=${CAPACITY} \
---config=/etc/tikv/tikv.toml
+--config=/etc/tikv/tikv.toml \
+--labels=dc=${DC_ID}
 "
 
 echo "starting tikv-server ..."
@@ -235,8 +238,10 @@ exec /tikv-server ${ARGS}
 
 // TiKVStartScriptModel ...
 type TiKVStartScriptModel struct {
-	DataDir   string
-	MasterKey string
+	DataDir    string
+	MasterKey  string
+	Replicas   int32
+	DataCenter int
 }
 
 // RenderTiKVStartScript ...

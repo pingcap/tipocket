@@ -508,7 +508,12 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir, MasterKey: tikvEncryptionMasterKey}
+	scriptModel := &TiKVStartScriptModel{
+		DataDir:    tikvDir,
+		MasterKey:  tikvEncryptionMasterKey,
+		Replicas:   tc.Spec.TiKV.Replicas,
+		DataCenter: fixture.Context.TiDBClusterConfig.DataCenter,
+	}
 	if getIOChaosAnnotation(tc, "tikv") == "chaosfs-tikv" {
 		scriptModel.DataDir = tikvDataDir
 	}

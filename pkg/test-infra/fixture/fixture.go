@@ -94,6 +94,9 @@ type TiDBClusterConfig struct {
 	TiKVReplicas    int
 	PDReplicas      int
 	TiFlashReplicas int
+
+	// Data center count
+	DataCenter int
 }
 
 // Context ...
@@ -238,6 +241,7 @@ func init() {
 	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.PDReplicas, "pd-replicas", 3, "number of pd replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiFlashReplicas, "tiflash-replicas", 0, "number of tiflash replicas, set 0 to disable tiflash")
+	flag.IntVar(&Context.TiDBClusterConfig.DataCenter, "data-center", 1, "number of data centers")
 
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
