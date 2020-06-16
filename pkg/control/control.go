@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"sync"
 	"time"
 
@@ -22,10 +21,6 @@ import (
 
 	// register nemesis
 	_ "github.com/pingcap/tipocket/pkg/nemesis"
-)
-
-var (
-	minTime = time.Unix(0, 0)
 )
 
 // Controller controls the whole cluster. It sends request to the database,
@@ -56,11 +51,9 @@ type Controller struct {
 	// TODO(yeya24): make log service an interface
 	lokiClient *loki.Client
 	logPath    string
-	// maps from string to *os.File
-	podLogFiles   sync.Map
-	lastQueryTime time.Time
 
-	suit verify.Suit
+	suit    verify.Suit
+	plugins []Plugin
 }
 
 // NewController creates a controller.
@@ -71,6 +64,7 @@ func NewController(
 	nemesisGenerators core.NemesisGenerators,
 	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
+	plugins []Plugin,
 	lokiCli *loki.Client,
 	logPath string,
 ) *Controller {
@@ -85,8 +79,7 @@ func NewController(
 	c.suit = verifySuit
 	c.lokiClient = lokiCli
 	c.logPath = logPath
-	// init time stamp
-	c.lastQueryTime = minTime
+	c.plugins = plugins
 
 	if c.lokiClient != nil {
 		if _, err := os.Stat(c.logPath); err != nil {
@@ -126,12 +119,18 @@ func (c *Controller) Run() {
 	}
 }
 
+func (c *Controller) setUpPlugin() {
+	for _, plugin := range c.plugins {
+		plugin.InitPlugin(c)
+	}
+}
+
 // RunMixed runs workload round by round, with nemesis injected seamlessly
 // Nemesis and workload are running concurrently, nemesis won't pause when one round of workload is finished
 func (c *Controller) RunMixed() {
 	c.setUpDB()
 	c.setUpClient()
-	c.collectLogs()
+	c.setUpPlugin()
 
 	nctx, ncancel := context.WithTimeout(c.ctx, c.cfg.RunTime*time.Duration(int64(c.cfg.RunRound)))
 	var nemesisWg sync.WaitGroup
@@ -202,7 +201,7 @@ ROUND:
 func (c *Controller) RunWithNemesisSequential() {
 	c.setUpDB()
 	c.setUpClient()
-	c.collectLogs()
+	c.setUpPlugin()
 ENTRY:
 	for {
 		c.RLock()
@@ -275,7 +274,7 @@ ENTRY:
 func (c *Controller) RunSelfScheduled() {
 	c.setUpDB()
 	c.setUpClient()
-	c.collectLogs()
+	c.setUpPlugin()
 
 	var (
 		nemesisWg     sync.WaitGroup
@@ -501,131 +500,4 @@ func (c *Controller) onNemesis(ctx context.Context, op *core.NemesisOperation) {
 	if err != nil {
 		log.Errorf("recover nemesis %s failed: %v", op.String(), err)
 	}
-}
-
-func (c *Controller) collectLogs() {
-	if c.lokiClient == nil {
-		return
-	}
-
-	longDur := time.Minute * 10
-	shortDur := time.Minute * 1
-	panicTicker := time.NewTicker(longDur)
-	// log ticker is a ticker for collecting pod logs, runs every 4 minute
-	logTicker := time.NewTicker(shortDur)
-
-	go func() {
-		for {
-			select {
-			case <-c.ctx.Done():
-				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now())
-				// Close all pod logs files
-				c.podLogFiles.Range(func(key, value interface{}) bool {
-					f := value.(*os.File)
-					f.Close()
-					return true
-				})
-				logTicker.Stop()
-				panicTicker.Stop()
-				return
-			case <-panicTicker.C:
-				c.checkTiDBClusterPanic(longDur, c.cfg.Nodes)
-			case <-logTicker.C:
-				// Here we don't use time.Now() is to prevent
-				// the case that agent doesn't upload the latest logs
-				c.fetchTiDBClusterLogs(c.cfg.Nodes, time.Now().Add(-2*time.Second))
-			}
-		}
-	}()
-}
-
-func (c *Controller) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTypes.Node) {
-	wg := &sync.WaitGroup{}
-	to := time.Now()
-	from := to.Add(-dur)
-
-	for _, n := range nodes {
-		switch n.Component {
-		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
-			wg.Add(1)
-			var nonMatch []string
-			if n.Component == clusterTypes.TiKV {
-				nonMatch = []string{
-					"panic-when-unexpected-key-or-data",
-					"No space left on device",
-				}
-			}
-
-			// containerName is added to be sure that we only fetch the logs of
-			// the container we want, not included sidecar containers.
-			go func(ns, podName, containerName string, nonMatch []string) {
-				defer wg.Done()
-				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
-					"panic", nonMatch, from, to, 1000, false)
-				if err != nil {
-					log.Infof("failed to fetch logs from loki for pod %s in ns %s", podName, ns)
-				} else if len(texts) > 0 {
-					panicLogs := "panic-logs"
-					file, err := os.OpenFile(path.Join(c.logPath, panicLogs),
-						os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-					if err != nil {
-						log.Fatal("failed to create panic logs file", err)
-					}
-					f, ok := c.podLogFiles.LoadOrStore(panicLogs, file)
-					if ok {
-						file.Close()
-					}
-					file = f.(*os.File)
-					content := fmt.Sprintf("%d panics occurred in ns: %s pod %s. Content: %v", len(texts), ns, podName, texts)
-					if _, err := file.WriteString(content); err != nil {
-						log.Fatal("fail to write logs to panic logs file", content, err)
-					}
-				}
-			}(n.Namespace, n.PodName, string(n.Component), nonMatch)
-		default:
-		}
-	}
-	wg.Wait()
-}
-
-func (c *Controller) fetchTiDBClusterLogs(nodes []clusterTypes.Node, toTime time.Time) {
-	wg := &sync.WaitGroup{}
-
-	for _, n := range nodes {
-		switch n.Component {
-		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
-			wg.Add(1)
-
-			// containerName is added to be sure that we only fetch the logs of
-			// the container we want, not included sidecar containers.
-			go func(ns, podName, containerName string) {
-				defer wg.Done()
-				texts, err := c.lokiClient.FetchPodLogs(ns, podName, containerName,
-					"", nil, c.lastQueryTime, toTime, 20000, false)
-				if err != nil {
-					log.Infof("failed to fetch logs from loki for pod %s in ns %s error is %v", podName, ns, err)
-				} else {
-					log.Infof("collect %s pod logs successfully, %d lines total", podName, len(texts))
-				}
-				file, err := os.OpenFile(path.Join(c.logPath, podName),
-					os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if err != nil {
-					log.Fatalf("failed to create log file for pod %s error is %v", podName, err)
-				}
-				f, ok := c.podLogFiles.LoadOrStore(podName, file)
-				if ok {
-					file.Close()
-				}
-				file = f.(*os.File)
-				for _, line := range texts {
-					if _, err = file.Write([]byte(line)); err != nil {
-						log.Fatal("fail to write log file for pod %s error is %v", podName, err)
-					}
-				}
-			}(n.Namespace, n.PodName, string(n.Component))
-		default:
-		}
-	}
-	wg.Wait()
-	c.lastQueryTime = toTime
 }
