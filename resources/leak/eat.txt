@@ -33271,3 +33271,9 @@ github.com/dgraph-io/ristretto.(*Cache).processItems(0xc000123740)
         /home/jenkins/agent/workspace/tidb_release-4.0/go/pkg/mod/github.com/dgraph-io/ristretto@v0.0.1/cache.go:257 +0xc8
 created by github.com/dgraph-io/ristretto.NewCache
         /home/jenkins/agent/workspace/tidb_release-4.0/go/pkg/mod/github.com/dgraph-io/ristretto@v0.0.1/cache.go:155 +0x1f3
+
+goroutine 538 [select, 20 minutes]:
+github.com/pingcap/tidb/ddl.(*ddl).limitDDLJobs(0xc000b39e00)
+        /home/jenkins/agent/workspace/tidb_release-4.0/go/src/github.com/pingcap/tidb/ddl/ddl_worker.go:209 +0x2e8
+created by github.com/pingcap/tidb/ddl.(*ddl).Start
+        /home/jenkins/agent/workspace/tidb_release-4.0/go/src/github.com/pingcap/tidb/ddl/ddl.go:320 +0x2ba
