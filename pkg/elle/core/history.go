@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -114,6 +115,7 @@ func (m Mop) IsEqual(n Mop) bool {
 
 // String ...
 func (m Mop) String() string {
+	debug.PrintStack()
 	switch m.T {
 	case MopTypeRead:
 		key, ok := m.M["key"]
@@ -140,8 +142,14 @@ func (m Mop) String() string {
 		return b.String()
 	case MopTypeAppend:
 		key := m.M["key"].(string)
-		value := m.M["value"].(int)
-		return fmt.Sprintf("[:append %s %v]", key, value)
+		var value string
+		switch v := m.M["value"].(type) {
+		case int:
+			value = strconv.Itoa(v)
+		default:
+			value = v.(fmt.Stringer).String()
+		}
+		return fmt.Sprintf("[:append %s %s]", key, value)
 	case MopTypeWrite:
 		var b strings.Builder
 		fmt.Fprint(&b, "[:w")

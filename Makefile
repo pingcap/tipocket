@@ -25,6 +25,9 @@ tidb:
 append:
 	$(GOBUILD) $(GOMOD) -o bin/append cmd/append/main.go
 
+register:
+	$(GOBUILD) $(GOMOD) -o bin/register cmd/register/main.go
+
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
 

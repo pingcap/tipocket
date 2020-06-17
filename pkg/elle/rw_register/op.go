@@ -53,6 +53,14 @@ func (i Int) EqNotNil(another Int) bool {
 	return i.Val == another.Val
 }
 
+// MustGetVal asserts Int is not nil and get its value
+func (i Int) MustGetVal() int {
+	if i.IsNil {
+		panic("should not be nil")
+	}
+	return i.Val
+}
+
 // IntPtr copy int and return its pointer
 func IntPtr(i int) *int {
 	return &i
