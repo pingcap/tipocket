@@ -77,6 +77,12 @@ type fixtureContext struct {
 
 // TiDBClusterConfig ...
 type TiDBClusterConfig struct {
+	// hub address
+	TiDBHubAddress    string
+	TiKVHubAddress    string
+	PDHubAddress      string
+	TiFlashHubAddress string
+
 	// image versions
 	ImageVersion string
 	TiDBImage    string
@@ -211,7 +217,6 @@ func init() {
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
-	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
@@ -224,6 +229,12 @@ func init() {
 	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
 	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
+
+	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBHubAddress, "tidb-hub", "", "tidb hub address, will overwrite -hub")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVHubAddress, "tikv-hub", "", "tikv hub address, will overwrite -hub")
+	flag.StringVar(&Context.TiDBClusterConfig.PDHubAddress, "pd-hub", "", "pd hub address, will overwrite -hub")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashHubAddress, "tiflash-hub", "", "tiflash hub address, will overwrite -hub")
 
 	flag.StringVar(&Context.TiDBClusterConfig.ImageVersion, "image-version", "nightly", "image version")
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBImage, "tidb-image", "", "tidb image")
