@@ -21,11 +21,11 @@ require (
 	github.com/pingcap/chaos-mesh v0.0.0-20200519114056-7201f6b64797
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/kvproto v0.0.0-20200420075417-e0c6e8842f22
+	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36
 	github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd
-	github.com/pingcap/parser v0.0.0-20200427031542-879c7bd4f27d
+	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
 	github.com/pingcap/pd v2.1.17+incompatible
-	github.com/pingcap/pd/v4 v4.0.0-rc.1
+	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tidb-operator v1.1.0-rc.2.p1
 	github.com/pingcap/tidb-tools v4.0.1-0.20200612040216-6ddacc75561c+incompatible
@@ -49,6 +49,8 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
 
 // we use pingcap/pd and pingcap/pd/v4 at the same time, which will cause a panic because pd register prometheus metrics two times.
 replace github.com/pingcap/pd => github.com/mahjonp/pd v1.1.0-beta.0.20200408110858-9c088a87390c
+
+replace github.com/pingcap/tidb => github.com/pingcap/tidb v0.0.0-20200317142013-5268094afe05
 
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v1.8.2-0.20200213233353-b90be6f32a33
 
@@ -99,5 +101,3 @@ replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
 
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
-
-replace github.com/pingcap/tidb => github.com/youjiali1995/tidb v1.1.0-beta.0.20200506103238-f4fcf5dc2012

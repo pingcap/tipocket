@@ -10,8 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pingcap/tidb/store/tikv/gcworker"
-
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/kvproto/pkg/kvrpcpb"
@@ -72,10 +70,10 @@ type resolveLockClient struct {
 	safeLockTs uint64
 	mockLockTs uint64
 
-	dbAddr string
-	db     *sql.DB
-	pd     pd.Client
-	kv     tikv.Storage
+	dbStatusAddr string
+	db           *sql.DB
+	pd           pd.Client
+	kv           tikv.Storage
 }
 
 func (c *resolveLockClient) openDB(ctx context.Context, ip string, port int32) error {
@@ -93,19 +91,14 @@ func (c *resolveLockClient) openDB(ctx context.Context, ip string, port int32) e
 	return errors.Trace(err)
 }
 
-func (c *resolveLockClient) CreateTable(ctx context.Context, i int, node types.ClientNode) (int64, error) {
+func (c *resolveLockClient) CreateTable(ctx context.Context, i int) (int64, error) {
 	table := "t" + strconv.Itoa(i)
 	_, err := c.db.ExecContext(ctx, fmt.Sprintf("create table if not exists %s(id int primary key, v varchar(128))", table))
 	if err != nil {
 		return 0, errors.Trace(err)
 	}
 
-	clusterName := node.ClusterName
-	ns := node.Namespace
-	tidbStatusAddr := fmt.Sprintf("%s-tidb.%s.svc:10080", clusterName, ns)
-	url := fmt.Sprintf("http://%s/schema/%s/%s", tidbStatusAddr, c.dbName, table)
-	// NOTE: local run
-	// url := fmt.Sprintf("http://%s:%d/schema/%s/%s", c.dbAddr, 10080, c.dbName, table)
+	url := fmt.Sprintf("%s/schema/%s/%s", c.dbStatusAddr, c.dbName, table)
 	resp, err := httputil.NewHTTPClient(http.DefaultClient).Get(url)
 	if err != nil {
 		return 0, errors.Trace(err)
@@ -120,54 +113,58 @@ func (c *resolveLockClient) CreateTable(ctx context.Context, i int, node types.C
 	return body.ID, nil
 }
 
-func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.Node, clientNodes []types.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
-	node := nodes[idx]
-
 	log.Info("start to init")
 	defer func() {
 		log.Infof("init end")
 	}()
 
-	err := c.openDB(ctx, node.IP, node.Port)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	c.dbAddr = node.IP
-
-	// Disable GC
-	_, err = c.db.ExecContext(ctx, `update mysql.tidb set VARIABLE_VALUE = "10000h" where VARIABLE_NAME in ("tikv_gc_run_interval", "tikv_gc_life_time")`)
-	if err != nil {
-		return errors.Trace(err)
-	}
-
-	log.Infof("create %d tables", c.RegionCount)
-	// Can't create tables concurrently because there are too many WriteConflicts.
-	for i := 0; i < c.RegionCount; i++ {
-		id, err := c.CreateTable(ctx, i, node)
-		if err != nil {
-			return errors.Trace(err)
-		}
-		c.tableIDs = append(c.tableIDs, id)
-	}
-
-	clusterName := nodes[0].ClusterName
-	ns := nodes[0].Namespace
-	pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)
+	// PD
+	pdNode := nodes[0]
+	pdAddr := fmt.Sprintf("%s-pd.%s.svc:2379", pdNode.ClusterName, pdNode.Namespace)
 	// NOTE: local run
 	// pdAddr := "127.0.0.1:2379"
-	c.pd, err = pd.NewClient([]string{pdAddr}, pd.SecurityOption{})
+	pdClient, err := pd.NewClient([]string{pdAddr}, pd.SecurityOption{})
 	if err != nil {
 		return errors.Trace(err)
 	}
+	c.pd = pdClient
+
+	// TiKV
 	driver := tikv.Driver{}
 	store, err := driver.Open(fmt.Sprintf("tikv://%s?disableGC=true", pdAddr))
 	if err != nil {
 		return errors.Trace(err)
 	}
 	c.kv = store.(tikv.Storage)
+
+	// TiDB
+	dbNode := clientNodes[idx]
+	c.dbStatusAddr = fmt.Sprintf("http://%s-tidb.%s.svc:10080", dbNode.ClusterName, dbNode.Namespace)
+	// NOTE: local run
+	// c.dbStatusAddr = fmt.Sprintf("http://%s:10080", dbNode.IP)
+
+	err = c.openDB(ctx, dbNode.IP, dbNode.Port)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	// Disable GC
+	_, err = c.db.ExecContext(ctx, `update mysql.tidb set VARIABLE_VALUE = "10000h" where VARIABLE_NAME in ("tikv_gc_run_interval", "tikv_gc_life_time")`)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	log.Infof("create %d tables", c.RegionCount)
+	// Can't create tables concurrently because there are too many WriteConflicts.
+	for i := 0; i < c.RegionCount; i++ {
+		id, err := c.CreateTable(ctx, i)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		c.tableIDs = append(c.tableIDs, id)
+	}
 
 	return nil
 }
@@ -218,7 +215,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		log.Infof("[round-%d] start to async generate locks during GC", loopNum)
 		// Generate locks before ts to let lock observer do it job. ts is the safeLockTs which means
 		// locks with ts before it are safe locks. These locks can be left after GC and won't break data consistency.
-		cancel, wg := c.asyncGenerateLocksDuringGC(ctx, ts, 200*time.Millisecond, 1*time.Second)
+		cancel, wg := c.asyncGenerateLocksDuringGC(ctx, ts, 200*time.Millisecond, 2*time.Second)
 
 		// Get a ts as the safe point so it's greater than any locks written by `generateLocks`
 		c.safePoint, err = c.getTs(ctx)
@@ -227,10 +224,9 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		}
 		log.Infof("[round-%d] start to GC at safePoint(%v)", loopNum, c.safePoint)
 		// Invoke GC with the safe point
-		id := fmt.Sprintf("gc-worker-%v", loopNum)
-		greenGCUsed, err := gcworker.RunDistributedGCJob(ctx, c.kv, c.pd, c.safePoint, id, 3, c.EnableGreenGC)
+		greenGCUsed, err := c.resolveLocks(ctx)
 		if err != nil {
-			log.Errorf("[round-%d] %s failed to run GC at safe point %v", loopNum, id, c.safePoint)
+			log.Errorf("[round-%d] failed to run GC at safe point %v", loopNum, c.safePoint)
 			return errors.Trace(err)
 		}
 		log.Infof("[round-%d] GC done at safePoint(%v)", loopNum, c.safePoint)
@@ -238,7 +234,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		if greenGCUsed {
 			lastGreenGC = loopNum
 		} else {
-			log.Warnf("[round-%d] %s failed to resolve lock physically at safe point %v", loopNum, id, c.safePoint)
+			log.Warnf("[round-%d] failed to resolve lock physically at safe point %v", loopNum, c.safePoint)
 		}
 		if c.EnableGreenGC && loopNum-lastGreenGC > 50 {
 			return errors.New("green gc failed to run for over 50 times")
@@ -260,6 +256,22 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		log.Infof("[round-%d] check data done at safePoint(%v)", loopNum, c.safePoint)
 		c.reset(ctx)
 	}
+}
+
+func (c *resolveLockClient) resolveLocks(ctx context.Context) (bool, error) {
+	url := fmt.Sprintf("%s/test/gc/resolvelock?safepoint=%v&physical=%v", c.dbStatusAddr, c.safePoint, c.EnableGreenGC)
+	resp, err := httputil.NewHTTPClient(http.DefaultClient).Get(url)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+	var body struct {
+		PhysicalUsed bool `json:"physicalUsed"`
+	}
+	err = json.Unmarshal(resp, &body)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+	return body.PhysicalUsed, nil
 }
 
 func (c *resolveLockClient) asyncGenerateLocksDuringGC(ctx context.Context, safeLockTs uint64, interval time.Duration, timeout time.Duration) (context.CancelFunc, *sync.WaitGroup) {
