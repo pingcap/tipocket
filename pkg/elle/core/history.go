@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -115,7 +114,6 @@ func (m Mop) IsEqual(n Mop) bool {
 
 // String ...
 func (m Mop) String() string {
-	debug.PrintStack()
 	switch m.T {
 	case MopTypeRead:
 		key, ok := m.M["key"]
@@ -153,15 +151,12 @@ func (m Mop) String() string {
 	case MopTypeWrite:
 		var b strings.Builder
 		fmt.Fprint(&b, "[:w")
-		for k, v := range m.M {
-			switch v := v.(type) {
-			case *int:
-				if v == nil {
-					fmt.Fprintf(&b, " %s %v", k, nil)
-				} else {
-					fmt.Fprintf(&b, " %s %v", k, *v)
-				}
-			}
+		k, v := m.GetKey(), m.GetValue()
+		switch v := v.(type) {
+		case int:
+			fmt.Fprintf(&b, " %s %v", k, v)
+		default:
+			fmt.Fprintf(&b, " %s %s", k, v.(fmt.Stringer).String())
 		}
 		fmt.Fprint(&b, "]")
 		return b.String()

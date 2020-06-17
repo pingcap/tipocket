@@ -13,8 +13,8 @@ var (
 
 // Int can be an int value or nil
 type Int struct {
-	IsNil bool
-	Val   int
+	IsNil bool `json:"is_num"`
+	Val   int  `json:"val"`
 }
 
 // NewInt creates Int with int value

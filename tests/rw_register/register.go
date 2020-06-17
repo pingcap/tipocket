@@ -128,7 +128,6 @@ func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r int
 			if c.readLock != "" {
 				query += " " + c.readLock
 			}
-			fmt.Println(query, k)
 			rows, err := txn.QueryContext(ctx, query, k)
 			if err != nil {
 				return registerResponse{
@@ -229,11 +228,13 @@ type registerClientCreator struct {
 
 // NewClientCreator ...
 func NewClientCreator(tableCount int, readLock string, txnMode string) core.ClientCreator {
+	opt := elletxn.DefaultWrTxnOpts()
+	opt.MaxWritesPerKey = 1024
 	return &registerClientCreator{
 		tableCount: tableCount,
 		readLock:   readLock,
 		txnMode:    txnMode,
-		it:         elletxn.WrTxnWithDefaultOpts(),
+		it:         elletxn.WrTxn(opt),
 	}
 }
 
@@ -247,7 +248,7 @@ func (r *registerClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 			r.mu.Lock()
 			defer r.mu.Unlock()
 			value := r.it.Next()
-			for _, mop := range value {
+			for index, mop := range value {
 				var intVal elleregister.Int
 				switch v := mop.M["value"].(type) {
 				case int:
@@ -258,6 +259,10 @@ func (r *registerClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
 					panic("unexpected type")
 				}
 				mop.M["value"] = intVal
+				if mop.T == ellecore.MopTypeAppend {
+					value[index].T = ellecore.MopTypeWrite
+				}
+				value[index].M = mop.M
 			}
 			return ellecore.Op{
 				Type:  ellecore.OpTypeInvoke,
@@ -297,7 +302,7 @@ func (a RegisterParser) OnState(state json.RawMessage) (interface{}, error) {
 	return nil, nil
 }
 
-// RegisterChecker ...
+// x ...
 type RegisterChecker struct{}
 
 // Check ...
@@ -346,10 +351,17 @@ func convertOperationsToHistory(events []core.Operation) ellecore.History {
 		mops := op.Value
 		typedMops := make([]ellecore.Mop, 0)
 		for _, mop := range *mops {
+			var v elleregister.Int
+			val := mop.GetValue().(map[string]interface{})
+			if val["is_num"].(bool) {
+				v = elleregister.NewNil()
+			} else {
+				v = elleregister.NewInt(int(val["val"].(float64)))
+			}
 			m := ellecore.Mop{
 				M: map[string]interface{}{
 					"key":   mop.GetKey(),
-					"value": mop.GetValue().(elleregister.Int),
+					"value": v,
 				},
 			}
 			if mop.IsRead() {
