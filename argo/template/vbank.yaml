@@ -79,6 +79,7 @@ spec:
             -tikv-config={{inputs.parameters.tikv-config}} \
             -pd-config={{inputs.parameters.pd-config}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -client={{inputs.parameters.client}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -nemesis={{inputs.parameters.nemesis}} \

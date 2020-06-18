@@ -55,6 +55,7 @@ spec:
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -tiflash-replicas={{inputs.parameters.tiflash-replicas}} \

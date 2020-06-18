@@ -68,6 +68,7 @@ spec:
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -tidb-config={{inputs.parameters.tidb-config}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
             -pd-config={{inputs.parameters.pd-config}} \

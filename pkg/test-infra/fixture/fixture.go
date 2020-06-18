@@ -51,6 +51,7 @@ type fixtureContext struct {
 	Namespace                string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
+	DeleteNS                 bool
 	LocalVolumeStorageClass  string
 	TiDBMonitorSvcType       string
 	RemoteVolumeStorageClass string
@@ -221,10 +222,10 @@ func init() {
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
-	flag.StringVar(&Context.BinlogConfig.Image, "binlog-image", "", `overwrite "-image-version" flag for drainer`)
-	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
+
 	flag.BoolVar(&Context.Purge, "purge", false, "purge the whole cluster on success")
+	flag.BoolVar(&Context.DeleteNS, "delNS", false, "delete the deployed namespace")
 
 	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
 	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
@@ -278,6 +279,8 @@ func init() {
 
 	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
 
+	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
+	flag.StringVar(&Context.BinlogConfig.Image, "binlog-image", "", `overwrite "-image-version" flag for drainer`)
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
