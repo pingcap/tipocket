@@ -1,4 +1,4 @@
-<img src="static/logo.png" alt="TiPocket" width="640"/>
+<img src="static/logo.png" alt="TiPocket" width="300"/>
 
 TiPocket is a testing toolkit designed to test TiDB, it encapsulates some testing tools which are also suitable for testing other databases.
 
