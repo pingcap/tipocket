@@ -72,7 +72,7 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/append \
+            /bin/register \
             -table-count={{inputs.parameters.table-count}} \
             -read-lock={{inputs.parameters.read-lock}} \
             -txn-mode={{inputs.parameters.txn-mode}} \
