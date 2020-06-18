@@ -62,7 +62,7 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
-            -purge={{inputs.parameters.purge}} \
+            -purge=true \
             -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
