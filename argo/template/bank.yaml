@@ -76,6 +76,7 @@ spec:
             -tikv-image={{inputs.parameters.tikv-image}} \
             -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -case=bank \
             -client={{inputs.parameters.client}} \
             -tidb-config={{inputs.parameters.tidb-config}} \
