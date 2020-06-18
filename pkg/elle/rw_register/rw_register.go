@@ -39,32 +39,31 @@ func internalOp(op core.Op) core.Anomaly {
 
 	for _, mop := range *op.Value {
 		if mop.IsWrite() {
-			for k, v := range mop.M {
-				vint := v.(Int)
-				if vint.IsNil {
-					panic("write value should not be nil")
-				}
-				dataMap[k] = vint
+			k, v := mop.GetKey(), mop.GetValue()
+			vint := v.(Int)
+			if vint.IsNil {
+				panic("write value should not be nil")
 			}
+			dataMap[k] = vint
 		}
 		if mop.IsRead() {
-			for k, v := range mop.M {
-				vint := v.(Int)
-				if vint.IsNil {
-					// skip failed read
-					continue
-				}
-				if prev, ok := dataMap[k]; !ok {
-					dataMap[k] = vint
-				} else {
-					if !prev.Eq(vint) {
-						expected := mop.Copy()
-						expected.M[k] = prev
-						return InternalConflict{
-							Op:       op,
-							Mop:      mop,
-							Expected: expected,
-						}
+			k, v := mop.GetKey(), mop.GetValue()
+			vint := v.(Int)
+			if vint.IsNil {
+				// skip failed read
+				continue
+			}
+			if prev, ok := dataMap[k]; !ok {
+				dataMap[k] = vint
+			} else {
+				if !prev.Eq(vint) {
+					expected := mop.Copy()
+					expected.M["key"] = k
+					expected.M["value"] = prev
+					return InternalConflict{
+						Op:       op,
+						Mop:      mop,
+						Expected: expected,
 					}
 				}
 			}
@@ -108,13 +107,12 @@ func g1aCases(history core.History) GCaseTp {
 	for _, op := range core.FilterFailedHistory(history) {
 		for _, mop := range *op.Value {
 			if mop.IsWrite() {
-				for k, v := range mop.M {
-					vint := v.(Int)
-					if vint.IsNil {
-						panic("write value should not be nil")
-					}
-					failedMap[core.KVEntity{K: k, V: vint}] = op
+				k, v := mop.GetKey(), mop.GetValue()
+				vint := v.(Int)
+				if vint.IsNil {
+					panic("write value should not be nil")
 				}
+				failedMap[core.KVEntity{K: k, V: vint}] = op
 			}
 		}
 	}
@@ -122,20 +120,19 @@ func g1aCases(history core.History) GCaseTp {
 	for _, op := range core.FilterOkHistory(history) {
 		for _, mop := range *op.Value {
 			if mop.IsRead() {
-				for k, v := range mop.M {
-					vprt := v.(Int)
-					// skip failed reads
-					if vprt.IsNil {
-						continue
-					}
-					if failedOp, ok := failedMap[core.KVEntity{K: k, V: vprt}]; ok {
-						anomalies = append(anomalies, G1Conflict{
-							Op:      op,
-							Mop:     mop,
-							Writer:  failedOp,
-							Element: k,
-						})
-					}
+				k, v := mop.GetKey(), mop.GetValue()
+				vprt := v.(Int)
+				// skip failed reads
+				if vprt.IsNil {
+					continue
+				}
+				if failedOp, ok := failedMap[core.KVEntity{K: k, V: vprt}]; ok {
+					anomalies = append(anomalies, G1Conflict{
+						Op:      op,
+						Mop:     mop,
+						Writer:  failedOp,
+						Element: k,
+					})
 				}
 			}
 		}
@@ -152,16 +149,15 @@ func g1bCases(history core.History) GCaseTp {
 		valMap := make(map[string]Int)
 		for _, mop := range *op.Value {
 			if mop.IsWrite() {
-				for k, v := range mop.M {
-					vprt := v.(Int)
-					if vprt.IsNil {
-						panic("write value should not be nil")
-					}
-					if old, ok := valMap[k]; ok {
-						interMap[core.KVEntity{K: k, V: old}] = op
-					}
-					valMap[k] = vprt
+				k, v := mop.GetKey(), mop.GetValue()
+				vprt := v.(Int)
+				if vprt.IsNil {
+					panic("write value should not be nil")
 				}
+				if old, ok := valMap[k]; ok {
+					interMap[core.KVEntity{K: k, V: old}] = op
+				}
+				valMap[k] = vprt
 			}
 		}
 	}
@@ -169,20 +165,19 @@ func g1bCases(history core.History) GCaseTp {
 	for _, op := range core.FilterOkHistory(history) {
 		for _, mop := range *op.Value {
 			if mop.IsRead() {
-				for k, v := range mop.M {
-					vprt := v.(Int)
-					// skip failed reads
-					if vprt.IsNil {
-						continue
-					}
-					if interOp, ok := interMap[core.KVEntity{K: k, V: vprt}]; ok && op != interOp {
-						anomalies = append(anomalies, G1Conflict{
-							Op:      op,
-							Mop:     mop,
-							Writer:  interOp,
-							Element: k,
-						})
-					}
+				k, v := mop.GetKey(), mop.GetValue()
+				vprt := v.(Int)
+				// skip failed reads
+				if vprt.IsNil {
+					continue
+				}
+				if interOp, ok := interMap[core.KVEntity{K: k, V: vprt}]; ok && op != interOp {
+					anomalies = append(anomalies, G1Conflict{
+						Op:      op,
+						Mop:     mop,
+						Writer:  interOp,
+						Element: k,
+					})
 				}
 			}
 		}
@@ -286,11 +281,11 @@ func getKeys(op core.Op) []string {
 		if op.Type == core.OpTypeInfo && mop.IsRead() {
 			continue
 		}
-		for k := range mop.M {
-			if _, ok := dup[k]; !ok {
-				keys = append(keys, k)
-				dup[k] = struct{}{}
-			}
+
+		k := mop.GetKey()
+		if _, ok := dup[k]; !ok {
+			keys = append(keys, k)
+			dup[k] = struct{}{}
 		}
 	}
 	return keys
@@ -306,7 +301,8 @@ func getVersion(k string, op core.Op) Int {
 		if op.Type == core.OpTypeInfo && mop.IsRead() {
 			continue
 		}
-		if v, ok := mop.M[k]; ok {
+		if k == mop.GetKey() {
+			v := mop.GetValue()
 			if tp == core.MopTypeUnknown {
 				tp = mop.T
 				r = v.(Int)
@@ -362,20 +358,11 @@ func transactionGraph2VersionGraphs(rel core.Rel, history core.History, graph *c
 			stopNext := false
 		LOOP:
 			for _, mop := range *nextOp.Value {
-				if mop.IsWrite() && (nextOp.Type == core.OpTypeOk || nextOp.Type == core.OpTypeInfo) {
-					for k := range mop.M {
-						if k == key {
-							stopNext = true
-							break LOOP
-						}
-					}
-				}
-				if mop.IsRead() && nextOp.Type == core.OpTypeOk {
-					for k := range mop.M {
-						if k == key {
-							stopNext = true
-							break LOOP
-						}
+				if key == mop.GetKey() {
+					if (mop.IsWrite() && (nextOp.Type == core.OpTypeOk || nextOp.Type == core.OpTypeInfo)) ||
+						(mop.IsRead() && nextOp.Type == core.OpTypeOk) {
+						stopNext = true
+						break LOOP
 					}
 				}
 			}
