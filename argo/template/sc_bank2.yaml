@@ -80,4 +80,4 @@ spec:
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
             -tidb-replica-read={{inputs.parameters.tidb-replica-read}} \
-            -plugin.leak.eat=/resources/leak/eat.txt
+            -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt

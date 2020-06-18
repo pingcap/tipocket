@@ -159,7 +159,13 @@ func (s *Stack) Signature() []byte {
 }
 
 func parseFile() ([]*Stack, error) {
-	text, err := ioutil.ReadFile(fixture.Context.LeakCheckEatFile)
+	resp, err := http.Get(fixture.Context.LeakCheckEatFile)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	defer resp.Body.Close()
+
+	text, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
