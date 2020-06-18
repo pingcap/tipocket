@@ -68,4 +68,4 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            -plugin.leak.eat=/resources/leak/eat.txt
+            -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt
