@@ -26,7 +26,7 @@ spec:
         - name: pd-image
           value: ""
         - name: storage-class
-          value: local-storage
+          value: sas
         - name: nemesis
           value: ""
         - name: run-time

@@ -129,7 +129,7 @@ func (suit *Suit) Run(ctx context.Context) {
 
 	log.Info("tear down cluster...")
 	if err := suit.Provisioner.TearDown(context.TODO(), clusterSpec); err != nil {
-		log.Info("Provisioner tear down failed: %+v", err)
+		log.Infof("Provisioner tear down failed: %+v", err)
 	}
 }
 
@@ -163,7 +163,7 @@ func OnClientLoop(
 	requestCount *int64,
 	recorder *history.Recorder,
 ) {
-	log.Info("begin to emit requests on node %s", node)
+	log.Infof("begin to emit requests on node %s", node)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -176,16 +176,16 @@ func OnClientLoop(
 			log.Fatalf("record request %v failed %v", request, err)
 		}
 		if stringer, ok := request.(fmt.Stringer); ok {
-			log.Info("%d %s: call %s", procID, node, stringer.String())
+			log.Infof("%d %s: call %s", procID, node, stringer.String())
 		} else {
-			log.Info("%d %s: call %+v", procID, node, request)
+			log.Infof("%d %s: call %+v", procID, node, request)
 		}
 		response := client.Invoke(ctx, node, request)
 
 		if stringer, ok := response.(fmt.Stringer); ok {
-			log.Info("%d %s: return %+v", procID, node, stringer.String())
+			log.Infof("%d %s: return %+v", procID, node, stringer.String())
 		} else {
-			log.Info("%d %s: return %+v", procID, node, response)
+			log.Infof("%d %s: return %+v", procID, node, response)
 		}
 
 		v := response.(core.UnknownResponse)
@@ -216,7 +216,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 		proc *int64,
 		requestCount *int64,
 		recorder *history.Recorder) {
-		log.Info("begin to run command on node %s", node)
+		log.Infof("begin to run command on node %s", node)
 
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -248,9 +248,9 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 				log.Fatalf("record request %v failed %v", request, err)
 			}
 
-			log.Info("[%d] %s: call %+v", procID, node.String(), request)
+			log.Infof("[%d] %s: call %+v", procID, node.String(), request)
 			response := client.Invoke(ctx, node, request)
-			log.Info("[%d] %s: return %+v", procID, node.String(), response)
+			log.Infof("[%d] %s: return %+v", procID, node.String(), response)
 
 			v := response.(core.UnknownResponse)
 			isUnknown := v.IsUnknown()
@@ -262,7 +262,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			// If Unknown, we need to use another process ID.
 			if isUnknown {
 				procID = atomic.AddInt64(proc, 1)
-				log.Info("[%d] %s: procID add 1", procID, node.String())
+				log.Infof("[%d] %s: procID add 1", procID, node.String())
 			}
 
 			select {
