@@ -1,8 +1,8 @@
-# Tipocket
+<img src="static/logo.png" alt="TiPocket" width="300"/>
 
-Tipocket is a testing toolkit designed to test TiDB, it encapsulates some testing tools which are also suitable for testing other databases.
+TiPocket is a testing toolkit designed to test TiDB, it encapsulates some testing tools which are also suitable for testing other databases.
 
-Tipocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen), a famous library on the distributed system field. Tipocket focuses on stability testing on TiDB, it uses [chaos-mesh](https://github.com/pingcap/chaos-mesh) to inject all-round kinds of nemesis on a TiDB cluster.
+TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen), a famous library on the distributed system field. TiPocket focuses on stability testing on TiDB, it uses [chaos-mesh](https://github.com/pingcap/chaos-mesh) to inject all-round kinds of nemesis on a TiDB cluster.
 
 ## Requirements
 
@@ -47,7 +47,7 @@ Another convenient way we recommend you is using tiup to deploy a cluster on loc
 tiup playground --kv 3
 ```
 
-* Specify that cluster as SUT cluster on Tipocket
+* Specify that cluster as SUT cluster on TiPocket
 
 ```Go
 suit := util.Suit{
@@ -58,7 +58,7 @@ suit := util.Suit{
 
 ## Workloads
 
-Tipocket includes some consistency, isolation and other kinds of tests
+TiPocket includes some consistency, isolation and other kinds of tests
 
 ### Consistency
 
