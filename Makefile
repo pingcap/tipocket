@@ -17,13 +17,16 @@ default: tidy fmt lint build
 
 build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc dm-pocket follower-read append
+		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc dm-pocket follower-read append register
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
 
 append:
 	$(GOBUILD) $(GOMOD) -o bin/append cmd/append/main.go
+
+register:
+	$(GOBUILD) $(GOMOD) -o bin/register cmd/register/main.go
 
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go

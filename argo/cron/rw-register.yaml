@@ -1,0 +1,88 @@
+metadata:
+  name: tipocket-rw-register
+spec:
+  schedule: "0 5 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-rw-register
+    arguments:
+      parameters:
+        - name: table-count
+          value: 7
+        - name: read-lock
+          value: "\"FOR UPDATE\""
+        - name: txn-mode
+          value: pessimistic
+        - name: ns
+          value: tipocket-rw-register
+        - name: purge
+          value: "true"
+        - name: repository
+          value: pingcap
+        - name: image-version
+          value: nightly
+        - name: storage-class
+          value: local-storage
+        - name: nemesis
+          value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+        - name: client
+          value: "5"
+        - name: request-count
+          value: "100000"
+        - name: round
+          value: "10"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
+    templates:
+      - name: call-tipocket-rw-register
+        steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+          - - name: call-tipocket-rw-register
+              templateRef:
+                name: tipocket-rw-register
+                template: tipocket-rw-register
+              arguments:
+                parameters:
+                  - name: table-count
+                    value: "{{workflow.parameters.table-count}}"
+                  - name: read-lock
+                    value: "{{workflow.parameters.read-lock}}"
+                  - name: txn-mode
+                    value: "{{workflow.parameters.txn-mode}}"
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+                  - name: purge
+                    value: "{{workflow.parameters.purge}}"
+                  - name: repository
+                    value: "{{workflow.parameters.repository}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
+                  - name: nemesis
+                    value: "{{workflow.parameters.nemesis}}"
+                  - name: client
+                    value: "{{workflow.parameters.client}}"
+                  - name: request-count
+                    value: "{{workflow.parameters.request-count}}"
+                  - name: round
+                    value: "{{workflow.parameters.round}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"

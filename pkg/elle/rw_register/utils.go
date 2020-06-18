@@ -13,14 +13,13 @@ func extReadKeys(op core.Op) map[string]Int {
 	)
 
 	for _, mop := range *op.Value {
-		for k, v := range mop.M {
-			i := v.(Int)
-			_, ok := ignore[k]
-			if !ok && mop.IsRead() {
-				res[k] = i
-			}
-			ignore[k] = struct{}{}
+		k, v := mop.GetKey(), mop.GetValue()
+		i := v.(Int)
+		_, ok := ignore[k]
+		if !ok && mop.IsRead() {
+			res[k] = i
 		}
+		ignore[k] = struct{}{}
 	}
 
 	return res
@@ -30,14 +29,13 @@ func extWriteKeys(op core.Op) map[string]Int {
 	var res = make(map[string]Int)
 
 	for _, mop := range *op.Value {
-		for k, v := range mop.M {
-			if mop.IsWrite() {
-				i := v.(Int)
-				if i.IsNil {
-					panic("should not write with nil")
-				}
-				res[k] = i
+		k, v := mop.GetKey(), mop.GetValue()
+		if mop.IsWrite() {
+			i := v.(Int)
+			if i.IsNil {
+				panic("should not write with nil")
 			}
+			res[k] = i
 		}
 	}
 
