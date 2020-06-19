@@ -16,7 +16,6 @@ package util
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -24,6 +23,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"github.com/ngaut/log"
 
 	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -69,14 +70,16 @@ func (suit *Suit) Run(ctx context.Context) {
 	startTime := time.Now()
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, clusterSpec)
 	if err != nil {
-		log.Fatalf("deploy a cluster failed, err: %s", err)
+		// we can release resources safely in this case.
+		_ = suit.Provisioner.TearDown(context.TODO(), clusterSpec)
+		log.Fatalf("deploy a cluster failed, maybe has no enough resources, err: %s", err)
 	}
-	log.Printf("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
+	log.Infof("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
 	if len(suit.Config.ClientNodes) == 0 {
-		log.Panic("no client nodes exist")
+		log.Fatal("no client nodes exist")
 	}
 	if suit.Config.ClientCount == 0 {
-		log.Panic("suit.Config.ClientCount is required")
+		log.Fatal("suit.Config.ClientCount is required")
 	}
 	// fill clientNodes
 	retClientCount := len(suit.Config.ClientNodes)
@@ -124,9 +127,9 @@ func (suit *Suit) Run(ctx context.Context) {
 
 	c.Run()
 
-	log.Printf("tear down cluster...")
+	log.Info("tear down cluster...")
 	if err := suit.Provisioner.TearDown(context.TODO(), clusterSpec); err != nil {
-		log.Printf("Provisioner tear down failed: %+v", err)
+		log.Infof("Provisioner tear down failed: %+v", err)
 	}
 }
 
@@ -160,7 +163,7 @@ func OnClientLoop(
 	requestCount *int64,
 	recorder *history.Recorder,
 ) {
-	log.Printf("begin to run command on node %s", node)
+	log.Infof("begin to emit requests on node %s", node)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -173,16 +176,16 @@ func OnClientLoop(
 			log.Fatalf("record request %v failed %v", request, err)
 		}
 		if stringer, ok := request.(fmt.Stringer); ok {
-			log.Printf("%d %s: call %s", procID, node, stringer.String())
+			log.Infof("%d %s: call %s", procID, node, stringer.String())
 		} else {
-			log.Printf("%d %s: call %+v", procID, node, request)
+			log.Infof("%d %s: call %+v", procID, node, request)
 		}
 		response := client.Invoke(ctx, node, request)
 
 		if stringer, ok := response.(fmt.Stringer); ok {
-			log.Printf("%d %s: return %+v", procID, node, stringer.String())
+			log.Infof("%d %s: return %+v", procID, node, stringer.String())
 		} else {
-			log.Printf("%d %s: return %+v", procID, node, response)
+			log.Infof("%d %s: return %+v", procID, node, response)
 		}
 
 		v := response.(core.UnknownResponse)
@@ -213,7 +216,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 		proc *int64,
 		requestCount *int64,
 		recorder *history.Recorder) {
-		log.Printf("begin to run command on node %s", node)
+		log.Infof("begin to run command on node %s", node)
 
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -245,9 +248,9 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 				log.Fatalf("record request %v failed %v", request, err)
 			}
 
-			log.Printf("[%d] %s: call %+v", procID, node.String(), request)
+			log.Infof("[%d] %s: call %+v", procID, node.String(), request)
 			response := client.Invoke(ctx, node, request)
-			log.Printf("[%d] %s: return %+v", procID, node.String(), response)
+			log.Infof("[%d] %s: return %+v", procID, node.String(), response)
 
 			v := response.(core.UnknownResponse)
 			isUnknown := v.IsUnknown()
@@ -259,7 +262,7 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			// If Unknown, we need to use another process ID.
 			if isUnknown {
 				procID = atomic.AddInt64(proc, 1)
-				log.Printf("[%d] %s: procID add 1", procID, node.String())
+				log.Infof("[%d] %s: procID add 1", procID, node.String())
 			}
 
 			select {
@@ -293,7 +296,7 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	case "short_kill_tikv_1node", "short_kill_pd_leader", "short_kill_tiflash_1node":
 		g = nemesis.NewContainerKillGenerator(name)
 	case "random_drop", "all_drop", "minor_drop", "major_drop":
-		log.Panic("Unimplemented")
+		log.Fatal("Unimplemented")
 	case "small_skews", "subcritical_skews", "critical_skews", "big_skews", "huge_skews", "strobe_skews":
 		g = nemesis.NewTimeChaos(name)
 	case "partition_one":

@@ -71,6 +71,7 @@ spec:
             -image-version={{inputs.parameters.image-version}} \
             -abtest.image-version={{inputs.parameters.abtest_image-version}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -client={{inputs.parameters.client}} \
             -run-time={{inputs.parameters.run-time}} \

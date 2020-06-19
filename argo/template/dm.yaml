@@ -62,6 +62,8 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
+            -purge=true \
+            -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -loki-addr={{inputs.parameters.loki-addr}} \

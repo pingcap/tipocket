@@ -102,8 +102,9 @@ func BuildImage(name, tag, fullImageIfNotEmpty string) string {
 		return fullImageIfNotEmpty
 	}
 	var b strings.Builder
-	if fixture.Context.HubAddress != "" {
-		fmt.Fprintf(&b, "%s/", fixture.Context.HubAddress)
+	hub := chooseHub(name)
+	if hub != "" {
+		fmt.Fprintf(&b, "%s/", hub)
 	}
 	b.WriteString(fixture.Context.DockerRepository)
 	b.WriteString("/")
@@ -112,6 +113,28 @@ func BuildImage(name, tag, fullImageIfNotEmpty string) string {
 	b.WriteString(tag)
 
 	return b.String()
+}
+
+func chooseHub(image string) string {
+	switch image {
+	case "tidb":
+		if fixture.Context.TiDBClusterConfig.TiDBHubAddress != "" {
+			return fixture.Context.TiDBClusterConfig.TiDBHubAddress
+		}
+	case "tikv":
+		if fixture.Context.TiDBClusterConfig.TiKVHubAddress != "" {
+			return fixture.Context.TiDBClusterConfig.TiKVHubAddress
+		}
+	case "pd":
+		if fixture.Context.TiDBClusterConfig.PDHubAddress != "" {
+			return fixture.Context.TiDBClusterConfig.PDHubAddress
+		}
+	case "tiflash":
+		if fixture.Context.TiDBClusterConfig.TiFlashHubAddress != "" {
+			return fixture.Context.TiDBClusterConfig.TiFlashHubAddress
+		}
+	}
+	return fixture.Context.HubAddress
 }
 
 // GetNodeIPs gets the IPs (or addresses) for nodes.

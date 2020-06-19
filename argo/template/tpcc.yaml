@@ -64,6 +64,7 @@ spec:
             -tikv-image={{inputs.parameters.tikv-image}} \
             -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -client={{inputs.parameters.client}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \

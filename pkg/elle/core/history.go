@@ -140,20 +140,23 @@ func (m Mop) String() string {
 		return b.String()
 	case MopTypeAppend:
 		key := m.M["key"].(string)
-		value := m.M["value"].(int)
-		return fmt.Sprintf("[:append %s %v]", key, value)
+		var value string
+		switch v := m.M["value"].(type) {
+		case int:
+			value = strconv.Itoa(v)
+		default:
+			value = v.(fmt.Stringer).String()
+		}
+		return fmt.Sprintf("[:append %s %s]", key, value)
 	case MopTypeWrite:
 		var b strings.Builder
 		fmt.Fprint(&b, "[:w")
-		for k, v := range m.M {
-			switch v := v.(type) {
-			case *int:
-				if v == nil {
-					fmt.Fprintf(&b, " %s %v", k, nil)
-				} else {
-					fmt.Fprintf(&b, " %s %v", k, *v)
-				}
-			}
+		k, v := m.GetKey(), m.GetValue()
+		switch v := v.(type) {
+		case int:
+			fmt.Fprintf(&b, " %s %v", k, v)
+		default:
+			fmt.Fprintf(&b, " %s %s", k, v.(fmt.Stringer).String())
 		}
 		fmt.Fprint(&b, "]")
 		return b.String()

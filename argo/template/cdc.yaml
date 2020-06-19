@@ -74,6 +74,7 @@ spec:
             -tikv-image={{inputs.parameters.tikv-image}} \
             -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
+            -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -tikv-config={{inputs.parameters.tikv-config}} \

@@ -50,5 +50,8 @@ func (k *K8sProvisioner) TearDown(_ context.Context, spec clusterTypes.ClusterSp
 	if !fixture.Context.Purge {
 		return nil
 	}
+	if fixture.Context.DeleteNS {
+		return k.DeleteNamespace(spec.Namespace)
+	}
 	return spec.Cluster.Delete()
 }
