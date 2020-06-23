@@ -292,7 +292,7 @@ func init() {
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
 	// failpoint
-	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "", "TiDB failpoints")
+	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
 
 	log.SetHighlighting(false)
 	go func() {
