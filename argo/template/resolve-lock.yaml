@@ -17,11 +17,11 @@ spec:
           - name: image-version
             default: nightly
           - name: tidb-image
-            default: ""
+            default: "hub.pingcap.net/qa/tidb:release-4.0-failpoint"
           - name: tikv-image
-            default: ""
+            default: "hub.pingcap.net/qa/tikv:release-4.0-failpoint"
           - name: pd-image
-            default: ""
+            default: "hub.pingcap.net/qa/pd:release-4.0-failpoint"
           - name: storage-class
             default: local-storage
           - name: nemesis
@@ -31,11 +31,11 @@ spec:
           - name: tikv-replicas
             default: "3"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default: "http://gateway.loki.svc"
           - name: loki-username
-            default: loki
+            default: "loki"
           - name: loki-password
-            default: admin
+            default: "admin"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -69,4 +69,3 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}}
-            -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt

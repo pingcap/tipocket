@@ -14,7 +14,7 @@ spec:
         - name: purge
           value: "true"
         - name: image-version
-          value: release-4.0-nightly
+          value: nightly
         - name: storage-class
           value: sas
         - name: nemesis
