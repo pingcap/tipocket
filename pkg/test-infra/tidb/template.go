@@ -77,14 +77,14 @@ echo "/tidb-server ${ARGS}"
 exec /tidb-server ${ARGS}
 `))
 
-// TiDBStartScriptModel ...
-type TiDBStartScriptModel struct {
+// StartScriptModel ...
+type StartScriptModel struct {
 	ClusterName string
 	Failpoints  string
 }
 
 // RenderTiDBStartScript ...
-func RenderTiDBStartScript(model *TiDBStartScriptModel) (string, error) {
+func RenderTiDBStartScript(model *StartScriptModel) (string, error) {
 	return util.RenderTemplateFunc(tidbStartScriptTpl, model)
 }
 

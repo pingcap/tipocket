@@ -492,7 +492,7 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 }
 
 func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderTiDBStartScript(&TiDBStartScriptModel{ClusterName: tc.Name, Failpoints: fixture.Context.TiDBFailpoint})
+	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name, Failpoints: fixture.Context.TiDBFailpoint})
 	if err != nil {
 		return nil, err
 	}
