@@ -236,8 +236,6 @@ SYNC:
 		// return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestTxnBegin(); err != nil {
-		c.Unlock()
-		c.execMutex.Unlock()
 		return false, errors.Trace(err)
 	}
 	log.Info("compare wait for chan finish")
