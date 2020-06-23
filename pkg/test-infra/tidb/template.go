@@ -67,6 +67,11 @@ then
     ARGS="${ARGS} --log-slow-query=${SLOW_LOG_FILE:-}"
 fi
 
+if [[ ! -z "{{.Failpoints}}" ]];
+then
+	export GO_FAILPOINTS='{{.Failpoints}}'
+	echo "export GO_FAILPOINTS='{{.Failpoints}}'"
+fi
 echo "start tidb-server ..."
 echo "/tidb-server ${ARGS}"
 exec /tidb-server ${ARGS}
@@ -75,6 +80,7 @@ exec /tidb-server ${ARGS}
 // StartScriptModel ...
 type StartScriptModel struct {
 	ClusterName string
+	Failpoints  string
 }
 
 // RenderTiDBStartScript ...
