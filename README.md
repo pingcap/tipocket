@@ -53,7 +53,7 @@ tiup playground --kv 3
 -tidb-server 127.0.0.1:4000 
 ```
 
-* If a cluster has multiple service addresses, you can pass multiple flags, Eg.
+* If a cluster has many service addresses, you can pass a flag multiple times
 
 ```bash
 -tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
@@ -66,7 +66,7 @@ TiPocket includes some consistency, isolation and other kinds of tests
 ### Consistency
 
 * **bank** transfers between rows of a shared table
-* **lbank** check bank accounts using a linearizability checker [porcupine](https://github.com/anishathalye/porcupine)
+* **pbank** check bank accounts using a linearizability checker [porcupine](https://github.com/anishathalye/porcupine)
 * **vbank** like bank but cover more TiKV features
 * **ledger** yet another bank test
 * **rawkv-linearizability** rawkv linearizability checker
