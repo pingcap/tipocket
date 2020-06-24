@@ -20,7 +20,7 @@ spec:
       - name: repository
         value: pingcap
       - name: image-version
-        value: nightly
+        value: release-4.0-failpoint
       - name: tidb-image
         value: ""
       - name: tikv-image
