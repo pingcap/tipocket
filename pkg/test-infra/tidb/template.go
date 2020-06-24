@@ -47,7 +47,10 @@ then
     tail -f /dev/null
 fi
 
+# Use HOSTNAME if POD_NAME is unset for backward compatibility.
+POD_NAME=${POD_NAME:-$HOSTNAME}
 ARGS="--store=tikv \
+--advertise-address=${POD_NAME}.${HEADLESS_SERVICE_NAME}.${NAMESPACE}.svc \
 --host=0.0.0.0 \
 --path=${CLUSTER_NAME}-pd:2379 \
 --config=/etc/tidb/tidb.toml
@@ -64,6 +67,11 @@ then
     ARGS="${ARGS} --log-slow-query=${SLOW_LOG_FILE:-}"
 fi
 
+if [[ ! -z "{{.Failpoints}}" ]];
+then
+	export GO_FAILPOINTS='{{.Failpoints}}'
+	echo "export GO_FAILPOINTS='{{.Failpoints}}'"
+fi
 echo "start tidb-server ..."
 echo "/tidb-server ${ARGS}"
 exec /tidb-server ${ARGS}
@@ -72,6 +80,7 @@ exec /tidb-server ${ARGS}
 // StartScriptModel ...
 type StartScriptModel struct {
 	ClusterName string
+	Failpoints  string
 }
 
 // RenderTiDBStartScript ...

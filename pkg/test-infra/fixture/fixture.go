@@ -74,6 +74,8 @@ type fixtureContext struct {
 	LogPath    string
 	// Plugins
 	LeakCheckEatFile string
+	// failpoints
+	TiDBFailpoint string
 }
 
 // TiDBClusterConfig ...
@@ -287,7 +289,10 @@ func init() {
 
 	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
 
+	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
+	// failpoint
+	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
 
 	log.SetHighlighting(false)
 	go func() {

@@ -9,7 +9,7 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
-	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/uuid v1.1.1
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
@@ -27,7 +27,7 @@ require (
 	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-operator v1.1.0-rc.2.p1
+	github.com/pingcap/tidb-operator v1.1.0-rc.3
 	github.com/pingcap/tidb-tools v4.0.1-0.20200612040216-6ddacc75561c+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/fastuuid v1.2.0
