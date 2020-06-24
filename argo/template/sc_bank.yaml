@@ -54,7 +54,7 @@ spec:
           ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
-        image: 'mahjonp/tipocket:latest'
+        image: 'pingcap/tipocket:latest'
         imagePullPolicy: Always
         command:
           - sh
