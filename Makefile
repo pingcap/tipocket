@@ -17,7 +17,8 @@ default: tidy fmt lint build
 
 build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
 		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc dm-pocket follower-read append register
+		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc dm-pocket follower-read append register \
+		resolve-lock
 
 tidb:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
@@ -48,6 +49,9 @@ compare:
 
 ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
+
+resolve-lock:
+	$(GOBUILD) $(GOMOD) -o bin/resolve-lock cmd/resolve-lock/*.go
 
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
