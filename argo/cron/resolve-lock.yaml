@@ -1,0 +1,64 @@
+metadata:
+  name: tipocket-resolve-lock
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-resolve-lock
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-resolve-lock
+        - name: purge
+          value: "true"
+        - name: image-version
+          value: nightly
+        - name: storage-class
+          value: sas
+        - name: nemesis
+          value: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
+        - name: run-time
+          value: "12h"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
+    templates:
+      - name: call-tipocket-resolve-lock
+        steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+          - - name: call-tipocket-resolve-lock
+              templateRef:
+                name: tipocket-resolve-lock
+                template: tipocket-resolve-lock
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+                  - name: purge
+                    value: "{{workflow.parameters.purge}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
+                  - name: nemesis
+                    value: "{{workflow.parameters.nemesis}}"
+                  - name: run-time
+                    value: "{{workflow.parameters.run-time}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"

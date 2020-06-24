@@ -17,7 +17,7 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
-		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read
+		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
 
@@ -67,6 +67,9 @@ pocket:
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
+
+resolve-lock:
+	$(GOBUILD) $(GOMOD) -o bin/resolve-lock cmd/resolve-lock/*.go
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
