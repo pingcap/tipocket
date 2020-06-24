@@ -18,7 +18,8 @@ import (
 	"github.com/pingcap/tidb/store/tikv/oracle"
 	"github.com/pingcap/tidb/store/tikv/tikvrpc"
 	"github.com/pingcap/tidb/tablecodec"
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	httputil "github.com/pingcap/tipocket/pkg/util/http"
 	"github.com/pingcap/tipocket/util"
@@ -52,7 +53,7 @@ type CaseCreator struct {
 }
 
 // Create creates the resolveLockClient from the CaseCreator
-func (l CaseCreator) Create(node types.ClientNode) core.Client {
+func (l CaseCreator) Create(node cluster.ClientNode) core.Client {
 	return &resolveLockClient{
 		Config: l.Cfg.Normalize(),
 		dbName: "resolve_lock",
@@ -113,7 +114,7 @@ func (c *resolveLockClient) CreateTable(ctx context.Context, i int) (int64, erro
 	return body.ID, nil
 }
 
-func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *resolveLockClient) SetUp(ctx context.Context, nodes []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -169,12 +170,12 @@ func (c *resolveLockClient) SetUp(ctx context.Context, nodes []types.Node, clien
 	return nil
 }
 
-func (c *resolveLockClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *resolveLockClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	c.db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", c.dbName))
 	return c.db.Close()
 }
 
-func (c *resolveLockClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *resolveLockClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -186,7 +187,7 @@ func (c *resolveLockClient) DumpState(ctx context.Context) (interface{}, error) 
 	panic("implement me")
 }
 
-func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test")
 	defer func() {
 		log.Info("test end")
