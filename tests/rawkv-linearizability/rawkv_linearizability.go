@@ -10,16 +10,15 @@ import (
 	"strconv"
 	"time"
 
+	persistent_treap "github.com/gengliqi/persistent_treap/persistent_treap"
 	pd "github.com/pingcap/pd/client"
 	"github.com/tikv/client-go/config"
 	"github.com/tikv/client-go/rawkv"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/util"
-
-	persistent_treap "github.com/gengliqi/persistent_treap/persistent_treap"
 )
 
 // Key type
@@ -155,7 +154,7 @@ type rawkvClient struct {
 }
 
 // SetUp implements the core.Client interface.
-func (c *rawkvClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (c *rawkvClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	log.Printf("setup client %v start", idx)
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -190,12 +189,12 @@ func (c *rawkvClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNo
 }
 
 // TearDown implements the core.Client interface.
-func (c *rawkvClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *rawkvClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke implements the core.Client interface.
-func (c *rawkvClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (c *rawkvClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(rawkvRequest)
 	key := []byte(strconv.Itoa(request.Key))
 	switch request.Op {
@@ -274,12 +273,12 @@ func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start implements the core.Client interface.
-func (c *rawkvClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (c *rawkvClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
 
 // Create creates a RawkvClient.
-func (r RawkvClientCreator) Create(node clusterTypes.ClientNode) core.Client {
+func (r RawkvClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &rawkvClient{
 		conf:         r.Cfg,
 		randomValues: r.RandomValues,

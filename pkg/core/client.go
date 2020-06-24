@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // UnknownResponse means we don't know wether this operation
@@ -17,12 +17,12 @@ type UnknownResponse interface {
 // You should define your own client for your database.
 type Client interface {
 	// SetUp sets up the client.
-	SetUp(ctx context.Context, nodes []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error
+	SetUp(ctx context.Context, nodes []cluster.Node, clientNodes []cluster.ClientNode, idx int) error
 	// TearDown tears down the client.
-	TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error
+	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
-	Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) UnknownResponse
+	Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) UnknownResponse
 	// NextRequest generates a request for latter Invoke.
 	NextRequest() interface{}
 	// DumpState the database state(also the model's state)
@@ -30,14 +30,14 @@ type Client interface {
 	// Start runs self scheduled cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only
-	Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error
+	Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error
 }
 
 // ClientCreator creates a client.
 // The control will create one client for one node.
 type ClientCreator interface {
 	// Create creates the client.
-	Create(node clusterTypes.ClientNode) Client
+	Create(node cluster.ClientNode) Client
 }
 
 // NoopClientCreator creates a noop client.
@@ -45,7 +45,7 @@ type NoopClientCreator struct {
 }
 
 // Create creates the client.
-func (NoopClientCreator) Create(node clusterTypes.Node) Client {
+func (NoopClientCreator) Create(node cluster.Node) Client {
 	return noopClient{}
 }
 
@@ -54,12 +54,12 @@ type noopClient struct {
 }
 
 // SetUp sets up the client.
-func (noopClient) SetUp(ctx context.Context, _ []clusterTypes.Node, _ []clusterTypes.ClientNode, idx int) error {
+func (noopClient) SetUp(ctx context.Context, _ []cluster.Node, _ []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // TearDown tears down the client.
-func (noopClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (noopClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (noopResponse) IsUnknown() bool {
 }
 
 // Invoke invokes a request to the database.
-func (noopClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) UnknownResponse {
+func (noopClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) UnknownResponse {
 	return noopResponse{}
 }
 
@@ -85,6 +85,6 @@ func (noopClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }

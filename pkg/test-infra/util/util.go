@@ -28,7 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
@@ -54,15 +54,15 @@ func FindPort(podName, component string, containers []corev1.Container) int32 {
 	}
 	ports := container.Ports
 	var priorityPort int32 = 0
-	if component == string(clusterTypes.PD) {
+	if component == string(cluster.PD) {
 		priorityPort = 2379
-	} else if component == string(clusterTypes.TiKV) {
+	} else if component == string(cluster.TiKV) {
 		priorityPort = 20160
-	} else if component == string(clusterTypes.TiDB) {
+	} else if component == string(cluster.TiDB) {
 		priorityPort = 4000
-	} else if component == string(clusterTypes.DM) {
+	} else if component == string(cluster.DM) {
 		priorityPort = 8261
-	} else if component == string(clusterTypes.MySQL) {
+	} else if component == string(cluster.MySQL) {
 		priorityPort = 3306
 	}
 

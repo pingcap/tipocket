@@ -22,17 +22,16 @@ import (
 	"github.com/ngaut/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/tests"
-
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/pkg/test-infra/util"
-
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // Ops knows how to operate CDC cluster
@@ -190,12 +189,12 @@ func (o *Ops) applyJob() error {
 }
 
 // GetClientNodes returns the client nodes
-func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	return nil, nil
 }
 
 // GetNodes returns cdc nodes
-func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	pod := &corev1.Pod{}
 	err := o.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: o.cdc.StatefulSet.ObjectMeta.Namespace,
@@ -203,14 +202,14 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	}, pod)
 
 	if err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
-	return []clusterTypes.Node{{
+	return []cluster.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
-		Component: clusterTypes.CDC,
-		Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.CDC), pod.Spec.Containers),
+		Component: cluster.CDC,
+		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.CDC), pod.Spec.Containers),
 	}}, nil
 }

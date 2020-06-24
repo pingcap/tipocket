@@ -11,7 +11,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -25,10 +25,10 @@ type killGenerator struct {
 }
 
 // Generate generates container-kill actions, to simulate the case that node can't be recovered quickly after being killed
-func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	var n int
 	var duration = time.Second * time.Duration(rand.Intn(120)+60)
-	var component *clusterTypes.Component
+	var component *cluster.Component
 
 	// This part decide how many machines to apply pod-failure
 	switch g.name {
@@ -41,34 +41,34 @@ func (g killGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperat
 	case "kill_tikv_1node_5min":
 		n = 1
 		duration = chaosDurationFiveMin
-		cmp := clusterTypes.TiKV
+		cmp := cluster.TiKV
 		component = &cmp
 	case "kill_tikv_2node_5min":
 		n = 2
 		duration = chaosDurationFiveMin
-		cmp := clusterTypes.TiKV
+		cmp := cluster.TiKV
 		component = &cmp
 	case "kill_pd_leader_5min":
 		n = 1
 		duration = chaosDurationFiveMin
-		cmp := clusterTypes.PD
+		cmp := cluster.PD
 		component = &cmp
 		nodes = findPDMember(nodes, true)
 	case "kill_pd_non_leader_5min":
 		n = 1
 		duration = chaosDurationFiveMin
-		cmp := clusterTypes.PD
+		cmp := cluster.PD
 		component = &cmp
 		nodes = findPDMember(nodes, false)
 	// only set this when you have more than 1 tiflash replicas
 	case "kill_tiflash_1node_5min":
 		n = 1
 		duration = chaosDurationFiveMin
-		cmp := clusterTypes.TiFlash
+		cmp := cluster.TiFlash
 		component = &cmp
 	case "kill_dm_1node":
 		n = 1
-		cmp := clusterTypes.DM
+		cmp := cluster.DM
 		component = &cmp
 	default:
 		n = 1
@@ -80,7 +80,7 @@ func (g killGenerator) Name() string {
 	return g.name
 }
 
-func killNodes(nodes []clusterTypes.Node, n int, component *clusterTypes.Component, duration time.Duration) []*core.NemesisOperation {
+func killNodes(nodes []cluster.Node, n int, component *cluster.Component, duration time.Duration) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	if component != nil {
 		nodes = filterComponent(nodes, *component)
@@ -111,11 +111,11 @@ func NewKillGenerator(name string) core.NemesisGenerator {
 
 // coordinationKillGenerator can be used to testing multi data center
 type coordinationKillGenerator struct {
-	nodes   []clusterTypes.Node
+	nodes   []cluster.Node
 	control *core.NemesisControl
 }
 
-func (t *coordinationKillGenerator) Generate(_ []clusterTypes.Node) []*core.NemesisOperation {
+func (t *coordinationKillGenerator) Generate(_ []cluster.Node) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 	for i := 0; i < len(t.nodes); i++ {
 		ops = append(ops, &core.NemesisOperation{
@@ -135,7 +135,7 @@ func (t *coordinationKillGenerator) Name() string {
 }
 
 // NewCoordinationKillGenerator ...
-func NewCoordinationKillGenerator(nodes []clusterTypes.Node) (core.NemesisGenerator, *core.NemesisControl) {
+func NewCoordinationKillGenerator(nodes []cluster.Node) (core.NemesisGenerator, *core.NemesisControl) {
 	control := &core.NemesisControl{}
 	return &coordinationKillGenerator{nodes: nodes, control: control}, control
 }
@@ -145,13 +145,13 @@ type kill struct {
 	k8sNemesisClient
 }
 
-func (k kill) Invoke(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
+func (k kill) Invoke(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
 	log.Infof("apply nemesis %s on node %s(ns:%s)", core.PodFailure, node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k kill) Recover(ctx context.Context, node *clusterTypes.Node, _ ...interface{}) error {
+func (k kill) Recover(ctx context.Context, node *cluster.Node, _ ...interface{}) error {
 	log.Infof("unapply nemesis %s on node %s(ns:%s)", core.PodFailure, node.PodName, node.Namespace)
 	podChaos := buildPodFailureChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)
@@ -181,8 +181,8 @@ func buildPodFailureChaos(ns string, chaosNs string, name string) chaosv1alpha1.
 	}
 }
 
-func filterComponent(nodes []clusterTypes.Node, component clusterTypes.Component) []clusterTypes.Node {
-	var componentNodes []clusterTypes.Node
+func filterComponent(nodes []cluster.Node, component cluster.Component) []cluster.Node {
+	var componentNodes []cluster.Node
 
 	for _, node := range nodes {
 		if node.Component == component {
@@ -193,14 +193,14 @@ func filterComponent(nodes []clusterTypes.Node, component clusterTypes.Component
 	return componentNodes
 }
 
-func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node {
+func findPDMember(nodes []cluster.Node, ifLeader bool) []cluster.Node {
 	var (
 		leader string
 		err    error
-		result []clusterTypes.Node
+		result []cluster.Node
 	)
 	for _, node := range nodes {
-		if node.Component == clusterTypes.PD {
+		if node.Component == cluster.PD {
 			if leader == "" && node.Client != nil {
 				leader, _, err = node.PDMember()
 				if err != nil {
@@ -208,7 +208,7 @@ func findPDMember(nodes []clusterTypes.Node, ifLeader bool) []clusterTypes.Node 
 				}
 			}
 			if ifLeader && node.PodName == leader {
-				return []clusterTypes.Node{node}
+				return []cluster.Node{node}
 			}
 			if !ifLeader && node.PodName != leader {
 				result = append(result, node)

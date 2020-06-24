@@ -34,7 +34,6 @@ var (
 	useRange      = flag.Bool("range", false, "use range condition")
 	updateInPlace = flag.Bool("update_in_place", false, "use update in place mode")
 	readCommitted = flag.Bool("read_committed", false, "use READ-COMMITTED isolation level")
-	local         = flag.Bool("local", false, "use local cluster")
 )
 
 func main() {
@@ -64,13 +63,9 @@ func main() {
 		ClientCreator:    vbank.NewClientCreator(vbCfg),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-	}
-	if *local {
-		suit.Provisioner = cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, nil, nil)
-	} else {
-		suit.Provisioner = cluster.NewK8sProvisioner()
-		suit.NemesisGens = util.ParseNemesisGenerators(fixture.Context.Nemesis)
-		suit.ClusterDefs = test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig)
+		Provider:         cluster.NewDefaultClusterProvider(),
+		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

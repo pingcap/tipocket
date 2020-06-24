@@ -11,7 +11,7 @@ import (
 
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -20,7 +20,7 @@ type podKillGenerator struct {
 	name string
 }
 
-func (g podKillGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+func (g podKillGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	return podKillNodes(nodes, len(nodes), time.Second*time.Duration(rand.Intn(120)+60))
 }
 
@@ -28,7 +28,7 @@ func (g podKillGenerator) Name() string {
 	return g.name
 }
 
-func podKillNodes(nodes []clusterTypes.Node, n int, freq time.Duration) []*core.NemesisOperation {
+func podKillNodes(nodes []cluster.Node, n int, freq time.Duration) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, len(nodes))
 	// randomly shuffle the indices and get the first n nodes to be partitioned.
 	indices := shuffleIndices(len(nodes))
@@ -56,14 +56,14 @@ type podKill struct {
 	k8sNemesisClient
 }
 
-func (k podKill) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (k podKill) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("apply nemesis %s on node %s(ns:%s)", core.PodKill, node.PodName, node.Namespace)
 	podChaos := buildPodKillChaos(node.Namespace, node.Namespace,
 		node.PodName)
 	return k.cli.ApplyPodChaos(ctx, &podChaos)
 }
 
-func (k podKill) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (k podKill) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("unapply nemesis %s on node %s(ns:%s)", core.PodKill, node.PodName, node.Namespace)
 	podChaos := buildPodKillChaos(node.Namespace, node.Namespace, node.PodName)
 	return k.cli.CancelPodChaos(ctx, &podChaos)

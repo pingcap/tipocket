@@ -13,7 +13,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -23,7 +23,7 @@ type CaseCreator struct {
 }
 
 // Create creates a read-stress test client
-func (c CaseCreator) Create(node types.ClientNode) core.Client {
+func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
 	return &titanClient{}
 }
 
@@ -33,7 +33,7 @@ type titanClient struct {
 }
 
 // SetUp implements the core.Client interface.
-func (c *titanClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *titanClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	log.Infof("setup client %v start", idx)
 
 	clusterName := clientNodes[0].ClusterName
@@ -57,11 +57,11 @@ func (c *titanClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []t
 }
 
 // TearDown implements the core.Client interface.
-func (c *titanClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *titanClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *titanClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *titanClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -73,7 +73,7 @@ func (c *titanClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	for {
 		start := []byte(fmt.Sprintf("v%03d", 1))
 		end := []byte(fmt.Sprintf("v%03d", 101))

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"regexp"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 )
@@ -14,20 +13,20 @@ var (
 	tidbRegex = regexp.MustCompile(`.*tidb-[0-9]+$`)
 )
 
-// K8sProvisioner implement Provisioner in k8s
-type K8sProvisioner struct {
+// K8sProvider implement Provider in k8s
+type K8sProvider struct {
 	*tests.TestCli
 }
 
-// NewK8sProvisioner create k8s provisioner
-func NewK8sProvisioner() clusterTypes.Provisioner {
-	return &K8sProvisioner{
+// NewK8sClusterProvider create tidb cluster on k8s
+func NewK8sClusterProvider() Provider {
+	return &K8sProvider{
 		TestCli: tests.TestClient,
 	}
 }
 
 // SetUp sets up cluster, returns err or all nodes info
-func (k *K8sProvisioner) SetUp(_ context.Context, spec clusterTypes.ClusterSpecs) ([]clusterTypes.Node, []clusterTypes.ClientNode, error) {
+func (k *K8sProvider) SetUp(_ context.Context, spec Specs) ([]Node, []ClientNode, error) {
 	if err := k.CreateNamespace(spec.Namespace); err != nil {
 		return nil, nil, errors.New("failed to create namespace " + spec.Namespace)
 	}
@@ -46,7 +45,7 @@ func (k *K8sProvisioner) SetUp(_ context.Context, spec clusterTypes.ClusterSpecs
 }
 
 // TearDown tears down the cluster
-func (k *K8sProvisioner) TearDown(_ context.Context, spec clusterTypes.ClusterSpecs) error {
+func (k *K8sProvider) TearDown(_ context.Context, spec Specs) error {
 	if !fixture.Context.Purge {
 		return nil
 	}

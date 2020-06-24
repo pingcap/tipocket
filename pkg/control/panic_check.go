@@ -9,7 +9,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 var (
@@ -68,17 +68,17 @@ func (c *PanicCheck) InitPlugin(control *Controller) {
 	}()
 }
 
-func (c *PanicCheck) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTypes.Node) {
+func (c *PanicCheck) checkTiDBClusterPanic(dur time.Duration, nodes []cluster.Node) {
 	wg := &sync.WaitGroup{}
 	to := time.Now()
 	from := to.Add(-dur)
 
 	for _, n := range nodes {
 		switch n.Component {
-		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
+		case cluster.TiDB, cluster.TiKV, cluster.PD:
 			wg.Add(1)
 			var nonMatch []string
-			if n.Component == clusterTypes.TiKV {
+			if n.Component == cluster.TiKV {
 				nonMatch = []string{
 					"panic-when-unexpected-key-or-data",
 					"No space left on device",
@@ -117,12 +117,12 @@ func (c *PanicCheck) checkTiDBClusterPanic(dur time.Duration, nodes []clusterTyp
 	wg.Wait()
 }
 
-func (c *PanicCheck) fetchTiDBClusterLogs(nodes []clusterTypes.Node, toTime time.Time) {
+func (c *PanicCheck) fetchTiDBClusterLogs(nodes []cluster.Node, toTime time.Time) {
 	wg := &sync.WaitGroup{}
 
 	for _, n := range nodes {
 		switch n.Component {
-		case clusterTypes.TiDB, clusterTypes.TiKV, clusterTypes.PD:
+		case cluster.TiDB, cluster.TiKV, cluster.PD:
 			wg.Add(1)
 
 			// containerName is added to be sure that we only fetch the logs of

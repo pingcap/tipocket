@@ -58,8 +58,8 @@ func main() {
 	}
 
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: bank2.ClientCreator{Cfg: &bank2.Config{
 			NumAccounts:   *accounts,
 			Interval:      *interval,

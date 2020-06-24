@@ -78,6 +78,17 @@ type fixtureContext struct {
 	TiDBFailpoint string
 }
 
+type arrayFlags []string
+
+func (a *arrayFlags) String() string {
+	return "multiple addresses"
+}
+
+func (a *arrayFlags) Set(value string) error {
+	*a = append(*a, value)
+	return nil
+}
+
 // TiDBClusterConfig ...
 type TiDBClusterConfig struct {
 	// hub address
@@ -103,6 +114,11 @@ type TiDBClusterConfig struct {
 	TiKVReplicas    int
 	PDReplicas      int
 	TiFlashReplicas int
+
+	// Database address
+	TiDBAddr arrayFlags
+	TiKVAddr arrayFlags
+	PDAddr   arrayFlags
 }
 
 // Context ...
@@ -293,6 +309,10 @@ func init() {
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
 	// failpoint
 	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
+
+	flag.Var(&Context.TiDBClusterConfig.TiDBAddr, "tidb-server", "tidb-server addresses")
+	flag.Var(&Context.TiDBClusterConfig.TiKVAddr, "tikv-server", "tikv-server addresses")
+	flag.Var(&Context.TiDBClusterConfig.PDAddr, "pd-server", "pd-server addresses")
 
 	log.SetHighlighting(false)
 	go func() {

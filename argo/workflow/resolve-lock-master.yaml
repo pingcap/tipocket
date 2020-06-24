@@ -18,7 +18,7 @@ spec:
       - name: pd-image
         value: "hub.pingcap.net/qa/pd:master-failpoint"
       - name: storage-class
-        value: local-storage
+        value: sas
       - name: nemesis
         value: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
       - name: run-time

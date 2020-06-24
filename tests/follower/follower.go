@@ -10,7 +10,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -41,14 +41,14 @@ func init() {
 }
 
 // Create creates FollowerReadClient
-func (l ClientCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &follower{
 		Config: l.Cfg,
 	}
 }
 
 // SetUp
-func (f *follower) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (f *follower) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (f *follower) SetUp(ctx context.Context, _ []types.Node, clientNodes []type
 }
 
 // Start
-func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")
 
 	log.Info("testSwitchFollowerRead")
@@ -108,12 +108,12 @@ func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []typ
 }
 
 // TearDown
-func (f *follower) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (f *follower) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke
-func (f *follower) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (f *follower) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 

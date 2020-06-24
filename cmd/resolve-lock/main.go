@@ -44,10 +44,8 @@ func main() {
 		RunRound:    1,
 	}
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
-		// NOTE: local run
-		// Provisioner: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, []string{"127.0.0.1:20171", "127.0.0.1:20172", "127.0.0.1:20173", "127.0.0.1:20174"}),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: resolvelock.CaseCreator{Cfg: &resolvelock.Config{
 			EnableGreenGC: *enableGreenGC,
 			RegionCount:   *regionCount,

@@ -20,7 +20,7 @@ spec:
         - name: nemesis
           value: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
         - name: run-time
-          value: "20h"
+          value: "12h"
         - name: loki-addr
           value: "http://gateway.loki.svc"
         - name: loki-username

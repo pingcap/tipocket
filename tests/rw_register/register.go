@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	ellecore "github.com/pingcap/tipocket/pkg/elle/core"
 	elleregister "github.com/pingcap/tipocket/pkg/elle/rw_register"
@@ -43,7 +43,7 @@ type client struct {
 	nextRequest func() ellecore.Op
 }
 
-func (c *client) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var err error
 	txnMode := c.txnMode
 	if txnMode == "mixed" {
@@ -70,7 +70,7 @@ func (c *client) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes [
 	return nil
 }
 
-func (c *client) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -81,7 +81,7 @@ func (c *client) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, 
 	return c.db.Close()
 }
 
-func (c *client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(ellecore.Op)
 	txn, err := c.db.Begin()
 	if err != nil {
@@ -212,7 +212,7 @@ func (c *client) DumpState(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (c *client) Start(_ context.Context, _ interface{}, _ []clusterTypes.ClientNode) error {
+func (c *client) Start(_ context.Context, _ interface{}, _ []cluster.ClientNode) error {
 	panic("unreachable")
 }
 
@@ -239,7 +239,7 @@ func NewClientCreator(tableCount int, readLock string, txnMode string) core.Clie
 }
 
 // Create creates a client.
-func (r *registerClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
+func (r *registerClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &client{
 		tableCount: r.tableCount,
 		readLock:   r.readLock,

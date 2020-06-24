@@ -95,7 +95,7 @@ func main() {
 	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      cluster.NewK8sProvisioner(),
+		Provider:         cluster.NewDefaultClusterProvider(),
 		ClientCreator:    creator,
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,

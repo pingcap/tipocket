@@ -66,7 +66,7 @@ func main() {
 
 	suit := util.Suit{
 		Config:        &cfg,
-		Provisioner:   cluster.NewK8sProvisioner(),
+		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: bank.ClientCreator{Cfg: &bankConfig},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,

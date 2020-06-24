@@ -14,7 +14,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 )
@@ -138,7 +138,7 @@ type Client struct {
 }
 
 // SetUp implements the core.Client interface.
-func (c *Client) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	c.idx = idx
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := clientNodes[idx]
@@ -174,7 +174,7 @@ func (c *Client) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes [
 }
 
 // TearDown implements the core.Client interface.
-func (c *Client) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	if c.idx == 0 {
 		c.dropTables(ctx)
 	}
@@ -217,7 +217,7 @@ const (
 )
 
 // Invoke implements the core.Client interface.
-func (c *Client) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (c *Client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	rt := r.(VBReqType)
 	resp := &Response{}
 	resp.ReqType = r.(VBReqType)
@@ -717,7 +717,7 @@ func (c *Client) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start implements the core.Client interface.
-func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
 
@@ -736,7 +736,7 @@ func NewClientCreator(cfg *Config) *ClientCreator {
 }
 
 // Create creates a Client.
-func (cc *ClientCreator) Create(node clusterTypes.ClientNode) core.Client {
+func (cc *ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &Client{cfg: cc.cfg}
 }
 

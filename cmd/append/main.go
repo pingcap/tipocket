@@ -31,7 +31,7 @@ func main() {
 			RunTime:      fixture.Context.RunTime,
 			History:      fixture.Context.HistoryFile,
 		},
-		Provisioner:      cluster.NewK8sProvisioner(),
+		Provider:         cluster.NewDefaultClusterProvider(),
 		ClientCreator:    listappend.NewClientCreator(*tableCount, *readLock, *txnMode),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,

@@ -44,7 +44,7 @@ func main() {
 	}
 	suit := util.Suit{
 		Config:        &cfg,
-		Provisioner:   cluster.NewK8sProvisioner(),
+		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: blockwriter.ClientCreator{TableNum: *tables, Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,

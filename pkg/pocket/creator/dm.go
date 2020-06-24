@@ -26,13 +26,13 @@ import (
 	"github.com/pingcap/tidb-tools/pkg/diff"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	pocketCore "github.com/pingcap/tipocket/pkg/pocket/core"
 	"github.com/pingcap/tipocket/pkg/util/dmutil"
 )
 
 // create MySQL sources and start tasks.
-func dmCreateSourceTask(clientNodes []clusterTypes.ClientNode) error {
+func dmCreateSourceTask(clientNodes []cluster.ClientNode) error {
 	sourceTemp := `
 source-id = "%s"
 enable-gtid = true
@@ -123,7 +123,7 @@ master-addr:%s
 }
 
 // dmSyncDiffData uses sync-diff-inspector to check data between downstream and upstream for DM tasks.
-func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval time.Duration, clientNodes []clusterTypes.ClientNode) error {
+func dmSyncDiffData(ctx context.Context, pCore *pocketCore.Core, checkInterval time.Duration, clientNodes []cluster.ClientNode) error {
 	schema := "pocket" // we always use `pocket` as the DB name now, see `makeDSN`.
 	mysql1 := clientNodes[0]
 	tidb := clientNodes[2]

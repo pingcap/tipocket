@@ -47,8 +47,8 @@ func main() {
 	pocketConfig.Options.Concurrency = 1
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,

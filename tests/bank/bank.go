@@ -14,7 +14,7 @@ import (
 	"github.com/ngaut/log"
 	"github.com/rogpeppe/fastuuid"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -91,7 +91,7 @@ type ClientCreator struct {
 }
 
 // Create ...
-func (c ClientCreator) Create(_ types.ClientNode) core.Client {
+func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return NewBankCase(c.Cfg)
 }
 
@@ -108,7 +108,7 @@ func NewBankCase(cfg *Config) core.Client {
 	}
 }
 
-func (c *bankCase) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *bankCase) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	// Only allow the first client to setup the whole test
 	if idx != 0 {
 		return nil
@@ -136,11 +136,11 @@ func (c *bankCase) SetUp(ctx context.Context, _ []types.Node, clientNodes []type
 	return nil
 }
 
-func (c *bankCase) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *bankCase) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *bankCase) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *bankCase) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -152,7 +152,7 @@ func (c *bankCase) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *bankCase) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *bankCase) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.Execute(ctx, c.dbConn); err != nil {
 		log.Fatalf("[bank] return with error %v", err)
 	}

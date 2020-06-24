@@ -3,7 +3,7 @@ package control
 import (
 	"time"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // Config is the configuration for the controller.
@@ -13,9 +13,9 @@ type Config struct {
 	// DB is the name which we want to run.
 	DB string
 	// Nodes are addresses of nodes.
-	Nodes []clusterTypes.Node
+	Nodes []cluster.Node
 	// ClientNode are addresses of client usage.
-	ClientNodes []clusterTypes.ClientNode
+	ClientNodes []cluster.ClientNode
 	// ClientCount controls the count of clients
 	ClientCount int
 	// Chaos NS

@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // DB allows to set up and tear down database.
 type DB interface {
 	// SetUp initializes the database.
-	SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error
+	SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
 	// TearDown tears down the database.
-	TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error
+	TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error
 	// Name returns the unique name for the database
 	Name() string
 }
@@ -22,12 +22,12 @@ type NoopDB struct {
 }
 
 // SetUp initializes the database.
-func (NoopDB) SetUp(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
+func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return nil
 }
 
 // TearDown tears down the database.
-func (NoopDB) TearDown(ctx context.Context, nodes []clusterTypes.Node, node clusterTypes.Node) error {
+func (NoopDB) TearDown(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	return nil
 }
 

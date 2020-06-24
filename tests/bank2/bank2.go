@@ -14,7 +14,7 @@ import (
 	"github.com/ngaut/log"
 	"github.com/rogpeppe/fastuuid"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -116,7 +116,7 @@ func (c *bank2Client) padLength(table int) int {
 	return minLen + rand.Intn(maxLen-minLen)
 }
 
-func (c *bank2Client) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -279,11 +279,11 @@ func (c *bank2Client) verify(db *sql.DB) {
 	}
 }
 
-func (c *bank2Client) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *bank2Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *bank2Client) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *bank2Client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 
 }
@@ -296,7 +296,7 @@ func (c *bank2Client) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {
 		log.Infof("[%s] test end...", c)
@@ -435,7 +435,7 @@ func (c *bank2Client) execTransaction(db *sql.DB, from, to int, amount int) erro
 }
 
 // Create ...
-func (c ClientCreator) Create(_ types.ClientNode) core.Client {
+func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &bank2Client{
 		Config: c.Cfg,
 	}

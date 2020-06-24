@@ -21,9 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
-
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
@@ -65,7 +64,7 @@ func (t *Ops) Delete() error {
 }
 
 // GetNodes returns all nodes(eg. pods on k8s)
-func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (t *Ops) GetNodes() ([]cluster.Node, error) {
 	pod := &corev1.Pod{}
 	err := t.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: t.drainer.StatefulSet.ObjectMeta.Namespace,
@@ -73,19 +72,19 @@ func (t *Ops) GetNodes() ([]clusterTypes.Node, error) {
 	}, pod)
 
 	if err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
-	return []clusterTypes.Node{{
+	return []cluster.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
-		Component: clusterTypes.Drainer,
-		Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.Drainer), pod.Spec.Containers),
+		Component: cluster.Drainer,
+		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.Drainer), pod.Spec.Containers),
 	}}, nil
 }
 
 // GetClientNodes returns client nodes
-func (t *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
+func (t *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	return nil, nil
 }
