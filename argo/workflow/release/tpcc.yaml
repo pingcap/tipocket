@@ -12,9 +12,9 @@ spec:
       - name: hub
         value: "hub.pingcap.net"
       - name: repository
-        value: pingcap
+        value: qa
       - name: image-version
-        value: release-4.0-nightly
+        value: release-4.0-failpoint
       - name: tidb-image
         value: ""
       - name: tikv-image
