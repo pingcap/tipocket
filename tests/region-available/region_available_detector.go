@@ -11,7 +11,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -53,14 +53,14 @@ type ClientCreator struct {
 }
 
 // Create ...
-func (l ClientCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &regionAvailableDetector{
 		Config: l.Cfg,
 	}
 }
 
 // SetUp ...
-func (d *regionAvailableDetector) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (d *regionAvailableDetector) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -96,11 +96,11 @@ func (d *regionAvailableDetector) SetUp(ctx context.Context, _ []types.Node, cli
 	return nil
 }
 
-func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (d *regionAvailableDetector) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (d *regionAvailableDetector) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -112,7 +112,7 @@ func (d *regionAvailableDetector) DumpState(ctx context.Context) (interface{}, e
 	panic("implement me")
 }
 
-func (d *regionAvailableDetector) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (d *regionAvailableDetector) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")
 	defer func() {
 		log.Info("test end...")

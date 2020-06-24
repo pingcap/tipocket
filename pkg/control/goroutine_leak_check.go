@@ -13,7 +13,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
@@ -32,9 +32,9 @@ func (l *LeakCheck) InitPlugin(control *Controller) {
 		log.Warnf("plugin leak check won't work: %v", err)
 		return
 	}
-	var tidbNodes []types.Node
+	var tidbNodes []cluster.Node
 	for _, node := range l.Controller.cfg.Nodes {
-		if node.Component == types.TiDB {
+		if node.Component == cluster.TiDB {
 			tidbNodes = append(tidbNodes, node)
 		}
 	}
@@ -55,7 +55,7 @@ func (l *LeakCheck) InitPlugin(control *Controller) {
 	}()
 }
 
-func checkTiDBProcess(tidbNodes []types.Node) error {
+func checkTiDBProcess(tidbNodes []cluster.Node) error {
 	for _, tidbNode := range tidbNodes {
 		// tidbAddr is host:4000, but we need host:10080
 		tidbAddr := fmt.Sprintf("%s.%s-tidb-peer.%s.svc", tidbNode.PodName, tidbNode.ClusterName, tidbNode.ClusterName)

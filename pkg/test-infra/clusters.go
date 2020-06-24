@@ -1,29 +1,29 @@
 package testinfra
 
 import (
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/util/config"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
 
-	"github.com/pingcap/tipocket/pkg/test-infra/dm"
-	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tidb-operator/pkg/util/config"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
+	"github.com/pingcap/tipocket/pkg/test-infra/dm"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 // groupCluster creates clusters concurrently
 type groupCluster struct {
-	ops []clusterTypes.Cluster
+	ops []cluster.Cluster
 }
 
 // NewGroupCluster creates a groupCluster
-func NewGroupCluster(clusters ...clusterTypes.Cluster) *groupCluster {
+func NewGroupCluster(clusters ...cluster.Cluster) *groupCluster {
 	return &groupCluster{ops: clusters}
 }
 
@@ -60,8 +60,8 @@ func (c *groupCluster) Delete() error {
 }
 
 // GetNodes returns the cluster nodes
-func (c *groupCluster) GetNodes() ([]clusterTypes.Node, error) {
-	var totalNodes []clusterTypes.Node
+func (c *groupCluster) GetNodes() ([]cluster.Node, error) {
+	var totalNodes []cluster.Node
 	for _, op := range c.ops {
 		nodes, err := op.GetNodes()
 		if err != nil {
@@ -73,8 +73,8 @@ func (c *groupCluster) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes
-func (c *groupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	var totalNodes []clusterTypes.ClientNode
+func (c *groupCluster) GetClientNodes() ([]cluster.ClientNode, error) {
+	var totalNodes []cluster.ClientNode
 	for _, op := range c.ops {
 		nodes, err := op.GetClientNodes()
 		if err != nil {
@@ -87,11 +87,11 @@ func (c *groupCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 
 // compositeCluster creates clusters sequentially
 type compositeCluster struct {
-	ops []clusterTypes.Cluster
+	ops []cluster.Cluster
 }
 
 // NewCompositeCluster creates a compositeCluster
-func NewCompositeCluster(clusters ...clusterTypes.Cluster) *compositeCluster {
+func NewCompositeCluster(clusters ...cluster.Cluster) *compositeCluster {
 	return &compositeCluster{ops: clusters}
 }
 
@@ -116,8 +116,8 @@ func (c *compositeCluster) Delete() error {
 }
 
 // GetNodes returns the cluster nodes
-func (c *compositeCluster) GetNodes() ([]clusterTypes.Node, error) {
-	var totalNodes []clusterTypes.Node
+func (c *compositeCluster) GetNodes() ([]cluster.Node, error) {
+	var totalNodes []cluster.Node
 	for _, op := range c.ops {
 		nodes, err := op.GetNodes()
 		if err != nil {
@@ -129,8 +129,8 @@ func (c *compositeCluster) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes
-func (c *compositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	var totalNodes []clusterTypes.ClientNode
+func (c *compositeCluster) GetClientNodes() ([]cluster.ClientNode, error) {
+	var totalNodes []cluster.ClientNode
 	for _, op := range c.ops {
 		nodes, err := op.GetClientNodes()
 		if err != nil {
@@ -142,12 +142,12 @@ func (c *compositeCluster) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 }
 
 // NewDefaultCluster creates a new TiDB cluster
-func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig) cluster.Cluster {
 	return tidb.New(namespace, name, config)
 }
 
 // NewCDCCluster creates two TiDB clusters with CDC
-func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) cluster.Cluster {
 	return NewCompositeCluster(
 		NewGroupCluster(
 			tidb.New(namespace, name+"-upstream", conf),
@@ -158,7 +158,7 @@ func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) clust
 }
 
 // NewBinlogCluster creates two TiDB clusters with Binlog
-func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cluster.Cluster {
 	up := tidb.New(namespace, name+"-upstream", conf)
 	upstream := up.GetTiDBCluster()
 	upstream.Spec.TiDB.BinlogEnabled = pointer.BoolPtr(true)
@@ -181,7 +181,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 }
 
 // NewDMCluster creates two upstream MySQL instances and a downstream TiDB cluster with DM.
-func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixture.TiDBClusterConfig) cluster.Cluster {
 	up1 := mysql.New(namespace, name+"-mysql1", dmConf.MySQLConf)
 	up2 := mysql.New(namespace, name+"-mysql2", dmConf.MySQLConf)
 	down := tidb.New(namespace, name+"-tidb", tidbConf)
@@ -192,7 +192,7 @@ func NewDMCluster(namespace, name string, dmConf fixture.DMConfig, tidbConf fixt
 }
 
 // NewABTestCluster creates two TiDB clusters to do AB Test
-func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) cluster.Cluster {
 	return NewGroupCluster(
 		tidb.New(namespace, name+"-a", confA),
 		tidb.New(namespace, name+"-b", confB),
@@ -200,12 +200,12 @@ func NewABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterCo
 }
 
 // NewTiFlashCluster creates a TiDB cluster with TiFlash
-func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewTiFlashCluster(namespace, name string, conf fixture.TiDBClusterConfig) cluster.Cluster {
 	return tidb.New(namespace, name, conf)
 }
 
 // NewTiFlashABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash
-func NewTiFlashABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewTiFlashABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) cluster.Cluster {
 	return NewGroupCluster(
 		NewTiFlashCluster(namespace, name+"-a", confA),
 		tidb.New(namespace, name+"-b", confB),
@@ -214,7 +214,7 @@ func NewTiFlashABTestCluster(namespace, name string, confA, confB fixture.TiDBCl
 
 // NewTiFlashCDCABTestCluster creates two TiDB clusters to do AB Test, one with TiFlash
 // This also includes a CDC cluster between the two TiDB clusters.
-func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) clusterTypes.Cluster {
+func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiDBClusterConfig) cluster.Cluster {
 	return NewCompositeCluster(
 		NewGroupCluster(
 			NewTiFlashCluster(namespace, name+"-upstream", confA),

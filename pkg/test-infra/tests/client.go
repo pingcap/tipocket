@@ -44,7 +44,7 @@ type TestCli struct {
 func newTestCli(conf *rest.Config) *TestCli {
 	kubeCli, err := fixture.BuildGenericKubeClient(conf)
 	if err != nil {
-		log.Errorf("error creating kube-client: %v", err)
+		log.Warnf("error creating kube-client: %v", err)
 	}
 	return &TestCli{
 		Cli: kubeCli,
@@ -106,7 +106,7 @@ func (e *TestCli) DeleteNamespace(name string) error {
 func init() {
 	conf, err := clientcmd.BuildConfigFromFlags("", os.Getenv("KUBECONFIG"))
 	if err != nil {
-		log.Errorf("build config failed: %+v", err)
+		log.Warnf("build config failed: %+v", err)
 	}
 	TestClient = newTestCli(conf)
 }

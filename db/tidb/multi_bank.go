@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -18,7 +18,7 @@ type multiBankClient struct {
 	accountNum int
 }
 
-func (c *multiBankClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (c *multiBankClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := clientNodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -55,7 +55,7 @@ func (c *multiBankClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clie
 	return nil
 }
 
-func (c *multiBankClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *multiBankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return c.db.Close()
 }
 
@@ -85,7 +85,7 @@ func (c *multiBankClient) invokeRead(ctx context.Context, r bankRequest) bankRes
 	return bankResponse{Balances: balances, Tso: tso}
 }
 
-func (c *multiBankClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (c *multiBankClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(bankRequest)
 	if arg.Op == 0 {
 		return c.invokeRead(ctx, arg)
@@ -176,7 +176,7 @@ func (c *multiBankClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
 
@@ -185,7 +185,7 @@ type MultiBankClientCreator struct {
 }
 
 // Create creates a client.
-func (MultiBankClientCreator) Create(node clusterTypes.ClientNode) core.Client {
+func (MultiBankClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &multiBankClient{
 		accountNum: accountNum,
 	}

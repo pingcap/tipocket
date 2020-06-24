@@ -11,7 +11,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -31,7 +31,7 @@ func NewIOChaosGenerator(name string) core.NemesisGenerator {
 }
 
 // Generate generates nemesises based on nemesis type.
-func (g IOChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+func (g IOChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	duration := time.Second * time.Duration(rand.Intn(120)+60)
 
 	// since the nemesis name is in the form of
@@ -41,7 +41,7 @@ func (g IOChaosGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOpe
 	parts := strings.Split(g.name, "_")
 	chaos := selectIOChaos(parts[0])
 
-	filteredNodes := filterComponent(nodes, clusterTypes.Component(parts[1]))
+	filteredNodes := filterComponent(nodes, cluster.Component(parts[1]))
 
 	return []*core.NemesisOperation{{
 		Type:        core.IOChaos,
@@ -238,13 +238,13 @@ func (n iochaos) extractChaos(args ...interface{}) chaosv1alpha1.IoChaos {
 	}
 	var c ioChaos
 	var ok bool
-	var nodes []clusterTypes.Node
+	var nodes []cluster.Node
 
 	if c, ok = args[0].(ioChaos); !ok {
 		panic("ioChaos get wrong type")
 	}
 
-	if nodes, ok = args[1].([]clusterTypes.Node); !ok {
+	if nodes, ok = args[1].([]cluster.Node); !ok {
 		panic("nodes get wrong type")
 	}
 
@@ -266,13 +266,13 @@ func (n iochaos) extractChaos(args ...interface{}) chaosv1alpha1.IoChaos {
 	}
 }
 
-func (n iochaos) Invoke(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
+func (n iochaos) Invoke(_ context.Context, _ *cluster.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
 	log.Infof("apply nemesis %s %s on ns:%s", core.IOChaos, chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.ApplyIOChaos(&chaosSpec)
 }
 
-func (n iochaos) Recover(_ context.Context, _ *clusterTypes.Node, args ...interface{}) error {
+func (n iochaos) Recover(_ context.Context, _ *cluster.Node, args ...interface{}) error {
 	chaosSpec := n.extractChaos(args...)
 	log.Infof("unapply nemesis %s %s on ns:%s", core.IOChaos, chaosSpec.Name, chaosSpec.Namespace)
 	return n.cli.CancelIOChaos(&chaosSpec)

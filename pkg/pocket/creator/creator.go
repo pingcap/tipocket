@@ -6,7 +6,7 @@ import (
 
 	"github.com/pingcap/errors"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	pocketCore "github.com/pingcap/tipocket/pkg/pocket/core"
@@ -30,22 +30,22 @@ type PocketClient struct {
 }
 
 // Create client
-func (p PocketCreator) Create(node clusterTypes.ClientNode) core.Client {
+func (p PocketCreator) Create(node cluster.ClientNode) core.Client {
 	return PocketClient{p.Config}
 }
 
 // SetUp sets up the client.
-func (PocketClient) SetUp(ctx context.Context, _ []clusterTypes.Node, _ []clusterTypes.ClientNode, idx int) error {
+func (PocketClient) SetUp(ctx context.Context, _ []cluster.Node, _ []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // TearDown tears down the client.
-func (PocketClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke invokes a request to the database.
-func (PocketClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (PocketClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	return nil
 }
 
@@ -60,7 +60,7 @@ func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start runs self scheduled cases
-func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	var cfgPath = p.Config.ConfigPath
 
 	cfg := p.Config.Config

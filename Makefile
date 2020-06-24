@@ -15,21 +15,43 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: tidb pocket tpcc ledger txn-rand-pessimistic on-dup sqllogic block-writer \
-		region-available deadlock-detector crud bank bank2 abtest cdc-pocket tiflash-pocket vbank \
-		read-stress rawkv-linearizability tiflash-abtest tiflash-cdc dm-pocket follower-read append register
+build: consistency isolation pocket on-dup sqllogic block-writer \
+		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
+		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read
 
-tidb:
-	$(GOBUILD) $(GOMOD) -o bin/chaos-tidb cmd/tidb/main.go
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
+
+isolation: append register
+
+bank:
+	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
+
+bank2:
+	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
+
+pbank:
+	$(GOBUILD) $(GOMOD) -o bin/pbank cmd/pbank/main.go
+
+vbank:
+	$(GOBUILD) $(GOMOD) -o bin/vbank cmd/vbank/*.go
+
+ledger:
+	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
+
+rawkv-linearizability:
+	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
+
+tpcc:
+	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
+
+txn-rand-pessimistic:
+	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 append:
 	$(GOBUILD) $(GOMOD) -o bin/append cmd/append/main.go
 
 register:
 	$(GOBUILD) $(GOMOD) -o bin/register cmd/register/main.go
-
-tpcc:
-	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
 
 rawkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-rawkv cmd/rawkv/main.go
@@ -45,21 +67,6 @@ pocket:
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
-
-ledger:
-	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
-
-bank:
-	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
-
-bank2:
-	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
-
-vbank:
-	$(GOBUILD) $(GOMOD) -o bin/vbank cmd/vbank/*.go
-
-txn-rand-pessimistic:
-	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
@@ -84,9 +91,6 @@ abtest:
 
 cdc-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
-
-rawkv-linearizability:
-	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
 
 tiflash-pocket:
 	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go

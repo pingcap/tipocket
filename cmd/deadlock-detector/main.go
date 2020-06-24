@@ -45,8 +45,8 @@ func main() {
 		RunRound:    1,
 	}
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: dlc.ClientCreator{Cfg: &dlc.Config{
 			DBName:           *dbName,
 			TableNum:         *tableNum,

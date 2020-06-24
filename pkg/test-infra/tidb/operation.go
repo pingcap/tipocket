@@ -19,14 +19,10 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/ngaut/log"
-	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -35,12 +31,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tidb-operator/pkg/label"
+	"golang.org/x/sync/errgroup"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
@@ -92,11 +91,11 @@ func (o *Ops) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, er
 }
 
 // GetNodes ...
-func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	pods := &corev1.PodList{}
 	if err := o.cli.List(context.TODO(), pods, &client.ListOptions{Namespace: o.ns},
 		client.MatchingLabels{"app.kubernetes.io/instance": o.name}); err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
 	r := pods.DeepCopy()
@@ -108,8 +107,8 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes ...
-func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	var clientNodes []clusterTypes.ClientNode
+func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
+	var clientNodes []cluster.ClientNode
 
 	ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 	if err != nil {
@@ -122,7 +121,7 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	if err != nil {
 		return clientNodes, err
 	}
-	clientNodes = append(clientNodes, clusterTypes.ClientNode{
+	clientNodes = append(clientNodes, cluster.ClientNode{
 		Namespace:   svc.ObjectMeta.Namespace,
 		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
 		IP:          ips[0], // compatible with the old code, can anyone FIXME?
@@ -593,8 +592,8 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
-	var nodes []clusterTypes.Node
+func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
+	var nodes []cluster.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
 		if !ok {
@@ -603,14 +602,14 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []clusterTypes.Node {
 			continue
 		}
 
-		nodes = append(nodes, clusterTypes.Node{
+		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			// TODO use better way to retrieve version?
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
-			Component: clusterTypes.Component(component),
+			Component: cluster.Component(component),
 			Port:      util.FindPort(pod.ObjectMeta.Name, component, pod.Spec.Containers),
-			Client: &clusterTypes.Client{
+			Client: &cluster.Client{
 				Namespace:   pod.ObjectMeta.Namespace,
 				ClusterName: pod.ObjectMeta.Labels["app.kubernetes.io/instance"],
 				PDMemberFunc: func(ns, name string) (string, []string, error) {

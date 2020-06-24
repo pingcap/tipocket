@@ -7,7 +7,7 @@ import (
 
 	"github.com/uber-go/atomic"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
 // ChaosKind is the kind of applying chaos
@@ -44,9 +44,9 @@ type Nemesis interface {
 	// TearDown(ctx context.Context, node string) error
 
 	// Invoke executes the nemesis
-	Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error
+	Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error
 	// Recover recovers the nemesis
-	Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error
+	Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error
 	// Name returns the unique name for the nemesis
 	Name() string
 }
@@ -144,10 +144,10 @@ func (n *NemesisControl) Rollback(ctx context.Context) {
 
 // NemesisOperation is nemesis operation used in control.
 type NemesisOperation struct {
-	Type        ChaosKind          // Nemesis name
-	Node        *clusterTypes.Node // Nemesis target node, optional if it affects
-	InvokeArgs  []interface{}      // Nemesis invoke args
-	RecoverArgs []interface{}      // Nemesis recover args
+	Type        ChaosKind     // Nemesis name
+	Node        *cluster.Node // Nemesis target node, optional if it affects
+	InvokeArgs  []interface{} // Nemesis invoke args
+	RecoverArgs []interface{} // Nemesis recover args
 
 	// We have two approaches to trigger recovery
 	// 1. through `RunTime`
@@ -172,7 +172,7 @@ type NemesisGeneratorRecord struct {
 type NemesisGenerator interface {
 	// Generate generates the nemesis operation for all nodes.
 	// Every node will be assigned a nemesis operation.
-	Generate(nodes []clusterTypes.Node) []*NemesisOperation
+	Generate(nodes []cluster.Node) []*NemesisOperation
 	Name() string
 }
 
@@ -183,7 +183,7 @@ type DelayNemesisGenerator struct {
 }
 
 // Generate ...
-func (d DelayNemesisGenerator) Generate(nodes []clusterTypes.Node) []*NemesisOperation {
+func (d DelayNemesisGenerator) Generate(nodes []cluster.Node) []*NemesisOperation {
 	time.Sleep(d.Delay)
 	return d.Gen.Generate(nodes)
 }

@@ -19,14 +19,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-	"github.com/pingcap/tipocket/pkg/core"
-
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/core"
 )
 
 type scalingGenerator struct {
@@ -38,7 +38,7 @@ func NewScalingGenerator(name string) core.NemesisGenerator {
 	return scalingGenerator{name: name}
 }
 
-func (s scalingGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+func (s scalingGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	ops := make([]*core.NemesisOperation, 1)
 	ops[0] = &core.NemesisOperation{
 		Type:        core.Scaling,
@@ -58,12 +58,12 @@ type scaling struct {
 	k8sNemesisClient
 }
 
-func (s scaling) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (s scaling) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("apply nemesis scaling on ns %s", node.Namespace)
 	return s.scaleCluster(ctx, node.Namespace, node.Namespace, 2)
 }
 
-func (s scaling) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (s scaling) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Printf("unapply nemesis scaling on ns %s", node.Namespace)
 	return s.scaleCluster(ctx, node.Namespace, node.Namespace, -2)
 }

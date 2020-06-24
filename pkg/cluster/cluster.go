@@ -1,8 +1,10 @@
-package types
+package cluster
 
 import (
 	"context"
 	"fmt"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // Component is the identifier of Cluster
@@ -87,17 +89,29 @@ type Cluster interface {
 	GetClientNodes() ([]ClientNode, error)
 }
 
-// ClusterSpecs is a cluster specification
-type ClusterSpecs struct {
+// Specs is a cluster specification
+type Specs struct {
 	Cluster     Cluster
 	NemesisGens []string
 	Namespace   string
 }
 
-// Provisioner provides a collection of APIs to deploy/destroy a cluster
-type Provisioner interface {
+// Provider provides a collection of APIs to deploy/destroy a cluster
+type Provider interface {
 	// SetUp sets up cluster, returns err or all nodes info
-	SetUp(ctx context.Context, spec ClusterSpecs) ([]Node, []ClientNode, error)
+	SetUp(ctx context.Context, spec Specs) ([]Node, []ClientNode, error)
 	// TearDown tears down the cluster
-	TearDown(ctx context.Context, spec ClusterSpecs) error
+	TearDown(ctx context.Context, spec Specs) error
+}
+
+// NewDefaultClusterProvider ...
+func NewDefaultClusterProvider() Provider {
+	if len(fixture.Context.TiDBClusterConfig.TiDBAddr) != 0 ||
+		len(fixture.Context.TiDBClusterConfig.TiKVAddr) != 0 ||
+		len(fixture.Context.TiDBClusterConfig.PDAddr) != 0 {
+		return NewLocalClusterProvisioner(fixture.Context.TiDBClusterConfig.TiDBAddr,
+			fixture.Context.TiDBClusterConfig.PDAddr,
+			fixture.Context.TiDBClusterConfig.TiKVAddr)
+	}
+	return NewK8sClusterProvider()
 }

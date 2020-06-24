@@ -13,7 +13,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -61,7 +61,7 @@ type ClientCreator struct {
 }
 
 // Create ...
-func (l ClientCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &ledgerClient{
 		Config: l.Cfg,
 	}
@@ -76,7 +76,7 @@ type ledgerClient struct {
 	db   *sql.DB
 }
 
-func (c *ledgerClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *ledgerClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -174,11 +174,11 @@ func (c *ledgerClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []
 	return nil
 }
 
-func (c *ledgerClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *ledgerClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *ledgerClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *ledgerClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -190,7 +190,7 @@ func (c *ledgerClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *ledgerClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *ledgerClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("start to test...")
 	defer func() {
 		log.Infof("test end...")

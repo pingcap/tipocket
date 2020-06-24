@@ -11,7 +11,7 @@ import (
 	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 )
 
@@ -108,7 +108,7 @@ type timeChaosGenerator struct {
 	name string
 }
 
-func (t timeChaosGenerator) Generate(nodes []types.Node) []*core.NemesisOperation {
+func (t timeChaosGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	var ops []*core.NemesisOperation
 
 	for idx := range nodes {
@@ -139,7 +139,7 @@ type timeChaos struct {
 	k8sNemesisClient
 }
 
-func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interface{}) error {
+func (t timeChaos) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	if len(args) != 1 {
 		panic("args number error")
 	}
@@ -152,7 +152,7 @@ func (t timeChaos) Invoke(ctx context.Context, node *types.Node, args ...interfa
 	return t.cli.ApplyTimeChaos(ctx, &timeChaos)
 }
 
-func (t timeChaos) Recover(ctx context.Context, node *types.Node, args ...interface{}) error {
+func (t timeChaos) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	if len(args) != 1 {
 		panic("args number error")
 	}

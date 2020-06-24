@@ -48,8 +48,8 @@ func main() {
 		RunRound:    1,
 	}
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: &sqllogictest.ClientCreator{
 			Config: &sqllogictest.Config{
 				SkipError:   *skipError,

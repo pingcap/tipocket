@@ -26,7 +26,7 @@ import (
 
 	"github.com/ngaut/log"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
@@ -39,8 +39,8 @@ import (
 // Suit is a basic chaos testing suit with configurations to run chaos.
 type Suit struct {
 	*control.Config
-	// Provisioner deploy the SUT cluster
-	clusterTypes.Provisioner
+	// Provider deploy the SUT cluster
+	cluster.Provider
 	// ClientCreator creates client
 	core.ClientCreator
 	// NemesisGens saves NemesisGenerator
@@ -50,7 +50,7 @@ type Suit struct {
 	// perform service quality checking
 	VerifySuit verify.Suit
 	// cluster definition
-	ClusterDefs clusterTypes.Cluster
+	ClusterDefs cluster.Cluster
 	// Plugins
 	Plugins []control.Plugin
 }
@@ -59,7 +59,7 @@ type Suit struct {
 func (suit *Suit) Run(ctx context.Context) {
 	var (
 		err         error
-		clusterSpec = clusterTypes.ClusterSpecs{
+		clusterSpec = cluster.Specs{
 			Cluster:   suit.ClusterDefs,
 			Namespace: fixture.Context.Namespace,
 		}
@@ -68,10 +68,10 @@ func (suit *Suit) Run(ctx context.Context) {
 	// get the time before creating the tidb cluster
 	// note this is just a approximate value
 	startTime := time.Now()
-	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provisioner.SetUp(sctx, clusterSpec)
+	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provider.SetUp(sctx, clusterSpec)
 	if err != nil {
 		// we can release resources safely in this case.
-		_ = suit.Provisioner.TearDown(context.TODO(), clusterSpec)
+		_ = suit.Provider.TearDown(context.TODO(), clusterSpec)
 		log.Fatalf("deploy a cluster failed, maybe has no enough resources, err: %s", err)
 	}
 	log.Infof("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
@@ -128,8 +128,8 @@ func (suit *Suit) Run(ctx context.Context) {
 	c.Run()
 
 	log.Info("tear down cluster...")
-	if err := suit.Provisioner.TearDown(context.TODO(), clusterSpec); err != nil {
-		log.Infof("Provisioner tear down failed: %+v", err)
+	if err := suit.Provider.TearDown(context.TODO(), clusterSpec); err != nil {
+		log.Infof("Provider tear down failed: %+v", err)
 	}
 }
 
@@ -146,7 +146,7 @@ func (suit *Suit) setDefaultPlugins() {
 // ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
 	client core.Client,
-	node clusterTypes.ClientNode,
+	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
 	recorder *history.Recorder)
@@ -158,7 +158,7 @@ type ClientLoopFunc func(ctx context.Context,
 func OnClientLoop(
 	ctx context.Context,
 	client core.Client,
-	node clusterTypes.ClientNode,
+	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
 	recorder *history.Recorder,
@@ -212,7 +212,7 @@ func OnClientLoop(
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
 		client core.Client,
-		node clusterTypes.ClientNode,
+		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,
 		recorder *history.Recorder) {

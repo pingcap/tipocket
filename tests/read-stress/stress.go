@@ -11,7 +11,7 @@ import (
 	"github.com/codahale/hdrhistogram"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -27,7 +27,7 @@ type CaseCreator struct {
 }
 
 // Create creates a read-stress test client
-func (c CaseCreator) Create(node types.ClientNode) core.Client {
+func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
 	return &stressClient{
 		numRows:          c.NumRows,
 		largeConcurrency: c.LargeConcurrency,
@@ -48,7 +48,7 @@ type stressClient struct {
 	replicaRead      string
 }
 
-func (c *stressClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *stressClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	// only prepare data through the first TiDB
 	if idx != 0 {
 		return nil
@@ -122,7 +122,7 @@ func (c *stressClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []
 	return nil
 }
 
-func (c *stressClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *stressClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	// only tear down through the first TiDB
 	if idx != 0 {
 		return nil
@@ -131,7 +131,7 @@ func (c *stressClient) TearDown(ctx context.Context, nodes []types.ClientNode, i
 	return err
 }
 
-func (c *stressClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *stressClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -143,7 +143,7 @@ func (c *stressClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	var wg sync.WaitGroup
 	for i := 0; i < c.largeConcurrency; i++ {
 		wg.Add(1)

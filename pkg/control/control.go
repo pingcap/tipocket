@@ -12,7 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 	"github.com/pingcap/tipocket/pkg/loki"
@@ -37,7 +37,7 @@ type Controller struct {
 
 	clientRequestGenerator func(ctx context.Context,
 		client core.Client,
-		node clusterTypes.ClientNode,
+		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,
 		recorder *history.Recorder)
@@ -62,7 +62,7 @@ func NewController(
 	cfg *Config,
 	clientCreator core.ClientCreator,
 	nemesisGenerators core.NemesisGenerators,
-	clientRequestGenerator func(ctx context.Context, client core.Client, node clusterTypes.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
+	clientRequestGenerator func(ctx context.Context, client core.Client, node cluster.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	plugins []Plugin,
 	lokiCli *loki.Client,

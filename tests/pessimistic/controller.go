@@ -9,7 +9,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
 	"github.com/pingcap/tipocket/util"
@@ -27,7 +27,7 @@ type ClientCreator struct {
 }
 
 // Create creates case client
-func (l ClientCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &pessimisticClient{
 		cfg: l.Cfg,
 	}
@@ -44,7 +44,7 @@ type pessimisticClient struct {
 	hongbaoDB         *sql.DB
 }
 
-func (c *pessimisticClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *pessimisticClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var (
 		err           error
 		node          = clientNodes[idx]
@@ -116,11 +116,11 @@ func (c *pessimisticClient) SetUp(ctx context.Context, _ []types.Node, clientNod
 	return nil
 }
 
-func (c *pessimisticClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *pessimisticClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *pessimisticClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *pessimisticClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -132,7 +132,7 @@ func (c *pessimisticClient) DumpState(ctx context.Context) (interface{}, error) 
 	panic("implement me")
 }
 
-func (c *pessimisticClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *pessimisticClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	ch := make(chan error)
 
 	go func() {

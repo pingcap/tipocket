@@ -5,42 +5,40 @@ import (
 	"log"
 	"strconv"
 	"strings"
-
-	"github.com/pingcap/tipocket/pkg/cluster/types"
 )
 
 type nodeComponent struct {
 	ip        string
 	port      int32
-	component types.Component
+	component Component
 }
 
 // NewLocalClusterProvisioner reuses a local cluster
-func NewLocalClusterProvisioner(dbs, pds, kvs []string) types.Provisioner {
-	return &LocalClusterProvisioner{
+func NewLocalClusterProvisioner(dbs, pds, kvs []string) Provider {
+	return &LocalClusterProvider{
 		DBs: dbs,
 		PDs: pds,
 		KVs: kvs,
 	}
 }
 
-// LocalClusterProvisioner ...
-type LocalClusterProvisioner struct {
+// LocalClusterProvider ...
+type LocalClusterProvider struct {
 	DBs []string
 	PDs []string
 	KVs []string
 }
 
 // SetUp fills nodes and clientNodes
-func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ types.ClusterSpecs) ([]types.Node, []types.ClientNode, error) {
-	var nodes []types.Node
-	var clientNode []types.ClientNode
-	var nodeComponents = buildNodeComponent(l.DBs, types.TiDB)
-	nodeComponents = append(nodeComponents, buildNodeComponent(l.KVs, types.TiKV)...)
-	nodeComponents = append(nodeComponents, buildNodeComponent(l.PDs, types.PD)...)
+func (l *LocalClusterProvider) SetUp(ctx context.Context, _ Specs) ([]Node, []ClientNode, error) {
+	var nodes []Node
+	var clientNode []ClientNode
+	var nodeComponents = buildNodeComponent(l.DBs, TiDB)
+	nodeComponents = append(nodeComponents, buildNodeComponent(l.KVs, TiKV)...)
+	nodeComponents = append(nodeComponents, buildNodeComponent(l.PDs, PD)...)
 
 	for _, node := range nodeComponents {
-		nodes = append(nodes, types.Node{
+		nodes = append(nodes, Node{
 			Namespace: "",
 			Component: node.component,
 			PodName:   "",
@@ -51,10 +49,10 @@ func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ types.ClusterSpec
 	}
 
 	for _, node := range nodeComponents {
-		if node.component != types.TiDB {
+		if node.component != TiDB {
 			continue
 		}
-		clientNode = append(clientNode, types.ClientNode{
+		clientNode = append(clientNode, ClientNode{
 			Namespace:   "",
 			ClusterName: "",
 			Component:   node.component,
@@ -66,11 +64,11 @@ func (l *LocalClusterProvisioner) SetUp(ctx context.Context, _ types.ClusterSpec
 }
 
 // TearDown does nothing here
-func (l *LocalClusterProvisioner) TearDown(ctx context.Context, _ types.ClusterSpecs) error {
+func (l *LocalClusterProvider) TearDown(ctx context.Context, _ Specs) error {
 	return nil
 }
 
-func buildNodeComponent(nodes []string, component types.Component) []nodeComponent {
+func buildNodeComponent(nodes []string, component Component) []nodeComponent {
 	var nodeComponents []nodeComponent
 	for _, node := range nodes {
 		addr := strings.Split(node, ":")

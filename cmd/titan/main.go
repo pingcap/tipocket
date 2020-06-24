@@ -39,7 +39,7 @@ func main() {
 	c := fixture.Context
 	suit := util.Suit{
 		Config:        &cfg,
-		Provisioner:   cluster.NewK8sProvisioner(),
+		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: titan.CaseCreator{},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),

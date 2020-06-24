@@ -50,7 +50,7 @@ func createFollowerReadCmd(cfg *control.Config) {
 				EnableSplit:      *enableSplit,
 			},
 		},
-		Provisioner: cluster.NewK8sProvisioner(),
+		Provider:    cluster.NewDefaultClusterProvider(),
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),

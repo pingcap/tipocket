@@ -13,8 +13,7 @@ import (
 	"sync"
 	"time"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 )
@@ -45,11 +44,11 @@ var (
 	lfState = struct {
 		mu      sync.Mutex
 		nextKey uint64
-		workers map[*clusterTypes.ClientNode]uint64
+		workers map[*cluster.ClientNode]uint64
 	}{
 		mu:      sync.Mutex{},
 		nextKey: 0,
-		workers: make(map[*clusterTypes.ClientNode]uint64),
+		workers: make(map[*cluster.ClientNode]uint64),
 	}
 )
 
@@ -57,7 +56,7 @@ type longForkClient struct {
 	db         *sql.DB
 	r          *rand.Rand
 	tableCount int
-	node       clusterTypes.ClientNode
+	node       cluster.ClientNode
 }
 
 func lfTableNames(tableCount int) []string {
@@ -77,7 +76,7 @@ func lfKey2Table(tableCount int, key uint64) string {
 	return fmt.Sprintf("txn_lf_%d", hash%tableCount)
 }
 
-func (c *longForkClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (c *longForkClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := clientNodes[idx]
 	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
@@ -110,11 +109,11 @@ func (c *longForkClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clien
 	return nil
 }
 
-func (c *longForkClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (c *longForkClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return c.db.Close()
 }
 
-func (c *longForkClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) core.UnknownResponse {
+func (c *longForkClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(lfRequest)
 	if arg.Kind == lfWrite {
 
@@ -191,7 +190,7 @@ func (c *longForkClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (c *longForkClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (c *longForkClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
 
@@ -210,7 +209,7 @@ type LongForkClientCreator struct {
 }
 
 // Create creates a new longForkClient.
-func (LongForkClientCreator) Create(node clusterTypes.ClientNode) core.Client {
+func (LongForkClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &longForkClient{
 		tableCount: 7,
 		r:          rand.New(rand.NewSource(time.Now().UnixNano())),

@@ -13,7 +13,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -29,7 +29,7 @@ type ClientCreator struct {
 }
 
 // Create creates WriterClient
-func (c ClientCreator) Create(node types.ClientNode) core.Client {
+func (c ClientCreator) Create(node cluster.ClientNode) core.Client {
 	client := &WriterClient{
 		tableNum:    c.TableNum,
 		concurrency: c.Concurrency,
@@ -46,7 +46,7 @@ type WriterClient struct {
 }
 
 // SetUp sets up client
-func (c *WriterClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *WriterClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var err error
 	log.Infof("[%s] start to set up...", c)
 	node := clientNodes[idx]
@@ -86,12 +86,12 @@ func (c *WriterClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []
 }
 
 // TearDown tears down client
-func (c *WriterClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *WriterClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke does nothing
-func (c *WriterClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *WriterClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -106,7 +106,7 @@ func (c *WriterClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start starts test
-func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []types.ClientNode) error {
+func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {
 		log.Infof("[%s] test end...", c)

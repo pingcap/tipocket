@@ -11,7 +11,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/kvproto/pkg/metapb"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/util/pdutil"
 )
@@ -26,13 +26,13 @@ func NewLeaderShuffleGenerator(name string) *leaderShuffleGenerator {
 }
 
 // Generate generates container-kill actions, to simulate the case that node can be recovered quickly after being killed
-func (l leaderShuffleGenerator) Generate(nodes []clusterTypes.Node) []*core.NemesisOperation {
+func (l leaderShuffleGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
 	duration := 10 * time.Second
 	return l.schedule(nodes, duration)
 }
 
-func (l leaderShuffleGenerator) schedule(nodes []clusterTypes.Node, duration time.Duration) []*core.NemesisOperation {
-	nodes = filterComponent(nodes, clusterTypes.PD)
+func (l leaderShuffleGenerator) schedule(nodes []cluster.Node, duration time.Duration) []*core.NemesisOperation {
+	nodes = filterComponent(nodes, cluster.PD)
 	var ops []*core.NemesisOperation
 	ops = append(ops, &core.NemesisOperation{
 		Type:        core.PDLeaderShuffler,
@@ -59,7 +59,7 @@ func newLeaderShuffler() *leaderShuffler {
 	return l
 }
 
-func (l *leaderShuffler) Invoke(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (l *leaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("apply nemesis %s...", core.PDLeaderShuffler)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
@@ -69,7 +69,7 @@ func (l *leaderShuffler) Invoke(ctx context.Context, node *clusterTypes.Node, ar
 	return l.shuffleLeader()
 }
 
-func (l *leaderShuffler) Recover(ctx context.Context, node *clusterTypes.Node, args ...interface{}) error {
+func (l *leaderShuffler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("unapply nemesis %s...", core.PDLeaderShuffler)
 	return nil
 }

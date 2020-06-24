@@ -59,8 +59,8 @@ func main() {
 
 	c := fixture.Context
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,

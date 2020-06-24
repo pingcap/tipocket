@@ -13,7 +13,7 @@ import (
 	tmysql "github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -50,14 +50,14 @@ type ClientCreator struct {
 }
 
 // Create ...
-func (l ClientCreator) Create(node types.ClientNode) core.Client {
+func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &ondupClient{
 		Config: l.Cfg,
 		errCh:  make(chan error, 3),
 	}
 }
 
-func (c *ondupClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *ondupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -82,11 +82,11 @@ func (c *ondupClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []t
 	return nil
 }
 
-func (c *ondupClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *ondupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
-func (c *ondupClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *ondupClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -98,7 +98,7 @@ func (c *ondupClient) DumpState(ctx context.Context) (interface{}, error) {
 	panic("implement me")
 }
 
-func (c *ondupClient) Start(ctx context.Context, cfg interface{}, clientNode []types.ClientNode) error {
+func (c *ondupClient) Start(ctx context.Context, cfg interface{}, clientNode []cluster.ClientNode) error {
 	childCtx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()
 

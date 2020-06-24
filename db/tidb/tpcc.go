@@ -9,11 +9,10 @@ import (
 	"strings"
 	"time"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
-
 	"github.com/pingcap/go-tpc/pkg/workload"
 	"github.com/pingcap/go-tpc/tpcc"
 
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
 )
@@ -25,7 +24,7 @@ type tpccClient struct {
 	workloadCtx context.Context
 }
 
-func (t *tpccClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNodes []clusterTypes.ClientNode, idx int) error {
+func (t *tpccClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var (
 		err  error
 		node = clientNodes[idx]
@@ -50,7 +49,7 @@ func (t *tpccClient) SetUp(ctx context.Context, _ []clusterTypes.Node, clientNod
 	return nil
 }
 
-func (t *tpccClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNode, idx int) error {
+func (t *tpccClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	defer t.CleanupThread(t.workloadCtx, 0)
 	if idx == 0 {
 		return t.Workloader.Cleanup(t.workloadCtx, 0)
@@ -58,7 +57,7 @@ func (t *tpccClient) TearDown(ctx context.Context, nodes []clusterTypes.ClientNo
 	return nil
 }
 
-func (t *tpccClient) Invoke(ctx context.Context, node clusterTypes.ClientNode, r interface{}) (response core.UnknownResponse) {
+func (t *tpccClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) (response core.UnknownResponse) {
 	s := time.Now()
 	err := t.Workloader.Run(t.workloadCtx, 0)
 	// TPCC.InitThread will panic when establish connection failed
@@ -95,7 +94,7 @@ func (t tpccClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []clusterTypes.ClientNode) error {
+func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
 
@@ -106,7 +105,7 @@ type TPCCClientCreator struct {
 }
 
 // Create ...
-func (t *TPCCClientCreator) Create(_ clusterTypes.ClientNode) core.Client {
+func (t *TPCCClientCreator) Create(_ cluster.ClientNode) core.Client {
 	client := &tpccClient{
 		Config: t.Config,
 	}

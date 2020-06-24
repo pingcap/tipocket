@@ -30,7 +30,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
@@ -67,38 +67,38 @@ func (o *Ops) Delete() error {
 }
 
 // GetNodes returns DM (DM-master & DM-worker) nodes.
-func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	podsMaster := &corev1.PodList{}
 	if err := o.cli.List(context.Background(), podsMaster,
 		client.InNamespace(o.dm.StsMaster.ObjectMeta.Namespace),
 		client.MatchingLabels(o.dm.StsMaster.ObjectMeta.Labels)); err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
 	podsWorker := &corev1.PodList{}
 	if err := o.cli.List(context.Background(), podsWorker,
 		client.InNamespace(o.dm.StsMaster.ObjectMeta.Namespace),
 		client.MatchingLabels(o.dm.StsWorker.ObjectMeta.Labels)); err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
-	nodes := make([]clusterTypes.Node, 0, len(podsMaster.Items)+len(podsWorker.Items))
+	nodes := make([]cluster.Node, 0, len(podsMaster.Items)+len(podsWorker.Items))
 	for _, pod := range podsMaster.Items {
-		nodes = append(nodes, clusterTypes.Node{
+		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
-			Component: clusterTypes.DM,
-			Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.DM), pod.Spec.Containers),
+			Component: cluster.DM,
+			Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.DM), pod.Spec.Containers),
 		})
 	}
 	for _, pod := range podsWorker.Items {
-		nodes = append(nodes, clusterTypes.Node{
+		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			PodName:   pod.ObjectMeta.Name,
 			IP:        pod.Status.PodIP,
-			Component: clusterTypes.DM,
-			Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.DM), pod.Spec.Containers),
+			Component: cluster.DM,
+			Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.DM), pod.Spec.Containers),
 		})
 	}
 
@@ -106,8 +106,8 @@ func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
 }
 
 // GetClientNodes returns the client nodes.
-func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	var clientNodes []clusterTypes.ClientNode
+func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
+	var clientNodes []cluster.ClientNode
 	ips, err := util.GetNodeIPs(o.cli, o.dm.StsMaster.Namespace, o.dm.StsMaster.ObjectMeta.Labels)
 	if err != nil {
 		return clientNodes, err
@@ -122,10 +122,10 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	port := getDMMasterNodePort(svc)
 
 	for _, ip := range ips {
-		clientNodes = append(clientNodes, clusterTypes.ClientNode{
+		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   svc.ObjectMeta.Namespace,
 			ClusterName: svc.ObjectMeta.Labels["instance"],
-			Component:   clusterTypes.DM,
+			Component:   cluster.DM,
 			IP:          ip,
 			Port:        port,
 		})

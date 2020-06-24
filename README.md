@@ -47,13 +47,16 @@ Another convenient way we recommend you is using tiup to deploy a cluster on loc
 tiup playground --kv 3
 ```
 
-* Specify that cluster as SUT cluster on TiPocket
+* Specify that cluster address through `-tidb-server` `-tikv-server` and `-pd-server`
 
-```Go
-suit := util.Suit{
-      ...
-      Provisioner:   cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, []string{"127.0.0.1:20160"}),
-   }
+```bash
+-tidb-server 127.0.0.1:4000 
+```
+
+* If a cluster has multiple service addresses, you can pass multiple flags, Eg.
+
+```bash
+-tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
 ```
 
 ## Workloads
@@ -62,13 +65,14 @@ TiPocket includes some consistency, isolation and other kinds of tests
 
 ### Consistency
 
-* **bank** check bank accounts using a linearizability checker [porcupine](https://github.com/anishathalye/porcupine)
+* **bank** transfers between rows of a shared table
+* **lbank** check bank accounts using a linearizability checker [porcupine](https://github.com/anishathalye/porcupine)
 * **vbank** like bank but cover more TiKV features
 * **ledger** yet another bank test
-* **scbank** transfers between rows of a shared table
 * **rawkv-linearizability** rawkv linearizability checker
 * **tpcc** use [go-tpc](https://github.com/pingcap/go-tpc) testing consistency
 
 ### Isolation
 
 * **append** checks for dependency cycles in transactions using Elle
+* **register** checks for write-read dependency cycles over read-write registers using Elle

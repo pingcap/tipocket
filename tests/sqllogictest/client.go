@@ -24,7 +24,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/ngaut/log"
 
-	"github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
 )
@@ -51,14 +51,14 @@ type ClientCreator struct {
 }
 
 // Create creates sqllogicClient
-func (l *ClientCreator) Create(node types.ClientNode) core.Client {
+func (l *ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &sqllogicClient{
 		Config: l.Config,
 	}
 }
 
 // SetUp set up sqllogicClient
-func (c *sqllogicClient) SetUp(ctx context.Context, _ []types.Node, clientNodes []types.ClientNode, idx int) error {
+func (c *sqllogicClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
 	}
@@ -98,12 +98,12 @@ func (c *sqllogicClient) SetUp(ctx context.Context, _ []types.Node, clientNodes 
 }
 
 // TearDown does nothing
-func (c *sqllogicClient) TearDown(ctx context.Context, nodes []types.ClientNode, idx int) error {
+func (c *sqllogicClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
 
 // Invoke does nothing
-func (c *sqllogicClient) Invoke(ctx context.Context, node types.ClientNode, r interface{}) core.UnknownResponse {
+func (c *sqllogicClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	panic("implement me")
 }
 
@@ -118,7 +118,7 @@ func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
 }
 
 // Start starts test
-func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []types.ClientNode) error {
+func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	startTime := time.Now()
 	var fileNames []string
 	filepath.Walk(c.TestDir, func(testPath string, info os.FileInfo, err error) error {

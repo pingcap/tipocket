@@ -43,8 +43,8 @@ func main() {
 	pocketConfig.Options.Path = fixture.Context.TiFlashConfig.LogPath
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: creator.PocketCreator{
 			Config: creator.Config{
 				ConfigPath: *configPath,

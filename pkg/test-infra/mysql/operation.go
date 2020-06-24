@@ -29,7 +29,7 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	clusterTypes "github.com/pingcap/tipocket/pkg/cluster/types"
+	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
@@ -70,28 +70,28 @@ func (o *Ops) Delete() error {
 }
 
 // GetNodes returns MySQL nodes.
-func (o *Ops) GetNodes() ([]clusterTypes.Node, error) {
+func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	pod := &corev1.Pod{} // only 1 replica
 	err := o.cli.Get(context.Background(), client.ObjectKey{
 		Namespace: o.mysql.Sts.ObjectMeta.Namespace,
 		Name:      fmt.Sprintf("%s-0", o.mysql.Sts.ObjectMeta.Name),
 	}, pod)
 	if err != nil {
-		return []clusterTypes.Node{}, err
+		return []cluster.Node{}, err
 	}
 
-	return []clusterTypes.Node{{
+	return []cluster.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
 		IP:        pod.Status.PodIP,
-		Component: clusterTypes.MySQL,
-		Port:      util.FindPort(pod.ObjectMeta.Name, string(clusterTypes.MySQL), pod.Spec.Containers),
+		Component: cluster.MySQL,
+		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.MySQL), pod.Spec.Containers),
 	}}, nil
 }
 
 // GetClientNodes returns the client nodes.
-func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
-	var clientNodes []clusterTypes.ClientNode
+func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
+	var clientNodes []cluster.ClientNode
 	ips, err := util.GetNodeIPs(o.cli, o.mysql.Sts.Namespace, o.mysql.Sts.ObjectMeta.Labels)
 	if err != nil {
 		return clientNodes, err
@@ -106,10 +106,10 @@ func (o *Ops) GetClientNodes() ([]clusterTypes.ClientNode, error) {
 	port := getMySQLNodePort(svc)
 
 	for _, ip := range ips {
-		clientNodes = append(clientNodes, clusterTypes.ClientNode{
+		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   svc.ObjectMeta.Namespace,
 			ClusterName: svc.ObjectMeta.Labels["instance"],
-			Component:   clusterTypes.MySQL,
+			Component:   cluster.MySQL,
 			IP:          ip,
 			Port:        port,
 		})

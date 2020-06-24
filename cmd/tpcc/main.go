@@ -79,7 +79,7 @@ func main() {
 	}
 	suit := util.Suit{
 		Config:           &cfg,
-		Provisioner:      cluster.NewK8sProvisioner(),
+		Provider:         cluster.NewDefaultClusterProvider(),
 		ClientCreator:    creator,
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),

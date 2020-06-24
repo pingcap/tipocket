@@ -76,8 +76,8 @@ func main() {
 		log.Fatalf("[%s] parse argment error: %v", caseName, err)
 	}
 	suit := util.Suit{
-		Config:      &cfg,
-		Provisioner: cluster.NewK8sProvisioner(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: pessimistic.ClientCreator{Cfg: &pessimistic.Config{
 			PessimisticClientConfig: pessimistic.ClientConfig{
 				DBName:         *randTxnDBName,
