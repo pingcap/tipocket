@@ -30,16 +30,14 @@ import (
 	"github.com/pingcap/tipocket/pkg/pocket/util"
 )
 
-func (c *Core) startCheckConsistency() {
-	t := 0
-	waitingForCheck := false
-	for range time.Tick(c.cfg.Options.CheckDuration.Duration) {
-		if waitingForCheck {
-			continue
-		}
-		waitingForCheck = true
-		t++
-		go func(t int) {
+func (c *Core) startCheckConsistency(ctx context.Context) {
+	ticker := time.NewTicker(c.cfg.Options.CheckDuration.Duration)
+	round := 0
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
 			var (
 				result bool
 				err    error
@@ -56,11 +54,12 @@ func (c *Core) startCheckConsistency() {
 				return true, nil
 			})
 			if err != nil {
-				log.Fatalf("compare data failed %v", err)
+				log.Errorf("compare data failed %v", err)
+				return
 			}
-			log.Infof("test %d compare data result %t\n", t, result)
-			waitingForCheck = false
-		}(t)
+			log.Infof("test %d compare data result %t\n", round, result)
+			round++
+		}
 	}
 }
 
@@ -147,7 +146,10 @@ func (c *Core) abTestCompareData(delay bool) (bool, error) {
 		return false, errors.Trace(err)
 	}
 	if err := compareExecutor.ABTestSelect(makeCompareSQLs(schema)[0]); err != nil {
-		log.Fatal(err)
+		if errors.Cause(err) == util.ErrExactlyNotSame {
+			log.Fatal(err)
+		}
+		return false, errors.Trace(err)
 	}
 	// free the lock since the compare has already got the same snapshot in both side
 	// go on other transactions
