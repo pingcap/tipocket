@@ -74,6 +74,7 @@ type fixtureContext struct {
 	LogPath    string
 	// Plugins
 	LeakCheckEatFile string
+	LeakCheckSilent  bool
 	// failpoints
 	TiDBFailpoint string
 }
@@ -307,6 +308,7 @@ func init() {
 
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
+	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
 	// failpoint
 	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
 

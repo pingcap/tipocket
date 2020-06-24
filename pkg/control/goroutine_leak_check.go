@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -83,15 +85,30 @@ func checkLeak(stacks []*Stack, body, tidbIP string) error {
 
 		sig := s.Signature()
 		if _, ok := leagel[string(sig)]; !ok {
-			buf.WriteString("goroutine seems to leak:\n")
+			buf.WriteString("\ngoroutine seems to leak:\n")
 			buf.Write(s.Raw)
 			fmt.Fprintf(&buf, "\n--------%s %s", tidbIP, time.Now())
 			leak = true
 		}
 	}
 	if leak {
-		log.Error(body)
-		log.Fatal(buf.String())
+		file, err := os.OpenFile(path.Join(fixture.Context.LogPath, "leak-check"),
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Fatalf("failed to open leak-check file: %v", err)
+		}
+		defer file.Close()
+		if _, err := file.Write([]byte(body)); err != nil {
+			log.Fatalf("failed to write leak-check result: %v", err)
+		}
+		if _, err := file.Write(buf.Bytes()); err != nil {
+			log.Fatalf("failed to write leak-check result: %v", err)
+		}
+		if fixture.Context.LeakCheckSilent {
+			log.Warn(buf.String())
+		} else {
+			log.Fatal(buf.String())
+		}
 	}
 	log.Infof("leak check successfully: %s", tidbIP)
 	return nil

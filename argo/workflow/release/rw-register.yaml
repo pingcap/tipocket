@@ -16,11 +16,11 @@ spec:
       - name: purge
         value: "true"
       - name: hub
-        value: "docker.io"
+        value: "hub.pingcap.net"
       - name: repository
-        value: pingcap
+        value: qa
       - name: image-version
-        value: nightly
+        value: release-4.0-failpoint
       - name: tidb-image
         value: ""
       - name: tikv-image
