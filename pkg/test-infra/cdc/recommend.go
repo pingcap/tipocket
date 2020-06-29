@@ -100,9 +100,21 @@ func newCDC(ns, name string) *CDC {
 									"server",
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
 									"--addr=0.0.0.0:8300",
+									fmt.Sprintf("--advertise-addr=%s", fmt.Sprintf("http://$(POD_NAME).%s.%s:8300", cdcName, ns)),
 									"--log-file", "/var/log/cdc/cdc.log",
 									"--log-level", logLevel,
 									"--tz", timezone,
+								},
+								Env: []corev1.EnvVar{
+									{
+										Name: "POD_NAME",
+										ValueFrom: &corev1.EnvVarSource{
+											FieldRef: &corev1.ObjectFieldSelector{
+												APIVersion: "v1",
+												FieldPath:  "metadata.name",
+											},
+										},
+									},
 								},
 								Ports: []corev1.ContainerPort{
 									{
