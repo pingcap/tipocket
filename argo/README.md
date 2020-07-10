@@ -1,8 +1,7 @@
 # Intro
 
 This directory contains some manifests for running tipocket in [argo](https://github.com/argoproj/argo). The [template](./template) directory
-contains the manifests for argo [workflow-template](https://github.com/argoproj/argo/blob/master/docs/workflow-templates.md) resources. And the 
-[workflow](./workflow) directory contains the manifests for argo workflow resources.
+contains the manifests for argo [workflow-template](https://github.com/argoproj/argo/blob/master/docs/workflow-templates.md) resources. And the [workflow](./workflow) directory contains the manifests for argo workflow resources.
 
 For more information about argo and its workflows, this [doc](https://argoproj.github.io/docs/argo/examples/readme.html) is really a good start.
 
@@ -29,37 +28,41 @@ tipocket-ledger-iochaos-wx4zl         Succeeded   2h    1h         0
 ### Submit a new workflow
 
 ```bash
-argo submit workflow/bank.yaml -n argo
+$ argo submit workflow/release/bank.yaml -n argo
 
 Name:                tipocket-bank-d8vr4
 Namespace:           argo
 ServiceAccount:      default
 Status:              Pending
 Created:             Sat Mar 21 13:24:31 -0400 (1 second ago)
-Parameters:          
+Parameters:
   image-version:     latest
-  storage-class:     pd-ssd
+  storage-class:     sas
 ```
 
 ### Submit a new workflow with parameter overwritten
 
 ```bash
-argo submit workflow/bank.yaml -p image-version=nightly -n argo
+$ argo submit workflow/release/bank.yaml -p hub='docker.io' -p repository='pingcap' -p image-version='nightly' -p storage-class='nvme' -n argo
 
-Name:                tipocket-bank-xqnm2
+Name:                tipocket-bank-vqwvj
 Namespace:           argo
 ServiceAccount:      default
 Status:              Pending
-Created:             Sat Mar 21 13:32:55 -0400 (now)
-Parameters:          
+Created:             Fri Jul 10 10:34:49 +0800 (now)
+Parameters:
+  hub:               docker.io
+  repository:        pingcap
   image-version:     nightly
-  storage-class:     pd-ssd
+  storage-class:     nvme
+  ns:                tipocket-bank
 ```
 
 ### Submit a new template
 
 ```bash
-argo template create template/ledger.yaml -n argo
+$ argo template create template/ledger.yaml -n argo
+
 Name:                tipocket-ledger
 Namespace:           argo
 Created:             Sat Mar 21 13:21:13 -0400 (now)
