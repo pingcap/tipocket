@@ -135,10 +135,10 @@ func (suit *Suit) Run(ctx context.Context) {
 
 	for _, node := range suit.ClientNodes {
 		if node.Component == cluster.TiDB {
-			dsn := fmt.Sprintf("root@tcp(%s:%d)", node.IP, node.Port)
+			dsn := fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
 			db, err := util.OpenDB(dsn, 1)
 			if err != nil {
-				panic("")
+				panic(err)
 			}
 			for _, stmt := range matrixSQLStmts {
 				_, err = db.Exec(stmt)
