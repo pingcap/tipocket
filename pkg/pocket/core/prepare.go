@@ -113,3 +113,7 @@ func (c *Core) createSchema() error {
 		SQLType: types.SQLTypeCreateDatabase,
 	}))
 }
+
+func AddFileMustExec(cont string) {
+	mustExecSQLs = append(mustExecSQLs, cont)
+}
