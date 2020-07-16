@@ -27,9 +27,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/chaos-mesh/matrix/api"
-
 	"github.com/ngaut/log"
+
+	"github.com/chaos-mesh/matrix/api"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -76,7 +76,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	startTime := time.Now()
 
 	// Apply Matrix config
-	var matrixSqlStmts []string
+	var matrixSQLStmts []string
 	tidbConfig := fixture.Context.TiDBClusterConfig
 	if tidbConfig.MatrixConfig.MatrixConfigFile != "" {
 		matrixCtx, err := ioutil.TempDir("", "matrix")
@@ -122,10 +122,10 @@ func (suit *Suit) Run(ctx context.Context) {
 					b, err = ioutil.ReadFile(sqlFile)
 					if err != nil {
 						log.Warn(fmt.Sprintf("Error loading from Matrix: %s", err.Error()))
-						matrixSqlStmts = nil
+						matrixSQLStmts = nil
 						break
 					}
-					matrixSqlStmts = append(matrixSqlStmts, fmt.Sprint(b))
+					matrixSQLStmts = append(matrixSQLStmts, fmt.Sprint(b))
 				}
 			}
 		}
@@ -140,7 +140,7 @@ func (suit *Suit) Run(ctx context.Context) {
 			if err != nil {
 				panic("")
 			}
-			for _, stmt := range matrixSqlStmts {
+			for _, stmt := range matrixSQLStmts {
 				_, err = db.Exec(stmt)
 				if err != nil {
 					panic(err)
