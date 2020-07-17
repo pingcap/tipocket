@@ -15,21 +15,16 @@ package util
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/signal"
-	"path"
 	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/ngaut/log"
-
-	"github.com/chaos-mesh/matrix/api"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -39,7 +34,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/util"
 )
 
 // Suit is a basic chaos testing suit with configurations to run chaos.
@@ -76,78 +70,14 @@ func (suit *Suit) Run(ctx context.Context) {
 	startTime := time.Now()
 
 	// Apply Matrix config
-	var matrixSQLStmts []string
-	tidbConfig := fixture.Context.TiDBClusterConfig
-	if tidbConfig.MatrixConfig.MatrixConfigFile != "" {
-		matrixCtx, err := ioutil.TempDir("", "matrix")
-		if err != nil {
-			log.Warn(fmt.Sprintf("Failed to create Matrix context folder: `%s`, skip Matrix.", err.Error()))
-		} else {
-			if !tidbConfig.MatrixConfig.NoCleanup {
-				defer os.RemoveAll(matrixCtx)
-			}
-
-			err = api.Gen(tidbConfig.MatrixConfig.MatrixConfigFile, matrixCtx, 0)
-			if err != nil {
-				log.Warn("Matrix generation failed, skip Matrix.")
-			} else {
-				checkAndOverrideConfig := func(matrixConfig string, realConfig *string) error {
-					if matrixConfig != "" {
-						joinedMatrixConfig := path.Join(matrixCtx, matrixConfig)
-						if util.IsFileExist(joinedMatrixConfig) {
-							if *realConfig != "" {
-								return errors.New(fmt.Sprintf("config file already specified: `%s`", *realConfig))
-							}
-							*realConfig = joinedMatrixConfig
-						} else {
-							return errors.New(fmt.Sprintf("`%s` not exists in Matrix output", matrixConfig))
-						}
-					}
-					return nil
-				}
-
-				if err = checkAndOverrideConfig(tidbConfig.MatrixConfig.MatrixTiDBConfig, &tidbConfig.TiDBConfig); err != nil {
-					log.Warn(fmt.Sprintf("Error applying Matrix's TiDB config, skipped: %s", err.Error()))
-				}
-				if err = checkAndOverrideConfig(tidbConfig.MatrixConfig.MatrixTiKVConfig, &tidbConfig.TiKVConfig); err != nil {
-					log.Warn(fmt.Sprintf("Error applying Matrix's TiKV config, skipped: %s", err.Error()))
-				}
-				if err = checkAndOverrideConfig(tidbConfig.MatrixConfig.MatrixPDConfig, &tidbConfig.PDConfig); err != nil {
-					log.Warn(fmt.Sprintf("Error applying Matrix's PD config, skipped: %s", err.Error()))
-				}
-
-				for _, sqlFile := range tidbConfig.MatrixConfig.MatrixSQLConfig {
-					sqlFile = path.Join(matrixCtx, sqlFile)
-					var b []byte
-					b, err = ioutil.ReadFile(sqlFile)
-					if err != nil {
-						log.Warn(fmt.Sprintf("Error loading from Matrix: %s", err.Error()))
-						matrixSQLStmts = nil
-						break
-					}
-					matrixSQLStmts = append(matrixSQLStmts, fmt.Sprint(b))
-				}
-			}
-		}
+	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&fixture.Context.TiDBClusterConfig)
+	if err != nil {
+		log.Fatalf("Matrix init failed, err: %s", err)
+	} else if matrixEnabled {
+		defer matrixCleanup()
 	}
 
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provider.SetUp(sctx, clusterSpec)
-
-	for _, node := range suit.ClientNodes {
-		if node.Component == cluster.TiDB {
-			dsn := fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
-			db, err := util.OpenDB(dsn, 1)
-			if err != nil {
-				panic(err)
-			}
-			for _, stmt := range matrixSQLStmts {
-				_, err = db.Exec(stmt)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
-	}
 
 	if err != nil {
 		// we can release resources safely in this case.
@@ -155,6 +85,14 @@ func (suit *Suit) Run(ctx context.Context) {
 		log.Fatalf("deploy a cluster failed, maybe has no enough resources, err: %s", err)
 	}
 	log.Infof("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
+
+	if matrixEnabled {
+		err = matrixSetupNodes(suit.Config.Nodes)
+		if err != nil {
+			log.Fatalf("Matrix setting up nodes failed, err: %s", err)
+		}
+	}
+
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Fatal("no client nodes exist")
 	}
