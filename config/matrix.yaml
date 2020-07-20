@@ -395,41 +395,27 @@ configs:
     value:
       type: list
       value:
-        - template:
-            - 'SET SESSION autocommit = %s;'
-            - 'SET GLOBAL autocommit = %s;'
+        - template: 'SET GLOBAL autocommit = %s;'
           value: ["ON", "OFF"]
-        - template:
-            - 'SET SESSION sql_mode = "%s";'
-            - 'SET GLOBAL sql_mode = "%s";'
+        - template: 'SET GLOBAL sql_mode = "%s";'
           value:
             type: choice_n
             sep: ','
             value: [ALLOW_INVALID_DATES, ANSI_QUOTES, ERROR_FOR_DIVISION_BY_ZERO, HIGH_NOT_PRECEDENCE, IGNORE_SPACE, NO_AUTO_VALUE_ON_ZERO, NO_BACKSLASH_ESCAPES, NO_DIR_IN_CREATE, NO_ENGINE_SUBSTITUTION, NO_UNSIGNED_SUBTRACTION, NO_ZERO_DATE, NO_ZERO_IN_DATE, ONLY_FULL_GROUP_BY, PAD_CHAR_TO_FULL_LENGTH, PIPES_AS_CONCAT, REAL_AS_FLOAT, STRICT_ALL_TABLES, STRICT_TRANS_TABLES, TIME_TRUNCATE_FRACTIONAL]
-        - template:
-            - 'SET SESSION tx_isolation = "%s";'
-            - 'SET GLOBAL tx_isolation = "%s";'
+        - template: 'SET GLOBAL tx_isolation = "%s";'
           value: [READ-UNCOMMITTED, READ-COMMITTED, REPEATABLE-READ, SERIALIZABLE]
-        - template:
-            - 'SET SESSION max_execution_time = %d;'
-            - 'SET GLOBAL max_execution_time = %d;'
+        - template: 'SET GLOBAL max_execution_time = %d;'
           value:
             - 0
             - type: int
               range: [100, 1000]
-        - template:
-            - 'SET SESSION innodb_lock_wait_timeout = %d;'
-            - 'SET GLOBAL innodb_lock_wait_timeout = %d;'
+        - template: 'SET GLOBAL innodb_lock_wait_timeout = %d;'
           value:
             type: int
             range: [1, 1073741824]
-        - template:
-            - 'SET SESSION windowing_use_high_precision = %s;'
-            - 'SET GLOBAL windowing_use_high_precision = %s;'
+        - template: 'SET GLOBAL windowing_use_high_precision = %s;'
           value: ["ON", "OFF"]
-        - template:
-            - 'SET SESSION sql_select_limit = %d;'
-            - 'SET GLOBAL sql_select_limit = %d;'
+        - template:'SET GLOBAL sql_select_limit = %d;'
           value: uint
   - tag: tidb-system-vars
     serializer: stmt
@@ -437,163 +423,79 @@ configs:
     value:
       type: list
       value:
-        - template: 'SET SESSION tidb_opt_agg_push_down = %d;'
-          value: [0, 1]
-        - template: 'SET SESSION tidb_opt_distinct_agg_push_down = %d;'
-          value: [0, 1]
         - template: 'SET GLOBAL tidb_auto_analyze_ratio = %f;'
           value:
             type: float
             range: [0.1, 0.9]
-        - template: 'SET SESSION tidb_build_stats_concurrency = %d;'
-          value:
-            type: int
-            range: [2, 10]
-        - template: 'SET SESSION tidb_checksum_table_concurrency = %d;'
-          value:
-            type: int
-            range: [2, 10]
-        - template:
-            - 'SET SESSION tidb_distsql_scan_concurrency = %d;'
-            - 'SET GLOBAL tidb_distsql_scan_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_distsql_scan_concurrency = %d;'
           value:
             type: int
             range: [1, 30]
             default: 15
-        - template:
-            - 'SET SESSION tidb_index_lookup_size = %d;'
-            - 'SET GLOBAL tidb_index_lookup_size = %d;'
+        - template: 'SET GLOBAL tidb_index_lookup_size = %d;'
           value:
             type: int
             range: [10000, 40000]
             default: 20000
-        - template:
-            - 'SET SESSION tidb_index_lookup_concurrency = %d;'
-            - 'SET GLOBAL tidb_index_lookup_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_index_lookup_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 4
-        - template:
-            - 'SET SESSION tidb_index_lookup_join_concurrency = %d;'
-            - 'SET GLOBAL tidb_index_lookup_join_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_index_lookup_join_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 4
-        - template:
-            - 'SET SESSION tidb_hash_join_concurrency = %d;'
-            - 'SET GLOBAL tidb_hash_join_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_hash_join_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 5
-        - template:
-            - 'SET SESSION tidb_index_serial_scan_concurrency = %d;'
-            - 'SET GLOBAL tidb_index_serial_scan_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_index_serial_scan_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 1
-        - template:
-            - 'SET SESSION tidb_projection_concurrency = %d;'
-            - 'SET GLOBAL tidb_projection_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_projection_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 4
-        - template:
-            - 'SET SESSION tidb_hashagg_final_concurrency = %d;'
-            - 'SET GLOBAL tidb_hashagg_final_concurrency = %d;'
+        - template: 'SET GLOBAL tidb_hashagg_final_concurrency = %d;'
           value:
             type: int
             range: [1, 10]
             default: 4
-        - template:
-            - 'SET SESSION tidb_index_join_batch_size = %d;'
-            - 'SET GLOBAL tidb_index_join_batch_size = %d;'
+        - template: 'SET GLOBAL tidb_index_join_batch_size = %d;'
           value:
             type: int
             range: [10000, 50000]
             default: 25000
-        - template:
-            - 'SET SESSION tidb_skip_utf8_check = %d;'
-            - 'SET GLOBAL tidb_skip_utf8_check = %d;'
+        - template: 'SET GLOBAL tidb_skip_utf8_check = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_init_chunk_size = %d;'
-            - 'SET GLOBAL tidb_init_chunk_size = %d;'
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
           value:
             type: int
             range: [8, 128]
             default: 32
-        - template:
-            - 'SET SESSION tidb_max_chunk_size = %d;'
-            - 'SET GLOBAL tidb_max_chunk_size = %d;'
+        - template: 'SET GLOBAL tidb_max_chunk_size = %d;'
           value:
             type: int
             range: [128, 8192]
             default: 1024
-        - template: 'SET SESSION tidb_mem_quota_query = %s;'
-          value:
-            type: size
-            range: [500M, 4GB]
-            default: 1GB
-        - template: 'SET SESSION tidb_mem_quota_hashjoin = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_mergejoin = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_sort = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_topn = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_indexlookupreader = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_indexlookupjoin = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
-        - template: 'SET SESSION tidb_mem_quota_nestedloopapply = %s;'
-          value:
-            type: size
-            range: [8GB, 64GB]
-            default: 32GB
         - template: 'SET SERVER tidb_enable_streaming = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_retry_limit = %s;'
-            - 'SET GLOBAL tidb_retry_limit = %s;'
+        - template: 'SET GLOBAL tidb_retry_limit = %s;'
           value: ['on', 'off']
-        - template:
-            - 'SET SESSION tidb_backoff_weight = %d;'
-            - 'SET GLOBAL tidb_backoff_weight = %d;'
+        - template: 'SET GLOBAL tidb_backoff_weight = %d;'
           value:
             type: int
             range: [1, 5]
             default: 2
-        - template:
-            - 'SET SESSION tidb_enable_table_partition = %s;'
-            - 'SET GLOBAL tidb_enable_table_partition = %s;'
+        - template: 'SET GLOBAL tidb_enable_table_partition = %s;'
           value: ['on', 'off', 'auto']
-        - template:
-            - 'SET SESSION tidb_backoff_lock_fast = %d;'
-            - 'SET GLOBAL tidb_backoff_lock_fast = %d;'
+        - template: 'SET GLOBAL tidb_backoff_lock_fast = %d;'
           value:
             type: int
             range: [20, 200]
@@ -608,9 +510,7 @@ configs:
             type: int
             range: [32, 10240]
             default: 256
-        - template:
-            - 'SET SESSION tidb_ddl_reorg_priority = %s;'
-            - 'SET GLOBAL tidb_ddl_reorg_priority = %s;'
+        - template: 'SET GLOBAL tidb_ddl_reorg_priority = %s;'
           value: [PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH]
         - template: 'SET GLOBAL tidb_ddl_error_count_limit = %d;'
           value:
@@ -622,77 +522,46 @@ configs:
             type: int
             range: [100, 16384]
             default: 1024
-        - template: 'SET SESSION tidb_force_priority = %s;'
-          value: [NO_PRIORITY, LOW_PRIORITY, DELAYED, HIGH_PRIORITY]
         - template: 'SET GLOBAL tidb_row_format_version = %d;'
           value: [1, 2]
-        - template:
-            - 'SET SESSION tidb_txn_mode = %s;'
-            - 'SET GLOBAL tidb_txn_mode = %s;'
+        - template: 'SET GLOBAL tidb_txn_mode = %s;'
           value: ["pessimistic", "optimistic", ""]
-        - template:
-            - 'SET SESSION tidb_constraint_check_in_place = %d;'
-            - 'SET GLOBAL tidb_constraint_check_in_place = %d;'
+        - template: 'SET GLOBAL tidb_constraint_check_in_place = %d;'
           value: [0, 1]
         - template: 'SET SERVER tidb_check_mb4_value_in_utf8 = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_opt_insubq_to_join_and_agg = %d;'
-            - 'SET GLOBAL tidb_opt_insubq_to_join_and_agg = %d;'
+        - template: 'SET GLOBAL tidb_opt_insubq_to_join_and_agg = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_opt_correlation_threshold = %f;'
-            - 'SET GLOBAL tidb_opt_correlation_threshold = %f;'
+        - template: 'SET GLOBAL tidb_opt_correlation_threshold = %f;'
           value:
             type: float
             range: [0.5, 0.99]
             default: 0.9
-        - template:
-            - 'SET SESSION tidb_opt_correlation_exp_factor = %f;'
-            - 'SET GLOBAL tidb_opt_correlation_exp_factor = %f;'
+        - template: 'SET GLOBAL tidb_opt_correlation_exp_factor = %f;'
           value:
             type: float
             range: [0, 1]
             default: 1
-        - template:
-            - 'SET SESSION tidb_enable_window_function = %d;'
-            - 'SET GLOBAL tidb_enable_window_function = %d;'
+        - template: 'SET GLOBAL tidb_enable_window_function = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_enable_fast_analyze = %d;'
-            - 'SET GLOBAL tidb_enable_fast_analyze = %d;'
+        - template: 'SET GLOBAL tidb_enable_fast_analyze = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_init_chunk_size = %d;'
-            - 'SET GLOBAL tidb_init_chunk_size = %d;'
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
           value:
             type: int
             range: [8, 128]
             default: 32
-        - template: 'SET SESSION tidb_wait_split_region_finish = %d;'
-          value: [0, 1]
         - template: 'SET GLOBAL tidb_scatter_region = %d;'
           value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_init_chunk_size = %d;'
-            - 'SET GLOBAL tidb_init_chunk_size = %d;'
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
           value:
             type: int
             range: [8, 128]
             default: 32
-        - template: 'SET SESSION tidb_allow_remove_auto_inc = %d;'
-          value: [0, 1]
         - template:
-            - 'SET SESSION tidb_enable_stmt_summary = %d;'
             - 'SET GLOBAL tidb_enable_stmt_summary = %d;'
           value: [0, 1]
-        - template: 'SET SESSION tidb_enable_chunk_rpc = %d;'
-          value: [0, 1]
-        - template: 'SET SESSION last_plan_from_cache = %d;'
-          value: [0, 1]
-        - template:
-            - 'SET SESSION tidb_allow_batch_cop = %d;'
-            - 'SET GLOBAL tidb_allow_batch_cop = %d;'
+        - template: 'SET GLOBAL tidb_allow_batch_cop = %d;'
           value: [0, 1, 2]
         - template: 'SET GLOBAL tidb_enable_telemetry = %d;'
           value: [0, 1]
