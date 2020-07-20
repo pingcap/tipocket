@@ -79,13 +79,24 @@ type fixtureContext struct {
 	TiDBFailpoint string
 }
 
-type arrayFlags []string
+type addressArrayFlags []string
 
-func (a *arrayFlags) String() string {
+func (a *addressArrayFlags) String() string {
 	return "multiple addresses"
 }
 
-func (a *arrayFlags) Set(value string) error {
+func (a *addressArrayFlags) Set(value string) error {
+	*a = append(*a, value)
+	return nil
+}
+
+type fileArrayFlags []string
+
+func (a *fileArrayFlags) String() string {
+	return "multiple files"
+}
+
+func (a *fileArrayFlags) Set(value string) error {
 	*a = append(*a, value)
 	return nil
 }
@@ -117,9 +128,9 @@ type TiDBClusterConfig struct {
 	TiFlashReplicas int
 
 	// Database address
-	TiDBAddr arrayFlags
-	TiKVAddr arrayFlags
-	PDAddr   arrayFlags
+	TiDBAddr addressArrayFlags
+	TiKVAddr addressArrayFlags
+	PDAddr   addressArrayFlags
 
 	MatrixConfig MatrixConfig
 }

@@ -16,9 +16,9 @@ import (
 )
 
 func matrixnize(tiDBConfig *fixture.TiDBClusterConfig) (
-	bool,                       // if Matrix enabled
+	bool, // if Matrix enabled
 	func([]cluster.Node) error, // setup nodes
-	func(),                     // cleanup
+	func(), // cleanup
 	error) {
 	copiedConfig := *tiDBConfig
 	matrixedConfig := copiedConfig
@@ -52,9 +52,8 @@ func matrixnize(tiDBConfig *fixture.TiDBClusterConfig) (
 						}
 						*realConfig = joinedMatrixConfig
 						return true, nil
-					} else {
-						return false, errors.New(fmt.Sprintf("`%s` not exists in Matrix output", matrixConfig))
 					}
+					return false, errors.New(fmt.Sprintf("`%s` not exists in Matrix output", matrixConfig))
 				}
 				return false, nil
 			}
@@ -86,7 +85,7 @@ func matrixnize(tiDBConfig *fixture.TiDBClusterConfig) (
 				}
 			}
 			if !(matrixTiDB || matrixTiKV || matrixPD || matrixSQL) {
-				return false, nil, nil, errors.New("Matrix enabled but no output from Matrix is used.")
+				return false, nil, nil, errors.New("`Matrix` enabled but no output from Matrix is used")
 			}
 
 			setupNodes = func(nodes []cluster.Node) error {

@@ -19,6 +19,6 @@ type MatrixConfig struct {
 	MatrixTiDBConfig string
 	MatrixTiKVConfig string
 	MatrixPDConfig   string
-	MatrixSQLConfig  arrayFlags
+	MatrixSQLConfig  fileArrayFlags
 	NoCleanup        bool
 }
