@@ -21,7 +21,8 @@ func matrixnize(c *cluster.Specs) (bool, func([]cluster.Node) error, func(), err
 	if c, ok := c.Cluster.(*tidb.Ops); ok {
 		tiDBConfig = c.GetTiDBConfig()
 	} else {
-		return false, nil, nil, errors.New("`Matrix` could only be used with TiDB cluster now")
+		log.Info("Not TiDB cluster, skip Matrix.")
+		return false, nil, nil, nil
 	}
 
 	matrixedConfig := *tiDBConfig
@@ -37,93 +38,95 @@ func matrixnize(c *cluster.Specs) (bool, func([]cluster.Node) error, func(), err
 	matrixCtx, err := ioutil.TempDir("", "matrix")
 	if err != nil {
 		log.Warn(fmt.Sprintf("Failed to create Matrix context folder: `%s`, skip Matrix.", err.Error()))
-	} else {
-		cleaner = func() {
-			if !tiDBConfig.MatrixConfig.NoCleanup {
-				_ = os.RemoveAll(matrixCtx)
-			}
+		return false, nil, nil, err
+	}
+	cleaner = func() {
+		if !tiDBConfig.MatrixConfig.NoCleanup {
+			_ = os.RemoveAll(matrixCtx)
 		}
+	}
 
-		err = api.Gen(tiDBConfig.MatrixConfig.MatrixConfigFile, matrixCtx, 0)
-		if err != nil {
-			log.Error("Matrix generation failed.")
-			return false, nil, nil, err
-		}
-		checkConfigEnabledAndOverwrite := func(matrixConfig string, realConfig *string) (bool, error) {
-			if matrixConfig != "" {
-				joinedMatrixConfig := path.Join(matrixCtx, matrixConfig)
-				if util.IsFileExist(joinedMatrixConfig) {
-					if *realConfig != "" {
-						return false, errors.New(fmt.Sprintf("Target config file already specified: `%s`", *realConfig))
-					}
-					*realConfig = joinedMatrixConfig
-					return true, nil
+	err = api.Gen(tiDBConfig.MatrixConfig.MatrixConfigFile, matrixCtx, 0)
+	if err != nil {
+		log.Error("Matrix generation failed.")
+		return false, nil, nil, err
+	}
+	checkConfigEnabledAndOverwrite := func(matrixConfig string, realConfig *string) (bool, error) {
+		if matrixConfig != "" {
+			joinedMatrixConfig := path.Join(matrixCtx, matrixConfig)
+			if util.IsFileExist(joinedMatrixConfig) {
+				if *realConfig != "" {
+					return false, errors.New(fmt.Sprintf("Target config file already specified: `%s`", *realConfig))
 				}
-				return false, errors.New(fmt.Sprintf("`%s` not exists in Matrix output", matrixConfig))
+				*realConfig = joinedMatrixConfig
+				return true, nil
 			}
-			return false, nil
+			return false, errors.New(fmt.Sprintf("`%s` not exists in Matrix output", matrixConfig))
 		}
+		return false, nil
+	}
 
-		var matrixTiDB, matrixTiKV, matrixPD, matrixSQL bool
-		if matrixTiDB, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixTiDBConfig, &matrixedConfig.TiDBConfig); err != nil {
-			return false, nil, nil, err
-		}
-		if matrixTiKV, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixTiKVConfig, &matrixedConfig.TiKVConfig); err != nil {
-			return false, nil, nil, err
-		}
-		if matrixPD, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixPDConfig, &matrixedConfig.PDConfig); err != nil {
-			return false, nil, nil, err
-		}
+	var matrixTiDB, matrixTiKV, matrixPD, matrixSQL bool
+	if matrixTiDB, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixTiDBConfig, &matrixedConfig.TiDBConfig); err != nil {
+		return false, nil, nil, err
+	}
+	if matrixTiKV, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixTiKVConfig, &matrixedConfig.TiKVConfig); err != nil {
+		return false, nil, nil, err
+	}
+	if matrixPD, err = checkConfigEnabledAndOverwrite(tiDBConfig.MatrixConfig.MatrixPDConfig, &matrixedConfig.PDConfig); err != nil {
+		return false, nil, nil, err
+	}
 
-		if len(tiDBConfig.MatrixConfig.MatrixSQLConfig) > 0 {
-			matrixSQL = true
+	if len(tiDBConfig.MatrixConfig.MatrixSQLConfig) > 0 {
+		matrixSQL = true
 
-			for _, sqlFile := range tiDBConfig.MatrixConfig.MatrixSQLConfig {
-				sqlFile = path.Join(matrixCtx, sqlFile)
-				b, err := ioutil.ReadFile(sqlFile)
+		for _, sqlFile := range tiDBConfig.MatrixConfig.MatrixSQLConfig {
+			sqlFile = path.Join(matrixCtx, sqlFile)
+			b, err := ioutil.ReadFile(sqlFile)
+			if err != nil {
+				log.Warn(fmt.Sprintf("Error loading from Matrix: %s", err.Error()))
+				matrixSQLStmts = nil
+				matrixSQL = false
+				break
+			}
+			matrixSQLStmts = append(matrixSQLStmts, string(b))
+		}
+	}
+	if !(matrixTiDB || matrixTiKV || matrixPD || matrixSQL) {
+		return false, nil, nil, errors.New("`Matrix` enabled but no output from Matrix is used")
+	}
+	if matrixTiDB {
+		log.Info("Use TiDB config from Matrix")
+	}
+	if matrixTiKV {
+		log.Info("Use TiKV config from Matrix")
+	}
+	if matrixPD {
+		log.Info("Use PD config from Matrix")
+	}
+	if matrixSQL {
+		log.Info("Use SQL statements from Matrix")
+	}
+
+	setupNodes = func(nodes []cluster.Node) error {
+		for _, node := range nodes {
+			if node.Component == cluster.TiDB {
+				dsn := fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
+				db, err := util.OpenDB(dsn, 1)
 				if err != nil {
-					log.Warn(fmt.Sprintf("Error loading from Matrix: %s", err.Error()))
-					matrixSQLStmts = nil
-					matrixSQL = false
-					break
+					return err
 				}
-				matrixSQLStmts = append(matrixSQLStmts, string(b))
-			}
-		}
-		if !(matrixTiDB || matrixTiKV || matrixPD || matrixSQL) {
-			return false, nil, nil, errors.New("`Matrix` enabled but no output from Matrix is used")
-		}
-		if matrixTiDB {
-			log.Info("Use TiDB config from Matrix")
-		}
-		if matrixTiKV {
-			log.Info("Use TiKV config from Matrix")
-		}
-		if matrixPD {
-			log.Info("Use PD config from Matrix")
-		}
-		if matrixSQL {
-			log.Info("Use SQL statements from Matrix")
-		}
-
-		setupNodes = func(nodes []cluster.Node) error {
-			for _, node := range nodes {
-				if node.Component == cluster.TiDB {
-					dsn := fmt.Sprintf("root@tcp(%s:%d)/", node.IP, node.Port)
-					db, err := util.OpenDB(dsn, 1)
+				//noinspection GoDeferInLoop
+				defer db.Close()
+				for _, stmt := range matrixSQLStmts {
+					_, err = db.Exec(stmt)
 					if err != nil {
 						return err
 					}
-					for _, stmt := range matrixSQLStmts {
-						_, err = db.Exec(stmt)
-						if err != nil {
-							return err
-						}
-					}
 				}
 			}
-			return nil
 		}
+		return nil
 	}
 
 	// no error, overwrite original config

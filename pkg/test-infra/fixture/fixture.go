@@ -17,6 +17,7 @@ import (
 	"flag"
 	"net/http"
 	_ "net/http/pprof" // pprof
+	"strings"
 	"time"
 
 	"github.com/ngaut/log"
@@ -97,7 +98,9 @@ func (a *fileArrayFlags) String() string {
 }
 
 func (a *fileArrayFlags) Set(value string) error {
-	*a = append(*a, value)
+	for _, value := range strings.Split(value, ";") {
+		*a = append(*a, value)
+	}
 	return nil
 }
 
