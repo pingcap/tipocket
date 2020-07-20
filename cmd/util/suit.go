@@ -70,7 +70,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	startTime := time.Now()
 
 	// Apply Matrix config
-	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&fixture.Context.TiDBClusterConfig)
+	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&clusterSpec)
 	if err != nil {
 		log.Fatalf("Matrix init failed, err: %s", err)
 	} else if matrixEnabled {

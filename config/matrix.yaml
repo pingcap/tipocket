@@ -415,7 +415,7 @@ configs:
             range: [1, 1073741824]
         - template: 'SET GLOBAL windowing_use_high_precision = %s;'
           value: ["ON", "OFF"]
-        - template:'SET GLOBAL sql_select_limit = %d;'
+        - template: 'SET GLOBAL sql_select_limit = %d;'
           value: uint
   - tag: tidb-system-vars
     serializer: stmt
@@ -474,26 +474,23 @@ configs:
             default: 25000
         - template: 'SET GLOBAL tidb_skip_utf8_check = %d;'
           value: [0, 1]
-        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
-          value:
-            type: int
-            range: [8, 128]
-            default: 32
         - template: 'SET GLOBAL tidb_max_chunk_size = %d;'
           value:
             type: int
             range: [128, 8192]
             default: 1024
-        - template: 'SET SERVER tidb_enable_streaming = %d;'
+        - template: 'SET tidb_enable_streaming = %d;'
           value: [0, 1]
-        - template: 'SET GLOBAL tidb_retry_limit = %s;'
-          value: ['on', 'off']
+        - template: 'SET GLOBAL tidb_retry_limit = %d;'
+          value:
+            type: int
+            range: [0, 100]
         - template: 'SET GLOBAL tidb_backoff_weight = %d;'
           value:
             type: int
             range: [1, 5]
             default: 2
-        - template: 'SET GLOBAL tidb_enable_table_partition = %s;'
+        - template: 'SET GLOBAL tidb_enable_table_partition = "%s";'
           value: ['on', 'off', 'auto']
         - template: 'SET GLOBAL tidb_backoff_lock_fast = %d;'
           value:
@@ -510,8 +507,6 @@ configs:
             type: int
             range: [32, 10240]
             default: 256
-        - template: 'SET GLOBAL tidb_ddl_reorg_priority = %s;'
-          value: [PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH]
         - template: 'SET GLOBAL tidb_ddl_error_count_limit = %d;'
           value:
             type: int
@@ -525,10 +520,10 @@ configs:
         - template: 'SET GLOBAL tidb_row_format_version = %d;'
           value: [1, 2]
         - template: 'SET GLOBAL tidb_txn_mode = %s;'
-          value: ["pessimistic", "optimistic", ""]
+          value: ["pessimistic", "optimistic", "\"\""]
         - template: 'SET GLOBAL tidb_constraint_check_in_place = %d;'
           value: [0, 1]
-        - template: 'SET SERVER tidb_check_mb4_value_in_utf8 = %d;'
+        - template: 'SET tidb_check_mb4_value_in_utf8 = %d;'
           value: [0, 1]
         - template: 'SET GLOBAL tidb_opt_insubq_to_join_and_agg = %d;'
           value: [0, 1]
@@ -537,10 +532,10 @@ configs:
             type: float
             range: [0.5, 0.99]
             default: 0.9
-        - template: 'SET GLOBAL tidb_opt_correlation_exp_factor = %f;'
+        - template: 'SET GLOBAL tidb_opt_correlation_exp_factor = %d;'
           value:
-            type: float
-            range: [0, 1]
+            type: int
+            range: [0, 100]
             default: 1
         - template: 'SET GLOBAL tidb_enable_window_function = %d;'
           value: [0, 1]
@@ -549,15 +544,10 @@ configs:
         - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
           value:
             type: int
-            range: [8, 128]
+            range: [8, 32]
             default: 32
         - template: 'SET GLOBAL tidb_scatter_region = %d;'
           value: [0, 1]
-        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
-          value:
-            type: int
-            range: [8, 128]
-            default: 32
         - template:
             - 'SET GLOBAL tidb_enable_stmt_summary = %d;'
           value: [0, 1]
