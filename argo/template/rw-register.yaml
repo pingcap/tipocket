@@ -52,6 +52,16 @@ spec:
             default: ""
           - name: tikv-replicas
             default: "4"
+          - name: matrix-config
+            default: "/config/matrix.yaml"
+          - name: matrix-tidb
+            default: "tidb.toml"
+          - name: matrix-tikv
+            default: "tikv.toml"
+          - name: matrix-pd
+            default: "pd.toml"
+          - name: matrix-sql
+            default: "mysql-system-vars.sql;tidb-system-vars.sql"
       outputs:
         artifacts:
           - name: case-logs
@@ -96,4 +106,9 @@ spec:
             -request-count={{inputs.parameters.request-count}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}}
+            -loki-password={{inputs.parameters.loki-password}} \
+            -matrix-config={{inputs.parameters.matrix-config}} \
+            -matrix-tidb={{inputs.parameters.matrix-tidb}} \
+            -matrix-tikv={{inputs.parameters.matrix-tikv}} \
+            -matrix-pd={{inputs.parameters.matrix-pd}} \
+            -matrix-sql={{inputs.parameters.matrix-sql}}

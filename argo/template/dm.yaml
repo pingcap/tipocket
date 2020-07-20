@@ -40,6 +40,16 @@ spec:
             default: 3
           - name: dm-worker-replicas
             default: 3
+          - name: matrix-config
+            default: "/config/matrix.yaml"
+          - name: matrix-tidb
+            default: "tidb.toml"
+          - name: matrix-tikv
+            default: "tikv.toml"
+          - name: matrix-pd
+            default: "pd.toml"
+          - name: matrix-sql
+            default: "mysql-system-vars.sql;tidb-system-vars.sql"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -75,4 +85,9 @@ spec:
             -dm.mysql.enable-gtid={{inputs.parameters.dm-mysql-enable-gtid}} \
             -dm.version={{inputs.parameters.dm-version}} \
             -dm.master-replicas={{inputs.parameters.dm-master-replicas}} \
-            -dm.worker-replicas={{inputs.parameters.dm-worker-replicas}}
+            -dm.worker-replicas={{inputs.parameters.dm-worker-replicas}} \
+            -matrix-config={{inputs.parameters.matrix-config}} \
+            -matrix-tidb={{inputs.parameters.matrix-tidb}} \
+            -matrix-tikv={{inputs.parameters.matrix-tikv}} \
+            -matrix-pd={{inputs.parameters.matrix-pd}} \
+            -matrix-sql={{inputs.parameters.matrix-sql}}

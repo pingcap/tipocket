@@ -44,6 +44,16 @@ spec:
             default: "3"
           - name: tidb-replica-read
             default: "leader"
+          - name: matrix-config
+            default: "/config/matrix.yaml"
+          - name: matrix-tidb
+            default: "tidb.toml"
+          - name: matrix-tikv
+            default: "tikv.toml"
+          - name: matrix-pd
+            default: "pd.toml"
+          - name: matrix-sql
+            default: "mysql-system-vars.sql;tidb-system-vars.sql"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -81,4 +91,9 @@ spec:
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
             -tidb-replica-read={{inputs.parameters.tidb-replica-read}} \
-            -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt
+            -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt \
+            -matrix-config={{inputs.parameters.matrix-config}} \
+            -matrix-tidb={{inputs.parameters.matrix-tidb}} \
+            -matrix-tikv={{inputs.parameters.matrix-tikv}} \
+            -matrix-pd={{inputs.parameters.matrix-pd}} \
+            -matrix-sql={{inputs.parameters.matrix-sql}}
