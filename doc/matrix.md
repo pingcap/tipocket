@@ -10,6 +10,8 @@ Matrix generates a set of config files based on its own config.
 
 TiPocket can use Matrix-generated config files to initial TiDB cluster and setup system variables if corresponding file has been specified.
 
+Note if TiPocket was initialed with a running cluster (with `-tidb-server` and so on), only `-matrix-sql` will take effect.
+
 The [example](/config/matrix.yaml) generates 5 files, including config of TiDB, TiKV, PD, and two SQL files of system variables.
 
 ## CLI Arguments
