@@ -68,13 +68,31 @@ func (suit *Suit) Run(ctx context.Context) {
 	// get the time before creating the tidb cluster
 	// note this is just a approximate value
 	startTime := time.Now()
+
+	// Apply Matrix config
+	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&fixture.Context.TiDBClusterConfig)
+	if err != nil {
+		log.Fatalf("Matrix init failed, err: %s", err)
+	} else if matrixEnabled {
+		defer matrixCleanup()
+	}
+
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provider.SetUp(sctx, clusterSpec)
+
 	if err != nil {
 		// we can release resources safely in this case.
 		_ = suit.Provider.TearDown(context.TODO(), clusterSpec)
 		log.Fatalf("deploy a cluster failed, maybe has no enough resources, err: %s", err)
 	}
 	log.Infof("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
+
+	if matrixEnabled {
+		err = matrixSetupNodes(suit.Config.Nodes)
+		if err != nil {
+			log.Fatalf("Matrix setting up nodes failed, err: %s", err)
+		}
+	}
+
 	if len(suit.Config.ClientNodes) == 0 {
 		log.Fatal("no client nodes exist")
 	}

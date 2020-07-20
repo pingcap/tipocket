@@ -1,0 +1,567 @@
+configs:
+  - tag: pd
+    serializer: toml
+    target: "pd.toml"
+    value:
+      log:
+        level: "info"
+      schedule:
+        max-snapshot-count:
+          type: int
+          range: [1, 10]
+          default: 3
+        max-pending-peer-count:
+          type: int
+          range: [1, 32]
+          default: 16
+        max-merge-region-size:
+          type: int
+          range: [1, 50]
+          default: 20
+        max-merge-region-keys:
+          type: int
+          range: [5000, 400000]
+          default: 200000
+        split-merge-interval:
+          type: time
+          range: [10m, 2h]
+          default: 1h
+        enable-one-way-merge: bool
+        enable-cross-table-merge: bool
+        patrol-region-interval:
+          type: time
+          range: [10ms, 1s]
+          default: 100ms
+        max-store-down-time:
+          type: time
+          range: [10m, 1h]
+          default: 30m
+        leader-schedule-limit:
+          type: int
+          range: [1, 10]
+          default: 4
+        leader-schedule-policy:
+          type: choice
+          value:
+            - "count"
+            - type: string
+              value: "size"
+          default: "count"
+        region-schedule-limit:
+          type: int
+          range: [512, 4096]
+          default: 2048
+        replica-schedule-limit:
+          type: int
+          range: [16, 256]
+          default: 64
+        merge-schedule-limit:
+          type: int
+          range: [1, 32]
+          default: 8
+        hot-region-schedule-limit:
+          type: int
+          range: [1, 16]
+          default: 4
+        hot-region-cache-hits-threshold:
+          type: int
+          range: [1, 10]
+          default: 3
+        store-balance-rate:
+          type: float
+          range: [1, 50]
+          default: 15
+        tolerant-size-ratio:
+          type: float
+          range: [0, 10]
+          default: 5
+        low-space-ratio:
+          type: float
+          range: [0.7, 0.999]
+          default: 0.8
+        high-space-ratio:
+          type: float
+          range: [0.001, 0.7]
+          default: 0.6
+        scheduler-max-waiting-operator:
+          type: int
+          range: [1, 10]
+          default: 5
+        store-limit-mode: ["auto", "manual"]
+      replication:
+        max-replicas:
+          type: int
+          range: [1, 10]
+          default: 3
+        strictly-match-label: bool
+        enable-placement-rules: bool
+      pd-server:
+        use-region-storage: bool
+        key-type: ["table", "raw", "txn"]
+  - tag: tikv
+    serializer: toml
+    target: "tikv.toml"
+    value:
+      server:
+        grpc-concurrency:
+          type: int
+          range: [1, 10]
+          default: 4
+        enable-request-batch: bool
+        request-batch-enable-cross-command: bool
+        request-batch-wait-duration:
+          type: time
+          range: [1ms, 20ms]
+          default: 1ms
+      "readpool.unified":
+        min-thread-count:
+          type: int
+          range: [1, 2]
+          default: 1
+        max-thread-count:
+          type: int
+          range: [2, 6]
+          default: 4
+      "readpool.storage":
+        use-unified-pool: bool
+        high-concurrency:
+          type: int
+          range: [1, 10]
+          default: 4
+        normal-concurrency:
+          type: int
+          range: [1, 10]
+          default: 4
+        low-concurrency:
+          type: int
+          range: [1, 10]
+          default: 4
+      "readpool.coprocessor":
+        use-unified-pool: bool
+        high-concurrency:
+          type: int
+          range: [1, 10]
+        normal-concurrency:
+          type: int
+          range: [1, 10]
+        low-concurrency:
+          type: int
+          range: [1, 10]
+        max-tasks-per-worker-high:
+          type: int
+          range: [2, 4000]
+          default: 2000
+        max-tasks-per-worker-normal:
+          type: int
+          range: [2, 4000]
+          default: 2000
+        max-tasks-per-worker-low:
+          type: int
+          range: [2, 4000]
+          default: 2000
+      storage:
+        scheduler-concurrency:
+          type: int
+          range: [1, 4096000]
+          default: 2048000
+        scheduler-worker-pool-size:
+          type: int
+          range: [1, 16]
+          default: 4
+        scheduler-pending-write-threshold:
+          type: size
+          range: [10MB, 1GB]
+          default: 100MB
+        block-cache:
+          shared: bool
+          capacity:
+            type: size
+            range: [500MB, 2GB]
+            default: 1GB
+      raftstore:
+        sync-log: bool
+        nitify-capacity:
+          type: int
+          range: [10240, 81920]
+          default: 40960
+        messages-per-tick:
+          type: int
+          range: [1024, 8192]
+          default: 4096
+        apply-pool-size:
+          type: int
+          range: [1, 4]
+        store-pool-size:
+          type: int
+          range: [1, 4]
+      coprocessor:
+        split-region-on-table: bool
+      rocksdb:
+        max-background-jobs:
+          type: int
+          range: [1, 16]
+          default: 8
+        max-sub-compactions:
+          type: int
+          range: [1, 10]
+          default: 3
+        rate-bytes-per-sec:
+          type: choice
+          default: 0
+          value:
+            - 0
+            - type: int
+              range: [10485760, 104857600]
+        auto-tuned: bool
+        titan:
+          enabled: bool
+          max-background-gc:
+            type: int
+            range: [1, 10]
+            default: 4
+        defaultcf:
+          level0-slowdown-writes-trigger:
+            type: int
+            range: [5, 30]
+            default: 20
+          level0-stop-writes-trigger:
+            type: int
+            range: [31, 50]
+            default: 36
+          max-write-buffer-number:
+            type: int
+            range: [2, 10]
+            default: 5
+          titan:
+            min-blob-size:
+              type: size
+              range: [512B, 10KB]
+              default: 1KB
+            blob-file-compression:
+              type: choice
+              value: ["no", "snappy", "zlib", "bz2", "lz4", "lz4hc", "zstd"]
+              default: "lz4"
+            blob-cache-size:
+              type: size
+              range: [0GB, 1GB]
+              default: 0GB
+            discardable-ratio:
+              type: float
+              range: [0.1, 0.9]
+              default: 0.5
+            blob-run-mode:
+              type: choice
+              value: ["normal", "read-only", "fallback"]
+              default: "normal"
+            level_merge: bool
+            gc-merge-rewrite: bool
+        writecf:
+          level0-slowdown-writes-trigger:
+            type: int
+            range: [5, 30]
+            default: 20
+          level0-stop-writes-trigger:
+            type: int
+            range: [31, 50]
+            default: 36
+      raftdb:
+        max-background-jobs:
+          type: int
+          range: [1, 10]
+          default: 4
+        max-sub-compactions:
+          type: int
+          range: [1, 5]
+          default: 2
+        defaultcf:
+          level0-slowdown-writes-trigger:
+            type: int
+            range: [5, 30]
+            default: 20
+          level0-stop-writes-trigger:
+            type: int
+            range: [31, 50]
+            default: 36
+      pessimistic-txn:
+        wait-for-lock-timeout:
+          type: time
+          range: [500ms, 2s]
+          default: 1s
+        wake-up-delay-duration:
+          type: time
+          range: [5ms, 50ms]
+          default: 20ms
+        pipelined: bool
+  - tag: tidb
+    serializer: toml
+    target: "tidb.toml"
+    value:
+      mem-quota-query:
+        type: int
+        range: [536870912, 4294967296] # [0.5, 4] * 1024 ^ 3
+        default: 1073741824
+      oom-use-tmp-storage: bool
+      tmp-storage-quota: [-1, 1073741824]
+      oom-action: ["log", "cancel"]
+      lease:
+        type: time
+        range: [0s, 0s]
+      performance:
+        max-memory:
+          type: int
+          value: 0
+          default: 0
+          when: prepared-plan-cache.enabled
+        stats-lease:
+          type: time
+          range: [0s, 10s]
+          default: 3s
+        bind-info-lease:
+          type: time
+          range: [0s, 10s]
+          default: 3s
+        feedback-probability:
+          type: float
+          range: [0, 0.5]
+          default: 0.05
+        query-feedback-limit:
+          type: int
+          range: [128, 4096]
+          default: 1024
+      prepared-plan-cache:
+        enabled: bool
+        capacity:
+          type: int
+          range: [10, 1000]
+          default: 100
+        memory-guard-ratio:
+          type: float
+          range: [0, 1]
+          default: 0.1
+      tikv-client:
+        grpc-connection-count:
+          type: int
+          range: [1, 64]
+          default: 16
+        commit-timeout:
+          type: time
+          range: [1s, 1m]
+          default: 41s
+        max-batch-size:
+          type: int
+          range: [1, 512]
+          default: 128
+        max-batch-wait-time:
+          type: int
+          range: [0, 1000000000] # [1ns, 1s]
+          default: 0
+        copr-cache:
+          type: struct
+          when: ["version", ">=", "4.0.0"]
+          value:
+            enable: bool
+            capacity-mb:
+              type: float
+              range: [100, 10000]
+              default: 1000
+            admission-max-result-mb:
+              type: float
+              range: [1, 100]
+              default: 10
+            admission-min-process-ms:
+              type: int
+              range: [1,50]
+              default: 5
+      stmt-summary:
+        max-stmt-count:
+          type: int
+          range: [10, 200]
+          default: 100
+        max-sql-length:
+          type: int
+          range: [1024, 8192]
+          default: 4096
+        refresh-interval:
+          type: int
+          range: [300, 3000]
+          default: 1800
+        history-size:
+          type: int
+          range: [6, 48]
+          default: 24
+  - tag: mysql-system-vars
+    serializer: stmt
+    target: "mysql-system-vars.sql"
+    value:
+      type: list
+      value:
+        - template: 'SET GLOBAL autocommit = %s;'
+          value: ["ON", "OFF"]
+        - template: 'SET GLOBAL sql_mode = "%s";'
+          value:
+            type: choice_n
+            sep: ','
+            value: [ALLOW_INVALID_DATES, ANSI_QUOTES, ERROR_FOR_DIVISION_BY_ZERO, HIGH_NOT_PRECEDENCE, IGNORE_SPACE, NO_AUTO_VALUE_ON_ZERO, NO_BACKSLASH_ESCAPES, NO_DIR_IN_CREATE, NO_ENGINE_SUBSTITUTION, NO_UNSIGNED_SUBTRACTION, NO_ZERO_DATE, NO_ZERO_IN_DATE, ONLY_FULL_GROUP_BY, PAD_CHAR_TO_FULL_LENGTH, PIPES_AS_CONCAT, REAL_AS_FLOAT, STRICT_ALL_TABLES, STRICT_TRANS_TABLES, TIME_TRUNCATE_FRACTIONAL]
+        - template: 'SET GLOBAL tx_isolation = "%s";'
+          value: [READ-UNCOMMITTED, READ-COMMITTED, REPEATABLE-READ, SERIALIZABLE]
+        - template: 'SET GLOBAL max_execution_time = %d;'
+          value:
+            - 0
+            - type: int
+              range: [100, 1000]
+        - template: 'SET GLOBAL innodb_lock_wait_timeout = %d;'
+          value:
+            type: int
+            range: [1, 1073741824]
+        - template: 'SET GLOBAL windowing_use_high_precision = %s;'
+          value: ["ON", "OFF"]
+        - template:'SET GLOBAL sql_select_limit = %d;'
+          value: uint
+  - tag: tidb-system-vars
+    serializer: stmt
+    target: "tidb-system-vars.sql"
+    value:
+      type: list
+      value:
+        - template: 'SET GLOBAL tidb_auto_analyze_ratio = %f;'
+          value:
+            type: float
+            range: [0.1, 0.9]
+        - template: 'SET GLOBAL tidb_distsql_scan_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 30]
+            default: 15
+        - template: 'SET GLOBAL tidb_index_lookup_size = %d;'
+          value:
+            type: int
+            range: [10000, 40000]
+            default: 20000
+        - template: 'SET GLOBAL tidb_index_lookup_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 4
+        - template: 'SET GLOBAL tidb_index_lookup_join_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 4
+        - template: 'SET GLOBAL tidb_hash_join_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 5
+        - template: 'SET GLOBAL tidb_index_serial_scan_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 1
+        - template: 'SET GLOBAL tidb_projection_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 4
+        - template: 'SET GLOBAL tidb_hashagg_final_concurrency = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 4
+        - template: 'SET GLOBAL tidb_index_join_batch_size = %d;'
+          value:
+            type: int
+            range: [10000, 50000]
+            default: 25000
+        - template: 'SET GLOBAL tidb_skip_utf8_check = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
+          value:
+            type: int
+            range: [8, 128]
+            default: 32
+        - template: 'SET GLOBAL tidb_max_chunk_size = %d;'
+          value:
+            type: int
+            range: [128, 8192]
+            default: 1024
+        - template: 'SET SERVER tidb_enable_streaming = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_retry_limit = %s;'
+          value: ['on', 'off']
+        - template: 'SET GLOBAL tidb_backoff_weight = %d;'
+          value:
+            type: int
+            range: [1, 5]
+            default: 2
+        - template: 'SET GLOBAL tidb_enable_table_partition = %s;'
+          value: ['on', 'off', 'auto']
+        - template: 'SET GLOBAL tidb_backoff_lock_fast = %d;'
+          value:
+            type: int
+            range: [20, 200]
+            default: 100
+        - template: 'SET GLOBAL tidb_ddl_reorg_worker_cnt = %d;'
+          value:
+            type: int
+            range: [1, 10]
+            default: 4
+        - template: 'SET GLOBAL tidb_ddl_reorg_batch_size = %d;'
+          value:
+            type: int
+            range: [32, 10240]
+            default: 256
+        - template: 'SET GLOBAL tidb_ddl_reorg_priority = %s;'
+          value: [PRIORITY_LOW, PRIORITY_NORMAL, PRIORITY_HIGH]
+        - template: 'SET GLOBAL tidb_ddl_error_count_limit = %d;'
+          value:
+            type: int
+            range: [128, 1024]
+            default: 512
+        - template: 'SET GLOBAL tidb_max_delta_schema_count = %d;'
+          value:
+            type: int
+            range: [100, 16384]
+            default: 1024
+        - template: 'SET GLOBAL tidb_row_format_version = %d;'
+          value: [1, 2]
+        - template: 'SET GLOBAL tidb_txn_mode = %s;'
+          value: ["pessimistic", "optimistic", ""]
+        - template: 'SET GLOBAL tidb_constraint_check_in_place = %d;'
+          value: [0, 1]
+        - template: 'SET SERVER tidb_check_mb4_value_in_utf8 = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_opt_insubq_to_join_and_agg = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_opt_correlation_threshold = %f;'
+          value:
+            type: float
+            range: [0.5, 0.99]
+            default: 0.9
+        - template: 'SET GLOBAL tidb_opt_correlation_exp_factor = %f;'
+          value:
+            type: float
+            range: [0, 1]
+            default: 1
+        - template: 'SET GLOBAL tidb_enable_window_function = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_enable_fast_analyze = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
+          value:
+            type: int
+            range: [8, 128]
+            default: 32
+        - template: 'SET GLOBAL tidb_scatter_region = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_init_chunk_size = %d;'
+          value:
+            type: int
+            range: [8, 128]
+            default: 32
+        - template:
+            - 'SET GLOBAL tidb_enable_stmt_summary = %d;'
+          value: [0, 1]
+        - template: 'SET GLOBAL tidb_allow_batch_cop = %d;'
+          value: [0, 1, 2]
+        - template: 'SET GLOBAL tidb_enable_telemetry = %d;'
+          value: [0, 1]
