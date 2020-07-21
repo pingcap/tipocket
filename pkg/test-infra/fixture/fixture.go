@@ -98,7 +98,7 @@ func (a *fileArrayFlags) String() string {
 }
 
 func (a *fileArrayFlags) Set(value string) error {
-	for _, value := range strings.Split(value, ";") {
+	for _, value := range strings.Split(value, ",") {
 		*a = append(*a, value)
 	}
 	return nil

@@ -57,7 +57,7 @@ spec:
           - name: loki-password
             default: admin
           - name: matrix-config
-            default: "/config/matrix.yaml"
+            default: ""
           - name: matrix-tidb
             default: "tidb.toml"
           - name: matrix-tikv
@@ -65,7 +65,7 @@ spec:
           - name: matrix-pd
             default: "pd.toml"
           - name: matrix-sql
-            default: "mysql-system-vars.sql;tidb-system-vars.sql"
+            default: "mysql-system-vars.sql,tidb-system-vars.sql"
       outputs:
         artifacts:
           - name: tidb-logs
