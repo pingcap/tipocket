@@ -6,6 +6,7 @@ ENV GO111MODULE=on
 WORKDIR /src
 COPY . .
 
+RUN make clean
 RUN make build
 
 FROM alpine:3.8
