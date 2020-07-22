@@ -38,15 +38,15 @@ spec:
       - name: loki-password
         value: "admin"
       - name: matrix-config
-        default: ""
+        value: ""
       - name: matrix-tidb
-        default: "tidb.toml"
+        value: "tidb.toml"
       - name: matrix-tikv
-        default: "tikv.toml"
+        value: "tikv.toml"
       - name: matrix-pd
-        default: "pd.toml"
+        value: "pd.toml"
       - name: matrix-sql
-        default: "mysql-system-vars.sql,tidb-system-vars.sql"
+        value: "mysql-system-vars.sql,tidb-system-vars.sql"
   templates:
     - name: call-tipocket-bank
       steps:
@@ -97,12 +97,12 @@ spec:
                 - name: loki-password
                   value: "{{workflow.parameters.loki-password}}"
                 - name: matrix-config
-                  default: "{{workflow.parameters.matrix-config}}"
+                  value: "{{workflow.parameters.matrix-config}}"
                 - name: matrix-tidb
-                  default: "{{workflow.parameters.matrix-tidb}}"
+                  value: "{{workflow.parameters.matrix-tidb}}"
                 - name: matrix-tikv
-                  default: "{{workflow.parameters.matrix-tikv}}"
+                  value: "{{workflow.parameters.matrix-tikv}}"
                 - name: matrix-pd
-                  default: "{{workflow.parameters.matrix-pd}}"
+                  value: "{{workflow.parameters.matrix-pd}}"
                 - name: matrix-sql
-                  default: "{{workflow.parameters.matrix-sql}}"
+                  value: "{{workflow.parameters.matrix-sql}}"
