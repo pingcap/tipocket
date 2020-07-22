@@ -26,3 +26,5 @@ bin/${testcase} ${args} -matrix-config config/matrix.yaml \
  -matrix-tidb tidb.toml -matrix-tikv tikv.toml -matrix-pd pd.toml \
  -matrix-sql mysql-system-vars.sql -matrix-sql tidb-system-vars.sql
 ```
+
+If you would like to explicitly disable (some of) Matrix-generated config, set `-matrix-*` to empty string will disable corresponding features.

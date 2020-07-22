@@ -38,6 +38,16 @@ spec:
             default: "https://github.com/mahjonp/sqllogictest/archive/tipocket.tar.gz"
           - name: case-dir
             default: "sqllogictest-tipocket"
+          - name: matrix-config
+            default: ""
+          - name: matrix-tidb
+            default: "tidb.toml"
+          - name: matrix-tikv
+            default: "tikv.toml"
+          - name: matrix-pd
+            default: "pd.toml"
+          - name: matrix-sql
+            default: "mysql-system-vars.sql,tidb-system-vars.sql"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -71,4 +81,9 @@ spec:
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            -tidb-replica-read={{inputs.parameters.tidb-replica-read}}
+            -tidb-replica-read={{inputs.parameters.tidb-replica-read}} \
+            -matrix-config={{inputs.parameters.matrix-config}} \
+            -matrix-tidb={{inputs.parameters.matrix-tidb}} \
+            -matrix-tikv={{inputs.parameters.matrix-tikv}} \
+            -matrix-pd={{inputs.parameters.matrix-pd}} \
+            -matrix-sql={{inputs.parameters.matrix-sql}}

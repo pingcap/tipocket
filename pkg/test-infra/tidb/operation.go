@@ -674,3 +674,8 @@ func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {
 
 	return ""
 }
+
+// GetTiDBConfig is used for Matrix-related setups
+func (o *Ops) GetTiDBConfig() *fixture.TiDBClusterConfig {
+	return &o.config
+}
