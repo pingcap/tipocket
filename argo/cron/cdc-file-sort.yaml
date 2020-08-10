@@ -10,7 +10,7 @@ spec:
     arguments:
       parameters:
         - name: ns
-          value: tipocket-cdc
+          value: tipocket-cdc-file-sort
         - name: purge
           value: "true"
         - name: hub
