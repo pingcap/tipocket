@@ -1,5 +1,5 @@
 metadata:
-  name: tipocket-cdc
+  name: tipocket-cdc-file-sort
 spec:
   schedule: "0 6 * * *"
   concurrencyPolicy: "Forbid"
