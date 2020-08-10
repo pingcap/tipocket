@@ -175,6 +175,8 @@ func newCDC(ns, name string) *CDC {
 									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
 									fmt.Sprintf("--sink-uri=%s", sinkURI),
 									"--start-ts=0",
+									fmt.Sprintf("--sort-engine=%s", fixture.Context.CDCConfig.SortEngine),
+									fmt.Sprintf("--sort-dir=%s", fixture.Context.CDCConfig.SortDir),
 								},
 							},
 						},
