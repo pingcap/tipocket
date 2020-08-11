@@ -16,10 +16,12 @@ package main
 import (
 	"context"
 	"flag"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
+	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/pocket/config"
 	"github.com/pingcap/tipocket/pkg/pocket/creator"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
@@ -46,6 +48,14 @@ func main() {
 	pocketConfig.Options.SyncTimeout.Duration = fixture.Context.BinlogConfig.SyncTimeout
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	c := fixture.Context
+
+	var waitWarmUpNemesisGens []core.NemesisGenerator
+	for _, gen := range util.ParseNemesisGenerators(fixture.Context.Nemesis) {
+		waitWarmUpNemesisGens = append(waitWarmUpNemesisGens, core.DelayNemesisGenerator{
+			Gen:   gen,
+			Delay: time.Minute * time.Duration(2),
+		})
+	}
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
@@ -56,7 +66,7 @@ func main() {
 				Config:     pocketConfig,
 			},
 		},
-		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
 		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
 	}
