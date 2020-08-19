@@ -391,9 +391,9 @@ func (c *Controller) tearDownClient() {
 }
 
 func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) error {
-	var err error
 	var sum interface{}
-	err = wait.PollImmediate(10*time.Second, time.Minute*time.Duration(10), func() (bool, error) {
+	err := wait.PollImmediate(10*time.Second, time.Minute*time.Duration(30), func() (bool, error) {
+		var err error
 		for _, client := range c.clients {
 			for _, node := range c.cfg.ClientNodes {
 				sum, err = client.DumpState(ctx)
@@ -407,9 +407,9 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 				}
 			}
 		}
+		log.Infof("fail to dump state, may try again later: %v", err)
 		return false, nil
 	})
-
 	return err
 }
 
