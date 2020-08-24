@@ -48,18 +48,20 @@ func (l leaderShuffleGenerator) Name() string {
 	return l.name
 }
 
-type leaderShuffler struct {
+type LeaderShuffler struct {
 	*pdutil.Client
+	regionKey    string
 	shuffleFuncs []func() error
 }
 
-func newLeaderShuffler() *leaderShuffler {
-	l := new(leaderShuffler)
+func NewLeaderShuffler(regionKey string) *LeaderShuffler {
+	l := new(LeaderShuffler)
+	l.regionKey = regionKey
 	l.shuffleFuncs = []func() error{l.transferLeader, l.transferRegion, l.transferOtherRegionToLeader, l.mergeRegion, l.splitRegion}
 	return l
 }
 
-func (l *leaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (l *LeaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("apply nemesis %s...", core.PDLeaderShuffler)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
@@ -69,27 +71,27 @@ func (l *leaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ..
 	return l.shuffleLeader()
 }
 
-func (l *leaderShuffler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
+func (l *LeaderShuffler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("unapply nemesis %s...", core.PDLeaderShuffler)
 	return nil
 }
 
-func (l leaderShuffler) Name() string {
+func (l LeaderShuffler) Name() string {
 	return string(core.PDLeaderShuffler)
 }
 
-func (l *leaderShuffler) shuffleLeader() error {
+func (l *LeaderShuffler) shuffleLeader() error {
 	shuffleFunc := l.shuffleFuncs[rand.Intn(len(l.shuffleFuncs))]
 	return shuffleFunc()
 }
 
-func (l *leaderShuffler) transferLeader() error {
-	region, err := l.GetRegionByKey("0")
+func (l *LeaderShuffler) transferLeader() error {
+	region, err := l.GetRegionByKey(l.regionKey)
 	if err != nil {
 		return err
 	}
 	if region == nil || region.Leader == nil {
-		log.Info("[leader shuffler] Can't find leader of the deadlock detector")
+		log.Infof("[leader shuffler] Can't find the leader of region(%s)", l.regionKey)
 		return nil
 	}
 
@@ -113,7 +115,7 @@ func (l *leaderShuffler) transferLeader() error {
 	return l.Operators(body)
 }
 
-func (l *leaderShuffler) transferRegion() error {
+func (l *LeaderShuffler) transferRegion() error {
 	stores, err := l.GetStores()
 	if err != nil {
 		return err
@@ -125,12 +127,12 @@ func (l *leaderShuffler) transferRegion() error {
 		}
 	}
 
-	region, err := l.GetRegionByKey("0")
+	region, err := l.GetRegionByKey(l.regionKey)
 	if err != nil {
 		return err
 	}
 	if region == nil || region.Leader == nil {
-		log.Info("[leader shuffler] Can't find leader of the deadlock detector")
+		log.Infof("[leader shuffler] Can't find the leader of region(%s)", l.regionKey)
 		return nil
 	}
 	// Remove current leader's id
@@ -159,13 +161,13 @@ func (l *leaderShuffler) transferRegion() error {
 	return l.Operators(body)
 }
 
-func (l *leaderShuffler) transferOtherRegionToLeader() error {
-	region, err := l.GetRegionByKey("0")
+func (l *LeaderShuffler) transferOtherRegionToLeader() error {
+	region, err := l.GetRegionByKey(l.regionKey)
 	if err != nil {
 		return err
 	}
 	if region == nil || region.Leader == nil {
-		log.Info("[leader shuffler] Can't find leader of the deadlock detector")
+		log.Infof("[leader shuffler] Can't find the leader of region(%s)", l.regionKey)
 		return nil
 	}
 	regions, err := l.ListRegions()
@@ -221,8 +223,8 @@ func (l *leaderShuffler) transferOtherRegionToLeader() error {
 	})
 }
 
-func (l *leaderShuffler) mergeRegion() error {
-	region, err := l.GetRegionByKey("0")
+func (l *LeaderShuffler) mergeRegion() error {
+	region, err := l.GetRegionByKey(l.regionKey)
 	if err != nil {
 		return err
 	}
@@ -257,8 +259,8 @@ func (l *leaderShuffler) mergeRegion() error {
 	return l.Operators(body)
 }
 
-func (l *leaderShuffler) splitRegion() error {
-	region, err := l.GetRegionByKey("0")
+func (l *LeaderShuffler) splitRegion() error {
+	region, err := l.GetRegionByKey(l.regionKey)
 	if err != nil {
 		return err
 	}
