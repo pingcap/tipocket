@@ -9,7 +9,7 @@ import (
 
 func TryRunWorkload(name string,
 	resources []types.Resource,
-	rris []types.ResourceRequestItem,
+	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
 ) ([]byte, []byte, error) {
 

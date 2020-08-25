@@ -50,5 +50,5 @@ type ResourceRequestItem struct {
 	RRID   uint   `gorm:"column:rr_id;not null"`
 	RID    uint   `gorm:"column:r_id;not null"`
 	// Components records which *_servers are serving on this machine
-	Components string `gorm:"column:components;not null"`
+	Components string `gorm:"column:components"`
 }

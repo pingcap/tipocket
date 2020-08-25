@@ -24,9 +24,9 @@ type Topology struct {
 
 func TryDeployCluster(name string,
 	resources []types.Resource,
-	rris []types.ResourceRequestItem,
+	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
-	crts []types.ClusterRequestTopology) error {
+	crts []*types.ClusterRequestTopology) error {
 	topo := &Topology{
 		Config:            cr.Config,
 		PDServers:         make(map[string]*types.ClusterRequestTopology),
@@ -49,15 +49,15 @@ func TryDeployCluster(name string,
 		ip := rriID2Resource[rriItemId2RriID[crt.RRIItemID]].IP
 		switch strings.ToLower(crt.Component) {
 		case "tidb":
-			topo.TiDBServers[ip] = &crts[idx]
+			topo.TiDBServers[ip] = crts[idx]
 		case "tikv":
-			topo.TiKVServers[ip] = &crts[idx]
+			topo.TiKVServers[ip] = crts[idx]
 		case "pd":
-			topo.PDServers[ip] = &crts[idx]
+			topo.PDServers[ip] = crts[idx]
 		case "monitoring":
-			topo.MonitoringServers[ip] = &crts[idx]
+			topo.MonitoringServers[ip] = crts[idx]
 		case "grafana":
-			topo.GrafanaServers[ip] = &crts[idx]
+			topo.GrafanaServers[ip] = crts[idx]
 		default:
 			return fmt.Errorf("unknown component type %s", crt.Component)
 		}

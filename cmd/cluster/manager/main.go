@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/logger"
 
 	"github.com/juju/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager"
+	"github.com/pingcap/tipocket/pkg/logger"
 )
 
 var (
@@ -24,7 +24,7 @@ func main() {
 		Use:   "manager",
 		Short: "Cluster manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, dbName)
+			dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", user, password, host, port, dbName)
 			mgr, err := manager.New(dsn)
 			if err != nil {
 				return errors.Trace(err)

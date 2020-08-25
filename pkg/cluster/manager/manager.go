@@ -3,21 +3,20 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
-
 	"github.com/gorilla/mux"
 	"github.com/juju/errors"
 
+	 "github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/service"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
 )
 
 type Manager struct {
@@ -144,6 +143,7 @@ func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := m.setOnline(rris, crts); err != nil {
 		http.Error(w, fmt.Sprintf("set online failed: %v", err), http.StatusInternalServerError)
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "deploy cluster %s success", rr.Name)
@@ -193,21 +193,25 @@ func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "destry cluster %s success", rr.Name)
 }
 
-func (m *Manager) setOnline(rris []types.ResourceRequestItem, crts []types.ClusterRequestTopology) error {
+func (m *Manager) setOnline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {
 	rriItem2RRi := make(map[uint]*types.ResourceRequestItem)
 	for idx, rri := range rris {
-		rriItem2RRi[rri.ItemID] = &rris[idx]
+		rriItem2RRi[rri.ItemID] = rris[idx]
 		rri.Components = ""
 	}
 	for _, crt := range crts {
 		crt.Status = types.ClusterTopoStatusReady
 		rri := rriItem2RRi[crt.RRIItemID]
-		rri.Components = strings.Join([]string{rri.Components, crt.Component}, "|")
+		if len(rri.Components) == 0 {
+			rri.Components = crt.Component
+		} else {
+			rri.Components = strings.Join([]string{rri.Components, crt.Component}, "|")
+		}
 	}
 	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos(rris, crts)
 }
 
-func (m *Manager) setOffline(rris []types.ResourceRequestItem, crts []types.ClusterRequestTopology) error {
+func (m *Manager) setOffline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {
 	for _, rri := range rris {
 		rri.Components = ""
 	}

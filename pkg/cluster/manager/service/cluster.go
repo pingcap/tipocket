@@ -30,8 +30,8 @@ func (c *Cluster) GetClusterRequestByRRID(rrID uint) (*types.ClusterRequest, err
 	return &result, nil
 }
 
-func (c *Cluster) GetClusterRequestTopoByCRID(crID uint) ([]types.ClusterRequestTopology, error) {
-	var result []types.ClusterRequestTopology
+func (c *Cluster) GetClusterRequestTopoByCRID(crID uint) ([]*types.ClusterRequestTopology, error) {
+	var result []*types.ClusterRequestTopology
 	if err := c.DB.Find(&result, "cr_id = ?", crID).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
