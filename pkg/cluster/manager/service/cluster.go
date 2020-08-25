@@ -37,3 +37,11 @@ func (c *Cluster) GetClusterRequestTopoByCRID(crID uint) ([]types.ClusterRequest
 	}
 	return result, nil
 }
+
+func (c *Cluster) GetClusterWorkloadByClusterRequestID(crID uint) (*types.WorkloadRequest, error) {
+	var result types.WorkloadRequest
+	if err := c.DB.First(&result, "cr_id = ?", crID).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}

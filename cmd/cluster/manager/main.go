@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/pingcap/tipocket/pkg/logger"
 
 	"github.com/juju/errors"
 	"github.com/spf13/cobra"
@@ -18,6 +19,7 @@ var (
 )
 
 func main() {
+	logger.InitGlobalLogger()
 	var rootCmd = &cobra.Command{
 		Use:   "manager",
 		Short: "Cluster manager",

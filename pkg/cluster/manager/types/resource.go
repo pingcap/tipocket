@@ -29,9 +29,10 @@ func (s *Spec) Suit(o *Spec) bool {
 
 type Resource struct {
 	gorm.Model
-	IP    string `gorm:"column:ip;type:varchar(20);unique;not null"`
-	Spec  Spec   `gorm:"column:spec;type:longtext;not null"`
-	RRIID uint   `gorm:"column:rri_id"`
+	IP       string `gorm:"column:ip;type:varchar(20);unique;not null"`
+	Username string `gorm:"column:username;type:varchar(50);not null"`
+	Spec     Spec   `gorm:"column:spec;type:longtext;not null"`
+	RRIID    uint   `gorm:"column:rri_id"`
 }
 
 type ResourceRequest struct {

@@ -22,7 +22,11 @@ type Topology struct {
 	GrafanaServers    map[string]*types.ClusterRequestTopology
 }
 
-func TryDeployCluster(name string, resources []types.Resource, cr *types.ClusterRequest, crts []types.ClusterRequestTopology) error {
+func TryDeployCluster(name string,
+	resources []types.Resource,
+	rris []types.ResourceRequestItem,
+	cr *types.ClusterRequest,
+	crts []types.ClusterRequestTopology) error {
 	topo := &Topology{
 		Config:            cr.Config,
 		PDServers:         make(map[string]*types.ClusterRequestTopology),
@@ -32,21 +36,28 @@ func TryDeployCluster(name string, resources []types.Resource, cr *types.Cluster
 		GrafanaServers:    make(map[string]*types.ClusterRequestTopology),
 	}
 	rriID2Resource := make(map[uint]types.Resource)
+	rriItemId2RriID := make(map[uint]uint)
+	// resource request item id -> resource
 	for _, re := range resources {
 		rriID2Resource[re.RRIID] = re
 	}
+	// resource request item item_id ->  resource request item id
+	for _, rri := range rris {
+		rriItemId2RriID[rri.ItemID] = rri.ID
+	}
 	for idx, crt := range crts {
+		ip := rriID2Resource[rriItemId2RriID[crt.RRIItemID]].IP
 		switch strings.ToLower(crt.Component) {
 		case "tidb":
-			topo.TiDBServers[rriID2Resource[crt.RRIItemID].IP] = &crts[idx]
+			topo.TiDBServers[ip] = &crts[idx]
 		case "tikv":
-			topo.TiKVServers[rriID2Resource[crt.RRIItemID].IP] = &crts[idx]
+			topo.TiKVServers[ip] = &crts[idx]
 		case "pd":
-			topo.PDServers[rriID2Resource[crt.RRIItemID].IP] = &crts[idx]
+			topo.PDServers[ip] = &crts[idx]
 		case "monitoring":
-			topo.MonitoringServers[rriID2Resource[crt.RRIItemID].IP] = &crts[idx]
+			topo.MonitoringServers[ip] = &crts[idx]
 		case "grafana":
-			topo.GrafanaServers[rriID2Resource[crt.RRIItemID].IP] = &crts[idx]
+			topo.GrafanaServers[ip] = &crts[idx]
 		default:
 			return fmt.Errorf("unknown component type %s", crt.Component)
 		}
