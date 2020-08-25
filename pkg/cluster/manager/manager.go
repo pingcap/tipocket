@@ -61,6 +61,7 @@ func (m *Manager) runServer() {
 	})
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
+	r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
 
 	srv := &http.Server{
 		Addr:         "127.0.0.1:8000",
@@ -123,5 +124,34 @@ func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("try deploy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
 		return
 	}
-	return
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "deploy cluster %s success", rr.Name)
+}
+
+func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
+	m.Lock()
+	defer m.Unlock()
+
+	vars := mux.Vars(r)
+	name := vars["name"]
+	rr, err := m.Resource.FindResourceRequestByName(name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		return
+	}
+	cr, err := m.Cluster.GetClusterRequestByRRID(rr.ID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("get cluster request by resource request id %d failed, err: %v", rr.ID, err), http.StatusInternalServerError)
+		return
+	}
+	if cr.Status != types.ClusterStatusReady {
+		http.Error(w, fmt.Sprintf("cluster %s expect %s, but got %s", rr.Name, types.ClusterStatusReady, cr.Status), http.StatusInternalServerError)
+		return
+	}
+	if err := deploy.TryDestroyCluster(rr.Name); err != nil {
+		http.Error(w, fmt.Sprintf("try destroy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "destry cluster %s success", rr.Name)
 }

@@ -62,6 +62,14 @@ func TryDeployCluster(name string, resources []types.Resource, cr *types.Cluster
 	return nil
 }
 
+func TryDestroyCluster(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
+	if err != nil {
+		return fmt.Errorf("destroy cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
 func deployCluster(yaml, name, version string) error {
 	file, err := ioutil.TempFile("", "topo")
 	if err != nil {
@@ -70,7 +78,7 @@ func deployCluster(yaml, name, version string) error {
 	defer file.Close()
 	file.WriteString(yaml)
 
-	output, err := util.Command("", "tiup", "cluster", "deploy", name, version, file.Name())
+	output, err := util.Command("", "tiup", "cluster", "deploy", "-y", name, version, file.Name())
 	if err != nil {
 		return fmt.Errorf("deploy cluster failed, err: %v, output: %s", err, output)
 	}
@@ -110,14 +118,13 @@ tidb_servers:`)
 	for host, config := range t.TiDBServers {
 		topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/deploy/tidb-4000"
-    data_dir: "%s/data/tidb-4000"`, host, config.DeployPath, config.DeployPath))
+    deploy_dir: "%s/deploy/tidb-4000"`, host, config.DeployPath))
 	}
 
 	topo.WriteString(`
 
 tikv_servers:`)
-	for host, config := range t.TiDBServers {
+	for host, config := range t.TiKVServers {
 		topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tikv-20160"
