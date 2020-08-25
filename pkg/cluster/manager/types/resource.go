@@ -27,6 +27,7 @@ func (s *Spec) Suit(o *Spec) bool {
 	return true
 }
 
+// Resource means (physical- or vm-)machine
 type Resource struct {
 	gorm.Model
 	IP       string `gorm:"column:ip;type:varchar(20);unique;not null"`
@@ -48,4 +49,6 @@ type ResourceRequestItem struct {
 	Status string `gorm:"column:status;type:varchar(255);not null"`
 	RRID   uint   `gorm:"column:rr_id;not null"`
 	RID    uint   `gorm:"column:r_id;not null"`
+	// Components records which *_servers are serving on this machine
+	Components string `gorm:"column:components;not null"`
 }
