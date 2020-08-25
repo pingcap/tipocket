@@ -10,7 +10,7 @@ import (
 
 func TestBuildTopologyYaml(t *testing.T) {
 	yaml := buildTopologyYaml(&Topology{
-		Config:            `server_configs:
+		Config: `server_configs:
   tidb:
     log.slow-threshold: 300
     binlog.enable: false

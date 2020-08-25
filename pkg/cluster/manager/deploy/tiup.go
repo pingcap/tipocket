@@ -3,9 +3,12 @@ package deploy
 import (
 	"bytes"
 	"fmt"
-	"github.com/juju/errors"
 	"io/ioutil"
 	"strings"
+
+	"github.com/juju/errors"
+
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 )
@@ -19,7 +22,7 @@ type Topology struct {
 	GrafanaServers    map[string]*types.ClusterRequestTopology
 }
 
-func TryDeploy(resources []types.Resource, cr *types.ClusterRequest, crts []types.ClusterRequestTopology) error {
+func TryDeployCluster(name string, resources []types.Resource, cr *types.ClusterRequest, crts []types.ClusterRequestTopology) error {
 	topo := &Topology{
 		Config:            cr.Config,
 		PDServers:         make(map[string]*types.ClusterRequestTopology),
@@ -50,13 +53,35 @@ func TryDeploy(resources []types.Resource, cr *types.ClusterRequest, crts []type
 	}
 
 	yaml := buildTopologyYaml(topo)
+	if err := deployCluster(yaml, name, cr.Version); err != nil {
+		return errors.Trace(err)
+	}
+	if err := startCluster(name); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
 
+func deployCluster(yaml, name, version string) error {
 	file, err := ioutil.TempFile("", "topo")
 	if err != nil {
 		return errors.Trace(err)
 	}
 	defer file.Close()
 	file.WriteString(yaml)
+
+	output, err := util.Command("", "tiup", "cluster", "deploy", name, version, file.Name())
+	if err != nil {
+		return fmt.Errorf("deploy cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
+func startCluster(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "start", name)
+	if err != nil {
+		return fmt.Errorf("start cluster failed, err: %v, output: %s", err, output)
+	}
 	return nil
 }
 

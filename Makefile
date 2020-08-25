@@ -116,6 +116,9 @@ follower-read:
 titan:
 	$(GOBUILD) $(GOMOD) -o bin/titan cmd/titan/*.go
 
+manager:
+	$(GOBUILD) $(GOMOD) -o bin/manager cmd/cluster/manager/*.go
+
 fmt: groupimports
 	go fmt ./...
 

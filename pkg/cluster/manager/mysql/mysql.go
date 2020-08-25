@@ -19,4 +19,3 @@ func Open(dsn string) (*DB, error) {
 		db,
 	}, nil
 }
-

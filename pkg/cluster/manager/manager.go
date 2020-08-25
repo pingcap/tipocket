@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
+
 	"github.com/gorilla/mux"
 	"github.com/juju/errors"
 
@@ -19,9 +21,9 @@ import (
 var Mrg Manager
 
 type Manager struct {
-	DB              *mysql.DB
-	ResourceRequest *service.ResourceRequest
-	Cluster         *service.Cluster
+	DB       *mysql.DB
+	Resource *service.Resource
+	Cluster  *service.Cluster
 	sync.Mutex
 }
 
@@ -32,7 +34,7 @@ func New(dsn string) (*Manager, error) {
 	}
 	return &Manager{
 		DB: db,
-		ResourceRequest: &service.ResourceRequest{
+		Resource: &service.Resource{
 			DB: db,
 		},
 		Cluster: &service.Cluster{
@@ -84,24 +86,42 @@ func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	name := vars["name"]
-	rr, err := m.ResourceRequest.FindByName(name)
+	rr, err := m.Resource.FindResourceRequestByName(name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
 		return
 	}
-	cr, err := m.Cluster.GetClusterRequestByResourceRequestID(rr.ID)
+	cr, err := m.Cluster.GetClusterRequestByRRID(rr.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("get cluster request by resource request id %d failed, err: %v", rr.ID, err), http.StatusInternalServerError)
 		return
 	}
 	if cr.Status != types.ClusterStatusReady {
-		http.Error(w, fmt.Sprintf("cluster %s expect %s, got %s", rr.Name, types.ClusterStatusReady, cr.Status), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("cluster %s expect %s, but got %s", rr.Name, types.ClusterStatusReady, cr.Status), http.StatusInternalServerError)
 		return
 	}
-	crt, err := m.Cluster.GetClusterRequestTopoByClusterRequestID(cr.ID)
+	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("find resource request items by rr_id %d failed, err: %v", rr.ID, err.Error()), http.StatusInternalServerError)
 		return
 	}
-
+	var rids []uint
+	for _, rri := range rris {
+		rids = append(rids, rri.RID)
+	}
+	rs, err := m.Resource.FindResourcesByIDs(rids)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resources by ids %v failed, err: %v", rids, err), http.StatusInternalServerError)
+		return
+	}
+	crts, err := m.Cluster.GetClusterRequestTopoByCRID(cr.ID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("get cluster request topology by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
+		return
+	}
+	if err := deploy.TryDeployCluster(rr.Name, rs, cr, crts); err != nil {
+		http.Error(w, fmt.Sprintf("try deploy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	return
 }

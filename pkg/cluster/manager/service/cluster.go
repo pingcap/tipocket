@@ -1,10 +1,12 @@
 package service
 
 import (
+	"sync"
+
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
-	"sync"
 )
 
 type Cluster struct {
@@ -20,7 +22,7 @@ func (c *Cluster) List() ([]types.ClusterRequest, error) {
 	return result, nil
 }
 
-func (c *Cluster) GetClusterRequestByResourceRequestID(rrID uint) (*types.ClusterRequest, error) {
+func (c *Cluster) GetClusterRequestByRRID(rrID uint) (*types.ClusterRequest, error) {
 	var result types.ClusterRequest
 	if err := c.DB.First(&result, "rr_id = ?", rrID).Error; err != nil {
 		return nil, errors.Trace(err)
@@ -28,7 +30,7 @@ func (c *Cluster) GetClusterRequestByResourceRequestID(rrID uint) (*types.Cluste
 	return &result, nil
 }
 
-func (c *Cluster) GetClusterRequestTopoByClusterRequestID(crID uint) ([]types.ClusterRequestTopology, error) {
+func (c *Cluster) GetClusterRequestTopoByCRID(crID uint) ([]types.ClusterRequestTopology, error) {
 	var result []types.ClusterRequestTopology
 	if err := c.DB.Find(&result, "cr_id = ?", crID).Error; err != nil {
 		return nil, errors.Trace(err)
