@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/juju/errors"
 
-	 "github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/service"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
@@ -65,6 +66,7 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
 	r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
+	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
 	r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
 
 	srv := &http.Server{
@@ -193,6 +195,42 @@ func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "destry cluster %s success", rr.Name)
 }
 
+func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
+	m.Lock()
+	defer m.Unlock()
+
+	vars := mux.Vars(r)
+	name := vars["name"]
+	id, _ := strconv.ParseInt(vars["id"], 10, 64)
+	component := vars["component"]
+
+	rr, err := m.Resource.FindResourceRequestByName(name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		return
+	}
+	rri, err := m.Resource.GetResourceRequestItemByID(uint(id))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource request item by id %d failed, err: %v", id, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	resource, err := m.Resource.GetResourceByID(rri.RID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource by id %d failed, err: %v", rri.RID, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	if err := deploy.TryScaleOut(name, resource, component); err != nil {
+		http.Error(w, fmt.Sprintf("try scale out cluster %s failed, err: %v", name, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	if err := m.setScaleOut(rri, component); err != nil {
+		http.Error(w, fmt.Sprintf("scale out failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "scale out cluster %s success", rr.Name)
+}
+
 func (m *Manager) setOnline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {
 	rriItem2RRi := make(map[uint]*types.ResourceRequestItem)
 	for idx, rri := range rris {
@@ -209,6 +247,15 @@ func (m *Manager) setOnline(rris []*types.ResourceRequestItem, crts []*types.Clu
 		}
 	}
 	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos(rris, crts)
+}
+
+func (m *Manager) setScaleOut(rri *types.ResourceRequestItem, component string) error {
+	if len(rri.Components) == 0 {
+		rri.Components = component
+	} else {
+		rri.Components = strings.Join([]string{rri.Components, component}, "|")
+	}
+	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos([]*types.ResourceRequestItem{rri}, nil)
 }
 
 func (m *Manager) setOffline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {

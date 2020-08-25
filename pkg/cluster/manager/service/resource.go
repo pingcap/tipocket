@@ -23,6 +23,14 @@ func (rr *Resource) FindResourcesByIDs(ids []uint) ([]types.Resource, error) {
 	return result, nil
 }
 
+func (rr *Resource) GetResourceByID(id uint) (*types.Resource, error) {
+	var result types.Resource
+	if err := rr.DB.First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
 func (rr *Resource) FindResourceRequestByName(name string) (*types.ResourceRequest, error) {
 	var result types.ResourceRequest
 	if err := rr.DB.First(&result, "name = ?", name).Error; err != nil {
@@ -37,6 +45,14 @@ func (rr *Resource) FindResourceRequestItemsByRRID(rrid uint) ([]*types.Resource
 		return nil, errors.Trace(err)
 	}
 	return result, nil
+}
+
+func (rr *Resource) GetResourceRequestItemByID(id uint) (*types.ResourceRequestItem, error) {
+	var result types.ResourceRequestItem
+	if err := rr.DB.First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
 }
 
 func (rr *Resource) FindResourceRequestItemsByResourceRequestName(name string) ([]*types.ResourceRequestItem, error) {

@@ -73,6 +73,41 @@ func TryDeployCluster(name string,
 	return nil
 }
 
+func TryScaleOut(name string, r *types.Resource, component string) error {
+	host := r.IP
+	// FIXME @mahjonp
+	deployPath := "/data1"
+	var tpl string
+	switch component {
+	case "tikv":
+		tpl = fmt.Sprintf(`
+tikv_servers:
+- host: %s
+    port: 20160
+    status_port: 20180
+    deploy_dir: %s/deploy/deploy/tikv-20160
+    data_dir: %s/data/tikv-20160
+`, host, deployPath, deployPath)
+	default:
+		return fmt.Errorf("unsupport component type %s now", component)
+	}
+
+	file, err := ioutil.TempFile("", "scale-out")
+	if err != nil {
+		return errors.Trace(err)
+	}
+	defer file.Close()
+	if _, err := file.WriteString(tpl); err != nil {
+		return errors.Trace(err)
+	}
+
+	output, err := util.Command("", "tiup", "cluster", "scale-out", "-y", name, file.Name())
+	if err != nil {
+		return fmt.Errorf("scale-out cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
 func TryDestroyCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
 	if err != nil {
