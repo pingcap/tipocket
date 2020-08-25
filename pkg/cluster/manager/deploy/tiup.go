@@ -83,10 +83,10 @@ func TryScaleOut(name string, r *types.Resource, component string) error {
 		tpl = fmt.Sprintf(`
 tikv_servers:
 - host: %s
-    port: 20160
-    status_port: 20180
-    deploy_dir: %s/deploy/deploy/tikv-20160
-    data_dir: %s/data/tikv-20160
+  port: 20160
+  status_port: 20180
+  deploy_dir: %s/deploy/deploy/tikv-20160
+  data_dir: %s/data/tikv-20160
 `, host, deployPath, deployPath)
 	default:
 		return fmt.Errorf("unsupport component type %s now", component)
