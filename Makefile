@@ -17,7 +17,7 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
-		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock
+		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
 
@@ -115,6 +115,9 @@ follower-read:
 
 titan:
 	$(GOBUILD) $(GOMOD) -o bin/titan cmd/titan/*.go
+
+pipelined-locking:
+	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
 fmt: groupimports
 	go fmt ./...

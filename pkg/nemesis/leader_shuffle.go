@@ -61,14 +61,18 @@ func NewLeaderShuffler(regionKey string) *LeaderShuffler {
 	return l
 }
 
+func (l *LeaderShuffler) SetPDAddr(addr string) {
+	l.Client = pdutil.NewPDClient(http.DefaultClient, addr)
+}
+
 func (l *LeaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("apply nemesis %s...", core.PDLeaderShuffler)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
 
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
-	l.Client = pdutil.NewPDClient(http.DefaultClient, pdAddr)
-	return l.shuffleLeader()
+	l.SetPDAddr(pdAddr)
+	return l.ShuffleLeader()
 }
 
 func (l *LeaderShuffler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
@@ -80,7 +84,7 @@ func (l LeaderShuffler) Name() string {
 	return string(core.PDLeaderShuffler)
 }
 
-func (l *LeaderShuffler) shuffleLeader() error {
+func (l *LeaderShuffler) ShuffleLeader() error {
 	shuffleFunc := l.shuffleFuncs[rand.Intn(len(l.shuffleFuncs))]
 	return shuffleFunc()
 }
