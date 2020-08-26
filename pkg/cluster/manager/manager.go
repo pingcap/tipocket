@@ -3,6 +3,7 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"io"
 	"io/ioutil"
 	"log"
@@ -74,7 +75,7 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
 
 	srv := &http.Server{
-		Addr:         "127.0.0.1:8000",
+		Addr:         util.Addr,
 		Handler:      r,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -186,7 +187,6 @@ func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("get cluster request topology by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
 		return
 	}
-
 	if err := deploy.TryDestroyCluster(rr.Name); err != nil {
 		http.Error(w, fmt.Sprintf("try destroy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
 		return
@@ -312,7 +312,7 @@ func (m *Manager) runWorkload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("find workload by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
 		return
 	}
-	_, _, err = workload.TryRunWorkload(rr.Name, rs, rris, wr)
+	_, _, err = workload.TryRunWorkload(rr.Name, rs, rris, wr, nil)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("try run workload failed: %v", err), http.StatusInternalServerError)
 		return
@@ -401,4 +401,8 @@ func ok(w http.ResponseWriter, format string, a ...interface{}) {
 func okJSON(w http.ResponseWriter, a interface{}) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(a)
+}
+
+func fail(w http.ResponseWriter, err error) {
+	http.Error(w, errors.ErrorStack(err), http.StatusInternalServerError)
 }

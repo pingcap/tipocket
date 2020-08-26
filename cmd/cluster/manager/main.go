@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"github.com/pingcap/tipocket/pkg/logger"
 )
 
@@ -40,6 +41,7 @@ func main() {
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "P", 4000, "Database port")
 	rootCmd.PersistentFlags().StringVarP(&user, "user", "u", "root", "Database user")
 	rootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Database password")
+	rootCmd.PersistentFlags().StringVarP(&util.Addr, "addr", "A", "127.0.0.1:8000", "The address that the manager monitors")
 
 	rootCmd.Execute()
 }
