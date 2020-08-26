@@ -31,9 +31,9 @@ func (rr *Resource) GetResourceByID(id uint) (*types.Resource, error) {
 	return &result, nil
 }
 
-func (rr *Resource) FindResourceRequestByName(name string) (*types.ResourceRequest, error) {
+func (rr *Resource) GetResourceRequestByName(tx *gorm.DB, name string) (*types.ResourceRequest, error) {
 	var result types.ResourceRequest
-	if err := rr.DB.First(&result, "name = ?", name).Error; err != nil {
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&result, "name = ?", name).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &result, nil

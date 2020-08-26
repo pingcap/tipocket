@@ -7,6 +7,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const ResourceRequestStatusReady = "READY"
+
 type Spec struct {
 	CPU  string
 	Mem  string
@@ -44,11 +46,11 @@ type ResourceRequest struct {
 
 type ResourceRequestItem struct {
 	gorm.Model
-	ItemID uint   `gorm:"column:item_id;unique;not null"`
-	Spec   Spec   `gorm:"column:spec;type:longtext;not null"`
-	Status string `gorm:"column:status;type:varchar(255);not null"`
-	RRID   uint   `gorm:"column:rr_id;not null"`
-	RID    uint   `gorm:"column:r_id;not null"`
+	ItemID uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
+	Spec   Spec   `gorm:"column:spec;type:longtext;not null" json:"spec"`
+	Status string `gorm:"column:status;type:varchar(255);not null" json:"status"`
+	RRID   uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	RID    uint   `gorm:"column:r_id;not null" json:"r_id"`
 	// Components records which *_servers are serving on this machine
-	Components string `gorm:"column:components"`
+	Components string `gorm:"column:components" json:"components"`
 }

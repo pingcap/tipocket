@@ -3,29 +3,47 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	ClusterStatusReady      = "READY"
+	ClusterRequestStatusReady = "READY"
+	ClusterRequestStatusDone  = "DONE"
+
 	ClusterTopoStatusReady  = "READY"
 	ClusterTopoStatusOnline = "ONLINE"
+
+	WorkloadStatusReady = "READY"
 )
 
 type ClusterRequest struct {
 	gorm.Model
-	Config    string `gorm:"column:config;type:text"`
-	Version   string `gorm:"column:version;type:varchar(255);not null"`
-	PDVersion string `gorm:"column:pd_version;type:varchar(255)"`
-	RRID      uint   `gorm:"column:rr_id;not null"`
-	Status    string `gorm:"column:status;type:varchar(255);not null"`
+	Config    string `gorm:"column:config;type:text" json:"config"`
+	Version   string `gorm:"column:version;type:varchar(255);not null" json:"version"`
+	PDVersion string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`
+	RRID      uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	Status    string `gorm:"column:status;type:varchar(255);not null" json:"status"`
+}
+
+func (cr *ClusterRequest) Baseline() *ClusterRequest {
+	return &ClusterRequest{
+		Model: gorm.Model{
+			ID:        cr.ID,
+			CreatedAt: cr.CreatedAt,
+			UpdatedAt: cr.UpdatedAt,
+			DeletedAt: cr.DeletedAt,
+		},
+		Config:  cr.Config,
+		Version: cr.Version,
+		RRID:    cr.RRID,
+		Status:  cr.Status,
+	}
 }
 
 // ClusterRequestTopology defines which component is installed on a Resource.
 type ClusterRequestTopology struct {
 	gorm.Model
-	Component  string `gorm:"column:component;type:varchar(255);not null"`
-	DeployPath string `gorm:"column:deploy_path;type:varchar(255);not null"`
-	CRID       uint   `gorm:"column:cr_id;not null"`
-	RRIItemID  uint   `gorm:"column:rri_item_id;not null"`
+	Component  string `gorm:"column:component;type:varchar(255);not null" json:"component"`
+	DeployPath string `gorm:"column:deploy_path;type:varchar(255);not null" json:"deploy_path"`
+	CRID       uint   `gorm:"column:cr_id;not null" json:"cr_id"`
+	RRIItemID  uint   `gorm:"column:rri_item_id;not null" json:"rri_item_id"`
 	// READY
-	// OFFLINE
 	// ONLINE
-	Status string `gorm:"column:status;not null"`
+	Status string `gorm:"column:status;not null" json:"status"`
 }
