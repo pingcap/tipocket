@@ -3,10 +3,9 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	ClusterStatusReady       = "READY"
-	ClusterTopoStatusReady   = "READY"
-	ClusterTopoStatusOnline  = "ONLINE"
-	ClusterTopoStatusOffline = "OFFLINE"
+	ClusterStatusReady      = "READY"
+	ClusterTopoStatusReady  = "READY"
+	ClusterTopoStatusOnline = "ONLINE"
 )
 
 type ClusterRequest struct {

@@ -14,7 +14,7 @@ type Cluster struct {
 	lock sync.Mutex
 }
 
-func (c *Cluster) List() ([]types.ClusterRequest, error) {
+func (c *Cluster) ListClusterRequests() ([]types.ClusterRequest, error) {
 	var result []types.ClusterRequest
 	if err := c.DB.Find(&result).Error; err != nil {
 		return nil, errors.Trace(err)
@@ -24,13 +24,13 @@ func (c *Cluster) List() ([]types.ClusterRequest, error) {
 
 func (c *Cluster) GetClusterRequestByRRID(rrID uint) (*types.ClusterRequest, error) {
 	var result types.ClusterRequest
-	if err := c.DB.First(&result, "rr_id = ?", rrID).Error; err != nil {
+	if err := c.DB.Last(&result, "rr_id = ?", rrID).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &result, nil
 }
 
-func (c *Cluster) GetClusterRequestTopoByCRID(crID uint) ([]*types.ClusterRequestTopology, error) {
+func (c *Cluster) FindClusterRequestToposByCRID(crID uint) ([]*types.ClusterRequestTopology, error) {
 	var result []*types.ClusterRequestTopology
 	if err := c.DB.Find(&result, "cr_id = ?", crID).Error; err != nil {
 		return nil, errors.Trace(err)
@@ -44,4 +44,19 @@ func (c *Cluster) GetClusterWorkloadByClusterRequestID(crID uint) (*types.Worklo
 		return nil, errors.Trace(err)
 	}
 	return &result, nil
+}
+
+func (c *Cluster) AddWorkloadReport(wr *types.WorkloadReport) error {
+	if err := c.DB.Create(wr).Error; err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+func (c *Cluster) FindWorkloadReportsByClusterRequestID(crID uint) ([]*types.WorkloadReport, error) {
+	var result []*types.WorkloadReport
+	if err := c.DB.Find(&result, "cr_id = ?", crID).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return result, nil
 }

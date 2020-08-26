@@ -25,12 +25,12 @@ func TryRunWorkload(name string,
 	}
 	resource := rriID2Resource[rriItemId2RriID[wr.RRIItemID]]
 	host := resource.IP
-	cmd := fmt.Sprintf("docker run %s %s %s", wr.DockerImage, wr.Cmd, wr.ARGS)
+	cmd := fmt.Sprintf("docker run %s %s %s", wr.DockerImage, wr.Cmd, wr.Args)
 	sshExecutor := util.NewSSHExecutor(util.SSHConfig{
-		Host:       host,
-		Port:       22,
-		User:       resource.Username,
-		KeyFile:    util.SSHKeyPath(),
+		Host:    host,
+		Port:    22,
+		User:    resource.Username,
+		KeyFile: util.SSHKeyPath(),
 	})
 	return sshExecutor.Execute(cmd)
 }
