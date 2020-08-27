@@ -71,6 +71,7 @@ func (m *Manager) runServer() {
 	//r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
 	//r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
 	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
+	r.HandleFunc("/api/cluster/scale_in/{name}/{id}/{component}", m.clusterScaleIn)
 	//r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
@@ -395,6 +396,39 @@ func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "scale out cluster %s success", rr.Name)
 }
 
+func (m *Manager) clusterScaleIn(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+	id, _ := strconv.ParseInt(vars["id"], 10, 64)
+	component := vars["component"]
+
+	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		return
+	}
+	rri, err := m.Resource.GetResourceRequestItemByID(uint(id))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource request item by id %d failed, err: %v", id, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	resource, err := m.Resource.GetResourceByID(rri.RID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("find resource by id %d failed, err: %v", rri.RID, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	if err := deploy.TryScaleIn(name, resource, component); err != nil {
+		http.Error(w, fmt.Sprintf("try scale in cluster %s failed, err: %v", name, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	if err := m.setScaleIn(rri, component); err != nil {
+		http.Error(w, fmt.Sprintf("scale in failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "scale in cluster %s success", rr.Name)
+}
+
 func (m *Manager) setOnline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {
 	rriItem2RRi := make(map[uint]*types.ResourceRequestItem)
 	for idx, rri := range rris {
@@ -419,6 +453,17 @@ func (m *Manager) setScaleOut(rri *types.ResourceRequestItem, component string) 
 	} else {
 		rri.Components = strings.Join([]string{rri.Components, component}, "|")
 	}
+	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos([]*types.ResourceRequestItem{rri}, nil)
+}
+
+func (m *Manager) setScaleIn(rri *types.ResourceRequestItem, component string) error {
+	var components []string
+	for _, c := range strings.Split(rri.Components, "|") {
+		if c != component {
+			components = append(components, c)
+		}
+	}
+	rri.Components = strings.Join(components, "|")
 	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos([]*types.ResourceRequestItem{rri}, nil)
 }
 

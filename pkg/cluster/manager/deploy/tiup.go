@@ -108,6 +108,23 @@ tikv_servers:
 	return nil
 }
 
+func TryScaleIn(name string, r *types.Resource, component string) error {
+	host := r.IP
+	var node string
+	switch component {
+	case "tikv":
+		// FIXME @mahjonp
+		node = fmt.Sprintf("%s:20160", host)
+	default:
+		return fmt.Errorf("unsupport component type %s now", component)
+	}
+	output, err := util.Command("", "tiup", "cluster", "scale-in", "-y", name, "--node", node)
+	if err != nil {
+		return fmt.Errorf("scale-in cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
 func TryDestroyCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
 	if err != nil {
