@@ -3,8 +3,9 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	ClusterRequestStatusReady = "READY"
-	ClusterRequestStatusDone  = "DONE"
+	ClusterRequestStatusReady   = "READY"
+	ClusterRequestStatusRunning = "RUNNING"
+	ClusterRequestStatusDone    = "DONE"
 
 	ClusterTopoStatusReady  = "READY"
 	ClusterTopoStatusOnline = "ONLINE"

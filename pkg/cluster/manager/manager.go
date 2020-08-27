@@ -64,9 +64,6 @@ func (m *Manager) migrate() {
 
 func (m *Manager) runServer() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		json.NewEncoder(writer).Encode(map[string]bool{"ok": true})
-	})
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/{name}", m.clusterRun).Methods("POST")
@@ -74,7 +71,7 @@ func (m *Manager) runServer() {
 	//r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
 	//r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
 	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
-	r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
+	//r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
 
@@ -168,6 +165,11 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	cr.Status = types.ClusterRequestStatusRunning
+	if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
+		fail(w, err)
+		return
+	}
 	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
 	if err != nil {
 		fail(w, err)
@@ -192,6 +194,11 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	wr.Status = types.WorkloadStatusRunning
+	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
+		fail(w, err)
+		return
+	}
 	if err := m.runWorkloadWithBaseline(name, rs, rr, rris, cr, crts, wr); err != nil {
 		fail(w, err)
 		return
@@ -201,12 +208,23 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
+	var report = "ok"
+	wps, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if len(wps) == 0 {
+		fail(w, errors.NotFoundf("workload report of cr_id %d", cr.ID))
+		return
+	}
+	report = *wps[len(wps)-1].PlainText
 	cr.Status = types.ClusterRequestStatusDone
 	if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
 		fail(w, err)
 		return
 	}
-	ok(w, "workload is success")
+	ok(w, report)
 }
 
 func (m *Manager) runWorkloadWithBaseline(
@@ -456,8 +474,16 @@ func (m *Manager) runWorkload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("try run workload failed: %v", err), http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "run workload success")
+	result, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if len(result) == 0 {
+		fail(w, errors.NotFoundf("workload request %s", name))
+		return
+	}
+	ok(w, *result[len(result)-1].PlainText)
 }
 
 func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
