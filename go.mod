@@ -22,6 +22,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/jinzhu/gorm v1.9.16
+	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/mgechev/revive v1.0.2
 	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
@@ -50,7 +51,8 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200824131525-c12d262b63d8 // indirect
+	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0

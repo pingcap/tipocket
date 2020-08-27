@@ -79,10 +79,11 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
 
 	srv := &http.Server{
-		Addr:         util.Addr,
-		Handler:      r,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		Addr:    util.Addr,
+		Handler: r,
+		// FIXME(mahjonp)
+		WriteTimeout: 15 * time.Hour,
+		ReadTimeout:  15 * time.Hour,
 	}
 	log.Fatal(srv.ListenAndServe())
 }
