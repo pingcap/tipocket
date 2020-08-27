@@ -153,6 +153,6 @@ image:
 	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
+	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
 
 .PHONY: all clean pocket compare test fmt

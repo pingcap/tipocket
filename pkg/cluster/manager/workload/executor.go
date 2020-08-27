@@ -61,14 +61,12 @@ func TryRunWorkload(name string,
 		envs["PROM_ADDR"] = fmt.Sprintf("%s:9090", rs.IP)
 	}
 
-	cmd := fmt.Sprintf("docker run%s %s %s %s", buildEnvArgs(envs), wr.DockerImage, wr.Cmd, wr.Args)
-	sshExecutor := util.NewSSHExecutor(util.SSHConfig{
-		Host:    host,
-		Port:    22,
-		User:    resource.Username,
-		KeyFile: util.SSHKeyPath(),
-	})
-	return sshExecutor.Execute(cmd)
+	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+
+	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args)
 }
 
 func randomResource(rs []types.Resource) (types.Resource, error) {

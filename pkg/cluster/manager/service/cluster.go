@@ -72,9 +72,16 @@ func (c *Cluster) GetClusterWorkloadByClusterRequestID(crID uint) (*types.Worklo
 	return &result, nil
 }
 
-func (c *Cluster) CreateWorkload(tx *gorm.DB, cw *types.WorkloadRequest) error {
+func (c *Cluster) CreateWorkloadRequest(tx *gorm.DB, cw *types.WorkloadRequest) error {
 	cw.Status = types.WorkloadStatusReady
 	if err := tx.Create(cw).Error; err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+func (c *Cluster) UpdateWorkloadRequest(tx *gorm.DB, wr *types.WorkloadRequest) error {
+	if err := tx.Save(wr).Error; err != nil {
 		return errors.Trace(err)
 	}
 	return nil

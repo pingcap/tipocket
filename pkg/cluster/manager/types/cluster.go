@@ -9,7 +9,9 @@ const (
 	ClusterTopoStatusReady  = "READY"
 	ClusterTopoStatusOnline = "ONLINE"
 
-	WorkloadStatusReady = "READY"
+	WorkloadStatusReady   = "READY"
+	WorkloadStatusRunning = "RUNNING"
+	WorkloadStatusDone    = "DONE"
 )
 
 type ClusterRequest struct {

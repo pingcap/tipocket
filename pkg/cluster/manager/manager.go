@@ -70,8 +70,9 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/{name}", m.clusterRun).Methods("POST")
-	r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
-	r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
+	// for debug
+	//r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
+	//r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
 	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
 	r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
@@ -96,8 +97,6 @@ func (m *Manager) clusterList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) clusterResourceByName(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
 	vars := mux.Vars(r)
 	name := vars["name"]
 	rr, err := m.Resource.FindResourceRequestItemsByResourceRequestName(name)
@@ -114,9 +113,6 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		ClusterRequestTopos []*types.ClusterRequestTopology `json:"cluster_request_topologies"`
 		Workload            *types.WorkloadRequest          `json:"cluster_workload"`
 	}
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 	var request Request
@@ -157,7 +153,7 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 			return errors.Trace(err)
 		}
 		request.Workload.CRID = request.ClusterRequest.ID
-		if err := m.Cluster.CreateWorkload(tx, request.Workload); err != nil {
+		if err := m.Cluster.CreateWorkloadRequest(tx, request.Workload); err != nil {
 			return errors.Trace(err)
 		}
 		return nil
@@ -196,6 +192,11 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := m.runWorkloadWithBaseline(name, rs, rr, rris, cr, crts, wr); err != nil {
+		fail(w, err)
+		return
+	}
+	wr.Status = types.WorkloadStatusDone
+	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		fail(w, err)
 		return
 	}
@@ -255,9 +256,6 @@ func (m *Manager) runClusterWorkload(name string,
 }
 
 func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
@@ -306,9 +304,6 @@ func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
@@ -349,9 +344,6 @@ func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 	id, _ := strconv.ParseInt(vars["id"], 10, 64)
@@ -422,9 +414,6 @@ func (m *Manager) setOffline(rris []*types.ResourceRequestItem, crts []*types.Cl
 }
 
 func (m *Manager) runWorkload(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 
@@ -475,10 +464,6 @@ func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
 		Data      string  `json:"data"`
 		PlainText *string `json:"plaintext"`
 	}
-
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 
@@ -518,9 +503,6 @@ func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manager) getWorkloadResult(w http.ResponseWriter, r *http.Request) {
-	m.Lock()
-	defer m.Unlock()
-
 	vars := mux.Vars(r)
 	name := vars["name"]
 
