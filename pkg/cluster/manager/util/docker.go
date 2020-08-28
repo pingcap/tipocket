@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -31,7 +32,7 @@ func NewDockerExecutor(host string) (*DockerExecutor, error) {
 	return &DockerExecutor{cli}, nil
 }
 
-func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd string, args ...string) ([]byte, []byte, error) {
+func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *string, args ...string) ([]byte, []byte, error) {
 	ctx := context.Background()
 	var env []string
 	for key, value := range envs {
@@ -43,11 +44,22 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd str
 		return nil, nil, errors.Trace(err)
 	}
 	defer reader.Close()
+	var b bytes.Buffer
+	io.Copy(&b, reader)
 
+	zap.L().Debug("pull image", zap.String("image", dockerImage), zap.String("result", b.String()))
+
+	var cmds []string
+	if cmd != nil {
+		cmds = append(cmds, *cmd)
+	}
+	if len(args) != 0 {
+		cmds = append(cmds, args...)
+	}
 	resp, err := d.ContainerCreate(ctx, &container.Config{
 		Image: dockerImage,
 		Env:   env,
-		Cmd:   append([]string{cmd}, args...),
+		Cmd:   cmds,
 	}, nil, nil, "")
 
 	if err != nil {

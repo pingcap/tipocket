@@ -44,7 +44,7 @@ func TryRunWorkload(name string,
 	}
 
 	envs["CLUSTER_NAME"] = name
-	envs["API_SERVER"] = util.Addr
+	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
 	if rs, err := randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	} else {
@@ -58,7 +58,7 @@ func TryRunWorkload(name string,
 	if rs, err := randomResource(component2Resources["monitoring"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	} else {
-		envs["PROM_ADDR"] = fmt.Sprintf("%s:9090", rs.IP)
+		envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 	}
 
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
@@ -66,7 +66,7 @@ func TryRunWorkload(name string,
 		return nil, nil, errors.Trace(err)
 	}
 
-	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args)
+	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
 }
 
 func randomResource(rs []types.Resource) (types.Resource, error) {
