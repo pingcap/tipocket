@@ -17,11 +17,13 @@ const (
 
 type ClusterRequest struct {
 	gorm.Model
-	Config    string `gorm:"column:config;type:text" json:"config"`
-	Version   string `gorm:"column:version;type:varchar(255);not null" json:"version"`
-	PDVersion string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`
-	RRID      uint   `gorm:"column:rr_id;not null" json:"rr_id"`
-	Status    string `gorm:"column:status;type:varchar(255);not null" json:"status"`
+	Config      string `gorm:"column:config;type:text" json:"config"`
+	Version     string `gorm:"column:version;type:varchar(255);not null" json:"version"`
+	PDVersion   string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`
+	TiDBVersion string `gorm:"column:tidb_version;type:varchar(255)" json:"tidb_version"`
+	TiKVVersion string `gorm:"column:tikv_version;type:varchar(255)" json:"tikv_version"`
+	RRID        uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	Status      string `gorm:"column:status;type:varchar(255);not null" json:"status"`
 }
 
 func (cr *ClusterRequest) Baseline() *ClusterRequest {

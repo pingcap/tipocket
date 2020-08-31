@@ -1,7 +1,6 @@
 package workload
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -74,12 +73,4 @@ func randomResource(rs []types.Resource) (types.Resource, error) {
 		return types.Resource{}, fmt.Errorf("expect non-empty resources")
 	}
 	return rs[rand.Intn(len(rs))], nil
-}
-
-func buildEnvArgs(envs map[string]string) string {
-	var buffer bytes.Buffer
-	for key, value := range envs {
-		buffer.WriteString(fmt.Sprintf(" --env %s=%s", key, value))
-	}
-	return buffer.String()
 }

@@ -8,9 +8,8 @@ import (
 
 	"github.com/juju/errors"
 
-	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
-
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
 type Topology struct {
@@ -64,7 +63,7 @@ func TryDeployCluster(name string,
 	}
 
 	yaml := buildTopologyYaml(topo)
-	if err := deployCluster(yaml, name, cr.Version); err != nil {
+	if err := deployCluster(yaml, name, cr); err != nil {
 		return errors.Trace(err)
 	}
 	if err := startCluster(name); err != nil {
@@ -133,17 +132,82 @@ func TryDestroyCluster(name string) error {
 	return nil
 }
 
-func deployCluster(yaml, name, version string) error {
-	file, err := ioutil.TempFile("", "topo")
+func deployCluster(yaml, name string, cr *types.ClusterRequest) error {
+	file, err := ioutil.TempFile("", "cluster")
 	if err != nil {
 		return errors.Trace(err)
 	}
 	defer file.Close()
 	file.WriteString(yaml)
 
-	output, err := util.Command("", "tiup", "cluster", "deploy", "-y", name, version, file.Name())
+	_, err = util.Command("", "tiup", "cluster", "deploy", "-y", name, cr.Version, file.Name())
 	if err != nil {
-		return fmt.Errorf("deploy cluster failed, err: %v, output: %s", err, output)
+		return fmt.Errorf("deploy cluster failed, err: %s", err)
+	}
+	_, err = util.Command("", "tiup", "cluster", "start", name)
+	if err != nil {
+		return fmt.Errorf("start cluster failed, err: %s", err)
+	}
+	return patchCluster(name, cr)
+}
+
+func patchCluster(name string, cr *types.ClusterRequest) error {
+	var patchComponent = []struct {
+		component   string
+		downloadURL string
+	}{
+		{
+			component:   "tidb-server",
+			downloadURL: cr.TiDBVersion,
+		},
+		{
+			component:   "tikv-server",
+			downloadURL: cr.TiKVVersion,
+		},
+		{
+			component:   "pd-server",
+			downloadURL: cr.PDVersion,
+		},
+	}
+	needPatch := false
+	for _, component := range patchComponent {
+		if len(component.downloadURL) != 0 {
+			needPatch = true
+			break
+		}
+	}
+	if !needPatch {
+		return nil
+	}
+	dir, err := ioutil.TempDir("", "components")
+	if err != nil {
+		return errors.Trace(err)
+	}
+	var components []string
+	for _, component := range patchComponent {
+		if len(component.downloadURL) != 0 {
+			components = append(components, component.component)
+			filePath, err := util.Wget(component.downloadURL, dir)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			if err := util.Unzip(filePath, dir); err != nil {
+				return errors.Trace(err)
+			}
+			if _, err := util.Command(dir, "mv", fmt.Sprintf("bin/%s", component.component), component.component); err != nil {
+				return errors.Trace(err)
+			}
+		}
+	}
+	args := append([]string{"zcf", "patch.tar.gz"}, components...)
+	if _, err := util.Command(dir, "tar", args...); err != nil {
+		return errors.Trace(err)
+	}
+
+	for _, component := range components {
+		if _, err := util.Command(dir, "tiup", "cluster", "patch", name, "patch.tar.gz", "-R", strings.Split(component, "-server")[0]); err != nil {
+			return errors.Trace(err)
+		}
 	}
 	return nil
 }
