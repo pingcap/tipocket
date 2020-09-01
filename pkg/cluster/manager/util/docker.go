@@ -69,15 +69,16 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 	if err := d.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
+	var exitCode int64
 	statusCh, errCh := d.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
 			return nil, nil, errors.Trace(err)
 		}
-	case <-statusCh:
+	case status := <-statusCh:
+		exitCode = status.StatusCode
 	}
-
 	out, err := d.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		return nil, nil, errors.Trace(err)
@@ -87,6 +88,8 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 	if _, err := stdcopy.StdCopy(&stdOutBuffer, &stdErrBuffer, out); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-
+	if exitCode != 0 {
+		return nil, nil, fmt.Errorf("container exit with %d", exitCode)
+	}
 	return stdOutBuffer.Bytes(), stdErrBuffer.Bytes(), nil
 }

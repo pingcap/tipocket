@@ -61,11 +61,34 @@ func TryRunWorkload(name string,
 	}
 
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
+
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 
+	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
+		return s, e, errors.Trace(err)
+	}
 	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+}
+
+func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) ([]byte, []byte, error) {
+	if wr.RestorePath != nil {
+		envs["S3_ENDPOINT"] = util.S3Endpoint
+		envs["AWS_ACCESS_KEY_ID"] = util.AwsAccessKeyID
+		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
+
+		// FIXME(mahjonp): replace with pingcap/br in future
+		s, e, err := dockerExecutor.Run("mahjonp/br",
+			envs,
+			&[]string{"/bin/bash"}[0],
+			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+*wr.RestorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
+		if err != nil {
+			return s, e, errors.Trace(err)
+		}
+		return s, e, nil
+	}
+	return nil, nil, nil
 }
 
 func randomResource(rs []types.Resource) (types.Resource, error) {

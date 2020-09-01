@@ -42,6 +42,9 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&user, "user", "u", "root", "Database user")
 	rootCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "Database password")
 	rootCmd.PersistentFlags().StringVarP(&util.Addr, "addr", "A", "127.0.0.1:8000", "The address that the manager monitors")
+	rootCmd.PersistentFlags().StringVar(&util.S3Endpoint, "s3.endpoint", "", "The endpoint of s3")
+	rootCmd.PersistentFlags().StringVar(&util.AwsAccessKeyID, "s3.access-key", "YOURACCESSKEY", "The access key of s3")
+	rootCmd.PersistentFlags().StringVar(&util.AwsSecretAccessKey, "s3.secret-key", "YOURSECRETKEY", "The secret key of s3")
 
 	rootCmd.Execute()
 }

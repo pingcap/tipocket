@@ -27,6 +27,11 @@ func (j *Args) Scan(value interface{}) error {
 
 type WorkloadRequest struct {
 	gorm.Model
+	// data preparation
+	//PrepareDockerImage *string `gorm:"column:prepare_docker_image;type:varchar(1024)" json:"prepare_docker_image"`
+	//PrepareCmd         *string `gorm:"column:prepare_cmd;type:varchar(255)" json:"prepare_cmd"`
+	//PrepareArgs        Args    `gorm:"column:prepare_args;type:varchar(1024)" json:"prepare_args"`
+	RestorePath *string `gorm:"column:restore_path;type:varchar(1024)" json:"restore_path"`
 	DockerImage string  `gorm:"column:docker_image;type:varchar(255);not null" json:"docker_image"`
 	Cmd         *string `gorm:"column:cmd;type:varchar(255)" json:"cmd"`
 	Args        Args    `gorm:"column:args;type:varchar(1024)" json:"args"`
