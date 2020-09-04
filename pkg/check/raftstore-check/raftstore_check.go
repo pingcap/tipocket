@@ -179,6 +179,7 @@ func (c *TiKvDebugClients) CheckRaftStoreConsistency() {
 			log.Fatalf("%s collect peer current state err %v", url, err)
 			return
 		}
+		log.Infof("%s collect %v num peer state", url, len(response.States))
 		for i := 0; i < len(response.States); i++ {
 			current_state := response.States[i]
 			if !current_state.Valid {
