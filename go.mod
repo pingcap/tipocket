@@ -36,9 +36,11 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0
+	go.etcd.io/etcd v0.5.0-alpha.5.0.20191023171146-3cf2f69b5738
 	go.uber.org/zap v1.14.0
 	golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	google.golang.org/grpc v1.28.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v12.0.0+incompatible
@@ -102,3 +104,5 @@ replace k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20
 replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
 
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+
+replace github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36 => github.com/gengliqi/kvproto v0.0.0-20200904025001-860bdbef86ee

@@ -15,6 +15,7 @@ import (
 	"github.com/tikv/client-go/config"
 	"github.com/tikv/client-go/rawkv"
 
+	raftstore_check "github.com/pingcap/tipocket/pkg/check/raftstore-check"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
@@ -85,10 +86,11 @@ func (s stateType) Remove(k Key) stateType {
 
 // Config is the config of the test case.
 type Config struct {
-	KeyStart        int
-	KeyNum          int
-	ReadProbability int
-	WriteProbaility int
+	KeyStart             int
+	KeyNum               int
+	ReadProbability      int
+	WriteProbaility      int
+	SleepTimebeforeCheck int
 }
 
 // RandomValues is some random byte slices which have different hash value.
@@ -151,10 +153,21 @@ type rawkvClient struct {
 	pd           pd.Client
 	conf         Config
 	randomValues *RandomValues
+	debugClients *raftstore_check.TiKvDebugClients
+}
+
+func GetAllTiKvAddr(nodes []cluster.Node) []string {
+	var urls []string
+	for _, node := range nodes {
+		if node.Component == cluster.TiKV {
+			urls = append(urls, node.IP)
+		}
+	}
+	return urls
 }
 
 // SetUp implements the core.Client interface.
-func (c *rawkvClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
+func (c *rawkvClient) SetUp(ctx context.Context, node []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	log.Printf("setup client %v start", idx)
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -167,6 +180,12 @@ func (c *rawkvClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	}
 
 	var err error
+
+	c.debugClients, err = raftstore_check.NewTiKvDebugClient(ctx, GetAllTiKvAddr(node))
+	if err != nil {
+		log.Fatalf("create tikv debug client error: %v", err)
+	}
+
 	c.cli, err = rawkv.NewClient(ctx, pdAddrs, config.Default())
 	if err != nil {
 		log.Fatalf("create tikv client error: %v", err)
@@ -190,6 +209,10 @@ func (c *rawkvClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 
 // TearDown implements the core.Client interface.
 func (c *rawkvClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	time.Sleep(time.Duration(c.conf.SleepTimebeforeCheck) * time.Second)
+
+	c.debugClients.CheckRaftStoreConsistency()
+
 	return nil
 }
 
