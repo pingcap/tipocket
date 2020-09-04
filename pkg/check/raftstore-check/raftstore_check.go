@@ -150,6 +150,7 @@ func (c *TiKvDebugClients) AddDebugClient(addr string) error {
 	}*/
 	dctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
 	defer cancel()
+	log.Infof("connect tikv debug client url %s", addr)
 	cc, err := GetClientConn(dctx, addr, nil, c.gRPCDialOptions...)
 	if err != nil {
 		return errors.WithStack(err)
