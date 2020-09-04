@@ -148,7 +148,7 @@ func (c *TiKvDebugClients) AddDebugClient(addr string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}*/
-	dctx, cancel := context.WithTimeout(c.ctx, 5)
+	dctx, cancel := context.WithTimeout(c.ctx, 10*time.Second)
 	defer cancel()
 	cc, err := GetClientConn(dctx, addr, nil, c.gRPCDialOptions...)
 	if err != nil {
