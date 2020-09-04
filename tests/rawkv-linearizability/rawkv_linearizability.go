@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"strconv"
@@ -153,6 +152,7 @@ type rawkvClient struct {
 	pd           pd.Client
 	conf         Config
 	randomValues *RandomValues
+	tikvAddrs    []string
 	debugClients *raftstore_check.TiKvDebugClients
 }
 
@@ -171,20 +171,17 @@ func (c *rawkvClient) SetUp(ctx context.Context, node []cluster.Node, clientNode
 	log.Printf("setup client %v start", idx)
 
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
-	clusterName := clientNodes[0].ClusterName
-	ns := clientNodes[0].Namespace
-	pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
-	//pdAddrs := []string{"127.0.0.1:2379"}
+	//clusterName := clientNodes[0].ClusterName
+	//ns := clientNodes[0].Namespace
+	//pdAddrs := []string{fmt.Sprintf("%s-pd.%s.svc:2379", clusterName, ns)}
+	pdAddrs := []string{"127.0.0.1:2379"}
 	if len(pdAddrs) == 0 {
 		return errors.New("No pd node found")
 	}
 
-	var err error
+	c.tikvAddrs = GetAllTiKvAddr(node)
 
-	c.debugClients, err = raftstore_check.NewTiKvDebugClient(ctx, GetAllTiKvAddr(node))
-	if err != nil {
-		log.Fatalf("create tikv debug client error: %v", err)
-	}
+	var err error
 
 	c.cli, err = rawkv.NewClient(ctx, pdAddrs, config.Default())
 	if err != nil {
@@ -211,6 +208,11 @@ func (c *rawkvClient) SetUp(ctx context.Context, node []cluster.Node, clientNode
 func (c *rawkvClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	time.Sleep(time.Duration(c.conf.SleepTimebeforeCheck) * time.Second)
 
+	var err error
+	c.debugClients, err = raftstore_check.NewTiKvDebugClient(ctx, c.tikvAddrs)
+	if err != nil {
+		log.Fatalf("create tikv debug client error: %v", err)
+	}
 	c.debugClients.CheckRaftStoreConsistency()
 
 	return nil
