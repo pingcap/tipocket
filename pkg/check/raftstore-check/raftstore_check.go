@@ -169,8 +169,8 @@ type CheckRegionCollector struct {
 func (c *TiKvDebugClients) CheckRaftStoreConsistency() {
 	log.Infof("start checking raftstore consistency")
 
-	region_collector := make(map[uint64]*CheckRegionCollector)
-	peer_to_state := make(map[uint64]*debugpb.PeerCurrentState)
+	regionCollector := make(map[uint64]*CheckRegionCollector)
+	peerToState := make(map[uint64]*debugpb.PeerCurrentState)
 
 	for url, debugClient := range c.debugClients {
 		request := &debugpb.CollectPeerCurrentStateRequest{
@@ -178,40 +178,40 @@ func (c *TiKvDebugClients) CheckRaftStoreConsistency() {
 		}
 		response, err := debugClient.CollectPeerCurrentState(c.ctx, request)
 		if err != nil {
-			log.Fatalf("%s collect peer current state err %v", url, err)
+			log.Warnf("%s collect peer current state err %v", url, err)
 			return
 		}
 		log.Infof("%s collect %v num peer state", url, len(response.States))
 		for i := 0; i < len(response.States); i++ {
-			current_state := response.States[i]
-			if !current_state.Valid {
-				log.Warnf("region %v on %s can not get current state", current_state.RegionId, url)
+			currentState := response.States[i]
+			if !currentState.Valid {
+				log.Warnf("region %v on %s can not get current state", currentState.RegionId, url)
 				continue
 			}
-			log_header := fmt.Sprintf("region %v on %s state %v", current_state.RegionId, url, current_state)
-			collector, ok := region_collector[current_state.RegionId]
+			logHeader := fmt.Sprintf("region %v on %s current state %v", currentState.RegionId, url, currentState)
+			collector, ok := regionCollector[currentState.RegionId]
 			if !ok {
 				collector := &CheckRegionCollector{
-					State:        current_state,
+					State:        currentState,
 					Report_peers: make(map[uint64]bool),
 				}
-				collector.Report_peers[current_state.PeerId] = true
-				region_collector[current_state.RegionId] = collector
+				collector.Report_peers[currentState.PeerId] = true
+				regionCollector[currentState.RegionId] = collector
 				continue
 			}
-			if collector.State.Region != current_state.Region ||
-				collector.State.LeaderId != current_state.LeaderId ||
-				collector.State.LastIndex != current_state.LastIndex ||
-				collector.State.AppliedIndex != current_state.AppliedIndex {
-				log.Warnf("%s not match to origin state %v", log_header, current_state, collector.State)
+			if collector.State.Region != currentState.Region ||
+				collector.State.LeaderId != currentState.LeaderId ||
+				collector.State.LastIndex != currentState.LastIndex ||
+				collector.State.AppliedIndex != currentState.AppliedIndex {
+				log.Warnf("not match to origin state, %s, origin state %v", logHeader, collector.State)
 				continue
 			}
-			if _, ok = collector.Report_peers[current_state.PeerId]; ok {
-				log.Warnf("%s peer id is equal to another peer in the same region, origin state %v", log_header, collector.State)
+			if _, ok = collector.Report_peers[currentState.PeerId]; ok {
+				log.Warnf("peer id is equal to another peer in the same region, %s, origin state %v", logHeader, collector.State)
 				continue
 			}
-			if origin_state, ok := peer_to_state[current_state.PeerId]; ok {
-				log.Warnf("%s peer id is equal to another peer in the different region state %v", log_header, origin_state)
+			if originState, ok := peerToState[currentState.PeerId]; ok {
+				log.Warnf("peer id is equal to another peer in the different region state, %s, origin state %v", logHeader, originState)
 				continue
 			}
 		}
