@@ -17,14 +17,15 @@ import (
 )
 
 var (
-	keyStart        = flag.Int("KeyStart", 0, "the start of the key")
-	keyNum          = flag.Int("KeyNum", 100000, "the key range number")
-	readProbability = flag.Int("ReadProbability", 60, "the probaility of read request")
-	writeProbaility = flag.Int("WriteProbaility", 35, "the probaility of write request, the remaining part is the probaility of delete request")
-	valueNum10KB    = flag.Int("ValueNum10KB", 400, "10KB value kind number")
-	valueNum100KB   = flag.Int("ValueNum100KB", 400, "100KB value kind number")
-	valueNum1MB     = flag.Int("ValueNum1MB", 200, "1MB value kind number")
-	valueNum5MB     = flag.Int("ValueNum5MB", 40, "5MB value kind number")
+	keyStart             = flag.Int("KeyStart", 0, "the start of the key")
+	keyNum               = flag.Int("KeyNum", 100000, "the key range number")
+	readProbability      = flag.Int("ReadProbability", 60, "the probaility of read request")
+	writeProbaility      = flag.Int("WriteProbaility", 35, "the probaility of write request, the remaining part is the probaility of delete request")
+	valueNum10KB         = flag.Int("ValueNum10KB", 400, "10KB value kind number")
+	valueNum100KB        = flag.Int("ValueNum100KB", 400, "100KB value kind number")
+	valueNum1MB          = flag.Int("ValueNum1MB", 200, "1MB value kind number")
+	valueNum5MB          = flag.Int("ValueNum5MB", 40, "5MB value kind number")
+	sleepTimebeforeCheck = flag.Int("SleepTimebeforeCheck", 60, "sleep time before check raftstore consistency")
 )
 
 func main() {
@@ -61,10 +62,11 @@ func main() {
 		//Provider: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
 		ClientCreator: rawkvlinearizability.RawkvClientCreator{
 			Cfg: rawkvlinearizability.Config{
-				KeyStart:        *keyStart,
-				KeyNum:          *keyNum,
-				ReadProbability: *readProbability,
-				WriteProbaility: *writeProbaility,
+				KeyStart:             *keyStart,
+				KeyNum:               *keyNum,
+				ReadProbability:      *readProbability,
+				WriteProbaility:      *writeProbaility,
+				SleepTimebeforeCheck: *sleepTimebeforeCheck,
 			},
 			RandomValues: &randomValues,
 		},
