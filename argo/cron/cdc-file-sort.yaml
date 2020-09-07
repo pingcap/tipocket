@@ -1,7 +1,7 @@
 metadata:
-  name: tipocket-cdc-kafka
+  name: tipocket-cdc-file-sort
 spec:
-  schedule: "0 7 * * *"
+  schedule: "0 6 * * *"
   concurrencyPolicy: "Forbid"
   timezone: "Asia/Shanghai"
   startingDeadlineSeconds: 0
@@ -10,7 +10,7 @@ spec:
     arguments:
       parameters:
         - name: ns
-          value: tipocket-cdc-kafka
+          value: tipocket-cdc-file-sort
         - name: purge
           value: "true"
         - name: hub
@@ -36,11 +36,11 @@ spec:
         - name: cdc_version
           value: ""
         - name: cdc_enable-kafka
-          value: "true"
+          value: "false"
         - name: cdc_kafka-consumer-image
           value: "docker.io/pingcap/ticdc-kafka:nightly"
         - name: cdc_sort-engine
-          value: "memory"
+          value: "file"
         - name: cdc_sort-dir
           value: "/tmp/sort_cache"
         - name: abtest_general-log

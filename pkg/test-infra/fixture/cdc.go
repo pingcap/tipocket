@@ -21,4 +21,6 @@ type CDCConfig struct {
 	KafkaConsumerImage string
 	LogLevel           string
 	Timezone           string
+	SortEngine         string
+	SortDir            string
 }

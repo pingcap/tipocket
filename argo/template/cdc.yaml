@@ -36,6 +36,10 @@ spec:
             default: "false"
           - name: cdc_kafka-consumer-image
             default: "docker.io/pingcap/ticdc-kafka:nightly"
+          - name: cdc_sort-engine
+            default: "memory"
+          - name: cdc_sort-dir
+            default: "/tmp/sort_cache"
           - name: abtest_general-log
             default: "true"
           - name: binlog_sync-timeout
@@ -91,6 +95,8 @@ spec:
             -cdc.version={{inputs.parameters.cdc_version}} \
             -cdc.enable-kafka={{inputs.parameters.cdc_enable-kafka}} \
             -cdc.kafka-consumer-image={{inputs.parameters.cdc_kafka-consumer-image}} \
+            -cdc.sort-engine={{inputs.parameters.cdc_sort-engine}} \
+            -cdc.sort-dir={{inputs.parameters.cdc_sort-dir}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general-log={{inputs.parameters.abtest_general-log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync-timeout}} \
