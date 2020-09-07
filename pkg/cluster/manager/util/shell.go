@@ -2,11 +2,12 @@ package util
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"net/url"
 	"os/exec"
 	"path"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/juju/errors"
 )

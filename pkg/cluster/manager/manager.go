@@ -3,7 +3,6 @@ package manager
 import (
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -596,9 +597,9 @@ func (m *Manager) getWorkloadResult(w http.ResponseWriter, r *http.Request) {
 	okJSON(w, result)
 }
 
-func ok(w http.ResponseWriter, format string, a ...interface{}) {
+func ok(w http.ResponseWriter, msg string) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, format, a...)
+	fmt.Fprint(w, msg)
 }
 
 func okJSON(w http.ResponseWriter, a interface{}) {

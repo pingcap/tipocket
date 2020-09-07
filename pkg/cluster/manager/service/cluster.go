@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/jinzhu/gorm"
 	"sync"
+
+	"github.com/jinzhu/gorm"
 
 	"github.com/juju/errors"
 
