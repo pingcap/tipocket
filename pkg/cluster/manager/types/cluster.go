@@ -3,18 +3,27 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	ClusterRequestStatusReady   = "READY"
+	// ClusterRequestStatusReady ...
+	ClusterRequestStatusReady = "READY"
+	// ClusterRequestStatusRunning ...
 	ClusterRequestStatusRunning = "RUNNING"
-	ClusterRequestStatusDone    = "DONE"
+	// ClusterRequestStatusDone ...
+	ClusterRequestStatusDone = "DONE"
 
-	ClusterTopoStatusReady  = "READY"
+	// ClusterTopoStatusReady ...
+	ClusterTopoStatusReady = "READY"
+	// ClusterTopoStatusOnline ...
 	ClusterTopoStatusOnline = "ONLINE"
 
-	WorkloadStatusReady   = "READY"
+	// WorkloadStatusReady ...
+	WorkloadStatusReady = "READY"
+	// WorkloadStatusRunning ...
 	WorkloadStatusRunning = "RUNNING"
-	WorkloadStatusDone    = "DONE"
+	// WorkloadStatusDone ...
+	WorkloadStatusDone = "DONE"
 )
 
+// ClusterRequest ...
 type ClusterRequest struct {
 	gorm.Model
 	Config      string `gorm:"column:config;type:text" json:"config"`
@@ -26,6 +35,7 @@ type ClusterRequest struct {
 	Status      string `gorm:"column:status;type:varchar(255);not null" json:"status"`
 }
 
+// Baseline ...
 func (cr *ClusterRequest) Baseline() *ClusterRequest {
 	return &ClusterRequest{
 		Model: gorm.Model{

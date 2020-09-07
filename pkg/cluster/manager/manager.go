@@ -26,6 +26,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
 )
 
+// Manager ...
 type Manager struct {
 	DB       *mysql.DB
 	Resource *service.Resource
@@ -33,6 +34,7 @@ type Manager struct {
 	sync.Mutex
 }
 
+// New creates a manager instance
 func New(dsn string) (*Manager, error) {
 	db, err := mysql.Open(dsn)
 	if err != nil {
@@ -49,6 +51,7 @@ func New(dsn string) (*Manager, error) {
 	}, nil
 }
 
+// Run ...
 func (m *Manager) Run() (err error) {
 	defer m.DB.Close()
 	m.migrate()

@@ -8,8 +8,10 @@ import (
 	"github.com/juju/errors"
 )
 
+// Args is used to encapsulate the docker container instance args
 type Args []string
 
+// Value ...
 func (j Args) Value() (driver.Value, error) {
 	if j == nil {
 		return nil, nil
@@ -18,6 +20,7 @@ func (j Args) Value() (driver.Value, error) {
 	return string(valueString), err
 }
 
+// Scan ...
 func (j *Args) Scan(value interface{}) error {
 	if err := json.Unmarshal(value.([]byte), j); err != nil {
 		return errors.Trace(err)
@@ -25,6 +28,7 @@ func (j *Args) Scan(value interface{}) error {
 	return nil
 }
 
+// WorkloadRequest means workload requests
 type WorkloadRequest struct {
 	gorm.Model
 	// data preparation
@@ -40,6 +44,7 @@ type WorkloadRequest struct {
 	RRIItemID   uint    `gorm:"column:rri_item_id;not null" json:"rri_item_id"`
 }
 
+// WorkloadReport means workload report
 type WorkloadReport struct {
 	gorm.Model
 	CRID      uint    `gorm:"column:cr_id;not null" json:"cr_id"`

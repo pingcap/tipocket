@@ -11,6 +11,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
+// TryRunWorkload creates the workload docker container and injects necessary
+// environment variables
 func TryRunWorkload(name string,
 	resources []types.Resource,
 	rris []*types.ResourceRequestItem,
@@ -19,7 +21,7 @@ func TryRunWorkload(name string,
 ) ([]byte, []byte, error) {
 
 	rriID2Resource := make(map[uint]types.Resource)
-	rriItemId2RriID := make(map[uint]uint)
+	rriItemID2RriID := make(map[uint]uint)
 	component2Resources := make(map[string][]types.Resource)
 	// resource request item id -> resource
 	for _, re := range resources {
@@ -27,7 +29,7 @@ func TryRunWorkload(name string,
 	}
 	// resource request item item_id ->  resource request item id
 	for _, rri := range rris {
-		rriItemId2RriID[rri.ItemID] = rri.ID
+		rriItemID2RriID[rri.ItemID] = rri.ID
 		for _, component := range strings.Split(rri.Components, "|") {
 			if _, ok := component2Resources[component]; !ok {
 				component2Resources[component] = make([]types.Resource, 0)
@@ -35,30 +37,31 @@ func TryRunWorkload(name string,
 			component2Resources[component] = append(component2Resources[component], rriID2Resource[rri.ID])
 		}
 	}
-	resource := rriID2Resource[rriItemId2RriID[wr.RRIItemID]]
+	resource := rriID2Resource[rriItemID2RriID[wr.RRIItemID]]
 	host := resource.IP
 
 	if envs == nil {
 		envs = make(map[string]string)
 	}
 
+	var (
+		rs  types.Resource
+		err error
+	)
 	envs["CLUSTER_NAME"] = name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
-	if rs, err := randomResource(component2Resources["pd"]); err != nil {
+	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)
-	} else {
-		envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
 	}
-	if rs, err := randomResource(component2Resources["tidb"]); err != nil {
+	envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
+	if rs, err = randomResource(component2Resources["tidb"]); err != nil {
 		return nil, nil, errors.Trace(err)
-	} else {
-		envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
 	}
-	if rs, err := randomResource(component2Resources["monitoring"]); err != nil {
+	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
+	if rs, err = randomResource(component2Resources["monitoring"]); err != nil {
 		return nil, nil, errors.Trace(err)
-	} else {
-		envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 	}
+	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 
@@ -72,6 +75,7 @@ func TryRunWorkload(name string,
 	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
 }
 
+// RestoreDataIfConfig ...
 func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) ([]byte, []byte, error) {
 	if wr.RestorePath != nil {
 		envs["S3_ENDPOINT"] = util.S3Endpoint

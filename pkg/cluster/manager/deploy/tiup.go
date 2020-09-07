@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
+// Topology ...
 type Topology struct {
 	Config            string
 	PDServers         map[string]*types.ClusterRequestTopology
@@ -21,6 +22,7 @@ type Topology struct {
 	GrafanaServers    map[string]*types.ClusterRequestTopology
 }
 
+// TryDeployCluster ...
 func TryDeployCluster(name string,
 	resources []types.Resource,
 	rris []*types.ResourceRequestItem,
@@ -35,17 +37,17 @@ func TryDeployCluster(name string,
 		GrafanaServers:    make(map[string]*types.ClusterRequestTopology),
 	}
 	rriID2Resource := make(map[uint]types.Resource)
-	rriItemId2RriID := make(map[uint]uint)
+	rriItemID2RriID := make(map[uint]uint)
 	// resource request item id -> resource
 	for _, re := range resources {
 		rriID2Resource[re.RRIID] = re
 	}
 	// resource request item item_id ->  resource request item id
 	for _, rri := range rris {
-		rriItemId2RriID[rri.ItemID] = rri.ID
+		rriItemID2RriID[rri.ItemID] = rri.ID
 	}
 	for idx, crt := range crts {
-		ip := rriID2Resource[rriItemId2RriID[crt.RRIItemID]].IP
+		ip := rriID2Resource[rriItemID2RriID[crt.RRIItemID]].IP
 		switch strings.ToLower(crt.Component) {
 		case "tidb":
 			topo.TiDBServers[ip] = crts[idx]
@@ -72,6 +74,7 @@ func TryDeployCluster(name string,
 	return nil
 }
 
+// TryScaleOut ...
 func TryScaleOut(name string, r *types.Resource, component string) error {
 	host := r.IP
 	// FIXME @mahjonp
@@ -107,6 +110,7 @@ tikv_servers:
 	return nil
 }
 
+// TryScaleIn ...
 func TryScaleIn(name string, r *types.Resource, component string) error {
 	host := r.IP
 	var node string
@@ -124,6 +128,7 @@ func TryScaleIn(name string, r *types.Resource, component string) error {
 	return nil
 }
 
+// TryDestroyCluster ...
 func TryDestroyCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
 	if err != nil {

@@ -14,10 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
+// DockerExecutor encapsulate docker client executor
 type DockerExecutor struct {
 	*client.Client
 }
 
+// NewDockerExecutor ...
 func NewDockerExecutor(host string) (*DockerExecutor, error) {
 	cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -32,6 +34,7 @@ func NewDockerExecutor(host string) (*DockerExecutor, error) {
 	return &DockerExecutor{cli}, nil
 }
 
+// Run runs a docker container
 func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *string, args ...string) ([]byte, []byte, error) {
 	ctx := context.Background()
 	var env []string

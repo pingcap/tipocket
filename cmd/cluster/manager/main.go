@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/juju/errors"
 	"github.com/spf13/cobra"
 

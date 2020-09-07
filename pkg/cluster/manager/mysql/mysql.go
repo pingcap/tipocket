@@ -2,14 +2,15 @@ package mysql
 
 import (
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/juju/errors"
 )
 
+// DB ...
 type DB struct {
 	*gorm.DB
 }
 
+// Open ...
 func Open(dsn string) (*DB, error) {
 	db, err := gorm.Open("mysql", dsn)
 	if err != nil {

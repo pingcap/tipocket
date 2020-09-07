@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// SSHConfig ...
 type SSHConfig struct {
 	Host       string // hostname of the SSH server
 	Port       uint   // port of the SSH server
@@ -21,10 +22,12 @@ type SSHConfig struct {
 	Timeout time.Duration
 }
 
+// SSHExecutor ...
 type SSHExecutor struct {
 	Config *easyssh.MakeConfig
 }
 
+// Execute executes a command on a remote host
 func (ssh *SSHExecutor) Execute(cmd string, timeout ...time.Duration) ([]byte, []byte, error) {
 	cmd = fmt.Sprintf("export LANG=C; PATH=$PATH:/usr/bin:/usr/sbin %s", cmd)
 	if len(timeout) == 0 {
@@ -60,6 +63,7 @@ func (ssh *SSHExecutor) Execute(cmd string, timeout ...time.Duration) ([]byte, [
 	return []byte(stdout), []byte(stderr), nil
 }
 
+// NewSSHExecutor creates a ssh executor
 func NewSSHExecutor(c SSHConfig) SSHExecutor {
 	if c.Port == 0 {
 		c.Port = 22
@@ -82,6 +86,7 @@ func NewSSHExecutor(c SSHConfig) SSHExecutor {
 	return e
 }
 
+// SSHKeyPath ...
 func SSHKeyPath() string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

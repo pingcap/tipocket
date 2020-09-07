@@ -12,6 +12,7 @@ import (
 	"github.com/juju/errors"
 )
 
+// CommandError saves command execution error
 type CommandError struct {
 	WorkDir string
 	Cmd     string
@@ -24,6 +25,7 @@ func (c *CommandError) Error() string {
 	return fmt.Sprintf("run cmd(on %s): %s, args: %v failed, err: %s\noutput:\n%s", c.WorkDir, c.Cmd, c.Args, c.Err, c.Output)
 }
 
+// Command ...
 func Command(workDir, command string, args ...string) (string, error) {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = workDir
@@ -37,6 +39,7 @@ func Command(workDir, command string, args ...string) (string, error) {
 	return string(out), nil
 }
 
+// Wget ...
 func Wget(rawURL string, dest string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -58,6 +61,7 @@ func Wget(rawURL string, dest string) (string, error) {
 	return filePath, err
 }
 
+// MkDir ...
 func MkDir(dir string) error {
 	_, err := Command("", "mkdir", "-p", dir)
 	if err != nil {
@@ -66,6 +70,7 @@ func MkDir(dir string) error {
 	return nil
 }
 
+// Unzip unzips a archive file
 func Unzip(filePath, destDir string) (err error) {
 	if strings.HasSuffix(filePath, ".zip") {
 		_, err = Command("", "unzip", "-d", destDir, filePath)
