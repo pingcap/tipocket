@@ -77,6 +77,7 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
 	r.HandleFunc("/api/cluster/workload/{name}/artifacts", m.getWorkloadArtifacts).Methods("GET")
+	r.HandleFunc("/api/cluster/workload/{name}/artifacts/monitor/{uuid}", m.rebuildMonitoring).Methods("POST")
 
 	srv := &http.Server{
 		Addr:    util.Addr,
@@ -476,6 +477,28 @@ func (m *Manager) getWorkloadArtifacts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	okJSON(w, as)
+}
+
+func (m *Manager) rebuildMonitoring(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+	uuid := vars["uuid"]
+	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
+	as, err := m.Artifacts.FindArtifacts(m.DB.DB, "rr_id = ? AND uuid = ?", rr.ID, uuid)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	if len(as) != 1 {
+		fail(w, errors.NotFoundf("monitor data of %s and %s not found", name, uuid))
+		return
+	}
+	err = artifacts.RebuildMonitoringOnK8s(uuid)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	ok(w, "success")
 }
 
 func (m *Manager) archiveArtifacts(rrID uint, topos *deploy.Topology) error {
