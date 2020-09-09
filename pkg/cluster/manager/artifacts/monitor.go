@@ -280,6 +280,7 @@ chown -R nobody:nobody .
 func rebuildGrafana(uuid string) (err error) {
 	grafanaPodName := fmt.Sprintf("grafana-%s", uuid)
 	grafanaService := fmt.Sprintf("grafana-service-%s", uuid)
+	monitoringService := fmt.Sprintf("monitoring-service-%s", uuid)
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      grafanaPodName,
@@ -314,7 +315,7 @@ touch grafana.ini
 chown -R 472:472 /etc/grafana
 ls -althr
 `,
-						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey, uuid, grafanaService, namespace),
+						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey, uuid, monitoringService, namespace),
 				},
 				VolumeMounts: []corev1.VolumeMount{
 					{
