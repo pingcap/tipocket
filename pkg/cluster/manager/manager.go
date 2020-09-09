@@ -218,7 +218,7 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(wps) == 0 {
-		fail(w, errors.NotFoundf("workload report of cr_id %d", cr.ID))
+		ok(w, fmt.Sprintf("success, but no workload report of cr_id %d", cr.ID))
 		return
 	}
 	report = *wps[len(wps)-1].PlainText
