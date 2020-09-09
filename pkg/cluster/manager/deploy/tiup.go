@@ -18,7 +18,7 @@ type Topology struct {
 	PDServers         map[string]*types.ClusterRequestTopology
 	TiKVServers       map[string]*types.ClusterRequestTopology
 	TiDBServers       map[string]*types.ClusterRequestTopology
-	MonitoringServers map[string]*types.ClusterRequestTopology
+	PrometheusServers map[string]*types.ClusterRequestTopology
 	GrafanaServers    map[string]*types.ClusterRequestTopology
 }
 
@@ -27,13 +27,13 @@ func TryDeployCluster(name string,
 	resources []types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
-	crts []*types.ClusterRequestTopology) error {
+	crts []*types.ClusterRequestTopology) (*Topology, error) {
 	topo := &Topology{
 		Config:            cr.Config,
 		PDServers:         make(map[string]*types.ClusterRequestTopology),
 		TiKVServers:       make(map[string]*types.ClusterRequestTopology),
 		TiDBServers:       make(map[string]*types.ClusterRequestTopology),
-		MonitoringServers: make(map[string]*types.ClusterRequestTopology),
+		PrometheusServers: make(map[string]*types.ClusterRequestTopology),
 		GrafanaServers:    make(map[string]*types.ClusterRequestTopology),
 	}
 	rriID2Resource := make(map[uint]types.Resource)
@@ -42,7 +42,7 @@ func TryDeployCluster(name string,
 	for _, re := range resources {
 		rriID2Resource[re.RRIID] = re
 	}
-	// resource request item item_id ->  resource request item id
+	// resource request item item_id -> resource request item id
 	for _, rri := range rris {
 		rriItemID2RriID[rri.ItemID] = rri.ID
 	}
@@ -55,23 +55,23 @@ func TryDeployCluster(name string,
 			topo.TiKVServers[ip] = crts[idx]
 		case "pd":
 			topo.PDServers[ip] = crts[idx]
-		case "monitoring":
-			topo.MonitoringServers[ip] = crts[idx]
+		case "prometheus":
+			topo.PrometheusServers[ip] = crts[idx]
 		case "grafana":
 			topo.GrafanaServers[ip] = crts[idx]
 		default:
-			return fmt.Errorf("unknown component type %s", crt.Component)
+			return nil, fmt.Errorf("unknown component type %s", crt.Component)
 		}
 	}
 
 	yaml := buildTopologyYaml(topo)
 	if err := deployCluster(yaml, name, cr); err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
 	if err := startCluster(name); err != nil {
-		return errors.Trace(err)
+		return nil, errors.Trace(err)
 	}
-	return nil
+	return topo, nil
 }
 
 // TryScaleOut ...
@@ -266,10 +266,11 @@ tikv_servers:`)
 	topo.WriteString(`
 
 monitoring_servers:`)
-	for host, config := range t.MonitoringServers {
+	for host, config := range t.PrometheusServers {
 		topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/data/prometheus-8249"`, host, config.DeployPath))
+    deploy_dir: "%s"
+    data_dir: "%s"`, host, BuildNormalPrometheusDeployDir(config), BuildNormalPrometheusDataDir(config)))
 	}
 
 	topo.WriteString(`
@@ -278,7 +279,22 @@ grafana_servers:`)
 	for host, config := range t.GrafanaServers {
 		topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/data/grafana-3000"`, host, config.DeployPath))
+    deploy_dir: "%s"`, host, BuildNormalGrafanaDeployDir(config)))
 	}
 	return topo.String()
+}
+
+// BuildNormalPrometheusDeployDir builds $root/deploy/prometheus-8249 format path
+func BuildNormalPrometheusDeployDir(topology *types.ClusterRequestTopology) string {
+	return fmt.Sprintf("%s/deploy/prometheus-8249", topology.DeployPath)
+}
+
+// BuildNormalPrometheusDataDir builds $root/data/prometheus-8249 format path
+func BuildNormalPrometheusDataDir(topology *types.ClusterRequestTopology) string {
+	return fmt.Sprintf("%s/data/prometheus-8249", topology.DeployPath)
+}
+
+// BuildNormalGrafanaDeployDir builds $root/data/grafana-3000 format path
+func BuildNormalGrafanaDeployDir(topology *types.ClusterRequestTopology) string {
+	return fmt.Sprintf("%s/deploy/grafana-3000", topology.DeployPath)
 }

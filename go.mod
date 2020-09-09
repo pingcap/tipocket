@@ -22,9 +22,9 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
 	github.com/jinzhu/gorm v1.9.16
-	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
 	github.com/mgechev/revive v1.0.2
+	github.com/minio/minio-go/v7 v7.0.5
 	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
@@ -49,7 +49,7 @@ require (
 	github.com/uber-go/atomic v1.5.0
 	go.uber.org/zap v1.14.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
-	golang.org/x/net v0.0.0-20200520004742-59133d7f0dd7
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

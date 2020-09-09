@@ -17,7 +17,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"github.com/juju/errors"
+	"github.com/rogpeppe/fastuuid"
 
+	"github.com/pingcap/tipocket/pkg/cluster/manager/artifacts"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/service"
@@ -28,9 +30,10 @@ import (
 
 // Manager ...
 type Manager struct {
-	DB       *mysql.DB
-	Resource *service.Resource
-	Cluster  *service.Cluster
+	DB        *mysql.DB
+	Resource  *service.Resource
+	Cluster   *service.Cluster
+	Artifacts *service.Artifacts
 	sync.Mutex
 }
 
@@ -41,13 +44,10 @@ func New(dsn string) (*Manager, error) {
 		return nil, errors.Trace(err)
 	}
 	return &Manager{
-		DB: db,
-		Resource: &service.Resource{
-			DB: db,
-		},
-		Cluster: &service.Cluster{
-			DB: db,
-		},
+		DB:        db,
+		Resource:  &service.Resource{DB: db},
+		Cluster:   &service.Cluster{DB: db},
+		Artifacts: &service.Artifacts{DB: db},
 	}, nil
 }
 
@@ -63,6 +63,7 @@ func (m *Manager) migrate() {
 	m.DB.AutoMigrate(&types.Resource{}, &types.ResourceRequest{}, &types.ResourceRequestItem{},
 		&types.ClusterRequest{}, &types.ClusterRequestTopology{},
 		&types.WorkloadRequest{}, &types.WorkloadReport{},
+		&types.Artifacts{},
 	)
 }
 
@@ -71,14 +72,11 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/{name}", m.clusterRun).Methods("POST")
-	// for debug
-	//r.HandleFunc("/api/cluster/deploy/{name}", m.clusterDeploy)
-	//r.HandleFunc("/api/cluster/destroy/{name}", m.clusterDestroy)
 	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
 	r.HandleFunc("/api/cluster/scale_in/{name}/{id}/{component}", m.clusterScaleIn)
-	//r.HandleFunc("/api/cluster/workload/{name}", m.runWorkload)
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
+	r.HandleFunc("/api/cluster/workload/{name}/artifacts", m.getWorkloadArtifacts).Methods("GET")
 
 	srv := &http.Server{
 		Addr:    util.Addr,
@@ -255,7 +253,11 @@ func (m *Manager) runClusterWorkload(name string,
 	cr *types.ClusterRequest,
 	crts []*types.ClusterRequestTopology,
 	wr *types.WorkloadRequest) error {
-	if err := deploy.TryDeployCluster(rr.Name, resources, rris, cr, crts); err != nil {
+	var (
+		err  error
+		topo *deploy.Topology
+	)
+	if topo, err = deploy.TryDeployCluster(rr.Name, resources, rris, cr, crts); err != nil {
 		return errors.Trace(err)
 	}
 	if err := m.setOnline(rris, crts); err != nil {
@@ -265,106 +267,20 @@ func (m *Manager) runClusterWorkload(name string,
 		zap.String("name", name),
 		zap.Uint("cr_id", cr.ID))
 
-	_, _, err := workload.TryRunWorkload(rr.Name, resources, rris, wr, nil)
+	_, _, err = workload.TryRunWorkload(rr.Name, resources, rris, wr, nil)
 	if err != nil {
 		return errors.Trace(err)
 	}
-
-	if err := deploy.TryDestroyCluster(rr.Name); err != nil {
+	if err = m.archiveArtifacts(rr.ID, topo); err != nil {
 		return errors.Trace(err)
 	}
-	if err := m.setOffline(rris, crts); err != nil {
+	if err = deploy.TryDestroyCluster(rr.Name); err != nil {
+		return errors.Trace(err)
+	}
+	if err = m.setOffline(rris, crts); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
-}
-
-func (m *Manager) clusterDeploy(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
-	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
-		return
-	}
-	cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("get cluster request by resource request id %d failed, err: %v", rr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	if cr.Status != types.ClusterRequestStatusReady {
-		http.Error(w, fmt.Sprintf("cluster %s expect %s, but got %s", rr.Name, types.ClusterRequestStatusReady, cr.Status), http.StatusInternalServerError)
-		return
-	}
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request items by rr_id %d failed, err: %v", rr.ID, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	var rids []uint
-	for _, rri := range rris {
-		rids = append(rids, rri.RID)
-	}
-	rs, err := m.Resource.FindResourcesByIDs(rids)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resources by ids %v failed, err: %v", rids, err), http.StatusInternalServerError)
-		return
-	}
-	crts, err := m.Cluster.FindClusterRequestToposByCRID(cr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("get cluster request topology by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	if err := deploy.TryDeployCluster(rr.Name, rs, rris, cr, crts); err != nil {
-		http.Error(w, fmt.Sprintf("try deploy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	if err := m.setOnline(rris, crts); err != nil {
-		http.Error(w, fmt.Sprintf("set online failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "deploy cluster %s success", rr.Name)
-}
-
-func (m *Manager) clusterDestroy(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
-	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
-		return
-	}
-	cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("get cluster request by resource request id %d failed, err: %v", rr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	if cr.Status != types.ClusterRequestStatusReady {
-		http.Error(w, fmt.Sprintf("cluster %s expect %s, but got %s", rr.Name, types.ClusterRequestStatusReady, cr.Status), http.StatusInternalServerError)
-		return
-	}
-
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request items by rr_id %d failed, err: %v", rr.ID, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	crts, err := m.Cluster.FindClusterRequestToposByCRID(cr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("get cluster request topology by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	if err := deploy.TryDestroyCluster(rr.Name); err != nil {
-		http.Error(w, fmt.Sprintf("try destroy cluster %s failed, err: %v", rr.Name, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	if err := m.setOffline(rris, crts); err != nil {
-		http.Error(w, fmt.Sprintf("set offline failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "destry cluster %s success", rr.Name)
 }
 
 func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
@@ -481,60 +397,6 @@ func (m *Manager) setOffline(rris []*types.ResourceRequestItem, crts []*types.Cl
 	return m.Resource.UpdateResourceRequestItemsAndClusterRequestTopos(rris, crts)
 }
 
-func (m *Manager) runWorkload(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	name := vars["name"]
-
-	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
-		return
-	}
-	cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("get cluster request by resource request id %d failed, err: %v", rr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	if cr.Status != types.ClusterRequestStatusReady {
-		http.Error(w, fmt.Sprintf("cluster %s expect %s, but got %s", rr.Name, types.ClusterRequestStatusReady, cr.Status), http.StatusInternalServerError)
-		return
-	}
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request items by rr_id %d failed, err: %v", rr.ID, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	var rids []uint
-	for _, rri := range rris {
-		rids = append(rids, rri.RID)
-	}
-	rs, err := m.Resource.FindResourcesByIDs(rids)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find resources by ids %v failed, err: %v", rids, err), http.StatusInternalServerError)
-		return
-	}
-	wr, err := m.Cluster.GetClusterWorkloadByClusterRequestID(cr.ID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("find workload by cr_id %d failed, err: %v", cr.ID, err), http.StatusInternalServerError)
-		return
-	}
-	_, _, err = workload.TryRunWorkload(rr.Name, rs, rris, wr, nil)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("try run workload failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-	result, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if len(result) == 0 {
-		fail(w, errors.NotFoundf("workload request %s", name))
-		return
-	}
-	ok(w, *result[len(result)-1].PlainText)
-}
-
 func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
 	type Result struct {
 		Data      string  `json:"data"`
@@ -598,6 +460,37 @@ func (m *Manager) getWorkloadResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	okJSON(w, result)
+}
+
+func (m *Manager) getWorkloadArtifacts(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	as, err := m.Artifacts.FindArtifacts(m.DB.DB, "rr_id = ?", rr.ID)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	okJSON(w, as)
+}
+
+func (m *Manager) archiveArtifacts(rrID uint, topos *deploy.Topology) error {
+	artifactUUID := fastuuid.MustNewGenerator().Hex128()
+	if err := artifacts.ArchiveMonitorData(artifactUUID, topos); err != nil {
+		return errors.Trace(err)
+	}
+	if err := m.Artifacts.CreateArtifacts(m.DB.DB, &types.Artifacts{
+		RRID: rrID,
+		UUID: artifactUUID,
+	}); err != nil {
+		return errors.Trace(err)
+	}
+	zap.L().Info("upload monitor data success", zap.String("uuid", artifactUUID))
+	return nil
 }
 
 func ok(w http.ResponseWriter, msg string) {

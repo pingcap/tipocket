@@ -60,7 +60,7 @@ func TestBuildTopologyYaml(t *testing.T) {
 				DeployPath: "/data2",
 			},
 		},
-		MonitoringServers: map[string]*types.ClusterRequestTopology{
+		PrometheusServers: map[string]*types.ClusterRequestTopology{
 			"10.0.1.16": &types.ClusterRequestTopology{
 				Component:  "tidb",
 				DeployPath: "/data2",
