@@ -102,6 +102,7 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			v := mop.GetValue().(elleregister.Int).MustGetVal()
 			_, err := txn.ExecContext(ctx, "insert into register(id, sk, val) values (?, ?, ?) on duplicate key update val = ?", k, k, v, v)
 			if err != nil {
+				_ = txn.Rollback()
 				return registerResponse{
 					Result: ellecore.Op{
 						Time:  time.Now(),
@@ -130,6 +131,7 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			}
 			rows, err := txn.QueryContext(ctx, query, k)
 			if err != nil {
+				_ = txn.Rollback()
 				return registerResponse{
 					Result: ellecore.Op{
 						Time:  time.Now(),
