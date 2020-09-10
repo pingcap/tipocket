@@ -108,6 +108,7 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			_, err := txn.ExecContext(ctx, fmt.Sprintf("insert into txn_%d(id, sk, val) values (?, ?, ?) on duplicate key update val = CONCAT(val, ',', ?)",
 				table), k, k, v, v)
 			if err != nil {
+				_ = txn.Rollback()
 				return appendResponse{
 					Result: ellecore.Op{
 						Time:  time.Now(),
@@ -134,6 +135,7 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			}
 			rows, err := txn.QueryContext(ctx, query, k)
 			if err != nil {
+				_ = txn.Rollback()
 				return appendResponse{
 					Result: ellecore.Op{
 						Time:  time.Now(),
