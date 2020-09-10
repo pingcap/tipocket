@@ -10,7 +10,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 )
 
-// Cluster ...
+// Artifacts ...
 type Artifacts struct {
 	DB   *mysql.DB
 	lock sync.Mutex

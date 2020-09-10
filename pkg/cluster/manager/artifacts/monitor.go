@@ -5,22 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"path"
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/juju/errors"
 	"github.com/minio/minio-go/v7"
 	"go.uber.org/zap"
 
-	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
@@ -30,6 +32,7 @@ import (
 
 const namespace = "tipocket"
 
+// ArchiveMonitorData ...
 func ArchiveMonitorData(uuid string, topos *deploy.Topology) (err error) {
 	var (
 		promHost    string
@@ -154,7 +157,7 @@ func archiveGrafana(s3Client *S3Client, uuid string, promServerHost string, graf
 	return nil
 }
 
-// Rebuild monitoring on K8s cluster
+// RebuildMonitoringOnK8s rebuilds monitoring on K8s cluster
 func RebuildMonitoringOnK8s(uuid string) (err error) {
 	err = rebuildProm(uuid)
 	if err != nil {

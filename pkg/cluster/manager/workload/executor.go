@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
+
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )

@@ -2,6 +2,7 @@ package types
 
 import "github.com/jinzhu/gorm"
 
+// Artifacts ...
 // 1. prometheus/grafana archive data
 // 2. TiDB/TiKV/PD and workloads logs
 type Artifacts struct {
