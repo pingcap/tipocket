@@ -60,7 +60,7 @@ func TestBuildTopologyYaml(t *testing.T) {
 				DeployPath: "/data2",
 			},
 		},
-		MonitoringServers: map[string]*types.ClusterRequestTopology{
+		PrometheusServers: map[string]*types.ClusterRequestTopology{
 			"10.0.1.16": &types.ClusterRequestTopology{
 				Component:  "tidb",
 				DeployPath: "/data2",
@@ -127,9 +127,10 @@ tikv_servers:
 
 monitoring_servers:
   - host: 10.0.1.16
-    deploy_dir: "/data2/data/prometheus-8249"
+    deploy_dir: "/data2/deploy/prometheus-8249"
+    data_dir: "/data2/data/prometheus-8249"
 
 grafana_servers:
   - host: 10.0.1.17
-    deploy_dir: "/data2/data/grafana-3000"`, yaml)
+    deploy_dir: "/data2/deploy/grafana-3000"`, yaml)
 }

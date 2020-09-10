@@ -13,12 +13,13 @@ import (
 
 // TryRunWorkload creates the workload docker container and injects necessary
 // environment variables
-func TryRunWorkload(name string,
+func TryRunWorkload(
+	name string,
 	resources []types.Resource,
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
 	envs map[string]string,
-) ([]byte, []byte, error) {
+) (s []byte, e []byte, err error) {
 
 	rriID2Resource := make(map[uint]types.Resource)
 	rriItemID2RriID := make(map[uint]uint)
@@ -45,8 +46,8 @@ func TryRunWorkload(name string,
 	}
 
 	var (
-		rs  types.Resource
-		err error
+		rs   types.Resource
+		prom types.Resource
 	)
 	envs["CLUSTER_NAME"] = name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
@@ -58,27 +59,29 @@ func TryRunWorkload(name string,
 		return nil, nil, errors.Trace(err)
 	}
 	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
-	if rs, err = randomResource(component2Resources["monitoring"]); err != nil {
+	if prom, err = randomResource(component2Resources["prometheus"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
-
+	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", prom.IP)
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-
 	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
 		return s, e, errors.Trace(err)
 	}
-	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+	s, e, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+	if err != nil {
+		return
+	}
+	return
 }
 
 // RestoreDataIfConfig ...
 func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) ([]byte, []byte, error) {
 	if wr.RestorePath != nil {
-		envs["S3_ENDPOINT"] = util.S3Endpoint
+		envs["S3_ENDPOINT"] = fmt.Sprintf("http://%s", util.S3Endpoint)
 		envs["AWS_ACCESS_KEY_ID"] = util.AwsAccessKeyID
 		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
 

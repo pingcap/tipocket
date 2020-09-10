@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// ResourceRequestStatusReady ...
+// ResourceRequestStatusReady ...t
 const ResourceRequestStatusReady = "READY"
 
 // Spec ...
