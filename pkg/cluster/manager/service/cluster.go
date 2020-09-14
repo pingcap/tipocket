@@ -47,7 +47,7 @@ func (c *Cluster) GetLastClusterRequestByRRID(rrID uint) (*types.ClusterRequest,
 
 // CreateClusterRequest ...
 func (c *Cluster) CreateClusterRequest(tx *gorm.DB, cr *types.ClusterRequest) error {
-	cr.Status = types.ClusterRequestStatusReady
+	cr.Status = types.ClusterRequestStatusPending
 	if err := tx.Create(cr).Error; err != nil {
 		return errors.Trace(err)
 	}
@@ -74,7 +74,6 @@ func (c *Cluster) FindClusterRequestToposByCRID(crID uint) ([]*types.ClusterRequ
 // CreateClusterRequestTopos ...
 func (c *Cluster) CreateClusterRequestTopos(tx *gorm.DB, crts []*types.ClusterRequestTopology) error {
 	for _, crt := range crts {
-		crt.Status = types.ClusterTopoStatusReady
 		if err := tx.Create(crt).Error; err != nil {
 			return errors.Trace(err)
 		}

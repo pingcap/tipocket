@@ -27,7 +27,7 @@ func TryRunWorkload(name string,
 	for idx, re := range resources {
 		id2Resource[re.ID] = resources[idx]
 	}
-	// resource request item item_id ->  resource request item id
+	// resource request item item_id -> resource request item id
 	for _, rri := range rris {
 		rriItemID2RID[rri.ItemID] = rri.RID
 		for _, component := range strings.Split(rri.Components, "|") {
@@ -58,7 +58,7 @@ func TryRunWorkload(name string,
 		return nil, nil, errors.Trace(err)
 	}
 	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
-	if rs, err = randomResource(component2Resources["monitoring"]); err != nil {
+	if rs, err = randomResource(component2Resources["prometheus"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)

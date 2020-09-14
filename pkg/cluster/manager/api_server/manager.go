@@ -90,6 +90,7 @@ func (m *Manager) runWatcher(ctx context.Context) {
 	for _, watcher := range []func(context.Context){
 		m.PollPendingClusterRequests,
 		m.PollPendingResourceRequests,
+		m.PollReadyClusterRequests,
 	} {
 		go func(watcher func(ctx2 context.Context)) {
 			watcher(ctx)

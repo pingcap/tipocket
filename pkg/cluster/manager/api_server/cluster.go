@@ -26,7 +26,7 @@ func (m *Manager) PollPendingClusterRequests(ctx context.Context) {
 	b := &backoff.Backoff{
 		Min:    1 * time.Second,
 		Max:    10 * time.Second,
-		Factor: 2,
+		Factor: 1.2,
 		Jitter: true,
 	}
 	for {
@@ -85,7 +85,10 @@ func (m *Manager) PollReadyClusterRequests(ctx context.Context) {
 		}
 		crs, err := m.Cluster.FindClusterRequests(m.Cluster.DB.DB, "status = ?", types.ClusterRequestStatusReady)
 		if err != nil {
-			zap.L().Error("find cluster requests failed", zap.Error(err))
+			zap.L().Error("find cluster requests failed", zap.Error(errors.Trace(err)))
+			continue
+		}
+		if len(crs) == 0 {
 			continue
 		}
 		for _, cr := range crs {
@@ -169,7 +172,6 @@ func (m *Manager) submitClusterRequest(w http.ResponseWriter, r *http.Request) {
 			return errors.Trace(err)
 		}
 		request.ClusterRequest.RRID = rr.ID
-		request.ClusterRequest.Status = types.ClusterRequestStatusPending
 		if err := m.Cluster.CreateClusterRequest(tx, &request.ClusterRequest); err != nil {
 			return errors.Trace(err)
 		}

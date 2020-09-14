@@ -42,7 +42,7 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 		return errors.Trace(err)
 	}
 	// FIXME(@mahjonp): add type field on workloads
-	if m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
+	if err := m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
 		return errors.Trace(err)
 	}
 	wr.Status = types.WorkloadStatusDone

@@ -21,7 +21,7 @@ func (m *Manager) PollPendingResourceRequests(ctx context.Context) {
 	b := &backoff.Backoff{
 		Min:    1 * time.Second,
 		Max:    10 * time.Second,
-		Factor: 2,
+		Factor: 1.3,
 		Jitter: true,
 	}
 	for {
@@ -34,17 +34,17 @@ func (m *Manager) PollPendingResourceRequests(ctx context.Context) {
 		err := m.Resource.DB.Transaction(func(tx *gorm.DB) error {
 			rrs, err := m.Resource.FindResourceRequests(tx, "status = ?", types.ClusterRequestStatusPending)
 			if err != nil {
-				return err
+				return errors.Trace(err)
 			}
 			for _, rr := range rrs {
 				if err := m.tryAllocateResourcesToRequest(tx, rr); err != nil {
-					return err
+					return errors.Trace(err)
 				}
 			}
 			return nil
 		})
 		if err != nil {
-			zap.L().Error("find cluster requests failed", zap.Error(err))
+			zap.L().Error("find pending resource requests failed", zap.Error(err))
 			continue
 		}
 		b.Reset()
@@ -78,7 +78,7 @@ func (m *Manager) tryAllocateResourcesToRequest(tx *gorm.DB, rr *types.ResourceR
 		instanceTypeToResources[item.InstanceType] = instanceTypeToResources[item.InstanceType][1:]
 		bindResources = append(bindResources, r)
 		r.RRID = rr.ID
-		r.Status = types.ResourceRequestStatusPending
+		r.Status = types.ResourceStatusBinding
 		item.RID = r.ID
 	}
 	for _, r := range bindResources {
