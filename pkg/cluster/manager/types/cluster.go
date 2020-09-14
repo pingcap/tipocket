@@ -3,29 +3,26 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	// ClusterRequestStatusReady ...
-	ClusterRequestStatusReady = "READY"
-	// ClusterRequestStatusRunning ...
+	// ClusterRequestStatusPending ...
+	ClusterRequestStatusPending = "PENDING"
+	ClusterRequestStatusReady   = "READY"
 	ClusterRequestStatusRunning = "RUNNING"
-	// ClusterRequestStatusDone ...
-	ClusterRequestStatusDone = "DONE"
+	ClusterRequestStatusDone    = "DONE"
 
 	// ClusterTopoStatusReady ...
-	ClusterTopoStatusReady = "READY"
-	// ClusterTopoStatusOnline ...
+	ClusterTopoStatusReady  = "READY"
 	ClusterTopoStatusOnline = "ONLINE"
 
 	// WorkloadStatusReady ...
-	WorkloadStatusReady = "READY"
-	// WorkloadStatusRunning ...
+	WorkloadStatusReady   = "READY"
 	WorkloadStatusRunning = "RUNNING"
-	// WorkloadStatusDone ...
-	WorkloadStatusDone = "DONE"
+	WorkloadStatusDone    = "DONE"
 )
 
 // ClusterRequest ...
 type ClusterRequest struct {
 	gorm.Model
+	Name        string `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Config      string `gorm:"column:config;type:text" json:"config"`
 	Version     string `gorm:"column:version;type:varchar(255);not null" json:"version"`
 	PDVersion   string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`

@@ -17,16 +17,26 @@ type Cluster struct {
 	lock sync.Mutex
 }
 
-// ListClusterRequests ...
-func (c *Cluster) ListClusterRequests() ([]types.ClusterRequest, error) {
-	var result []types.ClusterRequest
-	if err := c.DB.Find(&result).Error; err != nil {
+// FindClusterRequests ...
+func (c *Cluster) FindClusterRequests(tx *gorm.DB, where ...interface{}) ([]*types.ClusterRequest, error) {
+	var result []*types.ClusterRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return result, nil
 }
 
+// GetClusterRequest ...
+func (c *Cluster) GetClusterRequest(tx *gorm.DB, id uint) (*types.ClusterRequest, error) {
+	var result types.ClusterRequest
+	if err := tx.Set("gorml:query_option", "FOR UPDATE").First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
 // GetLastClusterRequestByRRID ...
+// Deprecated @FIXME(mahjonp) remove this method
 func (c *Cluster) GetLastClusterRequestByRRID(rrID uint) (*types.ClusterRequest, error) {
 	var result types.ClusterRequest
 	if err := c.DB.Last(&result, "rr_id = ?", rrID).Error; err != nil {
