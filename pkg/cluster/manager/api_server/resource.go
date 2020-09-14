@@ -78,6 +78,7 @@ func (m *Manager) tryAllocateResourcesToRequest(tx *gorm.DB, rr *types.ResourceR
 		instanceTypeToResources[item.InstanceType] = instanceTypeToResources[item.InstanceType][1:]
 		bindResources = append(bindResources, r)
 		r.RRID = rr.ID
+		r.Status = types.ResourceRequestStatusPending
 		item.RID = r.ID
 	}
 	for _, r := range bindResources {
@@ -92,7 +93,7 @@ func (m *Manager) tryAllocateResourcesToRequest(tx *gorm.DB, rr *types.ResourceR
 	if err := m.Resource.UpdateResourceRequest(tx, rr); err != nil {
 		return errors.Trace(err)
 	}
-	cr, err := m.Cluster.GetClusterRequest(tx, rr.ID)
+	cr, err := m.Cluster.GetClusterRequest(tx, rr.CRID)
 	if err != nil {
 		return errors.Trace(err)
 	}

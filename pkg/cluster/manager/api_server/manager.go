@@ -11,6 +11,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/juju/errors"
+	"go.uber.org/zap"
+
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/service"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
@@ -25,6 +27,9 @@ type Manager struct {
 	Artifacts *service.Artifacts
 	sync.Mutex
 }
+
+
+
 
 // New creates a manager instance
 func New(dsn string) (*Manager, error) {
@@ -102,5 +107,6 @@ func okJSON(w http.ResponseWriter, a interface{}) {
 }
 
 func fail(w http.ResponseWriter, err error) {
+	zap.L().Debug("request failed", zap.Error(err))
 	http.Error(w, errors.ErrorStack(err), http.StatusInternalServerError)
 }

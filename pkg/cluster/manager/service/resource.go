@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/jinzhu/gorm"
-
 	"github.com/juju/errors"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
@@ -44,6 +43,15 @@ func (rr *Resource) GetResourceByID(id uint) (*types.Resource, error) {
 func (rr *Resource) GetResourceRequestByName(tx *gorm.DB, name string) (*types.ResourceRequest, error) {
 	var result types.ResourceRequest
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&result, "name = ?", name).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
+// GetResourceRequest ...
+func (rr *Resource) GetResourceRequest(tx *gorm.DB, id uint) (*types.ResourceRequest, error) {
+	var result types.ResourceRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&result, "id = ?", id).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return &result, nil

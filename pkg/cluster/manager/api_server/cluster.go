@@ -67,6 +67,61 @@ func (m *Manager) PollPendingClusterRequests(ctx context.Context) {
 	}
 }
 
+// PollReadyClusterRequests polls ready cluster request and schedules workload of it
+func (m *Manager) PollReadyClusterRequests(ctx context.Context) {
+	b := &backoff.Backoff{
+		Min:    1 * time.Second,
+		Max:    10 * time.Second,
+		Factor: 2,
+		Jitter: true,
+	}
+	for {
+	ENTRY:
+		time.Sleep(b.Duration())
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+		crs, err := m.Cluster.FindClusterRequests(m.Cluster.DB.DB, "status = ?", types.ClusterRequestStatusReady)
+		if err != nil {
+			zap.L().Error("find cluster requests failed", zap.Error(err))
+			continue
+		}
+		for _, cr := range crs {
+			if err := m.scheduleClusterWorkload(cr); err != nil {
+				zap.L().Error("schedule cluster workload failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
+				goto ENTRY
+			}
+		}
+		b.Reset()
+	}
+}
+
+func (m *Manager) scheduleClusterWorkload(cr *types.ClusterRequest) error {
+	err := m.Cluster.DB.Transaction(func(tx *gorm.DB) error {
+		cr, err := m.Cluster.GetClusterRequest(tx, cr.ID)
+		if err != nil {
+			return err
+		}
+		if cr.Status != types.ClusterRequestStatusReady {
+			return fmt.Errorf("expect cluster request in `READY` state, but got %s", cr.Status)
+		}
+		cr.Status = types.ClusterRequestStatusRunning
+		return m.Cluster.UpdateClusterRequest(tx, cr)
+	})
+	if err != nil {
+		return err
+	}
+	go func() {
+		err := m.runWorkload(cr)
+		if err != nil {
+			zap.L().Error("run workload failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
+		}
+	}()
+	return nil
+}
+
 func (m *Manager) clusterList(w http.ResponseWriter, r *http.Request) {
 	cluster, err := m.Cluster.FindClusterRequests(m.Cluster.DB.DB)
 	if err != nil {
@@ -99,7 +154,8 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1000000))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("read workload result failed: %v", err), http.StatusInternalServerError)
+		fail(w, fmt.Errorf("read workload result failed: %v", err))
+		return
 	}
 	r.Body.Close()
 	if err := json.Unmarshal(body, &request); err != nil {
@@ -181,7 +237,7 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	if err := m.runWorkloadWithBaseline(name, rs, rr, rris, cr, crts, wr); err != nil {
+	if err := m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
 		fail(w, err)
 		return
 	}
