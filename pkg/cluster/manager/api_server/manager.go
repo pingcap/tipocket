@@ -28,9 +28,6 @@ type Manager struct {
 	sync.Mutex
 }
 
-
-
-
 // New creates a manager instance
 func New(dsn string) (*Manager, error) {
 	db, err := mysql.Open(dsn)
@@ -66,10 +63,14 @@ func (m *Manager) runServer() {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
-	r.HandleFunc("/api/cluster/{name}", m.clusterRun).Methods("POST")
+	r.HandleFunc("/api/cluster/{name}", m.submitClusterRequest).Methods("POST")
+	// DEPRECATED FIXME @mahjonp
 	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
+	// DEPRECATED FIXME @mahjonp
 	r.HandleFunc("/api/cluster/scale_in/{name}/{id}/{component}", m.clusterScaleIn)
+	// DEPRECATED FIXME @mahjonp
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
+	// DEPRECATED FIXME @mahjonp
 	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
 	r.HandleFunc("/api/cluster/workload/{name}/artifacts", m.getWorkloadArtifacts).Methods("GET")
 	r.HandleFunc("/api/cluster/workload/{name}/artifacts/monitor/{uuid}", m.rebuildMonitoring).Methods("POST")

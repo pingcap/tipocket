@@ -142,7 +142,7 @@ func (m *Manager) clusterResourceByName(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(rr)
 }
 
-func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) submitClusterRequest(w http.ResponseWriter, r *http.Request) {
 	type Request struct {
 		ClusterRequest      types.ClusterRequest            `json:"cluster_request"`
 		ClusterRequestTopos []*types.ClusterRequestTopology `json:"cluster_request_topologies"`
@@ -168,17 +168,8 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if rr.Status != types.ResourceRequestStatusReady {
-			return fmt.Errorf("resource request %s isn't meet", name)
-		}
-		cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-		if err != nil && !strings.Contains(err.Error(), "not found") {
-			return errors.Trace(err)
-		}
-		if cr != nil && cr.Status != types.ClusterRequestStatusDone {
-			return fmt.Errorf("resource request %s is using", name)
-		}
 		request.ClusterRequest.RRID = rr.ID
+		request.ClusterRequest.Status = types.ClusterRequestStatusPending
 		if err := m.Cluster.CreateClusterRequest(tx, &request.ClusterRequest); err != nil {
 			return errors.Trace(err)
 		}
@@ -198,71 +189,72 @@ func (m *Manager) clusterRun(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	cr.Status = types.ClusterRequestStatusRunning
-	if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
-		fail(w, err)
-		return
-	}
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	var rids []uint
-	for _, rri := range rris {
-		rids = append(rids, rri.RID)
-	}
-	rs, err := m.Resource.FindResources(m.Resource.DB.DB, "id IN (?)", rids)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	crts, err := m.Cluster.FindClusterRequestToposByCRID(cr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	wr, err := m.Cluster.GetClusterWorkloadByClusterRequestID(cr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	wr.Status = types.WorkloadStatusRunning
-	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-		fail(w, err)
-		return
-	}
-	if err := m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
-		fail(w, err)
-		return
-	}
-	wr.Status = types.WorkloadStatusDone
-	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-		fail(w, err)
-		return
-	}
-	var report = "ok"
-	wps, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
-	if err != nil {
-		fail(w, err)
-		return
-	}
-	if len(wps) == 0 {
-		ok(w, fmt.Sprintf("success, but no workload report of cr_id %d", cr.ID))
-		return
-	}
-	report = *wps[len(wps)-1].PlainText
-	cr.Status = types.ClusterRequestStatusDone
-	if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
-		fail(w, err)
-		return
-	}
-	ok(w, report)
+	ok(w, "submit success")
+	//cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//cr.Status = types.ClusterRequestStatusRunning
+	//if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//var rids []uint
+	//for _, rri := range rris {
+	//	rids = append(rids, rri.RID)
+	//}
+	//rs, err := m.Resource.FindResources(m.Resource.DB.DB, "id IN (?)", rids)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//crts, err := m.Cluster.FindClusterRequestToposByCRID(cr.ID)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//wr, err := m.Cluster.GetClusterWorkloadByClusterRequestID(cr.ID)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//wr.Status = types.WorkloadStatusRunning
+	//if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//if err := m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//wr.Status = types.WorkloadStatusDone
+	//if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//var report = "ok"
+	//wps, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
+	//if err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//if len(wps) == 0 {
+	//	ok(w, fmt.Sprintf("success, but no workload report of cr_id %d", cr.ID))
+	//	return
+	//}
+	//report = *wps[len(wps)-1].PlainText
+	//cr.Status = types.ClusterRequestStatusDone
+	//if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
+	//	fail(w, err)
+	//	return
+	//}
+	//ok(w, report)
 }
 
 func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
