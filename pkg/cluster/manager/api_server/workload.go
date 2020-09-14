@@ -113,9 +113,11 @@ func (m *Manager) runClusterWorkload(
 	}
 	zap.L().Info("deploy and start cluster success",
 		zap.Uint("cr_id", cr.ID))
-
 	_, _, err = workload.TryRunWorkload(rr.Name, resources, rris, wr, nil)
 	if err != nil {
+		return errors.Trace(err)
+	}
+	if err = deploy.TryStopCluster(rr.Name); err != nil {
 		return errors.Trace(err)
 	}
 	if err = m.archiveArtifacts(rr.ID, topo); err != nil {
