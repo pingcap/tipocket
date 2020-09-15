@@ -137,7 +137,7 @@ func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
 		PlainText *string `json:"plaintext"`
 	}
 	vars := mux.Vars(r)
-	clusterRequestID, err := strconv.ParseUint(vars["name"], 10, 65)
+	clusterRequestID, err := strconv.ParseUint(vars["cluster_id"], 10, 65)
 	if err != nil {
 		fail(w, err)
 		return
