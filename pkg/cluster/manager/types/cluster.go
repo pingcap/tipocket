@@ -41,6 +41,7 @@ func (cr *ClusterRequest) Baseline() *ClusterRequest {
 			UpdatedAt: cr.UpdatedAt,
 			DeletedAt: cr.DeletedAt,
 		},
+		Name:    cr.Name,
 		Config:  cr.Config,
 		Version: cr.Version,
 		RRID:    cr.RRID,
