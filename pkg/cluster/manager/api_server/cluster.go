@@ -136,10 +136,14 @@ func (m *Manager) clusterList(w http.ResponseWriter, r *http.Request) {
 
 func (m *Manager) clusterResourceByName(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	name := vars["name"]
-	rr, err := m.Resource.FindResourceRequestItemsByResourceRequestName(name)
+	clusterID, err := strconv.ParseUint(vars["cluster_id"], 10, 64)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request item by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		fail(w, err)
+		return
+	}
+	rr, err := m.Resource.FindResourceRequestItemsByClusterRequestID(uint(clusterID))
+	if err != nil {
+		fail(w, err)
 		return
 	}
 	json.NewEncoder(w).Encode(rr)

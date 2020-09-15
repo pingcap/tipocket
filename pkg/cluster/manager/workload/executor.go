@@ -49,8 +49,8 @@ func TryRunWorkload(
 		rs  *types.Resource
 		err error
 	)
-	envs["CLUSTER_NAME"] = fmt.Sprintf("%d", cr.ID)
 	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
+	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)

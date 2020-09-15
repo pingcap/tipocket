@@ -98,10 +98,10 @@ func (rr *Resource) GetResourceRequestItemByID(id uint) (*types.ResourceRequestI
 	return &result, nil
 }
 
-// FindResourceRequestItemsByResourceRequestName ...
-func (rr *Resource) FindResourceRequestItemsByResourceRequestName(name string) ([]*types.ResourceRequestItem, error) {
+// FindResourceRequestItemsByClusterRequestID ...
+func (rr *Resource) FindResourceRequestItemsByClusterRequestID(id uint) ([]*types.ResourceRequestItem, error) {
 	var result []*types.ResourceRequestItem
-	if err := rr.DB.Raw("SELECT * FROM resource_request_items WHERE rr_id = (SELECT id FROM resource_requests WHERE name = ?)", name).
+	if err := rr.DB.Raw("SELECT * FROM resource_request_items WHERE rr_id = (SELECT rr_id FROM cluster_requests WHERE id = ?)", id).
 		Scan(&result).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
