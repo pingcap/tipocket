@@ -64,6 +64,7 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{cluster_id}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/{name}", m.submitClusterRequest).Methods("POST")
+	r.HandleFunc("/api/cluster/{cluster_id}", m.queryClusterRequest).Methods("GET")
 	r.HandleFunc("/api/cluster/scale_out/{cluster_id}/{id}/{component}", m.clusterScaleOut)
 	r.HandleFunc("/api/cluster/scale_in/{cluster_id}/{id}/{component}", m.clusterScaleIn)
 	r.HandleFunc("/api/cluster/workload/{cluster_id}/result", m.uploadWorkloadResult).Methods("POST")

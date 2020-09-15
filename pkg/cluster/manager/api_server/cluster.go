@@ -200,6 +200,21 @@ func (m *Manager) submitClusterRequest(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (m *Manager) queryClusterRequest(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clusterID, err := strconv.ParseUint(vars["cluster_id"], 10, 64)
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	cr, err := m.Cluster.GetClusterRequest(m.Cluster.DB.DB, uint(clusterID))
+	if err != nil {
+		fail(w, err)
+		return
+	}
+	okJSON(w, cr)
+}
+
 func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	clusterRequestID, _ := strconv.ParseUint(vars["cluster_id"], 10, 64)

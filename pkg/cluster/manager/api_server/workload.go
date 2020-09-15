@@ -86,7 +86,6 @@ func (m *Manager) runWorkloadWithBaseline(
 	cr *types.ClusterRequest,
 	crts []*types.ClusterRequestTopology,
 	wr *types.WorkloadRequest) error {
-
 	err := m.runClusterWorkload(resources, rris, cr, crts, wr)
 	if err != nil {
 		return errors.Trace(err)
