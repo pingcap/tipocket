@@ -252,23 +252,27 @@ pd_servers:`)
     data_dir: "%s/data/pd-2379"`, host, config.DeployPath, config.DeployPath))
 	}
 
-	topo.WriteString(`
+	if len(t.TiDBServers) != 0 {
+		topo.WriteString(`
 
 tidb_servers:`)
-	for host, config := range t.TiDBServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiDBServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tidb-4000"`, host, config.DeployPath))
+		}
 	}
 
-	topo.WriteString(`
+	if len(t.TiKVServers) != 0 {
+		topo.WriteString(`
 
 tikv_servers:`)
-	for host, config := range t.TiKVServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiKVServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tikv-20160"
     data_dir: "%s/data/tikv-20160"`, host, config.DeployPath, config.DeployPath))
+		}
 	}
 
 	topo.WriteString(`
