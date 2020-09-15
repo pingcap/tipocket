@@ -5,6 +5,8 @@ TiPocket is a testing toolkit designed to test TiDB, it encapsulates some testin
 TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen), a famous library on the distributed system field. TiPocket focuses on stability testing on TiDB, it uses [chaos-mesh](https://github.com/pingcap/chaos-mesh) to inject all-round kinds of nemesis on a TiDB cluster.
 
 ## Requirements
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpingcap%2Ftipocket.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpingcap%2Ftipocket?ref=badge_shield)
+
 
 * [TiDB Operator](https://github.com/pingcap/tidb-operator) >= v1.1.0-rc.3
 
@@ -76,3 +78,7 @@ TiPocket includes some consistency, isolation and other kinds of tests
 
 * **append** checks for dependency cycles in transactions using Elle
 * **register** checks for write-read dependency cycles over read-write registers using Elle
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpingcap%2Ftipocket.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpingcap%2Ftipocket?ref=badge_large)
