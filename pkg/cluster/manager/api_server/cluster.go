@@ -191,138 +191,71 @@ func (m *Manager) submitClusterRequest(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	ok(w, "submit success")
-	//cr, err := m.Cluster.GetLastClusterRequestByRRID(rr.ID)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//cr.Status = types.ClusterRequestStatusRunning
-	//if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//var rids []uint
-	//for _, rri := range rris {
-	//	rids = append(rids, rri.RID)
-	//}
-	//rs, err := m.Resource.FindResources(m.Resource.DB.DB, "id IN (?)", rids)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//crts, err := m.Cluster.FindClusterRequestToposByCRID(cr.ID)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//wr, err := m.Cluster.GetClusterWorkloadByClusterRequestID(cr.ID)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//wr.Status = types.WorkloadStatusRunning
-	//if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//if err := m.runWorkloadWithBaseline(rs, rr, rris, cr, crts, wr); err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//wr.Status = types.WorkloadStatusDone
-	//if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//var report = "ok"
-	//wps, err := m.Cluster.FindWorkloadReportsByClusterRequestID(cr.ID)
-	//if err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//if len(wps) == 0 {
-	//	ok(w, fmt.Sprintf("success, but no workload report of cr_id %d", cr.ID))
-	//	return
-	//}
-	//report = *wps[len(wps)-1].PlainText
-	//cr.Status = types.ClusterRequestStatusDone
-	//if err := m.Cluster.UpdateClusterRequest(m.DB.DB, cr); err != nil {
-	//	fail(w, err)
-	//	return
-	//}
-	//ok(w, report)
+	okJSON(w, map[string]interface{}{
+		"cluster_request_id": request.ClusterRequest.ID,
+	})
 }
 
 func (m *Manager) clusterScaleOut(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	name := vars["name"]
-	id, _ := strconv.ParseInt(vars["id"], 10, 64)
+	clusterRequestID, _ := strconv.ParseUint(vars["cluster_id"], 10, 64)
+	id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	component := vars["component"]
-
-	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
+	cr, err := m.Cluster.GetClusterRequest(m.Cluster.DB.DB, uint(clusterRequestID))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
 	rri, err := m.Resource.GetResourceRequestItemByID(uint(id))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request item by id %d failed, err: %v", id, err.Error()), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
 	resource, err := m.Resource.GetResourceByID(rri.RID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource by id %d failed, err: %v", rri.RID, err.Error()), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
-	if err := deploy.TryScaleOut(name, resource, component); err != nil {
-		http.Error(w, fmt.Sprintf("try scale out cluster %s failed, err: %v", name, err.Error()), http.StatusInternalServerError)
+	if err := deploy.TryScaleOut(cr.Name, resource, component); err != nil {
+		fail(w, err)
 		return
 	}
 	if err := m.setScaleOut(rri, component); err != nil {
-		http.Error(w, fmt.Sprintf("scale out failed: %v", err), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "scale out cluster %s success", rr.Name)
+	ok(w, fmt.Sprintf("scale out cluster %d success", clusterRequestID))
 }
 
 func (m *Manager) clusterScaleIn(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	name := vars["name"]
+	clusterRequestID, _ := strconv.ParseUint(vars["cluster_id"], 10, 64)
 	id, _ := strconv.ParseInt(vars["id"], 10, 64)
 	component := vars["component"]
-
-	rr, err := m.Resource.GetResourceRequestByName(m.DB.DB, name)
+	cr, err := m.Cluster.GetClusterRequest(m.Cluster.DB.DB, uint(clusterRequestID))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request by name %s failed, err: %v", name, err), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
 	rri, err := m.Resource.GetResourceRequestItemByID(uint(id))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource request item by id %d failed, err: %v", id, err.Error()), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
 	resource, err := m.Resource.GetResourceByID(rri.RID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("find resource by id %d failed, err: %v", rri.RID, err.Error()), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
-	if err := deploy.TryScaleIn(name, resource, component); err != nil {
-		http.Error(w, fmt.Sprintf("try scale in cluster %s failed, err: %v", name, err.Error()), http.StatusInternalServerError)
+	if err := deploy.TryScaleIn(cr.Name, resource, component); err != nil {
+		fail(w, err)
 		return
 	}
 	if err := m.setScaleIn(rri, component); err != nil {
-		http.Error(w, fmt.Sprintf("scale in failed: %v", err), http.StatusInternalServerError)
+		fail(w, err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "scale in cluster %s success", rr.Name)
+	ok(w, fmt.Sprintf("scale in cluster %d success", clusterRequestID))
 }
 
 func (m *Manager) setOnline(rris []*types.ResourceRequestItem, crts []*types.ClusterRequestTopology) error {

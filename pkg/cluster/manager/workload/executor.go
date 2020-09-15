@@ -13,7 +13,8 @@ import (
 
 // TryRunWorkload creates the workload docker container and injects necessary
 // environment variables
-func TryRunWorkload(name string,
+func TryRunWorkload(
+	cr *types.ClusterRequest,
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
@@ -48,7 +49,8 @@ func TryRunWorkload(name string,
 		rs  *types.Resource
 		err error
 	)
-	envs["CLUSTER_NAME"] = name
+	envs["CLUSTER_NAME"] = fmt.Sprintf("%d", cr.ID)
+	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)

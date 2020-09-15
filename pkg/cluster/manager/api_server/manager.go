@@ -64,23 +64,18 @@ func (m *Manager) runServer() {
 	r.HandleFunc("/api/cluster/list", m.clusterList)
 	r.HandleFunc("/api/cluster/resource/{name}", m.clusterResourceByName)
 	r.HandleFunc("/api/cluster/{name}", m.submitClusterRequest).Methods("POST")
-	// DEPRECATED FIXME @mahjonp
-	r.HandleFunc("/api/cluster/scale_out/{name}/{id}/{component}", m.clusterScaleOut)
-	// DEPRECATED FIXME @mahjonp
-	r.HandleFunc("/api/cluster/scale_in/{name}/{id}/{component}", m.clusterScaleIn)
-	// DEPRECATED FIXME @mahjonp
-	r.HandleFunc("/api/cluster/workload/{name}/result", m.uploadWorkloadResult).Methods("POST")
-	// DEPRECATED FIXME @mahjonp
-	r.HandleFunc("/api/cluster/workload/{name}/result", m.getWorkloadResult).Methods("GET")
-	r.HandleFunc("/api/cluster/workload/{name}/artifacts", m.getWorkloadArtifacts).Methods("GET")
-	r.HandleFunc("/api/cluster/workload/{name}/artifacts/monitor/{uuid}", m.rebuildMonitoring).Methods("POST")
+	r.HandleFunc("/api/cluster/scale_out/{cluster_id}/{id}/{component}", m.clusterScaleOut)
+	r.HandleFunc("/api/cluster/scale_in/{cluster_id}/{id}/{component}", m.clusterScaleIn)
+	r.HandleFunc("/api/cluster/workload/{cluster_id}/result", m.uploadWorkloadResult).Methods("POST")
+	r.HandleFunc("/api/cluster/workload/{cluster_id}/result", m.getWorkloadResult).Methods("GET")
+	r.HandleFunc("/api/cluster/workload/{cluster_id}/artifacts", m.getWorkloadArtifacts).Methods("GET")
+	r.HandleFunc("/api/cluster/workload/{cluster_id}/artifacts/monitor/{uuid}", m.rebuildMonitoring).Methods("POST")
 
 	srv := &http.Server{
-		Addr:    util.Addr,
-		Handler: r,
-		// FIXME(mahjonp)
-		WriteTimeout: 15 * time.Hour,
-		ReadTimeout:  15 * time.Hour,
+		Addr:         util.Addr,
+		Handler:      r,
+		WriteTimeout: 15 * time.Minute,
+		ReadTimeout:  15 * time.Minute,
 	}
 	log.Fatal(srv.ListenAndServe())
 }
