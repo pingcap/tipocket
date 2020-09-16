@@ -76,7 +76,7 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 	if err != nil {
 		return err
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/workload", uuid), tmpFile.Name(), minio.PutObjectOptions{})
+	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/workload.tar.gz", uuid), tmpFile.Name(), minio.PutObjectOptions{})
 	if err != nil {
 		return errors.Trace(err)
 	}
