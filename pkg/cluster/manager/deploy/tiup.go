@@ -128,8 +128,8 @@ func TryScaleIn(name string, r *types.Resource, component string) error {
 	return nil
 }
 
-// TryStopCluster calls tiup cluster stop xxx
-func TryStopCluster(name string) error {
+// StopCluster calls tiup cluster stop xxx
+func StopCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "stop", name)
 	if err != nil {
 		return fmt.Errorf("stop cluster failed, err: %v, output: %s", err, output)
@@ -137,8 +137,8 @@ func TryStopCluster(name string) error {
 	return nil
 }
 
-// TryDestroyCluster ...
-func TryDestroyCluster(name string) error {
+// DestroyCluster ...
+func DestroyCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
 	if err != nil {
 		return fmt.Errorf("destroy cluster failed, err: %v, output: %s", err, output)

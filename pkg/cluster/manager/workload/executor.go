@@ -11,9 +11,9 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
-// TryRunWorkload creates the workload docker container and injects necessary
+// RunWorkload creates the workload docker container and injects necessary
 // environment variables
-func TryRunWorkload(
+func RunWorkload(
 	cr *types.ClusterRequest,
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
@@ -40,11 +40,9 @@ func TryRunWorkload(
 	}
 	resource := id2Resource[rriItemID2RID[wr.RRIItemID]]
 	host := resource.IP
-
 	if envs == nil {
 		envs = make(map[string]string)
 	}
-
 	var (
 		rs  *types.Resource
 		err error
@@ -52,25 +50,28 @@ func TryRunWorkload(
 	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
 	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
+
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 	envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
-	if rs, err = randomResource(component2Resources["tidb"]); err != nil {
-		return nil, nil, errors.Trace(err)
+
+	if len(component2Resources["tidb"]) != 0 {
+		if rs, err = randomResource(component2Resources["tidb"]); err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
 	}
-	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
+
 	if rs, err = randomResource(component2Resources["prometheus"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
 	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
-
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-
 	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
 		return s, e, errors.Trace(err)
 	}
