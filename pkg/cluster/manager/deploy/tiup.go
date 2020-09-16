@@ -128,6 +128,7 @@ func TryScaleIn(name string, r *types.Resource, component string) error {
 	return nil
 }
 
+// TryStopCluster calls tiup cluster stop xxx
 func TryStopCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "stop", name)
 	if err != nil {

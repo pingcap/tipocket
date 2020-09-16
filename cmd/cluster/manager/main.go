@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/cluster/manager/api_server"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/juju/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/pingcap/tipocket/pkg/cluster/manager/apiserver"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"github.com/pingcap/tipocket/pkg/logger"
 )
@@ -27,7 +27,7 @@ func main() {
 		Short: "Cluster manager",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", user, password, host, port, dbName)
-			mgr, err := api_server.New(dsn)
+			mgr, err := apiserver.New(dsn)
 			if err != nil {
 				return errors.Trace(err)
 			}

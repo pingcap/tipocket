@@ -3,20 +3,26 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	// ClusterRequestStatusPending ...
+	// ClusterRequestStatusPending means that the request is in queue
 	ClusterRequestStatusPending = "PENDING"
-	ClusterRequestStatusReady   = "READY"
+	// ClusterRequestStatusReady means that the request is met(get expected resources) but haven't run workloads
+	ClusterRequestStatusReady = "READY"
+	// ClusterRequestStatusRunning means that the request is running some workloads now
 	ClusterRequestStatusRunning = "RUNNING"
-	ClusterRequestStatusDone    = "DONE"
+	// ClusterRequestStatusDone means that the request is finished and resources
+	ClusterRequestStatusDone = "DONE"
 
 	// ClusterTopoStatusReady ...
-	ClusterTopoStatusReady  = "READY"
+	ClusterTopoStatusReady = "READY"
+	// ClusterTopoStatusOnline ...
 	ClusterTopoStatusOnline = "ONLINE"
 
 	// WorkloadStatusReady ...
-	WorkloadStatusReady   = "READY"
+	WorkloadStatusReady = "READY"
+	// WorkloadStatusRunning ...
 	WorkloadStatusRunning = "RUNNING"
-	WorkloadStatusDone    = "DONE"
+	// WorkloadStatusDone ...
+	WorkloadStatusDone = "DONE"
 )
 
 // ClusterRequest ...

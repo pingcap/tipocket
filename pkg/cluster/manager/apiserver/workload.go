@@ -1,4 +1,4 @@
-package api_server
+package apiserver
 
 import (
 	"encoding/json"
@@ -50,6 +50,9 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
 	}
+
+
+
 	// mark cluster request finished
 	cr.Status = types.ClusterRequestStatusDone
 	if err := m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr); err != nil {
