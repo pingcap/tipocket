@@ -43,10 +43,6 @@ func TestBuildTopologyYaml(t *testing.T) {
 				Component:  "pd",
 				DeployPath: "/data1",
 			},
-			"10.0.1.12": &types.ClusterRequestTopology{
-				Component:  "pd",
-				DeployPath: "/data1",
-			},
 		},
 		TiKVServers: map[string]*types.ClusterRequestTopology{
 			"10.0.1.13": &types.ClusterRequestTopology{
@@ -110,9 +106,6 @@ server_configs:
 
 pd_servers:
   - host: 10.0.1.11
-    deploy_dir: "/data1/deploy/pd-2379"
-    data_dir: "/data1/data/pd-2379"
-  - host: 10.0.1.12
     deploy_dir: "/data1/deploy/pd-2379"
     data_dir: "/data1/data/pd-2379"
 

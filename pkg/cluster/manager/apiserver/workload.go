@@ -3,6 +3,7 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/gorm"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -50,37 +51,36 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
 	}
-
-
-
-	// mark cluster request finished
-	cr.Status = types.ClusterRequestStatusDone
-	if err := m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr); err != nil {
-		goto ERR
-	}
-	rr.Status = types.ResourceRequestStatusIdle
-	rr.CRID = 0
-	if err := m.Resource.UpdateResourceRequest(m.Resource.DB.DB, rr); err != nil {
-		goto ERR
-	}
-	for _, r := range rs {
-		r.Status = types.ResourceStatusReady
-		r.RRID = 0
-		if err := m.Resource.UpdateResource(m.Resource.DB.DB, r); err != nil {
+	return m.Resource.DB.Transaction(func(tx *gorm.DB) error {
+		// mark cluster request finished
+		cr.Status = types.ClusterRequestStatusDone
+		if err := m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr); err != nil {
 			goto ERR
 		}
-	}
-	for _, rri := range rris {
-		rri.Components = ""
-		rri.RID = 0
-	}
-	if err := m.Resource.UpdateResourceRequestItems(m.Resource.DB.DB, rris); err != nil {
-		return errors.Trace(err)
-	}
-	return nil
-ERR:
-	zap.L().Error("teardown cluster request failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
-	return err
+		rr.Status = types.ResourceRequestStatusIdle
+		rr.CRID = 0
+		if err := m.Resource.UpdateResourceRequest(m.Resource.DB.DB, rr); err != nil {
+			goto ERR
+		}
+		for _, r := range rs {
+			r.Status = types.ResourceStatusReady
+			r.RRID = 0
+			if err := m.Resource.UpdateResource(m.Resource.DB.DB, r); err != nil {
+				goto ERR
+			}
+		}
+		for _, rri := range rris {
+			rri.Components = ""
+			rri.RID = 0
+		}
+		if err := m.Resource.UpdateResourceRequestItems(m.Resource.DB.DB, rris); err != nil {
+			goto ERR
+		}
+		return nil
+	ERR:
+		zap.L().Error("teardown cluster request failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
+		return err
+	})
 }
 
 func (m *Manager) runWorkloadWithBaseline(
