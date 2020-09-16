@@ -3,13 +3,13 @@ package apiserver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
 
 	"github.com/juju/errors"
