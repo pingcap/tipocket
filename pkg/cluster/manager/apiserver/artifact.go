@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/artifacts"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
 func (m *Manager) getWorkloadArtifacts(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +55,25 @@ func (m *Manager) rebuildMonitoring(w http.ResponseWriter, r *http.Request) {
 	ok(w, "success")
 }
 
-func (m *Manager) archiveArtifacts(crID uint, topos *deploy.Topology) error {
+func (m *Manager) archiveArtifacts(
+	crID uint,
+	topos *deploy.Topology,
+	wr *types.WorkloadRequest,
+	dockerExecutor *util.DockerExecutor,
+	containerID string) error {
 	artifactUUID := fastuuid.MustNewGenerator().Hex128()
-	if err := artifacts.ArchiveMonitorData(artifactUUID, topos); err != nil {
+	s3Client, err := artifacts.NewS3Client()
+	if err != nil {
 		return errors.Trace(err)
+	}
+	if err := artifacts.ArchiveMonitorData(s3Client, artifactUUID, topos); err != nil {
+		return errors.Trace(err)
+	}
+	if wr.ArtifactDir != nil {
+		err := artifacts.ArchiveWorkloadData(s3Client, dockerExecutor, containerID, artifactUUID, *wr.ArtifactDir)
+		if err != nil {
+			return errors.Trace(err)
+		}
 	}
 	if err := m.Artifacts.CreateArtifacts(m.DB.DB, &types.Artifacts{
 		CRID: crID,

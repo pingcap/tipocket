@@ -3,6 +3,7 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -31,20 +32,13 @@ import (
 const namespace = "tipocket"
 
 // ArchiveMonitorData ...
-func ArchiveMonitorData(uuid string, topos *deploy.Topology) (err error) {
+func ArchiveMonitorData(s3Client *S3Client, uuid string, topos *deploy.Topology) (err error) {
 	var (
 		promHost    string
 		grafanaHost string
 		promTopo    *types.ClusterRequestTopology
 		grafanaTopo *types.ClusterRequestTopology
 	)
-	s3Client, err := NewS3Client()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	if err != nil {
-		return errors.Trace(err)
-	}
 	if len(topos.PrometheusServers) == 0 {
 		return errors.Trace(errors.NotFoundf("prometheus server"))
 	}
@@ -63,6 +57,27 @@ func ArchiveMonitorData(uuid string, topos *deploy.Topology) (err error) {
 		return errors.Trace(err)
 	}
 	if err := archiveGrafana(s3Client, uuid, promHost, grafanaHost, grafanaTopo); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor, containerID, uuid string, srcPath string) (err error) {
+	r, _, err := dockerExecutor.CopyFromContainer(context.TODO(), containerID, srcPath)
+	if err != nil {
+		return err
+	}
+	tmpFile, err := ioutil.TempFile("", "workload")
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	_, err = io.Copy(tmpFile, r)
+	if err != nil {
+		return err
+	}
+	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/workload", uuid), tmpFile.Name(), minio.PutObjectOptions{})
+	if err != nil {
 		return errors.Trace(err)
 	}
 	return nil

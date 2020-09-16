@@ -19,8 +19,7 @@ func RunWorkload(
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
 	envs map[string]string,
-) ([]byte, []byte, error) {
-
+) (dockerExecutor *util.DockerExecutor, containerID string, stdout []byte, stderr []byte, err error) {
 	id2Resource := make(map[uint]*types.Resource)
 	rriItemID2RID := make(map[uint]uint)
 	component2Resources := make(map[string][]*types.Resource)
@@ -44,38 +43,38 @@ func RunWorkload(
 		envs = make(map[string]string)
 	}
 	var (
-		rs  *types.Resource
-		err error
+		rs *types.Resource
 	)
 	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
 	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
 
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
-		return nil, nil, errors.Trace(err)
+		return nil, "", nil, nil, errors.Trace(err)
 	}
 	envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
 
 	if len(component2Resources["tidb"]) != 0 {
 		if rs, err = randomResource(component2Resources["tidb"]); err != nil {
-			return nil, nil, errors.Trace(err)
+			return nil, "", nil, nil, errors.Trace(err)
 		}
 		envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
 	}
 
 	if rs, err = randomResource(component2Resources["prometheus"]); err != nil {
-		return nil, nil, errors.Trace(err)
+		return nil, "", nil, nil, errors.Trace(err)
 	}
 	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 
-	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
+	dockerExecutor, err = util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 	if err != nil {
-		return nil, nil, errors.Trace(err)
+		return nil, "", nil, nil, errors.Trace(err)
 	}
 	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
-		return s, e, errors.Trace(err)
+		return nil, "", s, e, errors.Trace(err)
 	}
-	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+	containerID, stdout, stderr, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+	return
 }
 
 // RestoreDataIfConfig ...
@@ -86,7 +85,7 @@ func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dock
 		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
 
 		// FIXME(mahjonp): replace with pingcap/br in future
-		s, e, err := dockerExecutor.Run("mahjonp/br",
+		_, s, e, err := dockerExecutor.Run("mahjonp/br",
 			envs,
 			&[]string{"/bin/bash"}[0],
 			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+*wr.RestorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
