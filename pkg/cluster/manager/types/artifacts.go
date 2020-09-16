@@ -7,6 +7,6 @@ import "github.com/jinzhu/gorm"
 // 2. TiDB/TiKV/PD and workloads logs
 type Artifacts struct {
 	gorm.Model
-	RRID uint   `gorm:"column:rr_id" json:"rr_id"`
+	CRID uint   `gorm:"column:cr_id" json:"cr_id"`
 	UUID string `gorm:"column:uuid" json:"uuid"`
 }

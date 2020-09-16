@@ -14,31 +14,31 @@ import (
 // TryRunWorkload creates the workload docker container and injects necessary
 // environment variables
 func TryRunWorkload(
-	name string,
-	resources []types.Resource,
+	cr *types.ClusterRequest,
+	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
 	envs map[string]string,
-) (s []byte, e []byte, err error) {
+) ([]byte, []byte, error) {
 
-	rriID2Resource := make(map[uint]types.Resource)
-	rriItemID2RriID := make(map[uint]uint)
-	component2Resources := make(map[string][]types.Resource)
+	id2Resource := make(map[uint]*types.Resource)
+	rriItemID2RID := make(map[uint]uint)
+	component2Resources := make(map[string][]*types.Resource)
 	// resource request item id -> resource
-	for _, re := range resources {
-		rriID2Resource[re.RRIID] = re
+	for idx, re := range resources {
+		id2Resource[re.ID] = resources[idx]
 	}
-	// resource request item item_id ->  resource request item id
+	// resource request item item_id -> resource request item id
 	for _, rri := range rris {
-		rriItemID2RriID[rri.ItemID] = rri.ID
+		rriItemID2RID[rri.ItemID] = rri.RID
 		for _, component := range strings.Split(rri.Components, "|") {
 			if _, ok := component2Resources[component]; !ok {
-				component2Resources[component] = make([]types.Resource, 0)
+				component2Resources[component] = make([]*types.Resource, 0)
 			}
-			component2Resources[component] = append(component2Resources[component], rriID2Resource[rri.ID])
+			component2Resources[component] = append(component2Resources[component], id2Resource[rri.RID])
 		}
 	}
-	resource := rriID2Resource[rriItemID2RriID[wr.RRIItemID]]
+	resource := id2Resource[rriItemID2RID[wr.RRIItemID]]
 	host := resource.IP
 
 	if envs == nil {
@@ -46,10 +46,11 @@ func TryRunWorkload(
 	}
 
 	var (
-		rs   types.Resource
-		prom types.Resource
+		rs  *types.Resource
+		err error
 	)
-	envs["CLUSTER_NAME"] = name
+	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
+	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, nil, errors.Trace(err)
@@ -59,23 +60,21 @@ func TryRunWorkload(
 		return nil, nil, errors.Trace(err)
 	}
 	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
-	if prom, err = randomResource(component2Resources["prometheus"]); err != nil {
+	if rs, err = randomResource(component2Resources["prometheus"]); err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", prom.IP)
+	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
+
 	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
+
 	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
 		return s, e, errors.Trace(err)
 	}
-	s, e, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
-	if err != nil {
-		return
-	}
-	return
+	return dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
 }
 
 // RestoreDataIfConfig ...
@@ -98,9 +97,9 @@ func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dock
 	return nil, nil, nil
 }
 
-func randomResource(rs []types.Resource) (types.Resource, error) {
+func randomResource(rs []*types.Resource) (*types.Resource, error) {
 	if len(rs) == 0 {
-		return types.Resource{}, fmt.Errorf("expect non-empty resources")
+		return nil, fmt.Errorf("expect non-empty resources")
 	}
 	return rs[rand.Intn(len(rs))], nil
 }

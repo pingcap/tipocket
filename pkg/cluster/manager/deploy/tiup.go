@@ -24,7 +24,7 @@ type Topology struct {
 
 // TryDeployCluster ...
 func TryDeployCluster(name string,
-	resources []types.Resource,
+	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
 	crts []*types.ClusterRequestTopology) (*Topology, error) {
@@ -36,18 +36,18 @@ func TryDeployCluster(name string,
 		PrometheusServers: make(map[string]*types.ClusterRequestTopology),
 		GrafanaServers:    make(map[string]*types.ClusterRequestTopology),
 	}
-	rriID2Resource := make(map[uint]types.Resource)
-	rriItemID2RriID := make(map[uint]uint)
+	id2Resource := make(map[uint]*types.Resource)
+	rriItemID2ResourceID := make(map[uint]uint)
 	// resource request item id -> resource
 	for _, re := range resources {
-		rriID2Resource[re.RRIID] = re
+		id2Resource[re.ID] = re
 	}
 	// resource request item item_id -> resource request item id
 	for _, rri := range rris {
-		rriItemID2RriID[rri.ItemID] = rri.ID
+		rriItemID2ResourceID[rri.ItemID] = rri.RID
 	}
 	for idx, crt := range crts {
-		ip := rriID2Resource[rriItemID2RriID[crt.RRIItemID]].IP
+		ip := id2Resource[rriItemID2ResourceID[crt.RRIItemID]].IP
 		switch strings.ToLower(crt.Component) {
 		case "tidb":
 			topo.TiDBServers[ip] = crts[idx]
@@ -124,6 +124,15 @@ func TryScaleIn(name string, r *types.Resource, component string) error {
 	output, err := util.Command("", "tiup", "cluster", "scale-in", "-y", name, "--node", node)
 	if err != nil {
 		return fmt.Errorf("scale-in cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
+// TryStopCluster calls tiup cluster stop xxx
+func TryStopCluster(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "stop", name)
+	if err != nil {
+		return fmt.Errorf("stop cluster failed, err: %v, output: %s", err, output)
 	}
 	return nil
 }
@@ -244,23 +253,27 @@ pd_servers:`)
     data_dir: "%s/data/pd-2379"`, host, config.DeployPath, config.DeployPath))
 	}
 
-	topo.WriteString(`
+	if len(t.TiDBServers) != 0 {
+		topo.WriteString(`
 
 tidb_servers:`)
-	for host, config := range t.TiDBServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiDBServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tidb-4000"`, host, config.DeployPath))
+		}
 	}
 
-	topo.WriteString(`
+	if len(t.TiKVServers) != 0 {
+		topo.WriteString(`
 
 tikv_servers:`)
-	for host, config := range t.TiKVServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiKVServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tikv-20160"
     data_dir: "%s/data/tikv-20160"`, host, config.DeployPath, config.DeployPath))
+		}
 	}
 
 	topo.WriteString(`

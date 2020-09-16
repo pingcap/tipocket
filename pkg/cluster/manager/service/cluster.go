@@ -17,16 +17,26 @@ type Cluster struct {
 	lock sync.Mutex
 }
 
-// ListClusterRequests ...
-func (c *Cluster) ListClusterRequests() ([]types.ClusterRequest, error) {
-	var result []types.ClusterRequest
-	if err := c.DB.Find(&result).Error; err != nil {
+// FindClusterRequests ...
+func (c *Cluster) FindClusterRequests(tx *gorm.DB, where ...interface{}) ([]*types.ClusterRequest, error) {
+	var result []*types.ClusterRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return result, nil
 }
 
+// GetClusterRequest ...
+func (c *Cluster) GetClusterRequest(tx *gorm.DB, id uint) (*types.ClusterRequest, error) {
+	var result types.ClusterRequest
+	if err := tx.Set("gorml:query_option", "FOR UPDATE").First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
 // GetLastClusterRequestByRRID ...
+// Deprecated @FIXME(mahjonp) remove this method
 func (c *Cluster) GetLastClusterRequestByRRID(rrID uint) (*types.ClusterRequest, error) {
 	var result types.ClusterRequest
 	if err := c.DB.Last(&result, "rr_id = ?", rrID).Error; err != nil {
@@ -37,7 +47,7 @@ func (c *Cluster) GetLastClusterRequestByRRID(rrID uint) (*types.ClusterRequest,
 
 // CreateClusterRequest ...
 func (c *Cluster) CreateClusterRequest(tx *gorm.DB, cr *types.ClusterRequest) error {
-	cr.Status = types.ClusterRequestStatusReady
+	cr.Status = types.ClusterRequestStatusPending
 	if err := tx.Create(cr).Error; err != nil {
 		return errors.Trace(err)
 	}
@@ -64,7 +74,6 @@ func (c *Cluster) FindClusterRequestToposByCRID(crID uint) ([]*types.ClusterRequ
 // CreateClusterRequestTopos ...
 func (c *Cluster) CreateClusterRequestTopos(tx *gorm.DB, crts []*types.ClusterRequestTopology) error {
 	for _, crt := range crts {
-		crt.Status = types.ClusterTopoStatusReady
 		if err := tx.Create(crt).Error; err != nil {
 			return errors.Trace(err)
 		}

@@ -2,10 +2,8 @@ package artifacts
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"path"
 	"strings"
 	"time"
@@ -75,38 +73,21 @@ func archiveProm(s3Client *S3Client, uuid string, promServerHost string, promSer
 		Name  string `json:"name"`
 		Error string `json:"error"`
 	}
-	var snapshot Snapshot
 	tmpDir, err := ioutil.TempDir("", "artifacts-prom")
 	if err != nil {
 		return err
-	}
-	// http://172.16.5.110:9090/api/v2/admin/tsdb/snapshot
-	resp, err := http.Post(fmt.Sprintf("http://%s:9090/api/v2/admin/tsdb/snapshot", promServerHost), "application/json", nil)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return errors.Trace(err)
-	}
-	if err := json.Unmarshal(body, &snapshot); err != nil {
-		return errors.Trace(err)
-	}
-	if resp.StatusCode != 200 {
-		return errors.Trace(errors.New(snapshot.Error))
 	}
 	// FIXME(@mahjonp): should use non-prompt to avoid the command hangs
 	output, err := util.Command(tmpDir,
 		"rsync",
 		"-avz",
-		fmt.Sprintf("tidb@%s:%s/snapshots/%s", promServerHost, deploy.BuildNormalPrometheusDataDir(promServerTopo), snapshot.Name), ".")
+		fmt.Sprintf("tidb@%s:%s", promServerHost, deploy.BuildNormalPrometheusDataDir(promServerTopo)), ".")
 	if err != nil {
 		return err
 	}
 	zap.L().Debug("rsync success", zap.String("dir", tmpDir), zap.String("output", output))
 	fileName := "prometheus.tar.gz"
-	_, err = util.Command(tmpDir, "tar", "zcf", fileName, snapshot.Name)
+	_, err = util.Command(tmpDir, "tar", "zcf", fileName, "prometheus-8249")
 	if err != nil {
 		return errors.Trace(err)
 	}

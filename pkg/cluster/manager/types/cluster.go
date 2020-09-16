@@ -3,11 +3,13 @@ package types
 import "github.com/jinzhu/gorm"
 
 const (
-	// ClusterRequestStatusReady ...
+	// ClusterRequestStatusPending means that the request is in queue
+	ClusterRequestStatusPending = "PENDING"
+	// ClusterRequestStatusReady means that the request is met(get expected resources) but haven't run workloads
 	ClusterRequestStatusReady = "READY"
-	// ClusterRequestStatusRunning ...
+	// ClusterRequestStatusRunning means that the request is running some workloads now
 	ClusterRequestStatusRunning = "RUNNING"
-	// ClusterRequestStatusDone ...
+	// ClusterRequestStatusDone means that the request is finished and resources
 	ClusterRequestStatusDone = "DONE"
 
 	// ClusterTopoStatusReady ...
@@ -26,6 +28,7 @@ const (
 // ClusterRequest ...
 type ClusterRequest struct {
 	gorm.Model
+	Name        string `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Config      string `gorm:"column:config;type:text" json:"config"`
 	Version     string `gorm:"column:version;type:varchar(255);not null" json:"version"`
 	PDVersion   string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`
@@ -44,6 +47,7 @@ func (cr *ClusterRequest) Baseline() *ClusterRequest {
 			UpdatedAt: cr.UpdatedAt,
 			DeletedAt: cr.DeletedAt,
 		},
+		Name:    cr.Name,
 		Config:  cr.Config,
 		Version: cr.Version,
 		RRID:    cr.RRID,
