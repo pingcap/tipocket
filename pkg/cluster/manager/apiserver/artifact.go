@@ -47,7 +47,7 @@ func (m *Manager) rebuildMonitoring(w http.ResponseWriter, r *http.Request) {
 		fail(w, errors.NotFoundf("monitor data of %d and %d not found", clusterRequestID, uuid))
 		return
 	}
-	err = artifacts.RebuildMonitoringOnK8s(uuid)
+	err = artifacts.RebuildMonitoringOnK8s(clusterRequestID, uuid)
 	if err != nil {
 		fail(w, err)
 		return
@@ -66,11 +66,11 @@ func (m *Manager) archiveArtifacts(
 	if err != nil {
 		return errors.Trace(err)
 	}
-	if err := artifacts.ArchiveMonitorData(s3Client, artifactUUID, topos); err != nil {
+	if err := artifacts.ArchiveMonitorData(s3Client, crID, artifactUUID, topos); err != nil {
 		return errors.Trace(err)
 	}
 	if wr.ArtifactDir != nil {
-		err := artifacts.ArchiveWorkloadData(s3Client, dockerExecutor, containerID, artifactUUID, *wr.ArtifactDir)
+		err := artifacts.ArchiveWorkloadData(s3Client, dockerExecutor, containerID, crID, artifactUUID, *wr.ArtifactDir)
 		if err != nil {
 			return errors.Trace(err)
 		}

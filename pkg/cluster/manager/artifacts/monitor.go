@@ -31,8 +31,8 @@ import (
 
 const namespace = "tipocket"
 
-// ArchiveMonitorData ...
-func ArchiveMonitorData(s3Client *S3Client, uuid string, topos *deploy.Topology) (err error) {
+// ArchiveMonitorData archives prometheus data and grafana configuration(including dashboards and provisioning)
+func ArchiveMonitorData(s3Client *S3Client, crID uint, uuid string, topos *deploy.Topology) (err error) {
 	var (
 		promHost    string
 		grafanaHost string
@@ -53,16 +53,16 @@ func ArchiveMonitorData(s3Client *S3Client, uuid string, topos *deploy.Topology)
 		grafanaHost = host
 		grafanaTopo = topo
 	}
-	if err := archiveProm(s3Client, uuid, promHost, promTopo); err != nil {
+	if err := archiveProm(s3Client, crID, uuid, promHost, promTopo); err != nil {
 		return errors.Trace(err)
 	}
-	if err := archiveGrafana(s3Client, uuid, promHost, grafanaHost, grafanaTopo); err != nil {
+	if err := archiveGrafana(s3Client, crID, uuid, promHost, grafanaHost, grafanaTopo); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
 }
 
-func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor, containerID, uuid string, srcPath string) (err error) {
+func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor, containerID string, crID uint, uuid string, srcPath string) (err error) {
 	r, _, err := dockerExecutor.CopyFromContainer(context.TODO(), containerID, srcPath)
 	if err != nil {
 		return err
@@ -76,14 +76,14 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 	if err != nil {
 		return err
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/workload.tar.gz", uuid), tmpFile.Name(), minio.PutObjectOptions{})
+	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%d/%s/workload.tar.gz", crID, uuid), tmpFile.Name(), minio.PutObjectOptions{})
 	if err != nil {
 		return errors.Trace(err)
 	}
 	return nil
 }
 
-func archiveProm(s3Client *S3Client, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {
+func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {
 	type Snapshot struct {
 		Name  string `json:"name"`
 		Error string `json:"error"`
@@ -106,14 +106,14 @@ func archiveProm(s3Client *S3Client, uuid string, promServerHost string, promSer
 	if err != nil {
 		return errors.Trace(err)
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/%s", uuid, fileName), path.Join(tmpDir, fileName), minio.PutObjectOptions{})
+	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%d/%s/%s", crID, uuid, fileName), path.Join(tmpDir, fileName), minio.PutObjectOptions{})
 	if err != nil {
 		return errors.Trace(err)
 	}
 	return nil
 }
 
-func archiveGrafana(s3Client *S3Client, uuid string, promServerHost string, grafanaServerHost string, grafanaTopo *types.ClusterRequestTopology) error {
+func archiveGrafana(s3Client *S3Client, crID uint, uuid string, promServerHost string, grafanaServerHost string, grafanaTopo *types.ClusterRequestTopology) error {
 	tmpDir, err := ioutil.TempDir("", "artifacts-prom")
 	if err != nil {
 		return err
@@ -146,7 +146,7 @@ func archiveGrafana(s3Client *S3Client, uuid string, promServerHost string, graf
 	if err != nil {
 		return errors.Trace(err)
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%s/%s", uuid, fileName), path.Join(tmpDir, fileName), minio.PutObjectOptions{})
+	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%d/%s/%s", crID, uuid, fileName), path.Join(tmpDir, fileName), minio.PutObjectOptions{})
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -154,15 +154,15 @@ func archiveGrafana(s3Client *S3Client, uuid string, promServerHost string, graf
 }
 
 // RebuildMonitoringOnK8s rebuilds monitoring on K8s cluster
-func RebuildMonitoringOnK8s(uuid string) (err error) {
-	err = rebuildProm(uuid)
+func RebuildMonitoringOnK8s(crID uint, uuid string) (err error) {
+	err = rebuildProm(crID, uuid)
 	if err != nil {
 		return err
 	}
-	return rebuildGrafana(uuid)
+	return rebuildGrafana(crID, uuid)
 }
 
-func rebuildProm(uuid string) (err error) {
+func rebuildProm(crID uint, uuid string) (err error) {
 	monitoringPodName := fmt.Sprintf("monitoring-%s", uuid)
 	monitoringClaimName := fmt.Sprintf("monitoring-claim-%s", uuid)
 	monitoringService := fmt.Sprintf("monitoring-service-%s", uuid)
@@ -212,11 +212,12 @@ func rebuildProm(uuid string) (err error) {
 					fmt.Sprintf(`set -euo pipefail
 cd prometheus
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%s/prometheus.tar.gz .
+mc cp minio/artifacts/%d/%s/prometheus.tar.gz .
 tar xf prometheus.tar.gz --strip-components 1
 chown -R nobody:nobody .
 `,
-						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey, uuid),
+						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
+						crID, uuid),
 				},
 				VolumeMounts: []corev1.VolumeMount{
 					{
@@ -276,7 +277,7 @@ chown -R nobody:nobody .
 	})
 }
 
-func rebuildGrafana(uuid string) (err error) {
+func rebuildGrafana(crID uint, uuid string) (err error) {
 	grafanaPodName := fmt.Sprintf("grafana-%s", uuid)
 	grafanaService := fmt.Sprintf("grafana-service-%s", uuid)
 	monitoringService := fmt.Sprintf("monitoring-service-%s", uuid)
@@ -307,14 +308,16 @@ func rebuildGrafana(uuid string) (err error) {
 					fmt.Sprintf(`set -uo pipefail
 cd /etc/grafana
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%s/grafana.tar.gz .
+mc cp minio/artifacts/%d/%s/grafana.tar.gz .
 tar xf grafana.tar.gz
 find . -type f -exec sed -i "s/\${PROM_ADDR}/%s.%s.svc/g" {} \;
 touch grafana.ini
 chown -R 472:472 /etc/grafana
 ls -althr
 `,
-						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey, uuid, monitoringService, namespace),
+						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
+						crID, uuid,
+						monitoringService, namespace),
 				},
 				VolumeMounts: []corev1.VolumeMount{
 					{
