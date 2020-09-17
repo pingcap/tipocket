@@ -65,7 +65,7 @@ func TryDeployCluster(name string,
 	}
 
 	yaml := buildTopologyYaml(topo)
-	if err := deployCluster(yaml, name, cr); err != nil {
+	if err := deployCluster(topo, yaml, name, cr); err != nil {
 		return nil, errors.Trace(err)
 	}
 	if err := startCluster(name); err != nil {
@@ -146,7 +146,7 @@ func DestroyCluster(name string) error {
 	return nil
 }
 
-func deployCluster(yaml, name string, cr *types.ClusterRequest) error {
+func deployCluster(topo *Topology, yaml, name string, cr *types.ClusterRequest) error {
 	file, err := ioutil.TempFile("", "cluster")
 	if err != nil {
 		return errors.Trace(err)
@@ -162,10 +162,10 @@ func deployCluster(yaml, name string, cr *types.ClusterRequest) error {
 	if err != nil {
 		return fmt.Errorf("start cluster failed, err: %s", err)
 	}
-	return patchCluster(name, cr)
+	return patchCluster(topo, name, cr)
 }
 
-func patchCluster(name string, cr *types.ClusterRequest) error {
+func patchCluster(topo *Topology, name string, cr *types.ClusterRequest) error {
 	var patchComponent = []struct {
 		component   string
 		downloadURL string
@@ -185,6 +185,15 @@ func patchCluster(name string, cr *types.ClusterRequest) error {
 	}
 	needPatch := false
 	for _, component := range patchComponent {
+		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
+			continue
+		}
+		if component.component == "tikv-server" && len(topo.TiKVServers) == 0 {
+			continue
+		}
+		if component.component == "pd-server" && len(topo.PDServers) == 0 {
+			continue
+		}
 		if len(component.downloadURL) != 0 {
 			needPatch = true
 			break
@@ -199,6 +208,15 @@ func patchCluster(name string, cr *types.ClusterRequest) error {
 	}
 	var components []string
 	for _, component := range patchComponent {
+		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
+			continue
+		}
+		if component.component == "tikv-server" && len(topo.TiKVServers) == 0 {
+			continue
+		}
+		if component.component == "pd-server" && len(topo.PDServers) == 0 {
+			continue
+		}
 		if len(component.downloadURL) != 0 {
 			components = append(components, component.component)
 			filePath, err := util.Wget(component.downloadURL, dir)
