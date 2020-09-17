@@ -114,17 +114,21 @@ func (m *Manager) runClusterWorkload(
 	}
 	zap.L().Info("deploy and start cluster success",
 		zap.Uint("cr_id", cr.ID))
-	_, _, err = workload.TryRunWorkload(cr, resources, rris, wr, nil)
+	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, nil)
 	if err != nil {
+		zap.L().Error("run workload failed",
+			zap.ByteString("stdout", stdout),
+			zap.ByteString("stderr", stderr),
+			zap.Error(err))
 		return errors.Trace(err)
 	}
-	if err = deploy.TryStopCluster(cr.Name); err != nil {
+	if err = deploy.StopCluster(cr.Name); err != nil {
 		return errors.Trace(err)
 	}
-	if err = m.archiveArtifacts(cr.ID, topo); err != nil {
+	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID); err != nil {
 		return errors.Trace(err)
 	}
-	if err = deploy.TryDestroyCluster(cr.Name); err != nil {
+	if err = deploy.DestroyCluster(cr.Name); err != nil {
 		return errors.Trace(err)
 	}
 	if err = m.setOffline(rris, crts); err != nil {
