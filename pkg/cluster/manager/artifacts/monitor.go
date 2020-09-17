@@ -62,6 +62,7 @@ func ArchiveMonitorData(s3Client *S3Client, crID uint, uuid string, topos *deplo
 	return nil
 }
 
+// ArchiveWorkloadData archives the workload data locating on srcPath in workload container
 func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor, containerID string, crID uint, uuid string, srcPath string) (err error) {
 	r, _, err := dockerExecutor.CopyFromContainer(context.TODO(), containerID, srcPath)
 	if err != nil {

@@ -47,7 +47,7 @@ func (m *Manager) rebuildMonitoring(w http.ResponseWriter, r *http.Request) {
 		fail(w, errors.NotFoundf("monitor data of %d and %d not found", clusterRequestID, uuid))
 		return
 	}
-	err = artifacts.RebuildMonitoringOnK8s(clusterRequestID, uuid)
+	err = artifacts.RebuildMonitoringOnK8s(uint(clusterRequestID), uuid)
 	if err != nil {
 		fail(w, err)
 		return
