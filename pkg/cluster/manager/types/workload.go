@@ -55,9 +55,12 @@ func (e *Envs) Scan(value interface{}) error {
 	return nil
 }
 
-func (e Envs) Clone() Envs {
+func (e *Envs) Clone() Envs {
 	result := make(Envs)
-	for k, v := range e {
+	if e == nil {
+		return result
+	}
+	for k, v := range *e {
 		result[k] = v
 	}
 	return result
