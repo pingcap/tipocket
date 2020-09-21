@@ -43,10 +43,18 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
 	}
-	// FIXME(@mahjonp): add type field on workloads
-	if err := m.runWorkloadWithBaseline(rs, rris, cr, crts, wr); err != nil {
+
+	workloadFunc := m.runPRWorkload
+	switch wr.Type {
+	case types.WorkloadTypePR:
+		workloadFunc = m.runPRWorkload
+	case types.WorkloadTypeStandard:
+		workloadFunc = m.runStandardWorkload
+	}
+	if err := workloadFunc(rs, rris, cr, crts, wr); err != nil {
 		return errors.Trace(err)
 	}
+
 	wr.Status = types.WorkloadStatusDone
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
@@ -83,7 +91,7 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	})
 }
 
-func (m *Manager) runWorkloadWithBaseline(
+func (m *Manager) runPRWorkload(
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
@@ -94,6 +102,15 @@ func (m *Manager) runWorkloadWithBaseline(
 		return errors.Trace(err)
 	}
 	return errors.Trace(m.runClusterWorkload(resources, rris, cr.Baseline(), crts, wr))
+}
+
+func (m *Manager) runStandardWorkload(
+	resources []*types.Resource,
+	rris []*types.ResourceRequestItem,
+	cr *types.ClusterRequest,
+	crts []*types.ClusterRequestTopology,
+	wr *types.WorkloadRequest) error {
+	return m.runClusterWorkload(resources, rris, cr, crts, wr)
 }
 
 func (m *Manager) runClusterWorkload(
@@ -114,7 +131,7 @@ func (m *Manager) runClusterWorkload(
 	}
 	zap.L().Info("deploy and start cluster success",
 		zap.Uint("cr_id", cr.ID))
-	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, nil)
+	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, wr.Envs.Clone())
 	if err != nil {
 		zap.L().Error("run workload failed",
 			zap.ByteString("stdout", stdout),
