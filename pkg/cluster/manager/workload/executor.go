@@ -7,6 +7,7 @@ import (
 
 	"github.com/juju/errors"
 
+	"github.com/pingcap/tipocket/pkg/cluster/manager/artifacts"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
@@ -48,6 +49,7 @@ func RunWorkload(
 	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
 	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
+	envs["ARTIFACT_URL"] = fmt.Sprintf("%s/%s", util.S3Endpoint, artifacts.ArtifactPath(cr.ID))
 
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, "", nil, nil, errors.Trace(err)

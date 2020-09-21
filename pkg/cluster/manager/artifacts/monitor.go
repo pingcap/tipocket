@@ -31,6 +31,11 @@ import (
 
 const namespace = "tipocket"
 
+// ArtifactPath builds artifact dir
+func ArtifactPath(crID uint) string {
+	return fmt.Sprintf("minio/artifacts/%d", crID)
+}
+
 // ArchiveMonitorData archives prometheus data and grafana configuration(including dashboards and provisioning)
 func ArchiveMonitorData(s3Client *S3Client, crID uint, uuid string, topos *deploy.Topology) (err error) {
 	var (
@@ -213,12 +218,12 @@ func rebuildProm(crID uint, uuid string) (err error) {
 					fmt.Sprintf(`set -euo pipefail
 cd prometheus
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%d/%s/prometheus.tar.gz .
+mc cp %s/%s/prometheus.tar.gz .
 tar xf prometheus.tar.gz --strip-components 1
 chown -R nobody:nobody .
 `,
 						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
-						crID, uuid),
+						ArtifactPath(crID), uuid),
 				},
 				VolumeMounts: []corev1.VolumeMount{
 					{
@@ -309,7 +314,7 @@ func rebuildGrafana(crID uint, uuid string) (err error) {
 					fmt.Sprintf(`set -uo pipefail
 cd /etc/grafana
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%d/%s/grafana.tar.gz .
+mc cp %s/%s/grafana.tar.gz .
 tar xf grafana.tar.gz
 find . -type f -exec sed -i "s/\${PROM_ADDR}/%s.%s.svc/g" {} \;
 touch grafana.ini
@@ -317,7 +322,7 @@ chown -R 472:472 /etc/grafana
 ls -althr
 `,
 						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
-						crID, uuid,
+						ArtifactPath(crID), uuid,
 						monitoringService, namespace),
 				},
 				VolumeMounts: []corev1.VolumeMount{
