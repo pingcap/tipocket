@@ -96,3 +96,9 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 	}
 	return resp.ID, stdOutBuffer.Bytes(), stdErrBuffer.Bytes(), nil
 }
+
+// RmContainer rms container
+func (d *DockerExecutor) RmContainer(containerID string) error {
+	ctx := context.Background()
+	return d.Client.ContainerRemove(ctx, containerID, types.ContainerRemoveOptions{RemoveVolumes: true})
+}

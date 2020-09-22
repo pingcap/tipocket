@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/juju/errors"
 	"github.com/minio/minio-go/v7"
@@ -18,18 +18,28 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 const namespace = "tipocket"
+
+// ArtifactPath builds artifact dir
+func ArtifactPath(crID uint) string {
+	return fmt.Sprintf("minio/artifacts/%d", crID)
+}
+
+// ArtifactDownloadPath builds artifact download dir
+func ArtifactDownloadPath(crID uint) string {
+	return fmt.Sprintf("artifacts/%d", crID)
+}
 
 // ArchiveMonitorData archives prometheus data and grafana configuration(including dashboards and provisioning)
 func ArchiveMonitorData(s3Client *S3Client, crID uint, uuid string, topos *deploy.Topology) (err error) {
@@ -68,20 +78,49 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 	if err != nil {
 		return err
 	}
-	tmpFile, err := ioutil.TempFile("", "workload")
+	defer r.Close()
+	tmpDir, err := ioutil.TempDir("", "workload")
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			zap.L().Error("remove tmp dir failed", zap.Error(err))
+		}
+	}()
+	tmpFile, err := os.OpenFile(path.Join(tmpDir, "workload.tar.gz"), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
 	_, err = io.Copy(tmpFile, r)
 	if err != nil {
 		return err
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%d/%s/workload.tar.gz", crID, uuid), tmpFile.Name(), minio.PutObjectOptions{})
+	_, err = util.Command(tmpDir, "tar", "-xf", "workload.tar.gz", "--strip-components", "1")
 	if err != nil {
 		return errors.Trace(err)
 	}
-	return nil
+	err = filepath.Walk(tmpDir, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		p, err = filepath.Rel(tmpDir, p)
+		_, err = s3Client.FPutObject(context.Background(),
+			"artifacts",
+			fmt.Sprintf("%d/%s/%s", crID, uuid, p),
+			path.Join(tmpDir, p),
+			minio.PutObjectOptions{},
+		)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	})
+	return err
 }
 
 func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {
@@ -213,12 +252,12 @@ func rebuildProm(crID uint, uuid string) (err error) {
 					fmt.Sprintf(`set -euo pipefail
 cd prometheus
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%d/%s/prometheus.tar.gz .
+mc cp %s/%s/prometheus.tar.gz .
 tar xf prometheus.tar.gz --strip-components 1
 chown -R nobody:nobody .
 `,
 						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
-						crID, uuid),
+						ArtifactPath(crID), uuid),
 				},
 				VolumeMounts: []corev1.VolumeMount{
 					{
@@ -309,7 +348,7 @@ func rebuildGrafana(crID uint, uuid string) (err error) {
 					fmt.Sprintf(`set -uo pipefail
 cd /etc/grafana
 mc alias set minio http://%s %s %s
-mc cp minio/artifacts/%d/%s/grafana.tar.gz .
+mc cp %s/%s/grafana.tar.gz .
 tar xf grafana.tar.gz
 find . -type f -exec sed -i "s/\${PROM_ADDR}/%s.%s.svc/g" {} \;
 touch grafana.ini
@@ -317,7 +356,7 @@ chown -R 472:472 /etc/grafana
 ls -althr
 `,
 						util.S3Endpoint, util.AwsAccessKeyID, util.AwsSecretAccessKey,
-						crID, uuid,
+						ArtifactPath(crID), uuid,
 						monitoringService, namespace),
 				},
 				VolumeMounts: []corev1.VolumeMount{

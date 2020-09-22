@@ -10,9 +10,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
+	"github.com/juju/errors"
+	"github.com/rogpeppe/fastuuid"
 	"go.uber.org/zap"
 
-	"github.com/juju/errors"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
@@ -43,8 +44,15 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
 	}
-	// FIXME(@mahjonp): add type field on workloads
-	if err := m.runWorkloadWithBaseline(rs, rris, cr, crts, wr); err != nil {
+
+	workloadFunc := m.runPRWorkload
+	switch wr.Type {
+	case types.WorkloadTypePR:
+		workloadFunc = m.runPRWorkload
+	case types.WorkloadTypeStandard:
+		workloadFunc = m.runStandardWorkload
+	}
+	if err := workloadFunc(rs, rris, cr, crts, wr); err != nil {
 		return errors.Trace(err)
 	}
 	wr.Status = types.WorkloadStatusDone
@@ -83,7 +91,7 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	})
 }
 
-func (m *Manager) runWorkloadWithBaseline(
+func (m *Manager) runPRWorkload(
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
@@ -94,6 +102,15 @@ func (m *Manager) runWorkloadWithBaseline(
 		return errors.Trace(err)
 	}
 	return errors.Trace(m.runClusterWorkload(resources, rris, cr.Baseline(), crts, wr))
+}
+
+func (m *Manager) runStandardWorkload(
+	resources []*types.Resource,
+	rris []*types.ResourceRequestItem,
+	cr *types.ClusterRequest,
+	crts []*types.ClusterRequestTopology,
+	wr *types.WorkloadRequest) error {
+	return m.runClusterWorkload(resources, rris, cr, crts, wr)
 }
 
 func (m *Manager) runClusterWorkload(
@@ -112,24 +129,36 @@ func (m *Manager) runClusterWorkload(
 	if err := m.setOnline(rris, crts); err != nil {
 		return errors.Trace(err)
 	}
+	artifactUUID := fastuuid.MustNewGenerator().Hex128()
 	zap.L().Info("deploy and start cluster success",
-		zap.Uint("cr_id", cr.ID))
-	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, nil)
+		zap.Uint("cr_id", cr.ID),
+		zap.String("artifactUUID", artifactUUID))
+
+	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
-		zap.L().Error("run workload failed",
+		zap.L().Error("run workload container failed",
 			zap.ByteString("stdout", stdout),
 			zap.ByteString("stderr", stderr),
 			zap.Error(err))
-		return errors.Trace(err)
+		goto TearDown
 	}
+	defer func() {
+		err := dockerExecutor.RmContainer(containerID)
+		if err != nil {
+			zap.L().Error("rm container failed", zap.String("container id", containerID), zap.Error(err))
+		}
+	}()
 	if err = deploy.StopCluster(cr.Name); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("stop cluster failed", zap.Error(err))
+		goto TearDown
 	}
-	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID); err != nil {
-		return errors.Trace(err)
+	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, artifactUUID); err != nil {
+		zap.L().Error("archive artifacts failed", zap.Error(err))
+		goto TearDown
 	}
+TearDown:
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
 	if err = m.setOffline(rris, crts); err != nil {
 		return errors.Trace(err)
