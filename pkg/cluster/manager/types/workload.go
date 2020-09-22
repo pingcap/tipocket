@@ -55,6 +55,7 @@ func (e *Envs) Scan(value interface{}) error {
 	return nil
 }
 
+// Clone ...
 func (e *Envs) Clone() Envs {
 	result := make(Envs)
 	if e == nil {

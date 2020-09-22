@@ -10,9 +10,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
+	"github.com/juju/errors"
+	"github.com/rogpeppe/fastuuid"
 	"go.uber.org/zap"
 
-	"github.com/juju/errors"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
@@ -128,11 +129,14 @@ func (m *Manager) runClusterWorkload(
 	if err := m.setOnline(rris, crts); err != nil {
 		return errors.Trace(err)
 	}
+	artifactUUID := fastuuid.MustNewGenerator().Hex128()
 	zap.L().Info("deploy and start cluster success",
-		zap.Uint("cr_id", cr.ID))
-	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, wr.Envs.Clone())
+		zap.Uint("cr_id", cr.ID),
+		zap.String("artifactUUID", artifactUUID))
+
+	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
-		zap.L().Error("run workload failed",
+		zap.L().Error("run workload container failed",
 			zap.ByteString("stdout", stdout),
 			zap.ByteString("stderr", stderr),
 			zap.Error(err))
@@ -148,7 +152,7 @@ func (m *Manager) runClusterWorkload(
 		zap.L().Error("stop cluster failed", zap.Error(err))
 		goto TearDown
 	}
-	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID); err != nil {
+	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, artifactUUID); err != nil {
 		zap.L().Error("archive artifacts failed", zap.Error(err))
 		goto TearDown
 	}

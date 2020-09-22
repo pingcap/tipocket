@@ -19,6 +19,7 @@ func RunWorkload(
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
+	artifactUUID string,
 	envs map[string]string,
 ) (dockerExecutor *util.DockerExecutor, containerID string, stdout []byte, stderr []byte, err error) {
 	id2Resource := make(map[uint]*types.Resource)
@@ -49,7 +50,7 @@ func RunWorkload(
 	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
 	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
-	envs["ARTIFACT_URL"] = fmt.Sprintf("%s/%s", util.S3Endpoint, artifacts.ArtifactPath(cr.ID))
+	envs["ARTIFACT_URL"] = fmt.Sprintf("%s/%s/%s", util.S3Endpoint, artifacts.ArtifactDownloadPath(cr.ID), artifactUUID)
 
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
 		return nil, "", nil, nil, errors.Trace(err)

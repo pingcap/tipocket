@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/juju/errors"
-	"github.com/rogpeppe/fastuuid"
 	"go.uber.org/zap"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/artifacts"
@@ -60,8 +59,8 @@ func (m *Manager) archiveArtifacts(
 	topos *deploy.Topology,
 	wr *types.WorkloadRequest,
 	dockerExecutor *util.DockerExecutor,
-	containerID string) error {
-	artifactUUID := fastuuid.MustNewGenerator().Hex128()
+	containerID string,
+	artifactUUID string) error {
 	s3Client, err := artifacts.NewS3Client()
 	if err != nil {
 		return errors.Trace(err)

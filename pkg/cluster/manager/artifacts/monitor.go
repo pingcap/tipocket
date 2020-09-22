@@ -36,6 +36,11 @@ func ArtifactPath(crID uint) string {
 	return fmt.Sprintf("minio/artifacts/%d", crID)
 }
 
+// ArtifactDownloadPath builds artifact download dir
+func ArtifactDownloadPath(crID uint) string {
+	return fmt.Sprintf("artifacts/%d", crID)
+}
+
 // ArchiveMonitorData archives prometheus data and grafana configuration(including dashboards and provisioning)
 func ArchiveMonitorData(s3Client *S3Client, crID uint, uuid string, topos *deploy.Topology) (err error) {
 	var (
@@ -96,18 +101,18 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 	if err != nil {
 		return errors.Trace(err)
 	}
-	err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(tmpDir, func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
 			return nil
 		}
-		path, err = filepath.Rel(tmpDir, path)
+		p, err = filepath.Rel(tmpDir, p)
 		_, err = s3Client.FPutObject(context.Background(),
 			"artifacts",
-			fmt.Sprintf("%d/%s/%s", crID, uuid, path),
-			path,
+			fmt.Sprintf("%d/%s/%s", crID, uuid, p),
+			path.Join(tmpDir, p),
 			minio.PutObjectOptions{},
 		)
 		if err != nil {
