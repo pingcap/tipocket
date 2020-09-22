@@ -20,7 +20,6 @@ require (
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gobuffalo/flect v0.2.2 // indirect
 	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -54,11 +53,8 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.5.1
-	github.com/swaggo/swag v1.6.7 // indirect
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0
-	github.com/urfave/cli v1.22.4 // indirect
-	github.com/urfave/cli/v2 v2.2.0 // indirect
 	go.uber.org/zap v1.14.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
@@ -67,14 +63,12 @@ require (
 	golang.org/x/tools v0.0.0-20200921210052-fa0125251cc4 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	k8s.io/api v0.19.2
 	k8s.io/apiextensions-apiserver v0.19.2 // indirect
 	k8s.io/apimachinery v0.19.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800
 	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/controller-tools v0.4.0 // indirect
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
