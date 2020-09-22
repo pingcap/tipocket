@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/juju/errors"
 	"github.com/minio/minio-go/v7"
@@ -18,15 +18,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
+	testUtil "github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
 const namespace = "tipocket"
@@ -73,20 +73,49 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 	if err != nil {
 		return err
 	}
-	tmpFile, err := ioutil.TempFile("", "workload")
+	defer r.Close()
+	tmpDir, err := ioutil.TempDir("", "workload")
 	if err != nil {
 		return err
 	}
-	defer r.Close()
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			zap.L().Error("remove tmp dir failed", zap.Error(err))
+		}
+	}()
+	tmpFile, err := os.OpenFile(path.Join(tmpDir, "workload.tar.gz"), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
 	_, err = io.Copy(tmpFile, r)
 	if err != nil {
 		return err
 	}
-	_, err = s3Client.FPutObject(context.Background(), "artifacts", fmt.Sprintf("%d/%s/workload.tar.gz", crID, uuid), tmpFile.Name(), minio.PutObjectOptions{})
+	_, err = util.Command(tmpDir, "tar", "-xf", "workload.tar.gz", "--strip-components", "1")
 	if err != nil {
 		return errors.Trace(err)
 	}
-	return nil
+	err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		path, err = filepath.Rel(tmpDir, path)
+		_, err = s3Client.FPutObject(context.Background(),
+			"artifacts",
+			fmt.Sprintf("%d/%s/%s", crID, uuid, path),
+			path,
+			minio.PutObjectOptions{},
+		)
+		if err != nil {
+			return errors.Trace(err)
+		}
+		return nil
+	})
+	return err
 }
 
 func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {

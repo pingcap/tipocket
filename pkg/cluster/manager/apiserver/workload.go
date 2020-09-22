@@ -54,7 +54,6 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err := workloadFunc(rs, rris, cr, crts, wr); err != nil {
 		return errors.Trace(err)
 	}
-
 	wr.Status = types.WorkloadStatusDone
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
 		return errors.Trace(err)
@@ -137,16 +136,25 @@ func (m *Manager) runClusterWorkload(
 			zap.ByteString("stdout", stdout),
 			zap.ByteString("stderr", stderr),
 			zap.Error(err))
-		return errors.Trace(err)
+		goto TearDown
 	}
+	defer func() {
+		err := dockerExecutor.RmContainer(containerID)
+		if err != nil {
+			zap.L().Error("rm container failed", zap.String("container id", containerID), zap.Error(err))
+		}
+	}()
 	if err = deploy.StopCluster(cr.Name); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("stop cluster failed", zap.Error(err))
+		goto TearDown
 	}
 	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("archive artifacts failed", zap.Error(err))
+		goto TearDown
 	}
+TearDown:
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
 	if err = m.setOffline(rris, crts); err != nil {
 		return errors.Trace(err)
