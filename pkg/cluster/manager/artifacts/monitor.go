@@ -1,6 +1,7 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -121,6 +122,45 @@ func ArchiveWorkloadData(s3Client *S3Client, dockerExecutor *util.DockerExecutor
 		return nil
 	})
 	return err
+}
+
+// ArchiveWorkloadRuntimeLog ...
+func ArchiveWorkloadRuntimeLog(
+	s3Client *S3Client,
+	crID uint,
+	out *bytes.Buffer,
+	uuid string) error {
+	if out == nil {
+		return nil
+	}
+	tmpDir, err := ioutil.TempDir("", "workload_log")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			zap.L().Error("remove tmp dir failed", zap.Error(err))
+		}
+	}()
+	tmpFile, err := os.OpenFile(path.Join(tmpDir, "stdout.log"), os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(tmpFile, out)
+	if err != nil {
+		return err
+	}
+	_, err = s3Client.FPutObject(context.Background(),
+		"artifacts",
+		fmt.Sprintf("%d/%s/%s", crID, uuid, "stdout.log"),
+		path.Join(tmpDir, "stdout.log"),
+		minio.PutObjectOptions{},
+	)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }
 
 func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {

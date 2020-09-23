@@ -134,11 +134,10 @@ func (m *Manager) runClusterWorkload(
 		zap.Uint("cr_id", cr.ID),
 		zap.String("artifactUUID", artifactUUID))
 
-	dockerExecutor, containerID, stdout, stderr, err := workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
+	dockerExecutor, containerID, out, err := workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
 		zap.L().Error("run workload container failed",
-			zap.ByteString("stdout", stdout),
-			zap.ByteString("stderr", stderr),
+			zap.ByteString("out", out.Bytes()),
 			zap.Error(err))
 		goto TearDown
 	}
@@ -152,11 +151,10 @@ func (m *Manager) runClusterWorkload(
 		zap.L().Error("stop cluster failed", zap.Error(err))
 		goto TearDown
 	}
-	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, artifactUUID); err != nil {
-		zap.L().Error("archive artifacts failed", zap.Error(err))
-		goto TearDown
-	}
 TearDown:
+	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, out, artifactUUID); err != nil {
+		zap.L().Error("archive artifacts failed", zap.Error(err))
+	}
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
 		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
