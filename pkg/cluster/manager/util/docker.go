@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/juju/errors"
 	"go.uber.org/zap"
 )
@@ -89,7 +90,7 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 		return "", nil, errors.Trace(err)
 	}
 	var buffer bytes.Buffer
-	if _, err := io.Copy(&buffer, out); err != nil {
+	if _, err := stdcopy.StdCopy(&buffer, &buffer, out); err != nil {
 		return "", nil, errors.Trace(err)
 	}
 	if exitCode != 0 {
