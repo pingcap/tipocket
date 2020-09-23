@@ -19,6 +19,9 @@ type DockerExecutor struct {
 	*client.Client
 }
 
+// ErrContainerExitNonZero ...
+var ErrContainerExitNonZero = fmt.Errorf("container exit with non zero")
+
 // NewDockerExecutor ...
 func NewDockerExecutor(host string) (*DockerExecutor, error) {
 	cli, err := client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
@@ -35,7 +38,7 @@ func NewDockerExecutor(host string) (*DockerExecutor, error) {
 }
 
 // Run runs a docker container
-func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *string, args ...string) (string, []byte, []byte, error) {
+func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *string, args ...string) (string, *bytes.Buffer, error) {
 	ctx := context.Background()
 	var env []string
 	for key, value := range envs {
@@ -44,7 +47,7 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 
 	reader, err := d.ImagePull(ctx, dockerImage, types.ImagePullOptions{})
 	if err != nil {
-		return "", nil, nil, errors.Trace(err)
+		return "", nil, errors.Trace(err)
 	}
 	defer reader.Close()
 	var b bytes.Buffer
@@ -66,35 +69,34 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 	}, nil, nil, "")
 
 	if err != nil {
-		return "", nil, nil, errors.Trace(err)
+		return "", nil, errors.Trace(err)
 	}
 
 	if err := d.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		return "", nil, nil, errors.Trace(err)
+		return "", nil, errors.Trace(err)
 	}
 	var exitCode int64
 	statusCh, errCh := d.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 	select {
 	case err := <-errCh:
 		if err != nil {
-			return "", nil, nil, errors.Trace(err)
+			return "", nil, errors.Trace(err)
 		}
 	case status := <-statusCh:
 		exitCode = status.StatusCode
 	}
 	out, err := d.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
-		return "", nil, nil, errors.Trace(err)
+		return "", nil, errors.Trace(err)
 	}
-	var stdOutBuffer bytes.Buffer
-	var stdErrBuffer bytes.Buffer
-	if _, err := stdcopy.StdCopy(&stdOutBuffer, &stdErrBuffer, out); err != nil {
-		return "", nil, nil, errors.Trace(err)
+	var buffer bytes.Buffer
+	if _, err := stdcopy.StdCopy(&buffer, &buffer, out); err != nil {
+		return "", nil, errors.Trace(err)
 	}
 	if exitCode != 0 {
-		return "", nil, nil, fmt.Errorf("container exit with %d", exitCode)
+		return "", &buffer, ErrContainerExitNonZero
 	}
-	return resp.ID, stdOutBuffer.Bytes(), stdErrBuffer.Bytes(), nil
+	return resp.ID, &buffer, nil
 }
 
 // RmContainer rms container

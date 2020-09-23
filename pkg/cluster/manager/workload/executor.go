@@ -1,6 +1,7 @@
 package workload
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -21,7 +22,7 @@ func RunWorkload(
 	wr *types.WorkloadRequest,
 	artifactUUID string,
 	envs map[string]string,
-) (dockerExecutor *util.DockerExecutor, containerID string, stdout []byte, stderr []byte, err error) {
+) (dockerExecutor *util.DockerExecutor, containerID string, out *bytes.Buffer, err error) {
 	id2Resource := make(map[uint]*types.Resource)
 	rriItemID2RID := make(map[uint]uint)
 	component2Resources := make(map[string][]*types.Resource)
@@ -53,51 +54,51 @@ func RunWorkload(
 	envs["ARTIFACT_URL"] = fmt.Sprintf("%s/%s/%s", util.S3Endpoint, artifacts.ArtifactDownloadPath(cr.ID), artifactUUID)
 
 	if rs, err = randomResource(component2Resources["pd"]); err != nil {
-		return nil, "", nil, nil, errors.Trace(err)
+		return nil, "", nil, errors.Trace(err)
 	}
 	envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
 
 	if len(component2Resources["tidb"]) != 0 {
 		if rs, err = randomResource(component2Resources["tidb"]); err != nil {
-			return nil, "", nil, nil, errors.Trace(err)
+			return nil, "", nil, errors.Trace(err)
 		}
 		envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
 	}
 
 	if rs, err = randomResource(component2Resources["prometheus"]); err != nil {
-		return nil, "", nil, nil, errors.Trace(err)
+		return nil, "", nil, errors.Trace(err)
 	}
 	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
 
 	dockerExecutor, err = util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 	if err != nil {
-		return nil, "", nil, nil, errors.Trace(err)
+		return nil, "", nil, errors.Trace(err)
 	}
-	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
-		return nil, "", s, e, errors.Trace(err)
+	if o, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
+		return nil, "", o, errors.Trace(err)
 	}
-	containerID, stdout, stderr, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
+	containerID, out, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
 	return
 }
 
 // RestoreDataIfConfig ...
-func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) ([]byte, []byte, error) {
+func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) (*bytes.Buffer, error) {
 	if wr.RestorePath != nil {
 		envs["S3_ENDPOINT"] = fmt.Sprintf("http://%s", util.S3Endpoint)
 		envs["AWS_ACCESS_KEY_ID"] = util.AwsAccessKeyID
 		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
 
 		// FIXME(mahjonp): replace with pingcap/br in future
-		_, s, e, err := dockerExecutor.Run("mahjonp/br",
+		_, o, err := dockerExecutor.Run("mahjonp/br",
 			envs,
 			&[]string{"/bin/bash"}[0],
 			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+*wr.RestorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
 		if err != nil {
-			return s, e, errors.Trace(err)
+			return o, errors.Trace(err)
 		}
-		return s, e, nil
+		return o, nil
 	}
-	return nil, nil, nil
+	return nil, nil
 }
 
 func randomResource(rs []*types.Resource) (*types.Resource, error) {

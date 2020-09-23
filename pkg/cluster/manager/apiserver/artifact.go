@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"bytes"
 	"net/http"
 	"strconv"
 
@@ -60,26 +61,29 @@ func (m *Manager) archiveArtifacts(
 	wr *types.WorkloadRequest,
 	dockerExecutor *util.DockerExecutor,
 	containerID string,
+	out *bytes.Buffer,
 	artifactUUID string) error {
-	s3Client, err := artifacts.NewS3Client()
-	if err != nil {
-		return errors.Trace(err)
-	}
-	if err := artifacts.ArchiveMonitorData(s3Client, crID, artifactUUID, topos); err != nil {
-		return errors.Trace(err)
-	}
-	if wr.ArtifactDir != nil {
-		err := artifacts.ArchiveWorkloadData(s3Client, dockerExecutor, containerID, crID, artifactUUID, *wr.ArtifactDir)
-		if err != nil {
-			return errors.Trace(err)
-		}
-	}
 	if err := m.Artifacts.CreateArtifacts(m.DB.DB, &types.Artifacts{
 		CRID: crID,
 		UUID: artifactUUID,
 	}); err != nil {
 		return errors.Trace(err)
 	}
-	zap.L().Info("upload monitor data success", zap.String("uuid", artifactUUID))
+	s3Client, err := artifacts.NewS3Client()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	if err := artifacts.ArchiveMonitorData(s3Client, crID, artifactUUID, topos); err != nil {
+		zap.L().Error("archive monitor data failed", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
+	}
+	if err := artifacts.ArchiveWorkloadRuntimeLog(s3Client, crID, out, artifactUUID); err != nil {
+		zap.L().Error("archive workload stdout log failed", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
+	}
+	if wr.ArtifactDir != nil {
+		if err := artifacts.ArchiveWorkloadData(s3Client, dockerExecutor, containerID, crID, artifactUUID, *wr.ArtifactDir); err != nil {
+			zap.L().Error("archive workload stdout log failed", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
+		}
+	}
+	zap.L().Info("archive artifacts success", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
 	return nil
 }
