@@ -19,8 +19,8 @@ type DockerExecutor struct {
 	*client.Client
 }
 
-// ContainerExitNonZeroError ...
-var ContainerExitNonZeroError = fmt.Errorf("container exit with non zero")
+// ErrContainerExitNonZero ...
+var ErrContainerExitNonZero = fmt.Errorf("container exit with non zero")
 
 // NewDockerExecutor ...
 func NewDockerExecutor(host string) (*DockerExecutor, error) {
@@ -94,7 +94,7 @@ func (d *DockerExecutor) Run(dockerImage string, envs map[string]string, cmd *st
 		return "", nil, errors.Trace(err)
 	}
 	if exitCode != 0 {
-		return "", &buffer, ContainerExitNonZeroError
+		return "", &buffer, ErrContainerExitNonZero
 	}
 	return resp.ID, &buffer, nil
 }
