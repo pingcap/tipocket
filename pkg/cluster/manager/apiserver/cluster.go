@@ -205,22 +205,29 @@ func (m *Manager) cleanClusterData(cr *types.ClusterRequest) error {
 	}
 	wr, err := m.Cluster.GetClusterWorkloadByClusterRequestID(cr.ID)
 	if err != nil {
-		return errors.Trace(err)
+		goto FAIL
 	}
 	if err := deploy.CleanClusterData(cr.Name); err != nil {
-		return err
+		goto FAIL
+	}
+	if err := deploy.StartCluster(cr.Name); err != nil {
+		goto FAIL
 	}
 	if wr.ArtifactDir != nil {
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err := util.RandomResource(component2Resources["pd"])
 		if err != nil {
-			return err
+			goto FAIL
 		}
 		if _, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
-			return err
+			goto FAIL
 		}
 	}
 	cr.Status = types.ClusterRequestStatusRunning
+	return m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr)
+FAIL:
+	zap.L().Error("clean cluster data failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
+	cr.Status = types.ClusterRequestStatusRebuildFail
 	return m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr)
 }
 

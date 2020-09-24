@@ -14,9 +14,11 @@ const (
 	// ClusterRequestStatusRunning means that the request is running some workloads now
 	ClusterRequestStatusRunning = "RUNNING"
 	// ClusterRequestStatusPendingRebuild ...
-	ClusterRequestStatusPendingRebuild = "PENDING-REBUILD"
+	ClusterRequestStatusPendingRebuild = "REBUILD-PENDING"
 	// ClusterRequestStatusRebuilding ...
 	ClusterRequestStatusRebuilding = "REBUILDING"
+	// ClusterRequestStatusRebuildFail ...
+	ClusterRequestStatusRebuildFail = "REBUILD-FAIL"
 	// ClusterRequestStatusDone means that the request is finished and resources
 	ClusterRequestStatusDone = "DONE"
 
@@ -75,6 +77,9 @@ type ClusterRequestTopology struct {
 	Status string `gorm:"column:status;not null" json:"status"`
 }
 
+// BuildClusterMap receives resources and resource request items then builds two maps.
+// rriItemID2Resource maps resource request item id to resource
+// component2Resources maps component name to resources
 func BuildClusterMap(resources []*Resource, rris []*ResourceRequestItem) (
 	rriItemID2Resource map[uint]*Resource, component2Resources map[string][]*Resource,
 ) {

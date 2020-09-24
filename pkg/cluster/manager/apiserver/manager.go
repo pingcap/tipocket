@@ -88,6 +88,7 @@ func (m *Manager) runWatcher(ctx context.Context) {
 		m.PollPendingClusterRequests,
 		m.PollPendingResourceRequests,
 		m.PollReadyClusterRequests,
+		m.PollPendingRebuildClusterRequests,
 	} {
 		go func(watcher func(ctx2 context.Context)) {
 			watcher(ctx)
