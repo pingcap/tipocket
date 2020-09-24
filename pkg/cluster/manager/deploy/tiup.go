@@ -157,7 +157,7 @@ func DestroyCluster(name string) error {
 
 // CleanClusterData ...
 func CleanClusterData(name string) error {
-	output, err := util.Command("", "tiup", "cluster", "clean", name, "--all", "--ignore-role", "prometheus", "-y")
+	output, err := util.Command("", "tiup", "cluster", "clean", name, "--data", "--ignore-role", "prometheus", "-y")
 	if err != nil {
 		return fmt.Errorf("clean cluster failed, err: %v, output: %s", err, output)
 	}
