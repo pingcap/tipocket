@@ -1,6 +1,10 @@
 package types
 
-import "github.com/jinzhu/gorm"
+import (
+	"strings"
+
+	"github.com/jinzhu/gorm"
+)
 
 const (
 	// ClusterRequestStatusPending means that the request is in queue
@@ -9,6 +13,10 @@ const (
 	ClusterRequestStatusReady = "READY"
 	// ClusterRequestStatusRunning means that the request is running some workloads now
 	ClusterRequestStatusRunning = "RUNNING"
+	// ClusterRequestStatusPendingRebuild ...
+	ClusterRequestStatusPendingRebuild = "PENDING-REBUILD"
+	// ClusterRequestStatusRebuilding ...
+	ClusterRequestStatusRebuilding = "REBUILDING"
 	// ClusterRequestStatusDone means that the request is finished and resources
 	ClusterRequestStatusDone = "DONE"
 
@@ -65,4 +73,26 @@ type ClusterRequestTopology struct {
 	// READY
 	// ONLINE
 	Status string `gorm:"column:status;not null" json:"status"`
+}
+
+func BuildClusterMap(resources []*Resource, rris []*ResourceRequestItem) (
+	rriItemID2Resource map[uint]*Resource, component2Resources map[string][]*Resource,
+) {
+	id2Resource := make(map[uint]*Resource)
+	rriItemID2Resource = make(map[uint]*Resource)
+	component2Resources = make(map[string][]*Resource)
+	// resource request item id -> resource
+	for idx, re := range resources {
+		id2Resource[re.ID] = resources[idx]
+	}
+	for _, rri := range rris {
+		rriItemID2Resource[rri.ItemID] = id2Resource[rri.RID]
+		for _, component := range strings.Split(rri.Components, "|") {
+			if _, ok := component2Resources[component]; !ok {
+				component2Resources[component] = make([]*Resource, 0)
+			}
+			component2Resources[component] = append(component2Resources[component], id2Resource[rri.RID])
+		}
+	}
+	return rriItemID2Resource, component2Resources
 }

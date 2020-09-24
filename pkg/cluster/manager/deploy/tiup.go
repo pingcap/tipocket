@@ -146,6 +146,15 @@ func DestroyCluster(name string) error {
 	return nil
 }
 
+// CleanClusterData ...
+func CleanClusterData(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "clean", name, "--all", "--ignore-role", "prometheus")
+	if err != nil {
+		return fmt.Errorf("clean cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
 func deployCluster(topo *Topology, yaml, name string, cr *types.ClusterRequest) error {
 	file, err := ioutil.TempFile("", "cluster")
 	if err != nil {

@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/deploy"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
+	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/workload"
 )
 
@@ -120,8 +122,12 @@ func (m *Manager) runClusterWorkload(
 	crts []*types.ClusterRequestTopology,
 	wr *types.WorkloadRequest) error {
 	var (
-		err  error
-		topo *deploy.Topology
+		err            error
+		topo           *deploy.Topology
+		containerID    string
+		out            *bytes.Buffer
+		rs             *types.Resource
+		dockerExecutor *util.DockerExecutor
 	)
 	if topo, err = deploy.TryDeployCluster(cr.Name, resources, rris, cr, crts); err != nil {
 		return errors.Trace(err)
@@ -129,12 +135,21 @@ func (m *Manager) runClusterWorkload(
 	if err := m.setOnline(rris, crts); err != nil {
 		return errors.Trace(err)
 	}
-	artifactUUID := fastuuid.MustNewGenerator().Hex128()
 	zap.L().Info("deploy and start cluster success",
-		zap.Uint("cr_id", cr.ID),
-		zap.String("artifactUUID", artifactUUID))
+		zap.Uint("cr_id", cr.ID))
 
-	dockerExecutor, containerID, out, err := workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
+	artifactUUID := fastuuid.MustNewGenerator().Hex128()
+	if wr.ArtifactDir != nil {
+		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
+		rs, err = util.RandomResource(component2Resources["pd"])
+		if err != nil {
+			goto DestroyCluster
+		}
+		if _, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			goto DestroyCluster
+		}
+	}
+	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
 		zap.L().Error("run workload container failed",
 			zap.ByteString("out", out.Bytes()),
@@ -155,6 +170,7 @@ TearDown:
 	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, out, artifactUUID); err != nil {
 		zap.L().Error("archive artifacts failed", zap.Error(err))
 	}
+DestroyCluster:
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
 		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
