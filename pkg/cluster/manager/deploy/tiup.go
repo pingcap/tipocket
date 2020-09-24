@@ -24,7 +24,7 @@ type Topology struct {
 
 // TryDeployCluster ...
 func TryDeployCluster(name string,
-	resources []types.Resource,
+	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
 	crts []*types.ClusterRequestTopology) (*Topology, error) {
@@ -36,18 +36,18 @@ func TryDeployCluster(name string,
 		PrometheusServers: make(map[string]*types.ClusterRequestTopology),
 		GrafanaServers:    make(map[string]*types.ClusterRequestTopology),
 	}
-	rriID2Resource := make(map[uint]types.Resource)
-	rriItemID2RriID := make(map[uint]uint)
+	id2Resource := make(map[uint]*types.Resource)
+	rriItemID2ResourceID := make(map[uint]uint)
 	// resource request item id -> resource
 	for _, re := range resources {
-		rriID2Resource[re.RRIID] = re
+		id2Resource[re.ID] = re
 	}
 	// resource request item item_id -> resource request item id
 	for _, rri := range rris {
-		rriItemID2RriID[rri.ItemID] = rri.ID
+		rriItemID2ResourceID[rri.ItemID] = rri.RID
 	}
 	for idx, crt := range crts {
-		ip := rriID2Resource[rriItemID2RriID[crt.RRIItemID]].IP
+		ip := id2Resource[rriItemID2ResourceID[crt.RRIItemID]].IP
 		switch strings.ToLower(crt.Component) {
 		case "tidb":
 			topo.TiDBServers[ip] = crts[idx]
@@ -65,7 +65,7 @@ func TryDeployCluster(name string,
 	}
 
 	yaml := buildTopologyYaml(topo)
-	if err := deployCluster(yaml, name, cr); err != nil {
+	if err := deployCluster(topo, yaml, name, cr); err != nil {
 		return nil, errors.Trace(err)
 	}
 	if err := startCluster(name); err != nil {
@@ -128,8 +128,26 @@ func TryScaleIn(name string, r *types.Resource, component string) error {
 	return nil
 }
 
-// TryDestroyCluster ...
-func TryDestroyCluster(name string) error {
+// StartCluster calls tiup cluster start xxx
+func StartCluster(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "start", name)
+	if err != nil {
+		return fmt.Errorf("start cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
+// StopCluster calls tiup cluster stop xxx
+func StopCluster(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "stop", name)
+	if err != nil {
+		return fmt.Errorf("stop cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
+// DestroyCluster ...
+func DestroyCluster(name string) error {
 	output, err := util.Command("", "tiup", "cluster", "destroy", name, "-y")
 	if err != nil {
 		return fmt.Errorf("destroy cluster failed, err: %v, output: %s", err, output)
@@ -137,7 +155,16 @@ func TryDestroyCluster(name string) error {
 	return nil
 }
 
-func deployCluster(yaml, name string, cr *types.ClusterRequest) error {
+// CleanClusterData ...
+func CleanClusterData(name string) error {
+	output, err := util.Command("", "tiup", "cluster", "clean", name, "--all", "--ignore-role", "prometheus", "-y")
+	if err != nil {
+		return fmt.Errorf("clean cluster failed, err: %v, output: %s", err, output)
+	}
+	return nil
+}
+
+func deployCluster(topo *Topology, yaml, name string, cr *types.ClusterRequest) error {
 	file, err := ioutil.TempFile("", "cluster")
 	if err != nil {
 		return errors.Trace(err)
@@ -153,10 +180,10 @@ func deployCluster(yaml, name string, cr *types.ClusterRequest) error {
 	if err != nil {
 		return fmt.Errorf("start cluster failed, err: %s", err)
 	}
-	return patchCluster(name, cr)
+	return patchCluster(topo, name, cr)
 }
 
-func patchCluster(name string, cr *types.ClusterRequest) error {
+func patchCluster(topo *Topology, name string, cr *types.ClusterRequest) error {
 	var patchComponent = []struct {
 		component   string
 		downloadURL string
@@ -176,6 +203,15 @@ func patchCluster(name string, cr *types.ClusterRequest) error {
 	}
 	needPatch := false
 	for _, component := range patchComponent {
+		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
+			continue
+		}
+		if component.component == "tikv-server" && len(topo.TiKVServers) == 0 {
+			continue
+		}
+		if component.component == "pd-server" && len(topo.PDServers) == 0 {
+			continue
+		}
 		if len(component.downloadURL) != 0 {
 			needPatch = true
 			break
@@ -190,6 +226,15 @@ func patchCluster(name string, cr *types.ClusterRequest) error {
 	}
 	var components []string
 	for _, component := range patchComponent {
+		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
+			continue
+		}
+		if component.component == "tikv-server" && len(topo.TiKVServers) == 0 {
+			continue
+		}
+		if component.component == "pd-server" && len(topo.PDServers) == 0 {
+			continue
+		}
 		if len(component.downloadURL) != 0 {
 			components = append(components, component.component)
 			filePath, err := util.Wget(component.downloadURL, dir)
@@ -244,23 +289,27 @@ pd_servers:`)
     data_dir: "%s/data/pd-2379"`, host, config.DeployPath, config.DeployPath))
 	}
 
-	topo.WriteString(`
+	if len(t.TiDBServers) != 0 {
+		topo.WriteString(`
 
 tidb_servers:`)
-	for host, config := range t.TiDBServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiDBServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tidb-4000"`, host, config.DeployPath))
+		}
 	}
 
-	topo.WriteString(`
+	if len(t.TiKVServers) != 0 {
+		topo.WriteString(`
 
 tikv_servers:`)
-	for host, config := range t.TiKVServers {
-		topo.WriteString(fmt.Sprintf(`
+		for host, config := range t.TiKVServers {
+			topo.WriteString(fmt.Sprintf(`
   - host: %s
     deploy_dir: "%s/deploy/tikv-20160"
     data_dir: "%s/data/tikv-20160"`, host, config.DeployPath, config.DeployPath))
+		}
 	}
 
 	topo.WriteString(`

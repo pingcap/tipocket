@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/ngaut/log"
-	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	chaosv1alpha1 "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"

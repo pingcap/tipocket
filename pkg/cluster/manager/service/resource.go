@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/jinzhu/gorm"
-
 	"github.com/juju/errors"
 
 	"github.com/pingcap/tipocket/pkg/cluster/manager/mysql"
@@ -17,13 +16,18 @@ type Resource struct {
 	lock sync.Mutex
 }
 
-// FindResourcesByIDs ...
-func (rr *Resource) FindResourcesByIDs(ids []uint) ([]types.Resource, error) {
-	var result []types.Resource
-	if err := rr.DB.Where("id IN (?)", ids).Find(&result).Error; err != nil {
+// FindResources ...
+func (rr *Resource) FindResources(tx *gorm.DB, where ...interface{}) ([]*types.Resource, error) {
+	var result []*types.Resource
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return result, nil
+}
+
+// UpdateResource ...
+func (rr *Resource) UpdateResource(tx *gorm.DB, r *types.Resource) error {
+	return errors.Trace(tx.Save(r).Error)
 }
 
 // GetResourceByID ...
@@ -44,6 +48,38 @@ func (rr *Resource) GetResourceRequestByName(tx *gorm.DB, name string) (*types.R
 	return &result, nil
 }
 
+// GetResourceRequest ...
+func (rr *Resource) GetResourceRequest(tx *gorm.DB, id uint) (*types.ResourceRequest, error) {
+	var result types.ResourceRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
+// FindResourceRequests ...
+func (rr *Resource) FindResourceRequests(tx *gorm.DB, where ...interface{}) ([]*types.ResourceRequest, error) {
+	var result []*types.ResourceRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return result, nil
+}
+
+// FindResourceRequest ...
+func (rr *Resource) FindResourceRequest(tx *gorm.DB, id uint) (*types.ResourceRequest, error) {
+	var result types.ResourceRequest
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&result, "id = ?", id).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &result, nil
+}
+
+// UpdateResourceRequest ...
+func (rr *Resource) UpdateResourceRequest(tx *gorm.DB, r *types.ResourceRequest) error {
+	return errors.Trace(tx.Save(r).Error)
+}
+
 // FindResourceRequestItemsByRRID ...
 func (rr *Resource) FindResourceRequestItemsByRRID(rrid uint) ([]*types.ResourceRequestItem, error) {
 	var result []*types.ResourceRequestItem
@@ -62,14 +98,24 @@ func (rr *Resource) GetResourceRequestItemByID(id uint) (*types.ResourceRequestI
 	return &result, nil
 }
 
-// FindResourceRequestItemsByResourceRequestName ...
-func (rr *Resource) FindResourceRequestItemsByResourceRequestName(name string) ([]*types.ResourceRequestItem, error) {
+// FindResourceRequestItemsByClusterRequestID ...
+func (rr *Resource) FindResourceRequestItemsByClusterRequestID(id uint) ([]*types.ResourceRequestItem, error) {
 	var result []*types.ResourceRequestItem
-	if err := rr.DB.Raw("SELECT * FROM resource_request_items WHERE rr_id = (SELECT id FROM resource_requests WHERE name = ?)", name).
+	if err := rr.DB.Raw("SELECT * FROM resource_request_items WHERE rr_id = (SELECT rr_id FROM cluster_requests WHERE id = ?)", id).
 		Scan(&result).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return result, nil
+}
+
+// UpdateResourceRequestItems ...
+func (rr *Resource) UpdateResourceRequestItems(tx *gorm.DB, rris []*types.ResourceRequestItem) error {
+	for _, rri := range rris {
+		if err := tx.Save(rri).Error; err != nil {
+			return errors.Trace(err)
+		}
+	}
+	return nil
 }
 
 // UpdateResourceRequestItemsAndClusterRequestTopos ...

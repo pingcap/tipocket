@@ -1,106 +1,86 @@
 package workload
 
 import (
+	"bytes"
 	"fmt"
-	"math/rand"
-	"strings"
 
 	"github.com/juju/errors"
 
+	"github.com/pingcap/tipocket/pkg/cluster/manager/artifacts"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/types"
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
-// TryRunWorkload creates the workload docker container and injects necessary
+// RunWorkload creates the workload docker container and injects necessary
 // environment variables
-func TryRunWorkload(
-	name string,
-	resources []types.Resource,
+func RunWorkload(
+	cr *types.ClusterRequest,
+	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	wr *types.WorkloadRequest,
+	artifactUUID string,
 	envs map[string]string,
-) (s []byte, e []byte, err error) {
-
-	rriID2Resource := make(map[uint]types.Resource)
-	rriItemID2RriID := make(map[uint]uint)
-	component2Resources := make(map[string][]types.Resource)
-	// resource request item id -> resource
-	for _, re := range resources {
-		rriID2Resource[re.RRIID] = re
-	}
-	// resource request item item_id ->  resource request item id
-	for _, rri := range rris {
-		rriItemID2RriID[rri.ItemID] = rri.ID
-		for _, component := range strings.Split(rri.Components, "|") {
-			if _, ok := component2Resources[component]; !ok {
-				component2Resources[component] = make([]types.Resource, 0)
-			}
-			component2Resources[component] = append(component2Resources[component], rriID2Resource[rri.ID])
-		}
-	}
-	resource := rriID2Resource[rriItemID2RriID[wr.RRIItemID]]
+) (dockerExecutor *util.DockerExecutor, containerID string, out *bytes.Buffer, err error) {
+	rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
+	resource := rriItemID2Resource[wr.RRIItemID]
 	host := resource.IP
-
 	if envs == nil {
 		envs = make(map[string]string)
 	}
-
 	var (
-		rs   types.Resource
-		prom types.Resource
+		rs *types.Resource
 	)
-	envs["CLUSTER_NAME"] = name
+	envs["CLUSTER_ID"] = fmt.Sprintf("%d", cr.ID)
+	envs["CLUSTER_NAME"] = cr.Name
 	envs["API_SERVER"] = fmt.Sprintf("http://%s", util.Addr)
-	if rs, err = randomResource(component2Resources["pd"]); err != nil {
-		return nil, nil, errors.Trace(err)
+	envs["ARTIFACT_URL"] = fmt.Sprintf("%s/%s/%s", util.S3Endpoint, artifacts.ArtifactDownloadPath(cr.ID), artifactUUID)
+
+	if rs, err = util.RandomResource(component2Resources["pd"]); err != nil {
+		return nil, "", nil, errors.Trace(err)
 	}
 	envs["PD_ADDR"] = fmt.Sprintf("%s:2379", rs.IP)
-	if rs, err = randomResource(component2Resources["tidb"]); err != nil {
-		return nil, nil, errors.Trace(err)
-	}
-	envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
-	if prom, err = randomResource(component2Resources["prometheus"]); err != nil {
-		return nil, nil, errors.Trace(err)
-	}
-	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", prom.IP)
-	dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 
+	if len(component2Resources["tidb"]) != 0 {
+		if rs, err = util.RandomResource(component2Resources["tidb"]); err != nil {
+			return nil, "", nil, errors.Trace(err)
+		}
+		envs["TIDB_ADDR"] = fmt.Sprintf("%s:4000", rs.IP)
+	}
+
+	if rs, err = util.RandomResource(component2Resources["prometheus"]); err != nil {
+		return nil, "", nil, errors.Trace(err)
+	}
+	envs["PROM_ADDR"] = fmt.Sprintf("http://%s:9090", rs.IP)
+
+	dockerExecutor, err = util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 	if err != nil {
-		return nil, nil, errors.Trace(err)
+		return nil, "", nil, errors.Trace(err)
 	}
-	if s, e, err := RestoreDataIfConfig(wr, envs, dockerExecutor); err != nil {
-		return s, e, errors.Trace(err)
-	}
-	s, e, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
-	if err != nil {
-		return
-	}
+	containerID, out, err = dockerExecutor.Run(wr.DockerImage, envs, wr.Cmd, wr.Args...)
 	return
 }
 
-// RestoreDataIfConfig ...
-func RestoreDataIfConfig(wr *types.WorkloadRequest, envs map[string]string, dockerExecutor *util.DockerExecutor) ([]byte, []byte, error) {
-	if wr.RestorePath != nil {
+// RestoreData ...
+func RestoreData(restorePath string, pdHost string, host string) (*bytes.Buffer, error) {
+	if len(restorePath) != 0 {
+		dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
+		if err != nil {
+			return nil, err
+		}
+		envs := make(map[string]string)
+		envs["PD_ADDR"] = fmt.Sprintf("%s:2379", pdHost)
 		envs["S3_ENDPOINT"] = fmt.Sprintf("http://%s", util.S3Endpoint)
 		envs["AWS_ACCESS_KEY_ID"] = util.AwsAccessKeyID
 		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
-
 		// FIXME(mahjonp): replace with pingcap/br in future
-		s, e, err := dockerExecutor.Run("mahjonp/br",
+		_, o, err := dockerExecutor.Run("mahjonp/br",
 			envs,
 			&[]string{"/bin/bash"}[0],
-			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+*wr.RestorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
+			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+restorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
 		if err != nil {
-			return s, e, errors.Trace(err)
+			return o, errors.Trace(err)
 		}
-		return s, e, nil
+		return o, nil
 	}
-	return nil, nil, nil
-}
-
-func randomResource(rs []types.Resource) (types.Resource, error) {
-	if len(rs) == 0 {
-		return types.Resource{}, fmt.Errorf("expect non-empty resources")
-	}
-	return rs[rand.Intn(len(rs))], nil
+	return nil, nil
 }

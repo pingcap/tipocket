@@ -1,13 +1,25 @@
 package types
 
-import "github.com/jinzhu/gorm"
+import (
+	"strings"
+
+	"github.com/jinzhu/gorm"
+)
 
 const (
-	// ClusterRequestStatusReady ...
+	// ClusterRequestStatusPending means that the request is in queue
+	ClusterRequestStatusPending = "PENDING"
+	// ClusterRequestStatusReady means that the request is met(get expected resources) but haven't run workloads
 	ClusterRequestStatusReady = "READY"
-	// ClusterRequestStatusRunning ...
+	// ClusterRequestStatusRunning means that the request is running some workloads now
 	ClusterRequestStatusRunning = "RUNNING"
-	// ClusterRequestStatusDone ...
+	// ClusterRequestStatusPendingRebuild ...
+	ClusterRequestStatusPendingRebuild = "REBUILD-PENDING"
+	// ClusterRequestStatusRebuilding ...
+	ClusterRequestStatusRebuilding = "REBUILDING"
+	// ClusterRequestStatusRebuildFail ...
+	ClusterRequestStatusRebuildFail = "REBUILD-FAIL"
+	// ClusterRequestStatusDone means that the request is finished and resources
 	ClusterRequestStatusDone = "DONE"
 
 	// ClusterTopoStatusReady ...
@@ -26,6 +38,7 @@ const (
 // ClusterRequest ...
 type ClusterRequest struct {
 	gorm.Model
+	Name        string `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	Config      string `gorm:"column:config;type:text" json:"config"`
 	Version     string `gorm:"column:version;type:varchar(255);not null" json:"version"`
 	PDVersion   string `gorm:"column:pd_version;type:varchar(255)" json:"pd_version"`
@@ -44,6 +57,7 @@ func (cr *ClusterRequest) Baseline() *ClusterRequest {
 			UpdatedAt: cr.UpdatedAt,
 			DeletedAt: cr.DeletedAt,
 		},
+		Name:    cr.Name,
 		Config:  cr.Config,
 		Version: cr.Version,
 		RRID:    cr.RRID,
@@ -61,4 +75,29 @@ type ClusterRequestTopology struct {
 	// READY
 	// ONLINE
 	Status string `gorm:"column:status;not null" json:"status"`
+}
+
+// BuildClusterMap receives resources and resource request items then builds two maps.
+// rriItemID2Resource maps resource request item id to resource
+// component2Resources maps component name to resources
+func BuildClusterMap(resources []*Resource, rris []*ResourceRequestItem) (
+	rriItemID2Resource map[uint]*Resource, component2Resources map[string][]*Resource,
+) {
+	id2Resource := make(map[uint]*Resource)
+	rriItemID2Resource = make(map[uint]*Resource)
+	component2Resources = make(map[string][]*Resource)
+	// resource request item id -> resource
+	for idx, re := range resources {
+		id2Resource[re.ID] = resources[idx]
+	}
+	for _, rri := range rris {
+		rriItemID2Resource[rri.ItemID] = id2Resource[rri.RID]
+		for _, component := range strings.Split(rri.Components, "|") {
+			if _, ok := component2Resources[component]; !ok {
+				component2Resources[component] = make([]*Resource, 0)
+			}
+			component2Resources[component] = append(component2Resources[component], id2Resource[rri.RID])
+		}
+	}
+	return rriItemID2Resource, component2Resources
 }

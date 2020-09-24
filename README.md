@@ -10,7 +10,7 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 
 * [TiDB Operator](https://github.com/pingcap/tidb-operator) >= v1.1.0-rc.3
 
-* [Chaos Mesh](https://github.com/pingcap/chaos-mesh)
+* [Chaos Mesh](https://github.com/pingcap/chaos-mesh) >= v0.9.1
 
 ## Toolkit
 
