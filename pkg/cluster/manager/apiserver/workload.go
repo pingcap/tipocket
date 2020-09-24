@@ -139,13 +139,13 @@ func (m *Manager) runClusterWorkload(
 		zap.Uint("cr_id", cr.ID))
 
 	artifactUUID := fastuuid.MustNewGenerator().Hex128()
-	if wr.ArtifactDir != nil {
+	if wr.RestorePath != nil {
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
 			goto DestroyCluster
 		}
-		if _, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+		if _, err := workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
 			goto DestroyCluster
 		}
 	}
