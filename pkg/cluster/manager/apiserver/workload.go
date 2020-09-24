@@ -54,12 +54,24 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	case types.WorkloadTypeStandard:
 		workloadFunc = m.runStandardWorkload
 	}
-	if err := workloadFunc(rs, rris, cr, crts, wr); err != nil {
-		return errors.Trace(err)
+	return m.handleErr(workloadFunc(rs, rris, cr, crts, wr), cr, rr, rs, rris, wr)
+}
+
+func (m *Manager) handleErr(err error,
+	cr *types.ClusterRequest,
+	rr *types.ResourceRequest,
+	rs []*types.Resource,
+	rris []*types.ResourceRequestItem,
+	wr *types.WorkloadRequest,
+) error {
+	if err != nil {
+		wr.Status = types.WorkloadStatusFail
+	} else {
+		wr.Status = types.WorkloadStatusDone
 	}
-	wr.Status = types.WorkloadStatusDone
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("update workload request failed", zap.Uint("cr_id", cr.ID), zap.Uint("wr_id", wr.ID), zap.Error(err))
+		return err
 	}
 	return m.Resource.DB.Transaction(func(tx *gorm.DB) error {
 		// mark cluster request finished
@@ -151,9 +163,11 @@ func (m *Manager) runClusterWorkload(
 	}
 	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
-		zap.L().Error("run workload container failed",
-			zap.ByteString("out", out.Bytes()),
-			zap.Error(err))
+		fields := []zap.Field{zap.Error(err)}
+		if out != nil {
+			fields = append(fields, zap.ByteString("stdout/stderr", out.Bytes()))
+		}
+		zap.L().Error("run workload container failed", fields...)
 		goto TearDown
 	}
 	defer func() {
@@ -171,13 +185,16 @@ TearDown:
 		zap.L().Error("archive artifacts failed", zap.Error(err))
 	}
 DestroyCluster:
+	errResult := err
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
+		errResult = err
 		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
 	if err = m.setOffline(rris, crts); err != nil {
-		return errors.Trace(err)
+		errResult = err
+		zap.L().Error("set offline failed", zap.Error(err))
 	}
-	return nil
+	return errResult
 }
 
 func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {
