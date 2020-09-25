@@ -61,11 +61,11 @@ func RunWorkload(
 }
 
 // RestoreData ...
-func RestoreData(restorePath string, pdHost string, host string) (*bytes.Buffer, error) {
+func RestoreData(restorePath string, pdHost string, host string) (string, *bytes.Buffer, error) {
 	if len(restorePath) != 0 {
 		dockerExecutor, err := util.NewDockerExecutor(fmt.Sprintf("tcp://%s:2375", host))
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
 		envs := make(map[string]string)
 		envs["PD_ADDR"] = fmt.Sprintf("%s:2379", pdHost)
@@ -73,14 +73,14 @@ func RestoreData(restorePath string, pdHost string, host string) (*bytes.Buffer,
 		envs["AWS_ACCESS_KEY_ID"] = util.AwsAccessKeyID
 		envs["AWS_SECRET_ACCESS_KEY"] = util.AwsSecretAccessKey
 		// FIXME(mahjonp): replace with pingcap/br in future
-		_, o, err := dockerExecutor.Run("mahjonp/br",
+		id, o, err := dockerExecutor.Run("mahjonp/br",
 			envs,
 			&[]string{"/bin/bash"}[0],
 			"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+restorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
 		if err != nil {
-			return o, errors.Trace(err)
+			return id, o, errors.Trace(err)
 		}
-		return o, nil
+		return id, o, nil
 	}
-	return nil, nil
+	return "", nil, nil
 }

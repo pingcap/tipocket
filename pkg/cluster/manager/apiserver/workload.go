@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -140,6 +141,7 @@ func (m *Manager) runClusterWorkload(
 		out            *bytes.Buffer
 		rs             *types.Resource
 		dockerExecutor *util.DockerExecutor
+		errResult      error
 	)
 	if topo, err = deploy.TryDeployCluster(cr.Name, resources, rris, cr, crts); err != nil {
 		return errors.Trace(err)
@@ -155,10 +157,13 @@ func (m *Manager) runClusterWorkload(
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
+			errResult = multierror.Append(errResult, err)
 			goto DestroyCluster
 		}
-		if _, err := workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
-			goto DestroyCluster
+		if containerID, out, err = workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			errResult = multierror.Append(errResult, err)
+			zap.L().Error("restore data failed", zap.Uint("cr_id", cr.ID))
+			goto TearDown
 		}
 	}
 	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
@@ -168,6 +173,7 @@ func (m *Manager) runClusterWorkload(
 			fields = append(fields, zap.ByteString("stdout/stderr", out.Bytes()))
 		}
 		zap.L().Error("run workload container failed", fields...)
+		errResult = multierror.Append(errResult, err)
 		goto TearDown
 	}
 	defer func() {
@@ -182,16 +188,16 @@ func (m *Manager) runClusterWorkload(
 	}
 TearDown:
 	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, out, artifactUUID); err != nil {
+		errResult = multierror.Append(errResult, err)
 		zap.L().Error("archive artifacts failed", zap.Error(err))
 	}
 DestroyCluster:
-	errResult := err
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
-		errResult = err
+		errResult = multierror.Append(errResult, err)
 		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
 	if err = m.setOffline(rris, crts); err != nil {
-		errResult = err
+		errResult = multierror.Append(errResult, err)
 		zap.L().Error("set offline failed", zap.Error(err))
 	}
 	return errResult
