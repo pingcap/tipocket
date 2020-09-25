@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/gorm"
 	"github.com/juju/errors"
 	"github.com/rogpeppe/fastuuid"
@@ -54,12 +55,24 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	case types.WorkloadTypeStandard:
 		workloadFunc = m.runStandardWorkload
 	}
-	if err := workloadFunc(rs, rris, cr, crts, wr); err != nil {
-		return errors.Trace(err)
+	return m.handleErr(workloadFunc(rs, rris, cr, crts, wr), cr, rr, rs, rris, wr)
+}
+
+func (m *Manager) handleErr(err error,
+	cr *types.ClusterRequest,
+	rr *types.ResourceRequest,
+	rs []*types.Resource,
+	rris []*types.ResourceRequestItem,
+	wr *types.WorkloadRequest,
+) error {
+	if err != nil {
+		wr.Status = types.WorkloadStatusFail
+	} else {
+		wr.Status = types.WorkloadStatusDone
 	}
-	wr.Status = types.WorkloadStatusDone
 	if err := m.Cluster.UpdateWorkloadRequest(m.DB.DB, wr); err != nil {
-		return errors.Trace(err)
+		zap.L().Error("update workload request failed", zap.Uint("cr_id", cr.ID), zap.Uint("wr_id", wr.ID), zap.Error(err))
+		return err
 	}
 	return m.Resource.DB.Transaction(func(tx *gorm.DB) error {
 		// mark cluster request finished
@@ -128,6 +141,7 @@ func (m *Manager) runClusterWorkload(
 		out            *bytes.Buffer
 		rs             *types.Resource
 		dockerExecutor *util.DockerExecutor
+		errResult      error
 	)
 	if topo, err = deploy.TryDeployCluster(cr.Name, resources, rris, cr, crts); err != nil {
 		return errors.Trace(err)
@@ -143,17 +157,23 @@ func (m *Manager) runClusterWorkload(
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
+			errResult = multierror.Append(errResult, err)
 			goto DestroyCluster
 		}
-		if _, err := workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
-			goto DestroyCluster
+		if containerID, out, err = workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			errResult = multierror.Append(errResult, err)
+			zap.L().Error("restore data failed", zap.Uint("cr_id", cr.ID))
+			goto TearDown
 		}
 	}
 	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if err != nil {
-		zap.L().Error("run workload container failed",
-			zap.ByteString("out", out.Bytes()),
-			zap.Error(err))
+		fields := []zap.Field{zap.Error(err)}
+		if out != nil {
+			fields = append(fields, zap.ByteString("stdout/stderr", out.Bytes()))
+		}
+		zap.L().Error("run workload container failed", fields...)
+		errResult = multierror.Append(errResult, err)
 		goto TearDown
 	}
 	defer func() {
@@ -168,16 +188,19 @@ func (m *Manager) runClusterWorkload(
 	}
 TearDown:
 	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, out, artifactUUID); err != nil {
+		errResult = multierror.Append(errResult, err)
 		zap.L().Error("archive artifacts failed", zap.Error(err))
 	}
 DestroyCluster:
 	if err = deploy.DestroyCluster(cr.Name); err != nil {
+		errResult = multierror.Append(errResult, err)
 		zap.L().Error("destroy cluster failed", zap.Error(err))
 	}
 	if err = m.setOffline(rris, crts); err != nil {
-		return errors.Trace(err)
+		errResult = multierror.Append(errResult, err)
+		zap.L().Error("set offline failed", zap.Error(err))
 	}
-	return nil
+	return errResult
 }
 
 func (m *Manager) uploadWorkloadResult(w http.ResponseWriter, r *http.Request) {

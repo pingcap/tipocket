@@ -25,6 +25,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
+	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/jpillora/backoff v1.0.0
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
