@@ -73,6 +73,9 @@ func (m *Manager) archiveArtifacts(
 	if err != nil {
 		return errors.Trace(err)
 	}
+	if err := artifacts.ArchiveClusterLogs(s3Client, crID, artifactUUID, topos); err != nil {
+		zap.L().Error("archive cluster data failed", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
+	}
 	if err := artifacts.ArchiveMonitorData(s3Client, crID, artifactUUID, topos); err != nil {
 		zap.L().Error("archive monitor data failed", zap.Uint("cr_id", crID), zap.String("uuid", artifactUUID))
 	}

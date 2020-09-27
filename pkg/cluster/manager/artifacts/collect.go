@@ -163,6 +163,91 @@ func ArchiveWorkloadRuntimeLog(
 	return nil
 }
 
+// ArchiveClusterLogs ...
+func ArchiveClusterLogs(s3Client *S3Client, crID uint, uuid string, topos *deploy.Topology) error {
+	tmpDir, err := ioutil.TempDir("", "cluster-log")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err := os.RemoveAll(tmpDir)
+		if err != nil {
+			zap.L().Error("remove tmp dir failed", zap.Error(err))
+		}
+	}()
+	type componentMeta struct {
+		host          string
+		componentType string
+		logDir        string
+	}
+	var metas []componentMeta
+	for host, topo := range topos.TiDBServers {
+		metas = append(metas, componentMeta{
+			host:          host,
+			componentType: "tidb",
+			logDir:        path.Join(deploy.TiDBDeployPath(topo.DeployPath), "log"),
+		})
+	}
+	for host, topo := range topos.TiKVServers {
+		metas = append(metas, componentMeta{
+			host:          host,
+			componentType: "tikv",
+			logDir:        path.Join(deploy.TiKVDeployPath(topo.DeployPath), "log"),
+		})
+	}
+	for host, topo := range topos.PDServers {
+		metas = append(metas, componentMeta{
+			host:          host,
+			componentType: "pd",
+			logDir:        path.Join(deploy.PDDeployPath(topo.DeployPath), "log"),
+		})
+	}
+	for _, meta := range metas {
+		logLocalDir := path.Join(tmpDir, fmt.Sprintf("%s/%s", meta.host, meta.componentType))
+		err := os.Mkdir(logLocalDir, 0755)
+		if err != nil {
+			zap.L().Error("create directory failed", zap.Uint("cr_id", crID), zap.Error(err))
+			continue
+		}
+		_, err = util.Command(logLocalDir,
+			"rsync",
+			"-avz",
+			fmt.Sprintf("tidb@%s:%s/", meta.host, meta.logDir), ".")
+		if err != nil {
+			zap.L().Error("sync cluster logs failed",
+				zap.Uint("cr_id", crID),
+				zap.String("host", meta.host),
+				zap.String("log_dir", meta.logDir),
+				zap.Error(err))
+			continue
+		}
+		err = filepath.Walk(logLocalDir, func(p string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			p, _ = filepath.Rel(tmpDir, p)
+			_, err = s3Client.FPutObject(context.Background(),
+				"artifacts",
+				fmt.Sprintf("%d/%s/%s", crID, uuid, p),
+				path.Join(tmpDir, p),
+				minio.PutObjectOptions{},
+			)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			return nil
+		})
+		if err != nil {
+			zap.L().Error("artifact cluster logs failed", zap.Uint("cr_id", crID), zap.Error(err))
+			continue
+		}
+	}
+	return err
+}
+
 func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost string, promServerTopo *types.ClusterRequestTopology) error {
 	type Snapshot struct {
 		Name  string `json:"name"`

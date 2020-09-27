@@ -32,7 +32,7 @@ func Command(workDir, command string, args ...string) (string, error) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		err = &CommandError{WorkDir: workDir, Cmd: command, Args: args, Err: err, Output: string(out)}
-		zap.L().Debug("run cmd failed", zap.String("cmd", command), zap.Strings("args", args), zap.Error(err))
+		zap.L().Error("run cmd failed", zap.String("cmd", command), zap.Strings("args", args), zap.Error(err))
 		return string(out), err
 	}
 	zap.L().Debug("run cmd succeed", zap.String("cmd", command), zap.Strings("args", args), zap.String("output", string(out)))
