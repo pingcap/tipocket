@@ -204,7 +204,7 @@ func ArchiveClusterLogs(s3Client *S3Client, crID uint, uuid string, topos *deplo
 	}
 	for _, meta := range metas {
 		logLocalDir := path.Join(tmpDir, fmt.Sprintf("%s/%s", meta.host, meta.componentType))
-		err := os.Mkdir(logLocalDir, 0755)
+		err := os.MkdirAll(logLocalDir, 0755)
 		if err != nil {
 			zap.L().Error("create directory failed", zap.Uint("cr_id", crID), zap.Error(err))
 			continue
@@ -257,6 +257,7 @@ func archiveProm(s3Client *S3Client, crID uint, uuid string, promServerHost stri
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(tmpDir)
 	// FIXME(@mahjonp): should use non-prompt to avoid the command hangs
 	output, err := util.Command(tmpDir,
 		"rsync",
@@ -283,6 +284,7 @@ func archiveGrafana(s3Client *S3Client, crID uint, uuid string, promServerHost s
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(tmpDir)
 	deployDir := deploy.BuildNormalGrafanaDeployDir(grafanaTopo)
 	output, err := util.Command(tmpDir,
 		"bash",

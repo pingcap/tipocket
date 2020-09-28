@@ -106,8 +106,8 @@ func (m *Manager) PollReadyClusterRequests(ctx context.Context) {
 	}
 }
 
-// PollPendingRebuildClusterRequests polls pending rebuild request
-func (m *Manager) PollPendingRebuildClusterRequests(ctx context.Context) {
+// PollCleaningPendingClusterRequests polls pending rebuild request
+func (m *Manager) PollCleaningPendingClusterRequests(ctx context.Context) {
 	b := &backoff.Backoff{
 		Min:    1 * time.Second,
 		Max:    10 * time.Second,
@@ -122,7 +122,7 @@ func (m *Manager) PollPendingRebuildClusterRequests(ctx context.Context) {
 			return
 		default:
 		}
-		crs, err := m.Cluster.FindClusterRequests(m.Cluster.DB.DB, "status = ?", types.ClusterRequestStatusPendingRebuild)
+		crs, err := m.Cluster.FindClusterRequests(m.Cluster.DB.DB, "status = ?", types.ClusterRequestStatusDataCleanPending)
 		if err != nil {
 			zap.L().Error("find cluster requests failed", zap.Error(errors.Trace(err)))
 			continue
@@ -131,7 +131,7 @@ func (m *Manager) PollPendingRebuildClusterRequests(ctx context.Context) {
 			continue
 		}
 		for _, cr := range crs {
-			if err := m.schedulePendingRebuildRequest(cr); err != nil {
+			if err := m.scheduleCleaningPendingRequest(cr); err != nil {
 				zap.L().Error("schedule cluster workload failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
 				goto ENTRY
 			}
@@ -165,16 +165,16 @@ func (m *Manager) scheduleClusterWorkload(cr *types.ClusterRequest) error {
 	return nil
 }
 
-func (m *Manager) schedulePendingRebuildRequest(cr *types.ClusterRequest) error {
+func (m *Manager) scheduleCleaningPendingRequest(cr *types.ClusterRequest) error {
 	err := m.Cluster.DB.Transaction(func(tx *gorm.DB) error {
 		cr, err := m.Cluster.GetClusterRequest(tx, cr.ID)
 		if err != nil {
 			return err
 		}
-		if cr.Status != types.ClusterRequestStatusPendingRebuild {
-			return fmt.Errorf("expect cluster request in %s state, but got %s", types.ClusterRequestStatusPendingRebuild, cr.Status)
+		if cr.Status != types.ClusterRequestStatusDataCleanPending {
+			return fmt.Errorf("expect cluster request in %s state, but got %s", types.ClusterRequestStatusDataCleanPending, cr.Status)
 		}
-		cr.Status = types.ClusterRequestStatusRebuilding
+		cr.Status = types.ClusterRequestStatusDataCleaning
 		return m.Cluster.UpdateClusterRequest(tx, cr)
 	})
 	if err != nil {
@@ -184,7 +184,7 @@ func (m *Manager) schedulePendingRebuildRequest(cr *types.ClusterRequest) error 
 		zap.L().Info("begin to clean data of cluster request", zap.Uint("cr_id", cr.ID))
 		err := m.cleanClusterData(cr)
 		if err != nil {
-			zap.L().Error("rebuild cluster failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
+			zap.L().Error("clean cluster data failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
 		}
 	}()
 	return nil
@@ -227,7 +227,7 @@ func (m *Manager) cleanClusterData(cr *types.ClusterRequest) error {
 	return m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr)
 FAIL:
 	zap.L().Error("clean cluster data failed", zap.Uint("cr_id", cr.ID), zap.Error(err))
-	cr.Status = types.ClusterRequestStatusRebuildFail
+	cr.Status = types.ClusterRequestStatusDataCleaningFail
 	return m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr)
 }
 
@@ -391,7 +391,7 @@ func (m *Manager) clusterScaleIn(w http.ResponseWriter, r *http.Request) {
 	ok(w, fmt.Sprintf("scale in cluster %d success", clusterRequestID))
 }
 
-func (m *Manager) clusterRebuild(w http.ResponseWriter, r *http.Request) {
+func (m *Manager) clusterDataClean(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	clusterRequestID, _ := strconv.ParseUint(vars["cluster_id"], 10, 64)
 	cr, err := m.Cluster.GetClusterRequest(m.Cluster.DB.DB, uint(clusterRequestID))
@@ -399,13 +399,13 @@ func (m *Manager) clusterRebuild(w http.ResponseWriter, r *http.Request) {
 		fail(w, err)
 		return
 	}
-	cr.Status = types.ClusterRequestStatusPendingRebuild
+	cr.Status = types.ClusterRequestStatusDataCleanPending
 	err = m.Cluster.UpdateClusterRequest(m.Cluster.DB.DB, cr)
 	if err != nil {
 		fail(w, err)
 		return
 	}
-	ok(w, fmt.Sprintf("submit rebuild request for cluster request %d success", clusterRequestID))
+	ok(w, fmt.Sprintf("submit cleaning request for cluster request %d success", clusterRequestID))
 }
 
 func (m *Manager) setScaleOut(rri *types.ResourceRequestItem, component string) error {
