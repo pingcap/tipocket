@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"strings"
+	"time"
 
 	"github.com/juju/errors"
 
@@ -71,6 +74,9 @@ func TryDeployCluster(name string,
 	if err := startCluster(name); err != nil {
 		return nil, errors.Trace(err)
 	}
+	// FIXME(mahjonp): replace it with heath check
+	// wait a moment for tidb providing service
+	time.Sleep(20 * time.Second)
 	return topo, nil
 }
 
@@ -87,9 +93,9 @@ tikv_servers:
 - host: %s
   port: 20160
   status_port: 20180
-  deploy_dir: %s/deploy/deploy/tikv-20160
-  data_dir: %s/data/tikv-20160
-`, host, deployPath, deployPath)
+  deploy_dir: %s
+  data_dir: %s
+`, host, TiKVDeployPath(deployPath), TiKVDataPath(deployPath))
 	default:
 		return fmt.Errorf("unsupport component type %s now", component)
 	}
@@ -224,6 +230,7 @@ func patchCluster(topo *Topology, name string, cr *types.ClusterRequest) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
+	defer os.RemoveAll(dir)
 	var components []string
 	for _, component := range patchComponent {
 		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
@@ -285,8 +292,8 @@ pd_servers:`)
 	for host, config := range t.PDServers {
 		topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/deploy/pd-2379"
-    data_dir: "%s/data/pd-2379"`, host, config.DeployPath, config.DeployPath))
+    deploy_dir: "%s"
+    data_dir: "%s"`, host, PDDeployPath(config.DeployPath), PDDataPath(config.DeployPath)))
 	}
 
 	if len(t.TiDBServers) != 0 {
@@ -296,7 +303,7 @@ tidb_servers:`)
 		for host, config := range t.TiDBServers {
 			topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/deploy/tidb-4000"`, host, config.DeployPath))
+    deploy_dir: "%s"`, host, TiDBDeployPath(config.DeployPath)))
 		}
 	}
 
@@ -307,8 +314,8 @@ tikv_servers:`)
 		for host, config := range t.TiKVServers {
 			topo.WriteString(fmt.Sprintf(`
   - host: %s
-    deploy_dir: "%s/deploy/tikv-20160"
-    data_dir: "%s/data/tikv-20160"`, host, config.DeployPath, config.DeployPath))
+    deploy_dir: "%s"
+    data_dir: "%s"`, host, TiKVDeployPath(config.DeployPath), TiKVDataPath(config.DeployPath)))
 		}
 	}
 
@@ -331,6 +338,31 @@ grafana_servers:`)
     deploy_dir: "%s"`, host, BuildNormalGrafanaDeployDir(config)))
 	}
 	return topo.String()
+}
+
+// TiDBDeployPath builds tidb deploy path
+func TiDBDeployPath(volumePath string) string {
+	return path.Join(volumePath, "deploy/tidb-4000")
+}
+
+// TiKVDeployPath builds tidb deploy path
+func TiKVDeployPath(volumePath string) string {
+	return path.Join(volumePath, "deploy/tikv-20160")
+}
+
+// TiKVDataPath builds tidb deploy path
+func TiKVDataPath(volumePath string) string {
+	return path.Join(volumePath, "data/tikv-20160")
+}
+
+// PDDeployPath builds tidb deploy path
+func PDDeployPath(volumePath string) string {
+	return path.Join(volumePath, "deploy/pd-2379")
+}
+
+// PDDataPath builds tidb deploy path
+func PDDataPath(volumePath string) string {
+	return path.Join(volumePath, "data/pd-2379")
 }
 
 // BuildNormalPrometheusDeployDir builds $root/deploy/prometheus-8249 format path
