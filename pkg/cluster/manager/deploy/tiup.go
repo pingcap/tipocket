@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -229,6 +230,7 @@ func patchCluster(topo *Topology, name string, cr *types.ClusterRequest) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
+	defer os.RemoveAll(dir)
 	var components []string
 	for _, component := range patchComponent {
 		if component.component == "tidb-server" && len(topo.TiDBServers) == 0 {
