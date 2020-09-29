@@ -54,6 +54,8 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 		workloadFunc = m.runPRWorkload
 	case types.WorkloadTypeStandard:
 		workloadFunc = m.runStandardWorkload
+	case types.WorkloadTypeDataImporter:
+		workloadFunc = m.runImporterWorkload
 	}
 	return m.handleErr(workloadFunc(rs, rris, cr, crts, wr), cr, rr, rs, rris, wr)
 }
@@ -106,6 +108,9 @@ func (m *Manager) handleErr(err error,
 	})
 }
 
+// runPRWorkload deploys the TiDB cluster and run the workload twice.
+// for the first time, it deploys the TiDB cluster using PR git hash bin and run the workload
+// for the second time, it deploys the TiDB cluster with baseline bin(for example, for the master branch PR, uses nightly) and run the workload
 func (m *Manager) runPRWorkload(
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
@@ -119,7 +124,18 @@ func (m *Manager) runPRWorkload(
 	return errors.Trace(m.runClusterWorkload(resources, rris, cr.Baseline(), crts, wr))
 }
 
+// runStandardWorkload works for almost scenes
 func (m *Manager) runStandardWorkload(
+	resources []*types.Resource,
+	rris []*types.ResourceRequestItem,
+	cr *types.ClusterRequest,
+	crts []*types.ClusterRequestTopology,
+	wr *types.WorkloadRequest) error {
+	return m.runClusterWorkload(resources, rris, cr, crts, wr)
+}
+
+// runImporterWorkload run the workload which imports data to databases then backups data imported
+func (m *Manager) runImporterWorkload(
 	resources []*types.Resource,
 	rris []*types.ResourceRequestItem,
 	cr *types.ClusterRequest,
@@ -160,13 +176,21 @@ func (m *Manager) runClusterWorkload(
 			errResult = multierror.Append(errResult, err)
 			goto DestroyCluster
 		}
-		if containerID, out, err = workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+		if out, err := workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
 			errResult = multierror.Append(errResult, err)
-			zap.L().Error("restore data failed", zap.Uint("cr_id", cr.ID))
-			goto TearDown
+			zap.L().Error("restore data failed", zap.Uint("cr_id", cr.ID), zap.String("output", out.String()))
+			goto DestroyCluster
 		}
 	}
 	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
+	if containerID != "" {
+		defer func() {
+			err := dockerExecutor.RmContainer(containerID)
+			if err != nil {
+				zap.L().Error("rm container failed", zap.String("container id", containerID), zap.Error(err))
+			}
+		}()
+	}
 	if err != nil {
 		fields := []zap.Field{zap.Error(err)}
 		if out != nil {
@@ -176,15 +200,21 @@ func (m *Manager) runClusterWorkload(
 		errResult = multierror.Append(errResult, err)
 		goto TearDown
 	}
-	defer func() {
-		err := dockerExecutor.RmContainer(containerID)
+	if wr.Type == types.WorkloadTypeDataImporter && wr.BackupPath != nil {
+		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
+		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
-			zap.L().Error("rm container failed", zap.String("container id", containerID), zap.Error(err))
+			errResult = multierror.Append(errResult, err)
+			goto DestroyCluster
 		}
-	}()
+		if out, err := workload.BackupData(*wr.BackupPath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			errResult = multierror.Append(errResult, err)
+			zap.L().Error("backup data failed", zap.Uint("cr_id", cr.ID), zap.String("output", out.String()))
+			goto DestroyCluster
+		}
+	}
 	if err = deploy.StopCluster(cr.Name); err != nil {
 		zap.L().Error("stop cluster failed", zap.Error(err))
-		goto TearDown
 	}
 TearDown:
 	if err = m.archiveArtifacts(cr.ID, topo, wr, dockerExecutor, containerID, out, artifactUUID); err != nil {
