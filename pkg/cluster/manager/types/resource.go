@@ -44,6 +44,16 @@ type ResourceRequestItem struct {
 	InstanceType string `gorm:"column:instance_type;type:varchar(100);not null" json:"instance_type"`
 	RRID         uint   `gorm:"column:rr_id;not null" json:"rr_id"`
 	RID          uint   `gorm:"column:r_id" json:"r_id"`
-	// Components records which *_servers are serving on this machine
-	Components string `gorm:"column:components" json:"components"`
+	Components   string `gorm:"column:components" json:"components"` // Components records which *_servers are serving on this machine
+}
+
+// ResourceRequestItemWithIP aggregates ResourceRequestItem with the ip field
+type ResourceRequestItemWithIP struct {
+	gorm.Model
+	ItemID       uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
+	InstanceType string `gorm:"column:instance_type;type:varchar(100);not null" json:"instance_type"`
+	RRID         uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	RID          uint   `gorm:"column:r_id" json:"r_id"`
+	Components   string `gorm:"column:components" json:"components"`
+	IP           string `json:"ip"`
 }
