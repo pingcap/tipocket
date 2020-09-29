@@ -219,7 +219,8 @@ func (m *Manager) cleanClusterData(cr *types.ClusterRequest) error {
 		if err != nil {
 			goto FAIL
 		}
-		if _, _, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+		if out, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			zap.L().Error("restore data failed", zap.String("output", out.String()), zap.Error(err))
 			goto FAIL
 		}
 	}

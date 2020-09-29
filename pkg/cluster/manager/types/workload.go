@@ -9,10 +9,12 @@ import (
 )
 
 const (
-	// WorkloadTypeStandard default value
+	// WorkloadTypeStandard is default value
 	WorkloadTypeStandard = "standard"
-	// WorkloadTypePR run with baseline
+	// WorkloadTypePR compares with baseline
 	WorkloadTypePR = "PR"
+	// WorkloadTypeDataImporter runs as a importer
+	WorkloadTypeDataImporter = "importer"
 )
 
 // Args is used to encapsulate the docker container instance args
@@ -70,8 +72,9 @@ func (e *Envs) Clone() Envs {
 // WorkloadRequest means workload requests
 type WorkloadRequest struct {
 	gorm.Model
-	Type        string  `gorm:"column:type;type:varchar(255)" json:"type"`
-	RestorePath *string `gorm:"column:restore_path;type:varchar(1024)" json:"restore_path"`
+	Type        string  `gorm:"column:type;type:varchar(255)" json:"type,omitempty"`
+	RestorePath *string `gorm:"column:restore_path;type:varchar(1024)" json:"restore_path,omitempty"`
+	BackupPath  *string `gorm:"column:backup_path;type:varchar(1024)" json:"backup_path,omitempty"`
 	DockerImage string  `gorm:"column:docker_image;type:varchar(255);not null" json:"docker_image"`
 	Cmd         *string `gorm:"column:cmd;type:varchar(255)" json:"cmd"`
 	ArtifactDir *string `gorm:"column:artifact_dir;type:varchar(255)" json:"artifact_dir"`
