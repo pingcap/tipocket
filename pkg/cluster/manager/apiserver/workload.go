@@ -169,7 +169,7 @@ func (m *Manager) runClusterWorkload(
 		zap.Uint("cr_id", cr.ID))
 
 	artifactUUID := fastuuid.MustNewGenerator().Hex128()
-	if wr.RestorePath != nil {
+	if wr.RestorePath != nil && *wr.RestorePath != "" {
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
@@ -181,6 +181,7 @@ func (m *Manager) runClusterWorkload(
 			zap.L().Error("restore data failed", zap.Uint("cr_id", cr.ID), zap.String("output", out.String()))
 			goto DestroyCluster
 		}
+		zap.L().Info("restore data success", zap.Uint("cr_id", cr.ID), zap.String("restore_path", *wr.RestorePath))
 	}
 	dockerExecutor, containerID, out, err = workload.RunWorkload(cr, resources, rris, wr, artifactUUID, wr.Envs.Clone())
 	if containerID != "" {
@@ -200,7 +201,7 @@ func (m *Manager) runClusterWorkload(
 		errResult = multierror.Append(errResult, err)
 		goto TearDown
 	}
-	if wr.Type == types.WorkloadTypeDataImporter && wr.BackupPath != nil {
+	if wr.Type == types.WorkloadTypeDataImporter && wr.BackupPath != nil && *wr.BackupPath != "" {
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err = util.RandomResource(component2Resources["pd"])
 		if err != nil {
@@ -212,6 +213,7 @@ func (m *Manager) runClusterWorkload(
 			zap.L().Error("backup data failed", zap.Uint("cr_id", cr.ID), zap.String("output", out.String()))
 			goto DestroyCluster
 		}
+		zap.L().Info("backup the importer workload success", zap.Uint("cr_id", cr.ID), zap.String("backup_path", *wr.BackupPath))
 	}
 	if err = deploy.StopCluster(cr.Name); err != nil {
 		zap.L().Error("stop cluster failed", zap.Error(err))
