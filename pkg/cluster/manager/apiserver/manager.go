@@ -52,7 +52,7 @@ func (m *Manager) Run() (err error) {
 }
 
 func (m *Manager) migrate() {
-	m.DB.AutoMigrate(&types.Resource{}, &types.ResourceRequest{}, &types.ResourceRequestItem{},
+	m.DB.AutoMigrate(&types.Resource{}, &types.ResourceRequest{}, &types.ResourceRequestItem{}, &types.ResourceRequestQueue{},
 		&types.ClusterRequest{}, &types.ClusterRequestTopology{},
 		&types.WorkloadRequest{}, &types.WorkloadReport{},
 		&types.Artifacts{},

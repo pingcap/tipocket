@@ -81,9 +81,9 @@ func (rr *Resource) UpdateResourceRequest(tx *gorm.DB, r *types.ResourceRequest)
 }
 
 // FindResourceRequestItemsByRRID ...
-func (rr *Resource) FindResourceRequestItemsByRRID(rrid uint) ([]*types.ResourceRequestItem, error) {
+func (rr *Resource) FindResourceRequestItemsByRRID(tx *gorm.DB, rrID uint) ([]*types.ResourceRequestItem, error) {
 	var result []*types.ResourceRequestItem
-	if err := rr.DB.Find(&result, "rr_id = ?", rrid).Error; err != nil {
+	if err := tx.Find(&result, "rr_id = ?", rrID).Error; err != nil {
 		return nil, errors.Trace(err)
 	}
 	return result, nil
@@ -138,4 +138,19 @@ func (rr *Resource) UpdateResourceRequestItemsAndClusterRequestTopos(
 		}
 		return nil
 	})
+}
+
+// FindResources ...
+func (rr *Resource) FindResourceRequestQueue(tx *gorm.DB, where ...interface{}) ([]*types.ResourceRequestQueue, error) {
+	var result []*types.ResourceRequestQueue
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
+		return nil, errors.Trace(err)
+	}
+	return result, nil
+}
+
+// UpdateResourceRequestQueue ...
+func (rr *Resource) UpdateResourceRequestQueue(tx *gorm.DB, rrq *types.ResourceRequestQueue) error {
+	return tx.Exec("INSERT INTO resource_request_queues (r_id, pending_request_list) VALUES (?, ?) ON DUPLICATE KEY UPDATE pending_request_list=?",
+		rrq.ResourceID, rrq.PendingRequestList, rrq.PendingRequestList).Error
 }
