@@ -199,7 +199,7 @@ func (m *Manager) cleanClusterData(cr *types.ClusterRequest) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
+	rris, err := m.Resource.FindResourceRequestItemsByRRID(m.Resource.DB.DB, rr.ID)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -213,14 +213,16 @@ func (m *Manager) cleanClusterData(cr *types.ClusterRequest) error {
 	if err := deploy.StartCluster(cr.Name); err != nil {
 		goto FAIL
 	}
-	if wr.ArtifactDir != nil {
+	if wr.RestorePath != nil && *wr.RestorePath != "" {
 		rriItemID2Resource, component2Resources := types.BuildClusterMap(resources, rris)
 		rs, err := util.RandomResource(component2Resources["pd"])
 		if err != nil {
 			goto FAIL
 		}
-		if out, err := workload.RestoreData(*wr.ArtifactDir, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
-			zap.L().Error("restore data failed", zap.String("output", out.String()), zap.Error(err))
+		if out, err := workload.RestoreData(*wr.RestorePath, rs.IP, rriItemID2Resource[wr.RRIItemID].IP); err != nil {
+			zap.L().Error("restore data failed",
+				zap.String("output", out.String()),
+				zap.Error(err))
 			goto FAIL
 		}
 	}

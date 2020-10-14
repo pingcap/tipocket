@@ -36,8 +36,12 @@ func (m *Manager) PollPendingResourceRequests(ctx context.Context) {
 			if err != nil {
 				return errors.Trace(err)
 			}
+			rrqs, err := m.Resource.FindResourceRequestQueue(tx)
+			if err != nil {
+				return errors.Trace(err)
+			}
 			for _, rr := range rrs {
-				if err := m.tryAllocateResourcesToRequest(tx, rr); err != nil {
+				if err := m.tryAllocateResourcesToRequest(tx, rr, rrqs); err != nil {
 					return errors.Trace(err)
 				}
 			}
@@ -52,37 +56,106 @@ func (m *Manager) PollPendingResourceRequests(ctx context.Context) {
 
 }
 
-// tryAllocateResourcesToRequest
-func (m *Manager) tryAllocateResourcesToRequest(tx *gorm.DB, rr *types.ResourceRequest) error {
-	items, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
+// tryAllocateResourcesToRequest find suitable resource for each item
+// 1. if the item has specified a resource id, the allocator pushes it to the end of that resource's pending list
+//    which avoids this resource being binding to other cluster requests(to avoid starvation)
+// 2. otherwise, the allocator tries to find a idle resource according to instance type field
+func (m *Manager) tryAllocateResourcesToRequest(tx *gorm.DB, rr *types.ResourceRequest, rrqs []*types.ResourceRequestQueue) error {
+	id2ResourceMaps := make(map[uint]*types.Resource)
+	instanceTypeToResources := make(map[string][]*types.Resource)
+	resourceID2ResourceRequestQueue := make(map[uint]*types.ResourceRequestQueue)
+
+	items, err := m.Resource.FindResourceRequestItemsByRRID(tx, rr.ID)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	instanceTypeToResources := make(map[string][]*types.Resource)
-	rs, err := m.Resource.FindResources(tx, "status = ?", types.ResourceStatusReady)
+	rs, err := m.Resource.FindResources(tx, "status = ? OR status = ?", types.ResourceStatusReady, types.ResourceStatusBinding)
 	if err != nil {
 		return errors.Trace(err)
+	}
+	for idx, rrq := range rrqs {
+		resourceID2ResourceRequestQueue[rrq.ResourceID] = rrqs[idx]
 	}
 	for _, r := range rs {
+		if _, ok := resourceID2ResourceRequestQueue[r.ID]; !ok {
+			resourceID2ResourceRequestQueue[r.ID] = &types.ResourceRequestQueue{ResourceID: r.ID}
+		}
+	}
+	for idx, r := range rs {
+		id2ResourceMaps[r.ID] = rs[idx]
 		if _, ok := instanceTypeToResources[r.InstanceType]; !ok {
 			instanceTypeToResources[r.InstanceType] = make([]*types.Resource, 0)
 		}
 		instanceTypeToResources[r.InstanceType] = append(instanceTypeToResources[r.InstanceType], r)
 	}
-	var bindResources []*types.Resource
+
+	var (
+		bindResources    []*types.Resource
+		pendingResources []*types.Resource
+	)
+BindItem:
 	for _, item := range items {
-		if len(instanceTypeToResources[item.InstanceType]) == 0 {
-			return nil
+		var r *types.Resource
+		// if the request item has specified a resource id
+		if item.Static {
+			r = id2ResourceMaps[item.RID]
+			if r == nil {
+				return fmt.Errorf("no online resource %d found", item.RID)
+			}
+			pendingList := resourceID2ResourceRequestQueue[r.ID].PendingRequestIDList()
+			if !pendingList.Exist(item.RRID) {
+				resourceID2ResourceRequestQueue[r.ID].PushPendingRequestID(item.RRID)
+				pendingList = resourceID2ResourceRequestQueue[r.ID].PendingRequestIDList()
+				pendingResources = append(pendingResources, r)
+			}
+			if !pendingList.IsFirst(item.RRID) {
+				continue
+			}
+			if r.Status != types.ResourceStatusReady {
+				continue
+			}
+		} else {
+			for {
+				if len(instanceTypeToResources[item.InstanceType]) == 0 {
+					continue BindItem
+				}
+				r = instanceTypeToResources[item.InstanceType][0]
+				instanceTypeToResources[item.InstanceType] = instanceTypeToResources[item.InstanceType][1:]
+				if !resourceID2ResourceRequestQueue[r.ID].PendingRequestIDList().IsEmpty() {
+					continue
+				}
+				if r.Status != types.ResourceStatusReady {
+					continue
+				}
+				item.RID = r.ID
+				break
+			}
 		}
-		r := instanceTypeToResources[item.InstanceType][0]
-		instanceTypeToResources[item.InstanceType] = instanceTypeToResources[item.InstanceType][1:]
 		bindResources = append(bindResources, r)
 		r.RRID = rr.ID
 		r.Status = types.ResourceStatusBinding
-		item.RID = r.ID
 	}
+	// 1. if not all resources are met, just update resource queue those has been specified
+	if len(bindResources) != len(items) {
+		for _, r := range pendingResources {
+			if err := m.Resource.UpdateResourceRequestQueue(tx, resourceID2ResourceRequestQueue[r.ID]); err != nil {
+				return errors.Trace(err)
+			}
+		}
+		return nil
+	}
+	// 2. for the case which all request items are met
 	for _, r := range bindResources {
+		if !resourceID2ResourceRequestQueue[r.ID].PendingRequestIDList().IsEmpty() {
+			rrID := resourceID2ResourceRequestQueue[r.ID].PopPendingRequestID()
+			if rrID != rr.ID {
+				panic(fmt.Sprintf("a fatal bug exists here"))
+			}
+		}
 		if err := m.Resource.UpdateResource(tx, r); err != nil {
+			return errors.Trace(err)
+		}
+		if err := m.Resource.UpdateResourceRequestQueue(tx, resourceID2ResourceRequestQueue[r.ID]); err != nil {
 			return errors.Trace(err)
 		}
 	}

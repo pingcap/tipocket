@@ -12,8 +12,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster/manager/util"
 )
 
-// FIXME(mahjonp): replace with pingcap/br in future
-const brImage = "mahjonp/br"
+const brImage = "pingcap/br:nightly"
 
 // RunWorkload creates the workload docker container and injects necessary
 // environment variables
@@ -78,7 +77,7 @@ func RestoreData(restorePath string, pdHost string, host string) (*bytes.Buffer,
 	containerID, o, err := dockerExecutor.Run(brImage,
 		envs,
 		&[]string{"/bin/bash"}[0],
-		"-c", fmt.Sprintf("bin/br restore full --pd $PD_ADDR --storage s3://"+restorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
+		"-c", fmt.Sprintf("/br restore full --pd $PD_ADDR --storage s3://"+restorePath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
 	if containerID != "" {
 		defer func() {
 			err := dockerExecutor.RmContainer(containerID)
@@ -104,7 +103,7 @@ func BackupData(backupPath string, pdHost string, host string) (*bytes.Buffer, e
 	containerID, o, err := dockerExecutor.Run(brImage,
 		envs,
 		&[]string{"/bin/bash"}[0],
-		"-c", fmt.Sprintf("bin/br backup full --pd $PD_ADDR --storage s3://"+backupPath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
+		"-c", fmt.Sprintf("/br backup full --pd $PD_ADDR --storage s3://"+backupPath+" --s3.endpoint $S3_ENDPOINT --send-credentials-to-tikv=true"))
 	if containerID != "" {
 		defer func() {
 			err := dockerExecutor.RmContainer(containerID)

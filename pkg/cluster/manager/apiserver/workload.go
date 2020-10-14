@@ -31,7 +31,7 @@ func (m *Manager) runWorkload(cr *types.ClusterRequest) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	rris, err := m.Resource.FindResourceRequestItemsByRRID(rr.ID)
+	rris, err := m.Resource.FindResourceRequestItemsByRRID(m.Resource.DB.DB, rr.ID)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -96,7 +96,9 @@ func (m *Manager) handleErr(err error,
 		}
 		for _, rri := range rris {
 			rri.Components = ""
-			rri.RID = 0
+			if !rri.Static {
+				rri.RID = 0
+			}
 		}
 		if err := m.Resource.UpdateResourceRequestItems(m.Resource.DB.DB, rris); err != nil {
 			goto ERR
