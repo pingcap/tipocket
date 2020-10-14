@@ -140,7 +140,7 @@ func (rr *Resource) UpdateResourceRequestItemsAndClusterRequestTopos(
 	})
 }
 
-// FindResources ...
+// FindResourceRequestQueue ...
 func (rr *Resource) FindResourceRequestQueue(tx *gorm.DB, where ...interface{}) ([]*types.ResourceRequestQueue, error) {
 	var result []*types.ResourceRequestQueue
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").Find(&result, where...).Error; err != nil {
