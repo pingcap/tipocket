@@ -174,10 +174,14 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 	}
 
 	if err := txn.Commit(); err != nil {
+		tp := ellecore.OpTypeFail
+		if strings.Contains(err.Error(), "invalid connection") {
+			tp = ellecore.OpTypeUnknown
+		}
 		return appendResponse{
 			Result: ellecore.Op{
 				Time:  time.Now(),
-				Type:  ellecore.OpTypeFail,
+				Type:  tp,
 				Value: &mops,
 				Error: err.Error(),
 			},
