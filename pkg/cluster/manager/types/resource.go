@@ -2,9 +2,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/jinzhu/gorm"
 	"strconv"
 	"strings"
+
+	"github.com/jinzhu/gorm"
 )
 
 const (

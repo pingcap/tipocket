@@ -14,8 +14,8 @@
 package scheme
 
 import (
-	astsv1alpha1 "github.com/pingcap/advanced-statefulset/pkg/client/clientset/versioned/scheme"
 	chaosoperatorv1alpha1 "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
+	astsv1alpha1 "github.com/pingcap/advanced-statefulset/pkg/client/clientset/versioned/scheme"
 	tidboperatorv1alpha "github.com/pingcap/tidb-operator/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
