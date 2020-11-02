@@ -9,7 +9,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	chaosv1alpha1 "github.com/pingcap/chaos-mesh/api/v1alpha1"
+	chaosv1alpha1 "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -45,9 +45,11 @@ func (l loss) template(ns string, pods []string, podMode chaosv1alpha1.PodMode, 
 		// default mode
 		Mode: podMode,
 		// default Loss
-		Loss: &chaosv1alpha1.LossSpec{
-			Loss:        args[0],
-			Correlation: args[1],
+		TcParameter: chaosv1alpha1.TcParameter{
+			Loss: &chaosv1alpha1.LossSpec{
+				Loss:        args[0],
+				Correlation: args[1],
+			},
 		},
 	}
 }
@@ -75,10 +77,12 @@ func (d delay) template(ns string, pods []string, podMode chaosv1alpha1.PodMode,
 		// default mode
 		Mode: podMode,
 		// default Latency
-		Delay: &chaosv1alpha1.DelaySpec{
-			Latency:     args[0],
-			Correlation: args[1],
-			Jitter:      args[2],
+		TcParameter: chaosv1alpha1.TcParameter{
+			Delay: &chaosv1alpha1.DelaySpec{
+				Latency:     args[0],
+				Correlation: args[1],
+				Jitter:      args[2],
+			},
 		},
 	}
 }
@@ -107,9 +111,11 @@ func (d duplicate) template(ns string, pods []string, podMode chaosv1alpha1.PodM
 		// default mode
 		Mode: podMode,
 		// default Latency
-		Duplicate: &chaosv1alpha1.DuplicateSpec{
-			Duplicate:   args[0],
-			Correlation: args[1],
+		TcParameter: chaosv1alpha1.TcParameter{
+			Duplicate: &chaosv1alpha1.DuplicateSpec{
+				Duplicate:   args[0],
+				Correlation: args[1],
+			},
 		},
 	}
 }
@@ -138,9 +144,11 @@ func (c corrupt) template(ns string, pods []string, podMode chaosv1alpha1.PodMod
 		// default mode
 		Mode: podMode,
 		// default Latency
-		Corrupt: &chaosv1alpha1.CorruptSpec{
-			Corrupt:     args[0],
-			Correlation: args[1],
+		TcParameter: chaosv1alpha1.TcParameter{
+			Corrupt: &chaosv1alpha1.CorruptSpec{
+				Corrupt:     args[0],
+				Correlation: args[1],
+			},
 		},
 	}
 }

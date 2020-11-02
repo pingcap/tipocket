@@ -28,7 +28,7 @@ import (
 
 var (
 	tableSize        = flag.Int("table-size", 100, "row counts in the table")
-	contenderCount   = flag.Int("contenders", 10, "the count of sessions updating the same row")
+	contenderCount   = flag.Int("contenders", 1, "the count of sessions updating the same row")
 	scheduleInterval = flag.Duration("schedule-interval", 3*time.Second, "periodically schedule regions of the table with a specified interval")
 	reportInterval   = flag.Duration("report-interval", 10*time.Second, "periodically report intermediate statistics with a specified interval. 0 disables intermediate reports [0]")
 	strict           = flag.Bool("strict", false, "strict means as long as one transaction fails to commit, the test quits")

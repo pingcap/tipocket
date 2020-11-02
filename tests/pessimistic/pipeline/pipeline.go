@@ -66,12 +66,14 @@ type pipelineClient struct {
 	db        *sql.DB
 	scheduler *nemesis.LeaderShuffler
 
-	// stats
-	lastTotal   uint64
-	lastErrors  uint64
-	total       uint64
-	errors      uint64
 	reportCount uint64
+	// stats
+	lastTotal     uint64
+	lastLockErr   uint64
+	lastCommitErr uint64
+	total         uint64
+	lockErr       uint64
+	commitErr     uint64
 }
 
 func (c *pipelineClient) openDB(ctx context.Context) error {
@@ -82,7 +84,7 @@ func (c *pipelineClient) openDB(ctx context.Context) error {
 	}
 	defer db.Close()
 	util.MustExec(db, `CREATE DATABASE IF NOT EXISTS `+dbName)
-	c.db, err = util.OpenDB(dsn+"pipeline", 100)
+	c.db, err = util.OpenDB(dsn+"pipeline", c.TableSize*c.ContenderCount)
 	return errors.Trace(err)
 }
 
@@ -217,8 +219,9 @@ func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int) (bool, e
 		return false, err
 	}
 	defer tx.Rollback()
-	_, err = tx.QueryContext(ctx, fmt.Sprintf(`select * from %s where id = %d for update nowait`, tableName, row))
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id = %d FOR UPDATE NOWAIT`, tableName, row))
 	if err == nil {
+		rows.Close()
 		return false, nil
 	}
 	if me, ok := err.(*mysql.MySQLError); !ok || me.Number != 3572 {
@@ -245,20 +248,18 @@ func (c *pipelineClient) inc(ctx context.Context, row int) {
 			log.Fatalf("fail to update: %v", err)
 		}
 		// Check whether the lock above is applied successfully.
+		// If there are more than one contenders for each row, it may report false positive because the row can belocked by another transaction.
 		if locked, err := c.checkKeyIsLocked(ctx, row); !locked || err != nil {
 			if c.Strict {
 				log.Fatalf("fail to lock: %v", err)
-			} else {
-				log.Warnf("fail to lock: %v", err)
 			}
+			atomic.AddUint64(&c.lockErr, 1)
 		}
 		if err := tx.Commit(); err != nil {
 			if c.Strict {
 				log.Fatalf("fail to commit: %v", err)
-			} else {
-				log.Warnf("fail to commit: %v", err)
 			}
-			atomic.AddUint64(&c.errors, 1)
+			atomic.AddUint64(&c.commitErr, 1)
 		}
 		cnt++
 		if cnt == 10 {
@@ -279,19 +280,27 @@ func (c *pipelineClient) reportStats() {
 	total := atomic.LoadUint64(&c.total)
 	totalDiff := total - c.lastTotal
 	c.lastTotal = total
-	errors := atomic.LoadUint64(&c.errors)
-	errorsDiff := errors - c.lastErrors
-	c.lastErrors = errors
 
-	log.Infof("[%v] tps: %.2f err/s: %.2f rate: %.2f%% errors/total: %d/%d(%.2f%%)",
+	lockErr := atomic.LoadUint64(&c.lockErr)
+	lockErrDiff := lockErr - c.lastLockErr
+	c.lastLockErr = lockErr
+
+	commitErr := atomic.LoadUint64(&c.commitErr)
+	commitErrDiff := commitErr - c.lastCommitErr
+	c.lastCommitErr = commitErr
+
+	log.Infof("[%v] tps: %.2f lock_err/s: %.2f commit_err/s: %.2f lock_err/commit_err/total: %d/%d/%d(%.2f%%)",
 		time.Duration(c.reportCount*uint64(c.ReportInterval)).String(),
 		float64(totalDiff)/c.ReportInterval.Seconds(),
-		float64(errorsDiff)/c.ReportInterval.Seconds(),
-		float64(errorsDiff)/float64(totalDiff)*100,
-		errors, total, float64(errors)/float64(total)*100,
+		float64(lockErrDiff)/c.ReportInterval.Seconds(),
+		float64(commitErrDiff)/c.ReportInterval.Seconds(),
+		lockErr, commitErr, total, float64(lockErr+commitErr)/float64(total)*100,
 	)
 }
 
 func (c *pipelineClient) reportSummary() {
-	log.Infof("Summary: errors/total: %d/%d(%.2f%%)", atomic.LoadUint64(&c.errors), atomic.LoadUint64(&c.total), float64(c.errors)/float64(c.total)*100)
+	lockErr := atomic.LoadUint64(&c.lockErr)
+	commitErr := atomic.LoadUint64(&c.commitErr)
+	total := atomic.LoadUint64(&c.total)
+	log.Infof("Summary: lock_err/commit_err/total: %d/%d/%d(%.2f%%)", lockErr, commitErr, total, float64(lockErr+commitErr)/float64(total)*100)
 }

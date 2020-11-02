@@ -15,7 +15,7 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: consistency isolation pocket on-dup sqllogic block-writer \
+build: manager consistency isolation pocket on-dup sqllogic block-writer \
 		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
 		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
 
@@ -119,6 +119,9 @@ titan:
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
+manager:
+	$(GOBUILD) $(GOMOD) -o bin/manager cmd/cluster/manager/*.go
+
 fmt: groupimports
 	go fmt ./...
 
@@ -153,6 +156,6 @@ image:
 	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
-	docker push "${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
+	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
 
 .PHONY: all clean pocket compare test fmt

@@ -156,12 +156,17 @@ func (l *LeaderShuffler) transferRegion() error {
 		current = append(current, peer.GetStoreId())
 	}
 	target := onlineStores[:len(current)]
+	roles := make([]string, len(target), len(target))
+	for i := range roles {
+		roles[i] = "voter"
+	}
 
 	log.Infof("[leader shuffler] [leader=%d] Transfer leader region #%d from %v to %v", region.Leader.GetStoreId(), region.ID, current, target)
 	body := make(map[string]interface{})
 	body["name"] = "transfer-region"
 	body["region_id"] = region.ID
 	body["to_store_ids"] = target
+	body["peer_roles"] = roles
 	return l.Operators(body)
 }
 
@@ -220,10 +225,16 @@ func (l *LeaderShuffler) transferOtherRegionToLeader() error {
 		log.Infof("[leader shuffler] [leader=%d] Transfer other region #%d to the leader", region.Leader.StoreId, ri.ID)
 	}
 
+	roles := make([]string, len(toStores), len(toStores))
+	for i := range roles {
+		roles[i] = "voter"
+	}
+
 	return l.Operators(map[string]interface{}{
 		"name":         "transfer-region",
 		"region_id":    ri.ID,
 		"to_store_ids": toStores,
+		"peer_roles":   roles,
 	})
 }
 
