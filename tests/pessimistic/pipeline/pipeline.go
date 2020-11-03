@@ -115,7 +115,8 @@ func (c *pipelineClient) SetUp(ctx context.Context, nodes []cluster.Node, client
 	util.MustExec(c.db, `set @@global.tidb_txn_mode='pessimistic'`)
 	util.MustExec(c.db, `DROP TABLE IF EXISTS `+tableName)
 	util.MustExec(c.db, fmt.Sprintf(`CREATE TABLE %s (id INT PRIMARY KEY, v BIGINT)`, tableName))
-	for i := 0; i < c.TableSize; i++ {
+	// Each transaction modifies two rows.
+	for i := 0; i < c.TableSize*2; i++ {
 		util.MustExec(c.db, fmt.Sprintf(`insert into %s values (%d, 0)`, tableName, i))
 	}
 
@@ -175,22 +176,27 @@ func (c *pipelineClient) DumpState(ctx context.Context) (interface{}, error) {
 func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	c.scatterTable(dbName, tableName)
 	defer func() {
+		c.checkSum(context.Background())
 		c.reportSummary()
 		c.stopScatterTable(dbName, tableName)
 	}()
 
 	for i := 0; i < c.TableSize; i++ {
 		for j := 0; j < c.ContenderCount; j++ {
-			go c.inc(ctx, i)
+			go c.transfer(ctx, i)
 		}
 	}
 
+	checkTick := time.NewTicker(time.Second)
 	scheduleTick := time.NewTicker(c.ScheduleInterval)
 	reportTick := time.NewTicker(c.ReportInterval)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
+
+		case <-checkTick.C:
+			c.checkSum(ctx)
 
 		case <-scheduleTick.C:
 			c.schedule(ctx)
@@ -219,7 +225,7 @@ func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int) (bool, e
 		return false, err
 	}
 	defer tx.Rollback()
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id = %d FOR UPDATE NOWAIT`, tableName, row))
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id in (%d, %d) FOR UPDATE NOWAIT`, tableName, row, row+1))
 	if err == nil {
 		rows.Close()
 		return false, nil
@@ -230,7 +236,8 @@ func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int) (bool, e
 	return true, nil
 }
 
-func (c *pipelineClient) inc(ctx context.Context, row int) {
+// transfer transfers 1 from a row to the next row.
+func (c *pipelineClient) transfer(ctx context.Context, row int) {
 	var cnt uint64
 	for {
 		select {
@@ -244,7 +251,10 @@ func (c *pipelineClient) inc(ctx context.Context, row int) {
 			log.Fatalf("fail to begin a transaction: %v", err)
 		}
 		// When pipelined pessimistic locking is enabled, returning successful result means the lock request has been proposed.
-		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE %s SET v = v + 1 WHERE id = %d`, tableName, row)); err != nil {
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE %s SET v = v - 1 WHERE id = %d`, tableName, row)); err != nil {
+			log.Fatalf("fail to update: %v", err)
+		}
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE %s SET v = v + 1 WHERE id = %d`, tableName, row+c.TableSize)); err != nil {
 			log.Fatalf("fail to update: %v", err)
 		}
 		// Check whether the lock above is applied successfully.
@@ -266,6 +276,19 @@ func (c *pipelineClient) inc(ctx context.Context, row int) {
 			atomic.AddUint64(&c.total, cnt)
 			cnt = 0
 		}
+	}
+}
+
+// checkSum checks the sum of all rows in the table. It should be 0 because every transaction increases
+// one row by 1 and decrease one row by 1.
+func (c *pipelineClient) checkSum(ctx context.Context) {
+	sum := -1
+	err := c.db.QueryRowContext(ctx, fmt.Sprintf(`select sum(v) from %s`, tableName)).Scan(&sum)
+	if err != nil {
+		log.Fatalf("fail to check sum: %v", err)
+	}
+	if sum != 0 {
+		log.Fatalf("sum(%d) is not zero!", sum)
 	}
 }
 
