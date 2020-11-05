@@ -54,6 +54,12 @@ spec:
             default: "pd.toml"
           - name: matrix-sql
             default: "mysql-system-vars.sql,tidb-system-vars.sql"
+          - name: concurrency
+            default: "200"
+          - name: accounts
+            default: "1000000"
+          - name: tidb-failpoint
+            default: "\"github.com/pingcap/tidb/server/enableTestAPI=return\""
       outputs:
         artifacts:
           - name: tidb-logs
@@ -96,4 +102,7 @@ spec:
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \
             -matrix-pd={{inputs.parameters.matrix-pd}} \
-            -matrix-sql={{inputs.parameters.matrix-sql}}
+            -matrix-sql={{inputs.parameters.matrix-sql}} \
+            -concurrency={{inputs.parameters.concurrency}} \
+            -accounts={{inputs.parameters.accounts}} \
+            -failpoint.tidb={{inputs.parameters.failpoint-tidb}}
