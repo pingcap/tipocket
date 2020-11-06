@@ -15,8 +15,8 @@ force-consistency-checks = true
 
 [rocksdb.defaultcf]
 enable-compaction-guard = true
-target-file-size-base = 128M
+target-file-size-base = "128M"
 
 [rocksdb.writecf]
 enable-compaction-guard = true
-target-file-size-base = 128M
+target-file-size-base = "128M"

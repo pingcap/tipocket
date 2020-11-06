@@ -19,8 +19,8 @@ max-background-gc = 3  # default 1
 
 [rocksdb.defaultcf]
 enable-compaction-guard = true
-target-file-size-base = 128M  # default 8M
+target-file-size-base = "128M"  # default 8M
 
 [rocksdb.writecf]
 enable-compaction-guard = true
-target-file-size-base = 128M
+target-file-size-base = "128M"
