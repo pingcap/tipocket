@@ -1,7 +1,9 @@
 # maintainer: cosven
+#
+# a workflow for debugging bank2-compaction-opt
 
 metadata:
-  generateName: tipocket-bank2-compaction-
+  generateName: tipocket-bank2-compaction-opt-
   namespace: argo
 spec:
   entrypoint: main

@@ -1,7 +1,7 @@
 # maintainer: cosven
 
 metadata:
-  name: tipocket-bank2-compaction
+  name: tipocket-titan-bank2-compaction-opt
 spec:
   schedule: "0 6 * * *"
   concurrencyPolicy: "Forbid"
@@ -43,7 +43,7 @@ spec:
                   - name: tikv-replicas
                     value: "5"
                   - name: tikv-config
-                    value: "/config/tikv/compaction.toml"
+                    value: "/config/tikv/titan-compaction-opt.toml"
                   - name: namesis
                     value: "random_kill,partition_one,subcritical_skews,shuffle-leader-scheduler,shuffle-region-scheduler"
                   - name: tidb-replica-read

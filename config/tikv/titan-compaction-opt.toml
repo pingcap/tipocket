@@ -13,11 +13,14 @@ consistency-check-interval = "180s"
 [rocksdb]
 force-consistency-checks = true
 
+[rocksdb.titan]
+enabled = true
+max-background-gc = 3  # default 1
+
 [rocksdb.defaultcf]
 enable-compaction-guard = true
+target-file-size-base = 128M  # default 8M
 
 [rocksdb.writecf]
 enable-compaction-guard = true
-
-[rocksdb.lockcf]
-enable-compaction-guard = true
+target-file-size-base = 128M
