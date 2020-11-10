@@ -225,7 +225,7 @@ func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int) (bool, e
 		return false, err
 	}
 	defer tx.Rollback()
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id in (%d, %d) FOR UPDATE NOWAIT`, tableName, row, row+1))
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id in (%d, %d) FOR UPDATE NOWAIT`, tableName, row, row+c.TableSize))
 	if err == nil {
 		rows.Close()
 		return false, nil
@@ -258,7 +258,7 @@ func (c *pipelineClient) transfer(ctx context.Context, row int) {
 			log.Fatalf("fail to update: %v", err)
 		}
 		// Check whether the lock above is applied successfully.
-		// If there are more than one contenders for each row, it may report false positive because the row can belocked by another transaction.
+		// If there are more than one contenders for each row, it may report false positive because the row can be locked by another transaction.
 		if locked, err := c.checkKeyIsLocked(ctx, row); !locked || err != nil {
 			if c.Strict {
 				log.Fatalf("fail to lock: %v", err)
