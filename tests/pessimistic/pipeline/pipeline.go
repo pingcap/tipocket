@@ -1,6 +1,7 @@
 package pipeline
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -42,7 +43,7 @@ func (c *Config) Normalize() *Config {
 		c.TableSize = 1
 	}
 	if c.ContenderCount == 0 {
-		c.ContenderCount = 10
+		c.ContenderCount = 1
 	}
 	if c.ScheduleInterval <= time.Second {
 		c.ScheduleInterval = time.Second
@@ -56,15 +57,52 @@ func (c *Config) Create(node cluster.ClientNode) core.Client {
 	}
 }
 
+type regionScheduler struct {
+	*nemesis.LeaderShuffler
+	// failpoints related to region scheduling.
+	failpoints []string
+}
+
+func newRegionScheduler(pdAddr string, key string) *regionScheduler {
+	leaderShuffler := nemesis.NewLeaderShuffler(key)
+	leaderShuffler.SetPDAddr(pdAddr)
+	return &regionScheduler{
+		leaderShuffler,
+		[]string{"apply_before_split", "apply_before_prepare_merge", "apply_before_commit_merge", "apply_before_rollback_merge"},
+	}
+}
+
+func (s *regionScheduler) delayScheduling(kvStatusAddrs []string, delayMS int) error {
+	client := httputil.NewHTTPClient(http.DefaultClient)
+	// Add a delay to each failpoint so that more requests can fail due to region scheduling.
+	for _, kvStatusAddr := range kvStatusAddrs {
+		for _, fp := range s.failpoints {
+			url := fmt.Sprintf("http://%s/fail/%s", kvStatusAddr, fp)
+			_, err := client.Put(url, "", bytes.NewBufferString(fmt.Sprintf("delay(%d)", delayMS)))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *regionScheduler) schedule(ctx context.Context) {
+	if err := s.ShuffleLeader(); err != nil {
+		log.Warnf("fail to schedule: %v", err)
+	}
+}
+
 type pipelineClient struct {
 	*Config
 
-	dbAddr       string
-	dbStatusAddr string
-	pdAddr       string
+	dbAddr        string
+	dbStatusAddr  string
+	pdAddr        string
+	kvStatusAddrs []string
 
 	db        *sql.DB
-	scheduler *nemesis.LeaderShuffler
+	scheduler *regionScheduler
 
 	reportCount uint64
 	// stats
@@ -88,15 +126,31 @@ func (c *pipelineClient) openDB(ctx context.Context) error {
 	return errors.Trace(err)
 }
 
-func (c *pipelineClient) setUpAddrs(dbNode cluster.ClientNode, pdNode cluster.Node) {
+func (c *pipelineClient) setUpAddrs(dbNode cluster.ClientNode, nodes []cluster.Node) {
+	var pdNode cluster.Node
+	var kvNodes []cluster.Node
+
+	for _, node := range nodes {
+		switch node.Component {
+		case cluster.PD:
+			pdNode = node
+		case cluster.TiKV:
+			kvNodes = append(kvNodes, node)
+		}
+	}
+
 	if c.LocalMode {
 		c.dbAddr = "127.0.0.1:4000"
 		c.dbStatusAddr = "127.0.0.1:10080"
 		c.pdAddr = "127.0.0.1:2379"
+		c.kvStatusAddrs = []string{"127.0.0.1:20180", "127.0.0.1:20181", "127.0.0.1:20182", "127.0.0.1:20183"}
 	} else {
 		c.dbAddr = dbNode.Address()
 		c.dbStatusAddr = fmt.Sprintf("%s-tidb.%s.svc:10080", dbNode.ClusterName, dbNode.Namespace)
 		c.pdAddr = fmt.Sprintf("%s-pd.%s.svc:2379", pdNode.ClusterName, pdNode.Namespace)
+		for _, kvNode := range kvNodes {
+			c.kvStatusAddrs = append(c.kvStatusAddrs, fmt.Sprintf("%s-tikv.%s.svc:20180", kvNode.ClusterName, kvNode.Namespace))
+		}
 	}
 }
 
@@ -106,7 +160,7 @@ func (c *pipelineClient) SetUp(ctx context.Context, nodes []cluster.Node, client
 		return nil
 	}
 
-	c.setUpAddrs(clientNodes[0], nodes[0])
+	c.setUpAddrs(clientNodes[0], nodes)
 
 	if err := c.openDB(ctx); err != nil {
 		return errors.Trace(err)
@@ -124,8 +178,7 @@ func (c *pipelineClient) SetUp(ctx context.Context, nodes []cluster.Node, client
 	if err != nil {
 		return errors.Trace(err)
 	}
-	c.scheduler = nemesis.NewLeaderShuffler(string(startKey))
-	c.scheduler.SetPDAddr("http://" + c.pdAddr)
+	c.scheduler = newRegionScheduler("http://"+c.pdAddr, string(startKey))
 	return nil
 }
 
@@ -174,7 +227,13 @@ func (c *pipelineClient) DumpState(ctx context.Context) (interface{}, error) {
 // this function will block Invoke trigger
 // if you want to schedule cases by yourself, use this function only
 func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	c.scatterTable(dbName, tableName)
+	if err := c.scheduler.delayScheduling(c.kvStatusAddrs, 200); err != nil {
+		log.Fatalf("failed to enable failpoints: %v", err)
+	}
+	if err := c.scatterTable(dbName, tableName); err != nil {
+		log.Fatalf("failed to scatter table: %v", err)
+	}
+
 	defer func() {
 		c.checkSum(context.Background())
 		c.reportSummary()
@@ -199,7 +258,7 @@ func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes
 			c.checkSum(ctx)
 
 		case <-scheduleTick.C:
-			c.schedule(ctx)
+			c.scheduler.schedule(ctx)
 
 		case <-reportTick.C:
 			c.reportStats()
@@ -289,12 +348,6 @@ func (c *pipelineClient) checkSum(ctx context.Context) {
 	}
 	if sum != 0 {
 		log.Fatalf("sum(%d) is not zero!", sum)
-	}
-}
-
-func (c *pipelineClient) schedule(ctx context.Context) {
-	if err := c.scheduler.ShuffleLeader(); err != nil {
-		log.Warnf("fail to schedule: %v", err)
 	}
 }
 
