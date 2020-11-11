@@ -48,42 +48,45 @@ func (l leaderShuffleGenerator) Name() string {
 	return l.name
 }
 
+// LeaderShuffler creates operators in PD to schedule the region containing the regionKey.
 type LeaderShuffler struct {
 	*pdutil.Client
 	regionKey    string
 	shuffleFuncs []func() error
 }
 
-func NewLeaderShuffler(regionKey string) *LeaderShuffler {
+// NewLeaderShuffler creates a LeaderShuffler to schedule the region containing the regionKey.
+func NewLeaderShuffler(pdAddr string, regionKey string) *LeaderShuffler {
 	l := new(LeaderShuffler)
+	l.Client = pdutil.NewPDClient(http.DefaultClient, pdAddr)
 	l.regionKey = regionKey
 	l.shuffleFuncs = []func() error{l.transferLeader, l.transferRegion, l.transferOtherRegionToLeader, l.mergeRegion, l.splitRegion}
 	return l
 }
 
-func (l *LeaderShuffler) SetPDAddr(addr string) {
-	l.Client = pdutil.NewPDClient(http.DefaultClient, addr)
-}
-
+// Invoke implements Nemesis.Invoke that invokes the nemesis.
 func (l *LeaderShuffler) Invoke(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("apply nemesis %s...", core.PDLeaderShuffler)
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*time.Duration(10))
 	defer cancel()
 
 	pdAddr := fmt.Sprintf("http://%s:%d", node.IP, node.Port)
-	l.SetPDAddr(pdAddr)
+	l.Client = pdutil.NewPDClient(http.DefaultClient, pdAddr)
 	return l.ShuffleLeader()
 }
 
+// Recover implements Nemesis.Recover that recovers the nemesis.
 func (l *LeaderShuffler) Recover(ctx context.Context, node *cluster.Node, args ...interface{}) error {
 	log.Infof("unapply nemesis %s...", core.PDLeaderShuffler)
 	return nil
 }
 
+// Name implements Nemesis.Name that returns the unique name for the nemesis.
 func (l LeaderShuffler) Name() string {
 	return string(core.PDLeaderShuffler)
 }
 
+// ShuffleLeader create a operator in PD to schedule the region.
 func (l *LeaderShuffler) ShuffleLeader() error {
 	shuffleFunc := l.shuffleFuncs[rand.Intn(len(l.shuffleFuncs))]
 	return shuffleFunc()

@@ -29,6 +29,7 @@ const (
 	tableName = "t"
 )
 
+// Config for this test.
 type Config struct {
 	TableSize        int
 	ContenderCount   int
@@ -38,7 +39,7 @@ type Config struct {
 	LocalMode        bool
 }
 
-func (c *Config) Normalize() *Config {
+func (c *Config) normalize() *Config {
 	if c.TableSize == 0 {
 		c.TableSize = 1
 	}
@@ -51,9 +52,10 @@ func (c *Config) Normalize() *Config {
 	return c
 }
 
+// Create implements core.Client interface that creates a client for the test.
 func (c *Config) Create(node cluster.ClientNode) core.Client {
 	return &pipelineClient{
-		Config: c.Normalize(),
+		Config: c.normalize(),
 	}
 }
 
@@ -64,8 +66,7 @@ type regionScheduler struct {
 }
 
 func newRegionScheduler(pdAddr string, key string) *regionScheduler {
-	leaderShuffler := nemesis.NewLeaderShuffler(key)
-	leaderShuffler.SetPDAddr(pdAddr)
+	leaderShuffler := nemesis.NewLeaderShuffler(pdAddr, key)
 	return &regionScheduler{
 		leaderShuffler,
 		[]string{"apply_before_split", "apply_before_prepare_merge", "apply_before_commit_merge", "apply_before_rollback_merge"},

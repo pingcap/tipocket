@@ -52,5 +52,5 @@ func init() {
 		core.RegisterNemesis(scaling{client})
 	}
 	core.RegisterNemesis(scheduler{})
-	core.RegisterNemesis(NewLeaderShuffler("0"))
+	core.RegisterNemesis(NewLeaderShuffler("", "0"))
 }
