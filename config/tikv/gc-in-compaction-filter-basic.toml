@@ -1,0 +1,6 @@
+# Used to test basic functions for gc-in-compaction-filter.
+
+[gc]
+ratio-threshold = 0.9
+enable-compaction-filter = true
+compaction-filter-skip-version-check = true

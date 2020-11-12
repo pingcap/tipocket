@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DATA_FENSE = 1000 * 60 * 10 // A large gap(in ms) before safe point.
+	timeFence = 1000 * 60 * 10 // A large gap(in ms) before safe point.
 )
 
 func (c *client) mustGetSafePoint() uint64 {
@@ -53,7 +53,7 @@ func (c *client) mustGetTiKVCtlClient(kvAddr string) debugpb.DebugClient {
 	return debugpb.NewDebugClient(conn)
 }
 
-func GcByCompact(debugCli debugpb.DebugClient) {
+func gcByCompact(debugCli debugpb.DebugClient) {
 	req := &debugpb.CompactRequest{
 		Db:      debugpb.DB_KV,
 		Cf:      "write",
@@ -96,9 +96,9 @@ func (c *client) testGcStaleVersions() {
 
 	safepoint := c.mustGetSafePoint()
 	physical := safepoint >> 18
-	oldStartTs := (physical - DATA_FENSE) << 18
+	oldStartTs := (physical - timeFence) << 18
 	oldCommitTs := oldStartTs + 1000
-	newStartTs := (physical - DATA_FENSE + 10) << 18
+	newStartTs := (physical - timeFence + 10) << 18
 	newCommitTs := newStartTs + 1000
 
 	oldKey, oldValue := genMvccPut(key, value, oldStartTs, oldCommitTs)
@@ -113,7 +113,7 @@ func (c *client) testGcStaleVersions() {
 		log.Fatalf("[%s] kv put error %v", caseLabel, err)
 	}
 
-	GcByCompact(debugCli)
+	gcByCompact(debugCli)
 	value, err = c.rawKvCli.Get(context.TODO(), oldKey, rawkv.GetOption{Cf: rawkv.CfWrite})
 	if err != nil {
 		log.Fatalf("[%s] kv get error %v", caseLabel, err)
@@ -133,9 +133,9 @@ func (c *client) testGcLatestPutBeforeSafePoint() {
 
 	safepoint := c.mustGetSafePoint()
 	physical := safepoint >> 18
-	oldStartTs := (physical - DATA_FENSE) << 18
+	oldStartTs := (physical - timeFence) << 18
 	oldCommitTs := oldStartTs + 1000
-	newStartTs := (physical + DATA_FENSE) << 18
+	newStartTs := (physical + timeFence) << 18
 	newCommitTs := newStartTs + 1000
 
 	oldKey, oldValue := genMvccPut(key, value, oldStartTs, oldCommitTs)
@@ -144,7 +144,7 @@ func (c *client) testGcLatestPutBeforeSafePoint() {
 		log.Fatalf("[%s] kv put error %v", caseLabel, err)
 	}
 
-	GcByCompact(debugCli)
+	gcByCompact(debugCli)
 	value, err = c.rawKvCli.Get(context.TODO(), oldKey, rawkv.GetOption{Cf: rawkv.CfWrite})
 	if err != nil {
 		log.Fatalf("[%s] kv get error %v", caseLabel, err)
@@ -159,7 +159,7 @@ func (c *client) testGcLatestPutBeforeSafePoint() {
 		log.Fatalf("[%s] kv put error %v", caseLabel, err)
 	}
 
-	GcByCompact(debugCli)
+	gcByCompact(debugCli)
 	value, err = c.rawKvCli.Get(context.TODO(), oldKey, rawkv.GetOption{Cf: rawkv.CfWrite})
 	if err != nil {
 		log.Fatalf("[%s] kv get error %v", caseLabel, err)
@@ -179,9 +179,9 @@ func (c *client) testGcLatestStaleDeleteMark(shouldGc bool) {
 
 	safepoint := c.mustGetSafePoint()
 	physical := safepoint >> 18
-	oldStartTs := (physical - DATA_FENSE) << 18
+	oldStartTs := (physical - timeFence) << 18
 	oldCommitTs := oldStartTs + 1000
-	newStartTs := (physical - DATA_FENSE + 10) << 18
+	newStartTs := (physical - timeFence + 10) << 18
 	newCommitTs := newStartTs + 1000
 
 	oldKey, oldValue := genMvccPut(key, value, oldStartTs, oldCommitTs)
@@ -196,7 +196,7 @@ func (c *client) testGcLatestStaleDeleteMark(shouldGc bool) {
 		log.Fatalf("[%s] kv put error %v", caseLabel, err)
 	}
 
-	GcByCompact(debugCli)
+	gcByCompact(debugCli)
 
 	type Pair struct {
 		key   []byte
@@ -220,7 +220,7 @@ func (c *client) testDynamicConfChange() {
 	var err error
 
 	debugCli := c.mustGetTiKVCtlClient(c.kvAddrs[0])
-	GcByCompact(debugCli) // Regenerate all sst files.
+	gcByCompact(debugCli) // Regenerate all sst files.
 
 	// Change ratio-threshold to a large value, so that GC won't run in compaction filter.
 	log.Infof("[%s] Testing change gc.ratio-threshold to 10", caseLabel)

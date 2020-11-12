@@ -1,0 +1,40 @@
+metadata:
+  generateName: tipocket-gc-in-compaction-filter-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-gc-in-compaction-filter
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-gc-in-compaction-filter-basic
+      - name: purge
+        value: "true"
+      - name: image-version
+        value: nightly
+      - name: storage-class
+        value: local-storage
+      - name: nemesis
+        value: ""
+      - name: tikv-config
+        value: "/config/tikv/gc-in-compaction-filter-basic.toml"
+  templates:
+    - name: call-tipocket-gc-in-compaction-filter
+      steps:
+        - - name: call-tipocket-gc-in-compaction-filter
+            templateRef:
+              name: tipocket-gc-in-compaction-filter
+              template: tipocket-gc-in-compaction-filter
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv-config}}"
