@@ -17,11 +17,11 @@ spec:
           - name: image-version
             default: nightly
           - name: tidb-image
-            default: ""
+            default: "hub.pingcap.net/qa/tidb:master-failpoint"
           - name: tikv-image
-            default: ""
+            default: "hub.pingcap.net/qa/tikv:master-failpoint"
           - name: pd-image
-            default: ""
+            default: "hub.pingcap.net/qa/pd:master-failpoint"
           - name: storage-class
             default: local-storage
           - name: nemesis
@@ -31,7 +31,7 @@ spec:
           - name: tikv-replicas
             default: "3"
           - name: tikv-config
-            default: ""
+            default: "/config/tikv/pipelined-pessimistic-locking.toml"
           - name: loki-addr
             default: "http://gateway.loki.svc"
           - name: loki-username

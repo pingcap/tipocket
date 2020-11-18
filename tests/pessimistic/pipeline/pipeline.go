@@ -88,7 +88,7 @@ func (s *regionScheduler) delayScheduling(kvStatusAddrs []string, delayMS int) e
 	return nil
 }
 
-func (s *regionScheduler) schedule(ctx context.Context) {
+func (s *regionScheduler) schedule() {
 	if err := s.ShuffleLeader(); err != nil {
 		log.Warnf("fail to schedule: %v", err)
 	}
@@ -150,7 +150,8 @@ func (c *pipelineClient) setUpAddrs(dbNode cluster.ClientNode, nodes []cluster.N
 		c.dbStatusAddr = fmt.Sprintf("%s-tidb.%s.svc:10080", dbNode.ClusterName, dbNode.Namespace)
 		c.pdAddr = fmt.Sprintf("%s-pd.%s.svc:2379", pdNode.ClusterName, pdNode.Namespace)
 		for _, kvNode := range kvNodes {
-			c.kvStatusAddrs = append(c.kvStatusAddrs, fmt.Sprintf("%s-tikv.%s.svc:20180", kvNode.ClusterName, kvNode.Namespace))
+			// ${POD_NAME}.${PEER_SERVICE_NAME}.${NAMESPACE}.svc
+			c.kvStatusAddrs = append(c.kvStatusAddrs, fmt.Sprintf("%s.%s-tikv-peer.%s.svc:20180", kvNode.PodName, kvNode.ClusterName, kvNode.Namespace))
 		}
 	}
 }
@@ -256,10 +257,10 @@ func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes
 			return nil
 
 		case <-checkTick.C:
-			c.checkSum(ctx)
+			c.checkSum(context.Background())
 
 		case <-scheduleTick.C:
-			c.scheduler.schedule(ctx)
+			c.scheduler.schedule()
 
 		case <-reportTick.C:
 			c.reportStats()
@@ -306,6 +307,7 @@ func (c *pipelineClient) transfer(ctx context.Context, row int) {
 		default:
 		}
 
+		ctx := context.Background()
 		tx, err := c.db.Begin()
 		if err != nil {
 			log.Fatalf("fail to begin a transaction: %v", err)
