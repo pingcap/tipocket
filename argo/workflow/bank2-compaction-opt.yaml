@@ -1,0 +1,37 @@
+# maintainer: cosven
+#
+# a workflow for debugging bank2-compaction-opt
+
+metadata:
+  generateName: tipocket-bank2-compaction-opt-
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      steps:
+        - - name: call-tipocket-scbank2
+            templateRef:
+              name: tipocket-scbank2
+              template: tipocket-scbank2
+            arguments:
+              parameters:
+                - name: ns
+                  value: tipocket-bank2-compaction
+                # reserve tidb-cluster after test finished
+                - name: purge
+                  value: "false"
+                - name: image-version
+                  value: nightly
+                - name: storage-class
+                  value: local-storage
+                - name: run-time
+                  value: "2h"
+                - name: tikv-replicas
+                  value: "5"
+                - name: tikv-config
+                  value: "/config/tikv/compaction.toml"
+                - name: namesis
+                  value: "random_kill,partition_one,subcritical_skews,shuffle-leader-scheduler,shuffle-region-scheduler"
+                - name: tidb-replica-read
+                  value: "leader-and-follower"

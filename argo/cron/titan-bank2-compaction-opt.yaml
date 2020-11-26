@@ -1,0 +1,50 @@
+# maintainer: cosven
+
+metadata:
+  name: tipocket-titan-bank2-compaction-opt
+spec:
+  schedule: "0 6 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    # select the template `main` as the the entrypoint
+    entrypoint: main
+    templates:
+      - name: main
+        steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+          - - name: call-tipocket-scbank2
+              templateRef:
+                # the template `tipocket-scbank2` refers to the argo
+                # template defined in argo/template/sc_bank2.yaml
+                name: tipocket-scbank2
+                template: tipocket-scbank2
+              arguments:
+                parameters:
+                  - name: ns
+                    value: tipocket-bank2-compaction
+                  - name: purge
+                    value: "true"
+                  - name: image-version
+                    value: nightly
+                  # NOTE: differenct K8s cluster has different storage-class name
+                  - name: storage-class
+                    value: sas
+                  - name: run-time
+                    value: "6h"
+                  - name: tikv-replicas
+                    value: "5"
+                  - name: tikv-config
+                    value: "/config/tikv/titan-compaction-opt.toml"
+                  - name: namesis
+                    value: "random_kill,partition_one,subcritical_skews,shuffle-leader-scheduler,shuffle-region-scheduler"
+                  - name: tidb-replica-read
+                    value: "leader-and-follower"

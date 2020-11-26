@@ -1,0 +1,92 @@
+metadata:
+  name: tipocket-async-scbank2
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-scbank2
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-async-scbank2
+        - name: purge
+          value: "true"
+        - name: image-version
+          value: nightly
+        - name: storage-class
+          value: sas
+        - name: nemesis
+          value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+        - name: tidb-config
+          value: ""
+        - name: tikv-config
+          value: ""
+        - name: pd-config
+          value: ""
+        - name: tikv-replicas
+          value: "4"
+        - name: tidb-replica-read
+          value: "leader-and-follower"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
+    templates:
+      - name: call-tipocket-scbank2
+        steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+          - - name: call-tipocket-scbank2
+              templateRef:
+                name: tipocket-scbank2
+                template: tipocket-scbank2
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+                  - name: purge
+                    value: "{{workflow.parameters.purge}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: tidb-image
+                    value: "hub.pingcap.net/qa/tidb:master-failpoint"
+                  - name: tikv-image
+                    value: "hub.pingcap.net/qa/tikv:master-failpoint"
+                  - name: pd-image
+                    value: "hub.pingcap.net/qa/pd:master-failpoint"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
+                  - name: nemesis
+                    value: "{{workflow.parameters.nemesis}}"
+                  - name: tidb-config
+                    value: "/config/tidb/enable-async-commit.toml"
+                  - name: tikv-config
+                    value: "{{workflow.parameters.tikv-config}}"
+                  - name: pd-config
+                    value: "{{workflow.parameters.pd-config}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"
+                  - name: tikv-replicas
+                    value: "{{workflow.parameters.tikv-replicas}}"
+                  - name: tidb-replica-read
+                    value: "{{workflow.parameters.tidb-replica-read}}"
+                  - name: concurrency
+                    value: "100"
+                  - name: accounts
+                    value: "5000"
+                  - name: tidb-failpoint
+                    value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=1%return\""
