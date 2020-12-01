@@ -1,0 +1,22 @@
+# maintainer: cosven
+
+[gc]
+enable-compaction-filter = true
+compaction-filter-skip-version-check = true
+
+[coprocessor]
+consistency-check-method = "mvcc"
+
+[raftstore]
+consistency-check-interval = "180s"
+
+[rocksdb]
+force-consistency-checks = true
+
+[rocksdb.defaultcf]
+enable-compaction-guard = true
+target-file-size-base = "128M"
+
+[rocksdb.writecf]
+enable-compaction-guard = true
+target-file-size-base = "128M"

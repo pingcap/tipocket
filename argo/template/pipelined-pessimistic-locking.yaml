@@ -1,13 +1,13 @@
 metadata:
-  name: tipocket-tpcc
+  name: tipocket-pipelined-pessimistic-locking
   namespace: argo
 spec:
   templates:
-    - name: tipocket-tpcc
+    - name: tipocket-pipelined-pessimistic-locking
       inputs:
         parameters:
           - name: ns
-            default: tipocket-tpcc
+            default: tipocket-pipelined-pessimistic-locking
           - name: hub
             default: "docker.io"
           - name: purge
@@ -17,41 +17,29 @@ spec:
           - name: image-version
             default: nightly
           - name: tidb-image
-            default: ""
+            default: "hub.pingcap.net/qa/tidb:master-failpoint"
           - name: tikv-image
-            default: ""
+            default: "hub.pingcap.net/qa/tikv:master-failpoint"
           - name: pd-image
-            default: ""
+            default: "hub.pingcap.net/qa/pd:master-failpoint"
           - name: storage-class
             default: local-storage
-          - name: client
-            default: "100"
-          - name: request-count
-            default: "1000000"
-          - name: round
-            default: "10"
           - name: nemesis
             default: ""
+          - name: run-time
+            default: "6h"
+          - name: tikv-replicas
+            default: "3"
+          - name: tikv-config
+            default: "/config/tikv/pipelined-pessimistic-locking.toml"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default: "http://gateway.loki.svc"
           - name: loki-username
-            default: loki
+            default: "loki"
           - name: loki-password
-            default: admin
-          - name: matrix-config
-            default: ""
-          - name: matrix-tidb
-            default: "tidb.toml"
-          - name: matrix-tikv
-            default: "tikv.toml"
-          - name: matrix-pd
-            default: "pd.toml"
-          - name: matrix-sql
-            default: "mysql-system-vars.sql,tidb-system-vars.sql"
-          - name: tidb-config
-            default: ""
-          - name: tidb-failpoint
-            default: "\"github.com/pingcap/tidb/server/enableTestAPI=return\""
+            default: "admin"
+          - name: strict
+            default: true
       outputs:
         artifacts:
           - name: tidb-logs
@@ -68,7 +56,7 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/tpcc \
+            /bin/pipelined-locking \
             -namespace={{inputs.parameters.ns}} \
             -hub={{inputs.parameters.hub}} \
             -repository={{inputs.parameters.repository}} \
@@ -79,17 +67,11 @@ spec:
             -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -delNS=true \
-            -client={{inputs.parameters.client}} \
             -nemesis={{inputs.parameters.nemesis}} \
-            -round={{inputs.parameters.round}} \
-            -request-count={{inputs.parameters.request-count}} \
+            -run-time={{inputs.parameters.run-time}} \
+            -tikv-replicas={{inputs.parameters.tikv-replicas}} \
+            -tikv-config={{inputs.parameters.tikv-config}} \
             -loki-addr={{inputs.parameters.loki-addr}} \
             -loki-username={{inputs.parameters.loki-username}} \
             -loki-password={{inputs.parameters.loki-password}} \
-            -matrix-config={{inputs.parameters.matrix-config}} \
-            -matrix-tidb={{inputs.parameters.matrix-tidb}} \
-            -matrix-tikv={{inputs.parameters.matrix-tikv}} \
-            -matrix-pd={{inputs.parameters.matrix-pd}} \
-            -matrix-sql={{inputs.parameters.matrix-sql}} \
-            -tidb-config={{inputs.parameters.tidb-config}} \
-            -failpoint.tidb={{inputs.parameters.tidb-failpoint}}
+            -strict={{inputs.parameters.strict}}
