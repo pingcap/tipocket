@@ -80,7 +80,7 @@ spec:
                     value: "{{workflow.parameters.repository}}"
                   - name: image-version
                     value: "{{workflow.parameters.image-version}}"
-                    - name: tidb-image
+                  - name: tidb-image
                     value: "hub.pingcap.net/qa/tidb:master-failpoint"
                   - name: tikv-image
                     value: "hub.pingcap.net/qa/tikv:master-failpoint"
