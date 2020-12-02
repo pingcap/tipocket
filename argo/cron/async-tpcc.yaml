@@ -116,3 +116,7 @@ spec:
                     value: "/config/tidb/enable-async-commit.toml"
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=2%return\""
+                  - name: async-commit
+                    default: "true"
+                  - name: one-pc
+                    default: "false"

@@ -102,8 +102,8 @@ type bank2Client struct {
 	stop        int32
 	txnID       int32
 	db          *sql.DB
-	AsyncCommit bool
-	OnePC       bool
+	asyncCommit bool
+	onePC       bool
 }
 
 func (c *bank2Client) padLength(table int) int {
@@ -136,7 +136,7 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	}
 	util.RandomlyChangeReplicaRead(c.String(), c.ReplicaRead, db)
 
-	if c.AsyncCommit {
+	if c.asyncCommit {
 		_, err = db.Exec("set @@global.tidb_enable_async_commit = 1;")
 	} else {
 		_, err = db.Exec("set @@global.tidb_enable_async_commit = 0;")
@@ -145,7 +145,7 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 		log.Fatalf("[bank2Client] set async commit failed: %v", err)
 	}
 
-	if c.OnePC {
+	if c.onePC {
 		_, err = db.Exec("set @@global.tidb_enable_1pc = 1;")
 	} else {
 		_, err = db.Exec("set @@global.tidb_enable_1pc = 0;")
@@ -460,8 +460,8 @@ func (c *bank2Client) execTransaction(db *sql.DB, from, to int, amount int) erro
 func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &bank2Client{
 		Config:      c.Cfg,
-		AsyncCommit: c.AsyncCommit,
-		OnePC:       c.OnePC,
+		asyncCommit: c.AsyncCommit,
+		onePC:       c.OnePC,
 	}
 }
 

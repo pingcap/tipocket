@@ -22,6 +22,8 @@ type tpccClient struct {
 	db *sql.DB
 	workload.Workloader
 	workloadCtx context.Context
+	asyncCommit bool
+	onePC       bool
 }
 
 func (t *tpccClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
@@ -33,6 +35,26 @@ func (t *tpccClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []
 	if err != nil {
 		return err
 	}
+
+	scopes := []string{"", "global."}
+	varNames := []string{"tidb_enable_async_commit", "tidb_enable_1pc"}
+	values := []int8{0, 0}
+	if t.asyncCommit {
+		values[0] = 1
+	}
+	if t.onePC {
+		values[1] = 1
+	}
+
+	for id, varName := range varNames {
+		for _, scope := range scopes {
+			query := fmt.Sprintf("set @@%s%s = %v;", scope, varName, values[id])
+			if _, err := t.db.Exec(query); err != nil {
+				log.Fatalf("[tpcc] set %s failed: %v", varName, err)
+			}
+		}
+	}
+
 	t.Workloader = tpcc.NewWorkloader(t.db, t.Config)
 	t.workloadCtx = t.Workloader.InitThread(ctx, 0)
 	if idx == 0 {
@@ -101,13 +123,17 @@ func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []c
 // TPCCClientCreator creates tpccClient
 type TPCCClientCreator struct {
 	*tpcc.Config
-	tpccClient []*tpccClient
+	tpccClient  []*tpccClient
+	AsyncCommit bool
+	OnePC       bool
 }
 
 // Create ...
 func (t *TPCCClientCreator) Create(_ cluster.ClientNode) core.Client {
 	client := &tpccClient{
-		Config: t.Config,
+		Config:      t.Config,
+		asyncCommit: t.AsyncCommit,
+		onePC:       t.OnePC,
 	}
 	t.tpccClient = append(t.tpccClient, client)
 	return client
