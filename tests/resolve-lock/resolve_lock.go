@@ -197,10 +197,11 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 	for loopNum := 0; ; loopNum++ {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return nil
 		default:
 		}
 
+		ctx := context.Background()
 		ts, err := c.getTs(ctx)
 		if err != nil {
 			return err
