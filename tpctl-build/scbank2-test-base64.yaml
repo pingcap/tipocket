@@ -1,0 +1,27 @@
+metadata:
+  generateName: tpctl-test-base64
+  namespace: argo
+spec:
+  entrypoint: main
+  templates:
+  - name: main
+    steps:
+    - - name: scbank2
+        template: scbank2
+  - container:
+      command:
+      - sh
+      - -c
+      - /bin/bank2 -accounts="1000000" -concurrency="200" -tidb-replica-read="leader"
+        -client="5" -run-time="10m" -nemesis="" -purge="false" -namespace="tpctl-scbank2-universal"
+        -hub="docker.io" -repository="pingcap" -image-version="nightly" -tikv-image=""
+        -tidb-image="" -pd-image="" -tikv-config="base64://bG9nLWxldmVsID0gIndhcm5pbmciCg==" -tidb-config="" -pd-config=""
+        -tikv-replicas="5" -tidb-replicas="1" -pd-replicas="1" -storage-class="local-storage"
+        -loki-addr="http://gateway.loki.svc" -loki-username="loki" -loki-password="admin"
+      image: hub.pingcap.net/chenweiwen/tipocket:201204
+      imagePullpolicy: Always
+      name: scbank2
+    metadata:
+      labels:
+        ns: tpctl-test-base64
+    name: scbank2

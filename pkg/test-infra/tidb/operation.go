@@ -17,7 +17,10 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net/url"
+	"os"
 	"time"
+	b64 "encoding/base64"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -274,14 +277,16 @@ func (o *Ops) Delete() error {
 	return g.Wait()
 }
 
-func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configString string) error {
 	configMap, err := getTiDBConfigMap(tc)
 	if err != nil {
 		return err
 	}
-	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
+	configData, err := parseConfig(configString)
+	if err != nil {
 		return err
 	}
+	configMap.Data["config-file"] = configData
 	desired := configMap.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
@@ -292,14 +297,16 @@ func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configFile string) er
 	return nil
 }
 
-func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configString string) error {
 	configMap, err := getPDConfigMap(tc)
 	if err != nil {
 		return err
 	}
-	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
+	configData, err := parseConfig(configString)
+	if err != nil {
 		return err
 	}
+	configMap.Data["config-file"] = configData
 	desired := configMap.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
@@ -310,14 +317,16 @@ func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configFile string) erro
 	return nil
 }
 
-func (o *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configFile string) error {
+func (o *Ops) applyTiKVConfigMap(tc *v1alpha1.TidbCluster, configString string) error {
 	configMap, err := getTiKVConfigMap(tc)
 	if err != nil {
 		return err
 	}
-	if configMap.Data["config-file"], err = readFileAsString(configFile); err != nil {
+	configData, err := parseConfig(configString)
+	if err != nil {
 		return err
 	}
+	configMap.Data["config-file"] = configData
 	desired := configMap.DeepCopy()
 	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, configMap, func() error {
 		configMap.Data = desired.Data
@@ -459,6 +468,37 @@ func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {
 	}
 }
 
+func parseConfig(config string) (string, error) {
+	// Parse config
+	if _, err := os.Stat(config); err == nil {
+		// config is a valid local path
+		configData, err := readFileAsString(config)
+		if err != nil {
+			return "", err
+		}
+		return configData, nil
+	} else {
+		// parse config string like "base64://BASE64CONTENT"
+		// Supported scheme: base64
+		u, err := url.Parse(config)
+		if err != nil {
+			return "", err
+		}
+		var configData string = ""
+		switch u.Scheme {
+		case "base64":
+			// When parse url like "base64://BASE64CONTENT", BASE64CONTENT would be parsed in url.Host
+			configData, err = readBase64AsString(u.Host)
+			if err != nil {
+				return "", err
+			}
+			fmt.Print(configData)
+		// Add more Scheme support here, like http
+		}
+		return configData, nil
+	}
+}
+
 func readFileAsString(filename string) (string, error) {
 	if filename == "" {
 		return ``, nil
@@ -468,6 +508,14 @@ func readFileAsString(filename string) (string, error) {
 		return ``, err
 	}
 	return string(bytes), nil
+}
+
+func readBase64AsString(base64config string) (string, error) {
+	configData, err := b64.StdEncoding.DecodeString(base64config)
+	if err != nil {
+		return "", err
+	}
+	return string(configData), nil
 }
 
 func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
