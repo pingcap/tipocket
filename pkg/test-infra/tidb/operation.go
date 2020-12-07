@@ -15,12 +15,11 @@ package tidb
 
 import (
 	"context"
+	b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/url"
-	"os"
 	"time"
-	b64 "encoding/base64"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -470,33 +469,28 @@ func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {
 
 func parseConfig(config string) (string, error) {
 	// Parse config
-	if _, err := os.Stat(config); err == nil {
-		// config is a valid local path
-		configData, err := readFileAsString(config)
-		if err != nil {
-			return "", err
-		}
-		return configData, nil
-	} else {
-		// parse config string like "base64://BASE64CONTENT"
-		// Supported scheme: base64
-		u, err := url.Parse(config)
-		if err != nil {
-			return "", err
-		}
-		var configData string = ""
-		switch u.Scheme {
-		case "base64":
-			// When parse url like "base64://BASE64CONTENT", BASE64CONTENT would be parsed in url.Host
-			configData, err = readBase64AsString(u.Host)
-			if err != nil {
-				return "", err
-			}
-			fmt.Print(configData)
-		// Add more Scheme support here, like http
-		}
+	configData, err := readFileAsString(config)
+	if err == nil {
 		return configData, nil
 	}
+	// parse config string like "base64://BASE64CONTENT"
+	// Supported scheme: base64
+	u, err := url.Parse(config)
+	if err != nil {
+		return "", err
+	}
+	switch u.Scheme {
+	case "base64":
+		// An workaround: When parse url like "base64://BASE64CONTENT", BASE64CONTENT would be parsed in url.Host
+		configData, err = readBase64AsString(u.Host)
+		if err != nil {
+			return "", err
+		}
+	default:
+		return "", fmt.Errorf("not a supported scheme: %s\nsupported schemes like base64://BASE64CONTENT", config)
+		// Add more Scheme support here, like http
+	}
+	return configData, nil
 }
 
 func readFileAsString(filename string) (string, error) {
