@@ -487,7 +487,7 @@ func parseConfig(config string) (string, error) {
 			return "", err
 		}
 	default:
-		return "", fmt.Errorf("not a supported scheme: %s\nsupported schemes like base64://BASE64CONTENT", config)
+		return "", fmt.Errorf("not a supported scheme: %s", config)
 		// Add more Scheme support here, like http
 	}
 	return configData, nil
