@@ -83,7 +83,7 @@ func (c *ledgerClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 
 	var err error
 	node := clientNodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/test?multiStatements=true", node.IP, node.Port)
 
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
