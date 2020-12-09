@@ -78,6 +78,8 @@ type fixtureContext struct {
 	LeakCheckSilent  bool
 	// failpoints
 	TiDBFailpoint string
+
+	ReplicaRead string
 }
 
 type addressArrayFlags []string
@@ -329,6 +331,8 @@ func init() {
 	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
 	// failpoint
 	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
+
+	flag.StringVar(&Context.ReplicaRead, "replica-read", "", "replica read target [leader, follower, leader-and-follower]")
 
 	flag.Var(&Context.TiDBClusterConfig.TiDBAddr, "tidb-server", "tidb-server addresses")
 	flag.Var(&Context.TiDBClusterConfig.TiKVAddr, "tikv-server", "tikv-server addresses")
