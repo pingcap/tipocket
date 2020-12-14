@@ -32,7 +32,7 @@ func main() {
 			History:      fixture.Context.HistoryFile,
 		},
 		Provider:         cluster.NewDefaultClusterProvider(),
-		ClientCreator:    listappend.NewClientCreator(*tableCount, *readLock, *txnMode),
+		ClientCreator:    listappend.NewClientCreator(*tableCount, *readLock, *txnMode, fixture.Context.ReplicaRead),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit: verify.Suit{

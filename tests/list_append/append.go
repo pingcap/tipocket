@@ -35,10 +35,11 @@ func (c appendResponse) IsUnknown() bool {
 }
 
 type client struct {
-	tableCount int
-	useIndex   bool
-	readLock   string
-	txnMode    string
+	tableCount  int
+	useIndex    bool
+	readLock    string
+	txnMode     string
+	replicaRead string
 
 	db          *sql.DB
 	nextRequest func() ellecore.Op
@@ -67,6 +68,12 @@ func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	if _, err := c.db.Exec(fmt.Sprintf("set @@tidb_txn_mode = '%s'", txnMode)); err != nil {
 		return fmt.Errorf("set tidb_txn_mode failed: %v", err)
 	}
+	if c.replicaRead != "" {
+		if _, err := c.db.Exec(fmt.Sprintf("set @@tidb_replica_read = '%s'", c.replicaRead)); err != nil {
+			return fmt.Errorf("set tidb_replica_read failed: %v", err)
+		}
+	}
+	time.Sleep(3 * time.Second)
 	return nil
 }
 
@@ -227,30 +234,33 @@ func (c *client) Start(_ context.Context, _ interface{}, _ []cluster.ClientNode)
 
 // ClientCreator can create list append client
 type appendClientCreator struct {
-	tableCount int
-	readLock   string
-	txnMode    string
+	tableCount  int
+	readLock    string
+	txnMode     string
+	replicaRead string
 
 	it *elletxn.MopIterator
 	mu sync.Mutex
 }
 
 // NewClientCreator ...
-func NewClientCreator(tableCount int, readLock string, txnMode string) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string) core.ClientCreator {
 	return &appendClientCreator{
-		tableCount: tableCount,
-		readLock:   readLock,
-		txnMode:    txnMode,
-		it:         elletxn.WrTxnWithDefaultOpts(),
+		tableCount:  tableCount,
+		readLock:    readLock,
+		txnMode:     txnMode,
+		replicaRead: replicaRead,
+		it:          elletxn.WrTxnWithDefaultOpts(),
 	}
 }
 
 // Create creates a client.
 func (a *appendClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &client{
-		tableCount: a.tableCount,
-		readLock:   a.readLock,
-		txnMode:    a.txnMode,
+		tableCount:  a.tableCount,
+		readLock:    a.readLock,
+		txnMode:     a.txnMode,
+		replicaRead: a.replicaRead,
 		nextRequest: func() ellecore.Op {
 			a.mu.Lock()
 			defer a.mu.Unlock()
