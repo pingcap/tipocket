@@ -35,10 +35,11 @@ func (c registerResponse) IsUnknown() bool {
 }
 
 type client struct {
-	tableCount int
-	useIndex   bool
-	readLock   string
-	txnMode    string
+	tableCount  int
+	useIndex    bool
+	readLock    string
+	txnMode     string
+	replicaRead string
 
 	db          *sql.DB
 	nextRequest func() ellecore.Op
@@ -67,7 +68,12 @@ func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	if _, err := c.db.Exec(fmt.Sprintf("set @@tidb_txn_mode = '%s'", txnMode)); err != nil {
 		return fmt.Errorf("set tidb_txn_mode failed: %v", err)
 	}
-	time.Sleep(10 * time.Second)
+	if c.replicaRead != "" {
+		if _, err := c.db.Exec(fmt.Sprintf("set @@tidb_replica_read = '%s'", c.replicaRead)); err != nil {
+			return fmt.Errorf("set tidb_replica_read failed: %v", err)
+		}
+	}
+	time.Sleep(3 * time.Second)
 	return nil
 }
 
@@ -225,23 +231,25 @@ func (c *client) Start(_ context.Context, _ interface{}, _ []cluster.ClientNode)
 
 // ClientCreator can create list append client
 type registerClientCreator struct {
-	tableCount int
-	readLock   string
-	txnMode    string
+	tableCount  int
+	readLock    string
+	txnMode     string
+	replicaRead string
 
 	it *elletxn.MopIterator
 	mu sync.Mutex
 }
 
 // NewClientCreator ...
-func NewClientCreator(tableCount int, readLock string, txnMode string) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string) core.ClientCreator {
 	opt := elletxn.DefaultWrTxnOpts()
 	opt.MaxWritesPerKey = 1024
 	return &registerClientCreator{
-		tableCount: tableCount,
-		readLock:   readLock,
-		txnMode:    txnMode,
-		it:         elletxn.WrTxn(opt),
+		tableCount:  tableCount,
+		readLock:    readLock,
+		txnMode:     txnMode,
+		replicaRead: replicaRead,
+		it:          elletxn.WrTxn(opt),
 	}
 }
 
