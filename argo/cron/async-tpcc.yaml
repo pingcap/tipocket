@@ -80,7 +80,7 @@ spec:
                     value: "{{workflow.parameters.repository}}"
                   - name: image-version
                     value: "{{workflow.parameters.image-version}}"
-                    - name: tidb-image
+                  - name: tidb-image
                     value: "hub.pingcap.net/qa/tidb:master-failpoint"
                   - name: tikv-image
                     value: "hub.pingcap.net/qa/tikv:master-failpoint"
@@ -116,3 +116,7 @@ spec:
                     value: "/config/tidb/enable-async-commit.toml"
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=2%return\""
+                  - name: async-commit
+                    default: "true"
+                  - name: one-pc
+                    default: "false"

@@ -90,3 +90,7 @@ spec:
                     value: "5000"
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=1%return\""
+                  - name: async-commit
+                    default: "true"
+                  - name: one-pc
+                    default: "false"
