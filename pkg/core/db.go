@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 )
@@ -23,6 +26,23 @@ type NoopDB struct {
 
 // SetUp initializes the database.
 func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+	prepareSQL := fixture.Context.TiDBClusterConfig.PrepareSQL
+	if len(prepareSQL) > 0 && node.Component == cluster.TiDB {
+		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+		if err != nil {
+			return err
+		}
+		if _, err = db.Exec(prepareSQL); err != nil {
+			return err
+		}
+		if err = db.Close(); err != nil {
+			return err
+		}
+		// Wait until global variables take effect
+		time.Sleep(2100 * time.Millisecond)
+		// Only need to run once
+		fixture.Context.TiDBClusterConfig.PrepareSQL = ""
+	}
 	return nil
 }
 

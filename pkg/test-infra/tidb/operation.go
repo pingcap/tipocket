@@ -15,7 +15,6 @@ package tidb
 
 import (
 	"context"
-	"database/sql"
 	b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -190,9 +189,6 @@ func (o *Ops) Apply() error {
 	if err := o.waitTiDBReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
-	if err := o.runPreparationSQL(); err != nil {
-		return err
-	}
 	return o.applyTiDBMonitor(tm)
 }
 
@@ -247,29 +243,6 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		return true, nil
 	})
-}
-
-func (o *Ops) runPreparationSQL() error {
-	if len(o.config.PrepareSQL) > 0 {
-		clientNodes, err := o.GetClientNodes()
-		if err != nil {
-			return err
-		}
-		node := clientNodes[0]
-		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
-		if err != nil {
-			return err
-		}
-		if _, err = db.Exec(o.config.PrepareSQL); err != nil {
-			return err
-		}
-		if err = db.Close(); err != nil {
-			return err
-		}
-		// Wait until global variables take effect
-		time.Sleep(2100 * time.Millisecond)
-	}
-	return nil
 }
 
 func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
