@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"time"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 // DB allows to set up and tear down database.
@@ -28,7 +28,7 @@ type NoopDB struct {
 func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
 	prepareSQL := fixture.Context.TiDBClusterConfig.PrepareSQL
 	if len(prepareSQL) > 0 && node.Component == cluster.TiDB {
-		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test?multiStatements=true", node.IP, node.Port))
 		if err != nil {
 			return err
 		}
