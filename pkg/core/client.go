@@ -6,7 +6,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 )
 
-// UnknownResponse means we don't know wether this operation
+// UnknownResponse means we don't know whether this operation
 // succeeds or not.
 type UnknownResponse interface {
 	IsUnknown() bool

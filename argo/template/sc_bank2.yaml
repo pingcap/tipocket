@@ -60,6 +60,10 @@ spec:
             default: "1000000"
           - name: tidb-failpoint
             default: "\"github.com/pingcap/tidb/server/enableTestAPI=return\""
+          - name: async-commit
+            default: "false"
+          - name: one-pc
+            default: "false"
       outputs:
         artifacts:
           - name: tidb-logs
@@ -105,4 +109,6 @@ spec:
             -matrix-sql={{inputs.parameters.matrix-sql}} \
             -concurrency={{inputs.parameters.concurrency}} \
             -accounts={{inputs.parameters.accounts}} \
-            -failpoint.tidb={{inputs.parameters.failpoint-tidb}}
+            -failpoint.tidb={{inputs.parameters.tidb-failpoint}} \
+            -async-commit={{inputs.parameters.async-commit}} \
+            -one-pc={{inputs.parameters.one-pc}}

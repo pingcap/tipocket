@@ -45,6 +45,8 @@ var (
 	maxLength   = flag.Int("max-value-length", 128, "maximum value inserted into rocksdb")
 	replicaRead = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
 	dbname      = flag.String("dbname", "test", "name of database to test")
+	asyncCommit = flag.Bool("async-commit", false, "whether to enable the async commit feature (default false)")
+	onePC       = flag.Bool("one-pc", false, "whether to enable the one-phase commit feature (default false)")
 )
 
 func main() {
@@ -60,21 +62,24 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: bank2.ClientCreator{Cfg: &bank2.Config{
-			NumAccounts:   *accounts,
-			Interval:      *interval,
-			TableNum:      *tables,
-			Concurrency:   *concurrency,
-			RetryLimit:    *retryLimit,
-			RunMode:       *runMode,
-			MinLength:     *minLength,
-			MaxLength:     *maxLength,
-			EnableLongTxn: *longTxn,
-			Contention:    *contention,
-			Pessimistic:   *pessimistic,
-			ReplicaRead:   *replicaRead,
-			DbName:        *dbname,
-		}},
+		ClientCreator: bank2.ClientCreator{
+			Cfg: &bank2.Config{
+				NumAccounts:   *accounts,
+				Interval:      *interval,
+				TableNum:      *tables,
+				Concurrency:   *concurrency,
+				RetryLimit:    *retryLimit,
+				RunMode:       *runMode,
+				MinLength:     *minLength,
+				MaxLength:     *maxLength,
+				EnableLongTxn: *longTxn,
+				Contention:    *contention,
+				Pessimistic:   *pessimistic,
+				ReplicaRead:   *replicaRead,
+				DbName:        *dbname,
+			},
+			AsyncCommit: *asyncCommit,
+			OnePC:       *onePC},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,

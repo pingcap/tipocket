@@ -78,6 +78,8 @@ type fixtureContext struct {
 	LeakCheckSilent  bool
 	// failpoints
 	TiDBFailpoint string
+
+	ReplicaRead string
 }
 
 type addressArrayFlags []string
@@ -255,7 +257,7 @@ func init() {
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
-	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "ClusterIP", "TiDB monitor service type")
+	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "NodePort", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")
 
@@ -329,6 +331,8 @@ func init() {
 	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
 	// failpoint
 	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
+
+	flag.StringVar(&Context.ReplicaRead, "replica-read", "", "replica read target [leader, follower, leader-and-follower]")
 
 	flag.Var(&Context.TiDBClusterConfig.TiDBAddr, "tidb-server", "tidb-server addresses")
 	flag.Var(&Context.TiDBClusterConfig.TiKVAddr, "tikv-server", "tikv-server addresses")
