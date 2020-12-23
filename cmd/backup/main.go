@@ -32,11 +32,11 @@ import (
 )
 
 var (
-	accounts        = flag.Int("accounts", 100, "the number of accounts")
+	accounts        = flag.Int("accounts", 100000, "the number of accounts")
 	concurrency     = flag.Int("concurrency", 200, "concurrency worker count")
 	contention      = flag.String("contention", "low", "contention level, support values: high / low, default value: low")
-	backupInterval  = flag.Duration("backup_interval", 10*time.Second, "the backup interval")
-	restoreInterval = flag.Duration("restore_interval", 15*time.Second, "the restore interval")
+	backupInterval  = flag.Duration("backup_interval", 1*time.Minute, "the backup interval")
+	restoreInterval = flag.Duration("restore_interval", 3*time.Minute, "the restore interval")
 	dbname          = flag.String("dbname", "test", "name of database to test")
 	retryLimit      = flag.Int("retry-limit", 200, "retry count")
 	backupURI       = flag.String("backup-uri", "local:///tmp/backup", "where the backup file should in")

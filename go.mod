@@ -13,7 +13,6 @@ require (
 	github.com/appleboy/easyssh-proxy v1.3.7
 	github.com/chaos-mesh/chaos-mesh v0.9.1
 	github.com/chaos-mesh/matrix v0.0.0-20200715113735-688b14661cd8
-	github.com/cheggaaa/pb/v3 v3.0.5 // indirect
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/docker/docker v0.7.3-0.20190817195342-4760db040282
@@ -38,7 +37,6 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170603005431-491d3605edfb
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/advanced-statefulset v0.3.2
-	github.com/pingcap/br v4.0.0-beta.2.0.20201216113734-283c1f1239c0+incompatible
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/failpoint v0.0.0-20200702092429-9f69995143ce // indirect
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
@@ -57,7 +55,6 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
-	github.com/tikv/pd v2.1.19+incompatible // indirect
 	github.com/uber-go/atomic v1.5.0
 	go.uber.org/zap v1.14.0
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a // indirect

@@ -89,7 +89,8 @@ type Config struct {
 	RestoreInterval time.Duration
 	DbName          string
 	RetryLimit      int
-	BackupURI       string
+	// will backup to BackupURI/full-$nextBackupIndex
+	BackupURI string
 }
 
 type backupClient struct {
@@ -113,7 +114,6 @@ func randomString(n int) string {
 
 func (c *backupClient) applyConfig() {
 	var err error
-	c.db.SetMaxOpenConns(c.config.Concurrency)
 	stmt := fmt.Sprintf("set @@tidb_replica_read = '%s'", c.features.ReplicaRead)
 	if _, err = c.db.Exec(stmt); err != nil {
 		log.Errorf("[%s] tidb_replica_read set fail: %v", c, err)
@@ -278,8 +278,7 @@ func (c *backupClient) transferOnce() error {
 		return errors.Trace(err)
 	}
 
-	err = tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 func (c *backupClient) startRestore(restoringLock *sync.RWMutex) {
@@ -371,7 +370,7 @@ func (c *backupClient) clearDB() {
 
 func (c *backupClient) saveState() []uint64 {
 	// currently we just check all balances
-	// todo: check transaction and transaction_leg, though these tables might be large we can check some fields' checksum
+	// todo: check transaction and transaction_leg, though these tables might be large we can check all fields' checksum
 	var balances []uint64
 	rows, err := c.db.Query(`SELECT balance FROM accounts ORDER BY id;`)
 	if err != nil {
@@ -391,13 +390,11 @@ func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 	if idx != 0 {
 		return nil
 	}
-
 	var err error
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.config.DbName)
-
 	log.Infof("start to init...")
-	c.db, err = sql.Open("mysql", dsn)
+	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
 	if err != nil {
 		return err
 	}
@@ -405,11 +402,17 @@ func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 		log.Infof("init end...")
 	}()
 	c.applyConfig()
+	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
+	c.db.SetMaxOpenConns(100)
+	if err != nil {
+		return err
+	}
 	c.createTables()
 	c.initData(ctx)
 	return nil
 }
 
+// Start the test
 func (c *backupClient) Start(ctx context.Context, _ interface{}, _ []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	var restoringLock sync.RWMutex
@@ -430,6 +433,7 @@ type ClientCreator struct {
 	Features Features
 }
 
+// Create a Client
 func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &backupClient{
 		features: c.Features,
@@ -437,7 +441,7 @@ func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	}
 }
 
-// Refused Bequest, just for implement backupClient interface
+// Refused Bequest, just for implement Client interface
 func (c *backupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
