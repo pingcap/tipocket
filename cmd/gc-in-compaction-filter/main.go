@@ -133,7 +133,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 }
 
 var (
-	clusterVersion = flag.String("cluster-version", "4.x", "support values: 4.x / 5.x, default value: 4.x")
+	clusterVersion = flag.String("cluster-version", "5.x", "support values: 4.x / 5.x, default value: 5.x")
 	localMode      = flag.Bool("local-mode", false, "use local mode or not")
 	waitSafePoint  = flag.Bool("wait-safe-point", false, "wait tidb to update safe point or not")
 )

@@ -91,6 +91,11 @@ func (c *client) testGcStaleVersions() {
 	var err error
 	debugCli := c.mustGetTiKVCtlClient(c.kvAddrs[0])
 
+	_, err = c.db.Exec("set config tikv gc.ratio-threshold = 0.9")
+	if err != nil {
+		log.Fatalf("[%s] change gc.ratio-threshold fail, error %v", caseLabel, err)
+	}
+
 	key := []byte("test_gc_stale_versions")
 	value := []byte("test_gc_stale_versions")
 
@@ -127,6 +132,11 @@ func (c *client) testGcStaleVersions() {
 func (c *client) testGcLatestPutBeforeSafePoint() {
 	var err error
 	debugCli := c.mustGetTiKVCtlClient(c.kvAddrs[0])
+
+	_, err = c.db.Exec("set config tikv gc.ratio-threshold = 0.9")
+	if err != nil {
+		log.Fatalf("[%s] change gc.ratio-threshold fail, error %v", caseLabel, err)
+	}
 
 	key := []byte("test_gc_latest_put")
 	value := []byte("test_gc_latest_put")
@@ -221,15 +231,6 @@ func (c *client) testDynamicConfChange() {
 
 	debugCli := c.mustGetTiKVCtlClient(c.kvAddrs[0])
 	gcByCompact(debugCli) // Regenerate all sst files.
-
-	// Change ratio-threshold to a large value, so that GC won't run in compaction filter.
-	log.Infof("[%s] Testing change gc.ratio-threshold to 10", caseLabel)
-	_, err = c.db.Exec("set config tikv gc.ratio-threshold = 10")
-	if err != nil {
-		log.Fatalf("[%s] change gc.ratio-threshold fail, error %v", caseLabel, err)
-	}
-	time.Sleep(5 * time.Second) // Sleep a while to wait TiKVs get the update.
-	c.testGcLatestStaleDeleteMark(false)
 
 	log.Infof("[%s] Testing change gc.ratio-threshold to 0.9", caseLabel)
 	_, err = c.db.Exec("set config tikv gc.ratio-threshold = 0.9")
