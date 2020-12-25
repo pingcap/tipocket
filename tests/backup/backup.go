@@ -182,9 +182,8 @@ func (c *backupClient) backup() error {
 	err := row.Scan(&ignore, &ignore, &c.lastBackupTs, &ignore, &ignore)
 	if err != nil {
 		return err
-	} else {
-		log.Infof("Back up %d success", c.nextBackupIndex)
 	}
+	log.Infof("Back up %d success", c.nextBackupIndex)
 	c.nextBackupIndex++
 	return nil
 }

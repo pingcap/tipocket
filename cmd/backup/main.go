@@ -21,7 +21,10 @@
 // ./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
 //
 // This case is supposed to run forever, until an error occur or got killed
-// This case should tolerant with all kinds of nemesis
+// This case should tolerant with all kinds of nemesis with one exception:
+//   - when backup-uri refers to some local storage, nemesis which will kill
+//     instances like random_kill should not be on, or the backup file will be removed.
+//     Use extern storage like s3 if you want these nemesis.
 // For async-commit and one-pc's calculated commit_ts related issues, which this case is originally for
 // I suggest clock skew and delay on pd and tikv
 
