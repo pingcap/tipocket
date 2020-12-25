@@ -11,6 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This test case is used to check whether BACKUP/RESTORE
+// compatible with different features (eg. async-commit/one-pc)
+// by checking whether we can restore the whole database no matter when we backup
+// Maintainer: longfangsong <longfangsong@icloud.com>
+//
+// example command to run this case:
+// with a tidb server running under 127.0.0.1:4000, with async-commit and one-pc on:
+// ./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
+//
+// This case is supposed to run forever, until an error occur or got killed
+// This case should tolerant with all kinds of nemesis
+// For async-commit and one-pc's calculated commit_ts related issues, which this case is originally for
+// I suggest clock skew and delay on pd and tikv
+
 package main
 
 import (
@@ -35,8 +49,8 @@ var (
 	accounts        = flag.Int("accounts", 100000, "the number of accounts")
 	concurrency     = flag.Int("concurrency", 200, "concurrency worker count")
 	contention      = flag.String("contention", "low", "contention level, support values: high / low, default value: low")
-	backupInterval  = flag.Duration("backup_interval", 1*time.Minute, "the backup interval")
-	restoreInterval = flag.Duration("restore_interval", 3*time.Minute, "the restore interval")
+	backupInterval  = flag.Duration("backup-interval", 1*time.Minute, "the backup interval")
+	restoreInterval = flag.Duration("restore-interval", 3*time.Minute, "the restore interval")
 	dbname          = flag.String("dbname", "test", "name of database to test")
 	retryLimit      = flag.Int("retry-limit", 200, "retry count")
 	backupURI       = flag.String("backup-uri", "local:///tmp/backup", "where the backup file should in")

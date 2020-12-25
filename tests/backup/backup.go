@@ -175,17 +175,18 @@ func (c *backupClient) initData(ctx context.Context) {
 	wg.Wait()
 }
 
-func (c *backupClient) backup() {
+func (c *backupClient) backup() error {
 	queryString := fmt.Sprintf(`BACKUP DATABASE * TO '%s/full-%d' LAST_BACKUP = %d;`, c.config.BackupURI, c.nextBackupIndex, c.lastBackupTs)
 	row := c.db.QueryRow(queryString)
 	var ignore string
 	err := row.Scan(&ignore, &ignore, &c.lastBackupTs, &ignore, &ignore)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	} else {
 		log.Infof("Back up %d success", c.nextBackupIndex)
 	}
 	c.nextBackupIndex++
+	return nil
 }
 
 func (c *backupClient) transferOnce() error {
@@ -288,7 +289,13 @@ func (c *backupClient) startRestore(restoringLock *sync.RWMutex) {
 		restoringLock.Lock()
 		// now no other workers are operating the database, let's do the check work
 		// first backup once, so we should build the current state of this database with all backups
-		c.backup()
+		err := util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+			err := c.backup()
+			return err
+		})
+		if err != nil {
+			log.Fatalf("[%s] failed to backup before restor", c)
+		}
 		// and then do the saveState, clearDB, restore and check work
 		balances := c.saveState()
 		c.clearDB()
@@ -303,7 +310,13 @@ func (c *backupClient) startBackup(restoringLock *sync.RWMutex) {
 		time.Sleep(c.config.BackupInterval)
 		// prevent restore when there is a living backup work
 		restoringLock.RLock()
-		c.backup()
+		err := util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+			err := c.backup()
+			return err
+		})
+		if err != nil {
+			log.Fatalf("[%s] failed to backup: %v", c, err)
+		}
 		restoringLock.RUnlock()
 	}
 }
@@ -339,7 +352,7 @@ func (c *backupClient) checkRestoreSuccess(balances []uint64) {
 		originBalance := balances[0]
 		balances = balances[1:]
 		if originBalance != balance {
-			log.Fatal("balance not match after recover!")
+			log.Fatal("balance not match after recover! Exit.")
 		}
 	}
 	log.Infof("Restore from backup 0-%d success", c.nextBackupIndex-1)
@@ -350,21 +363,34 @@ func (c *backupClient) restore() {
 	for i := 0; i < c.nextBackupIndex; i++ {
 		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, i))
 		if err != nil {
+			// no error should occur during restore
 			log.Fatal(err)
 		}
 	}
 }
 
 func (c *backupClient) clearDB() {
-	// then drop the tables, I did not find a better way to clearDB the storage
-	if _, err := c.db.Exec(`drop table accounts;`); err != nil {
-		log.Fatal("failed to drop table")
+	// then drop the tables, I did not find a better way to clear the storage
+	err := util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+		_, err := c.db.Exec(`drop table accounts;`)
+		return err
+	})
+	if err != nil {
+		log.Fatalf("[%s] drop table err %v", c, err)
 	}
-	if _, err := c.db.Exec(`drop table transaction;`); err != nil {
-		log.Fatal("failed to drop table")
+	err = util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+		_, err := c.db.Exec(`drop table transaction;`)
+		return err
+	})
+	if err != nil {
+		log.Fatalf("[%s] drop table err %v", c, err)
 	}
-	if _, err := c.db.Exec(`drop table transaction_leg;`); err != nil {
-		log.Fatal("failed to drop table")
+	err = util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+		_, err := c.db.Exec(`drop table transaction_leg;`)
+		return err
+	})
+	if err != nil {
+		log.Fatalf("[%s] drop table err %v", c, err)
 	}
 }
 
