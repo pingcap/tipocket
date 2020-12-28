@@ -22,7 +22,10 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
+	"io/ioutil"
 	"math/rand"
+	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -140,7 +143,7 @@ func (c *backupClient) applyConfig() {
 		_, err = c.db.Exec("set @@global.tidb_txn_mode = 'optimistic';")
 	}
 	if err != nil {
-		log.Fatalf("[backupClient] set txn_mode failed: %v", err)
+		log.Fatalf("[%s] set txn_mode failed: %v", c, err)
 	}
 	time.Sleep(5 * time.Second)
 }
@@ -148,7 +151,7 @@ func (c *backupClient) applyConfig() {
 func (c *backupClient) createTables() {
 	for _, stmt := range stmtsCreate {
 		if _, err := c.db.Exec(stmt); err != nil {
-			log.Fatalf("execute statement %s error %v", stmt, err)
+			log.Fatalf("[%s] execute statement %s error %v", c, stmt, err)
 		}
 	}
 }
@@ -176,16 +179,36 @@ func (c *backupClient) initData(ctx context.Context) {
 }
 
 func (c *backupClient) backup() error {
+	log.Infof("[%s] Try backup once", c)
 	queryString := fmt.Sprintf(`BACKUP DATABASE * TO '%s/full-%d' LAST_BACKUP = %d;`, c.config.BackupURI, c.nextBackupIndex, c.lastBackupTs)
 	row := c.db.QueryRow(queryString)
 	var ignore string
-	err := row.Scan(&ignore, &ignore, &c.lastBackupTs, &ignore, &ignore)
+	var lastBackupTs uint64
+	err := row.Scan(&ignore, &ignore, &lastBackupTs, &ignore, &ignore)
 	if err != nil {
+		log.Warnf("[%s] Backup failed, err: %v", c, err)
 		return err
+	} else {
+		log.Infof("[%s] Back up %d success, this increment include updates from %d to %d", c, c.nextBackupIndex, c.lastBackupTs, lastBackupTs)
+		c.lastBackupTs = lastBackupTs
+		c.nextBackupIndex++
+		return nil
 	}
-	log.Infof("Back up %d success", c.nextBackupIndex)
-	c.nextBackupIndex++
-	return nil
+}
+
+func (c *backupClient) restore() {
+	log.Infof("[%s] Start restore...", c)
+	for i := 0; i < c.nextBackupIndex; i++ {
+		log.Infof("[%s] Restoring from %s/full-%d ...", c, c.config.BackupURI, i)
+		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, i))
+		if err != nil {
+			// no error should occur during restore
+			log.Fatalf("[%s] Failed, err: %v", c, err)
+		} else {
+			log.Infof("[%s] Success", c)
+		}
+	}
+	log.Infof("[%s] Restore success", c)
 }
 
 func (c *backupClient) transferOnce() error {
@@ -285,15 +308,18 @@ func (c *backupClient) startRestore(restoringLock *sync.RWMutex) {
 	for {
 		time.Sleep(c.config.RestoreInterval)
 		// according to the document, no other operations are allowed to access the database when restoring
+		log.Infof("[%s] Try to restore once, waiting for other task finish...", c)
 		restoringLock.Lock()
+		log.Infof("[%s] Other task finished", c)
 		// now no other workers are operating the database, let's do the check work
 		// first backup once, so we should build the current state of this database with all backups
+		log.Infof("[%s] Backup once before restore", c)
 		err := util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
 			err := c.backup()
 			return err
 		})
 		if err != nil {
-			log.Fatalf("[%s] failed to backup before restor", c)
+			log.Fatalf("[%s] failed to backup after try for %d times before restore, err: %v", c, c.config.RetryLimit, err)
 		}
 		// and then do the saveState, clearDB, restore and check work
 		balances := c.saveState()
@@ -314,7 +340,7 @@ func (c *backupClient) startBackup(restoringLock *sync.RWMutex) {
 			return err
 		})
 		if err != nil {
-			log.Fatalf("[%s] failed to backup: %v", c, err)
+			log.Fatalf("[%s] failed to backup after try for %d times, err: %v", c, c.config.RetryLimit, err)
 		}
 		restoringLock.RUnlock()
 	}
@@ -336,39 +362,59 @@ func (c *backupClient) startTransactions(restoringLock *sync.RWMutex) {
 	}
 }
 
-func (c *backupClient) checkRestoreSuccess(balances []uint64) {
+func (c *backupClient) logBalances(path string, balances []uint64) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	for _, balance := range balances {
+		_, err := f.WriteString(fmt.Sprintf("%d\n", balance))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *backupClient) checkRestoreSuccess(expectedBalances []uint64) {
 	// query the restored result and check whether it matched with the origin result
 	// if incremental backup works as expected, the result should be just equal
 	rows, err := c.db.Query(`SELECT balance FROM accounts ORDER BY id;`)
 	if err != nil {
 		log.Fatal(err)
 	}
+	var balances []uint64
 	for rows.Next() {
 		var balance uint64
 		if err := rows.Scan(&balance); err != nil {
 			log.Fatal(err)
 		}
-		originBalance := balances[0]
-		balances = balances[1:]
-		if originBalance != balance {
-			log.Fatal("balance not match after recover! Exit.")
+		balances = append(balances, balance)
+	}
+	matched := len(expectedBalances) == len(balances)
+	for i, balance := range expectedBalances {
+		if !matched {
+			break
+		}
+		if balance != balances[i] {
+			matched = false
 		}
 	}
-	log.Infof("Restore from backup 0-%d success", c.nextBackupIndex-1)
-}
-
-func (c *backupClient) restore() {
-	// just restore now
-	for i := 0; i < c.nextBackupIndex; i++ {
-		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, i))
-		if err != nil {
-			// no error should occur during restore
+	if !matched {
+		if err = c.logBalances("./before-recover.log", expectedBalances); err != nil {
 			log.Fatal(err)
 		}
+		if err = c.logBalances("./after-recover.log", balances); err != nil {
+			log.Fatal(err)
+		}
+		log.Fatalf("[%s] Balance not match after recover! Check before-recover.log and after-recover.log for the difference", c)
 	}
+	log.Infof("[%s] Restore from backup 0-%d pass the validate", c, c.nextBackupIndex-1)
 }
 
 func (c *backupClient) clearDB() {
+	log.Infof("[%s] Clear the database before restore...", c)
 	// then drop the tables, I did not find a better way to clear the storage
 	err := util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
 		_, err := c.db.Exec(`drop table accounts;`)
@@ -391,6 +437,7 @@ func (c *backupClient) clearDB() {
 	if err != nil {
 		log.Fatalf("[%s] drop table err %v", c, err)
 	}
+	log.Infof("[%s] Database clean now", c)
 }
 
 func (c *backupClient) saveState() []uint64 {
@@ -411,6 +458,29 @@ func (c *backupClient) saveState() []uint64 {
 	return balances
 }
 
+func (c *backupClient) isValidBackupPath(path string) bool {
+	s, err := os.Stat(path)
+	// the folder will be created by br automatically
+	// so it is ok if the folder doesn't exists
+	if os.IsNotExist(err) {
+		return true
+	} else if s.IsDir() {
+		files, err := ioutil.ReadDir(path)
+		if err != nil {
+			log.Fatalf("[%s] Failed to read dir %s, err: %v", path, err)
+		}
+		// we cannot just judge whether files are empty here, because
+		// some meta files, like .DS_Store on macOS will interfere the judge
+		// so just check the files with "full-" prefix, which created by this test
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), "full-") {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	if idx != 0 {
 		return nil
@@ -418,13 +488,13 @@ func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 	var err error
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.config.DbName)
-	log.Infof("start to init...")
+	log.Infof("[%s] start to init...", c)
 	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		log.Infof("init end...")
+		log.Infof("[%s] init end...", c)
 	}()
 	c.applyConfig()
 	c.db, err = util.OpenDB(dsn, c.config.Concurrency)

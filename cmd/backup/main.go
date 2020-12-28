@@ -16,9 +16,14 @@
 // by checking whether we can restore the whole database no matter when we backup
 // Maintainer: longfangsong <longfangsong@icloud.com>
 //
-// example command to run this case:
-// with a tidb server running under 127.0.0.1:4000, with async-commit and one-pc on:
-// ./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
+// Precondition:
+// - Before run this case, please make sure:
+//   from TiKV nodes' point of view, BackupURI (by default it's local:///tmp/backup) does not exist or is an empty folder
+//   since we probably won't run this test on the same nodes of TiKV, we cannot check that in this program.
+//
+// Example command to run this case:
+//   with a tidb server running under 127.0.0.1:4000, with async-commit and one-pc on:
+//   ./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
 //
 // This case is supposed to run forever, until an error occur or got killed
 // This case should tolerant with all kinds of nemesis with one exception:
