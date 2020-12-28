@@ -97,12 +97,13 @@ type Config struct {
 }
 
 type backupClient struct {
-	features        Features
-	config          Config
-	db              *sql.DB
-	txnID           int32
-	lastBackupTs    uint64
-	nextBackupIndex int
+	features         Features
+	config           Config
+	db               *sql.DB
+	txnID            int32
+	lastBackupTs     uint64
+	nextRestoreIndex int
+	nextBackupIndex  int
 }
 
 func randomString(n int) string {
@@ -188,19 +189,18 @@ func (c *backupClient) backup() error {
 	if err != nil {
 		log.Warnf("[%s] Backup failed, err: %v", c, err)
 		return err
-	} else {
-		log.Infof("[%s] Back up %d success, this increment include updates from %d to %d", c, c.nextBackupIndex, c.lastBackupTs, lastBackupTs)
-		c.lastBackupTs = lastBackupTs
-		c.nextBackupIndex++
-		return nil
 	}
+	log.Infof("[%s] Back up %d success, this increment include updates from %d to %d", c, c.nextBackupIndex, c.lastBackupTs, lastBackupTs)
+	c.lastBackupTs = lastBackupTs
+	c.nextBackupIndex++
+	return nil
 }
 
 func (c *backupClient) restore() {
 	log.Infof("[%s] Start restore...", c)
-	for i := 0; i < c.nextBackupIndex; i++ {
-		log.Infof("[%s] Restoring from %s/full-%d ...", c, c.config.BackupURI, i)
-		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, i))
+	for ; c.nextRestoreIndex < c.nextBackupIndex; c.nextRestoreIndex++ {
+		log.Infof("[%s] Restoring from %s/full-%d ...", c, c.config.BackupURI, c.nextRestoreIndex)
+		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, c.nextRestoreIndex))
 		if err != nil {
 			// no error should occur during restore
 			log.Fatalf("[%s] Failed, err: %v", c, err)
@@ -208,6 +208,7 @@ func (c *backupClient) restore() {
 			log.Infof("[%s] Success", c)
 		}
 	}
+	c.lastBackupTs = 0
 	log.Infof("[%s] Restore success", c)
 }
 
@@ -321,11 +322,23 @@ func (c *backupClient) startRestore(restoringLock *sync.RWMutex) {
 		if err != nil {
 			log.Fatalf("[%s] failed to backup after try for %d times before restore, err: %v", c, c.config.RetryLimit, err)
 		}
+		oldNextRestoreIndex := c.nextRestoreIndex
 		// and then do the saveState, clearDB, restore and check work
 		balances := c.saveState()
 		c.clearDB()
 		c.restore()
 		c.checkRestoreSuccess(balances)
+		log.Infof("[%s] Restore from backup %d-%d pass the validate", c, oldNextRestoreIndex, c.nextRestoreIndex-1)
+		// the old backup files are invalidated after restore
+		// so backup once after restore
+		log.Infof("[%s] Backup once after restore", c)
+		err = util.RunWithRetry(context.Background(), c.config.RetryLimit, 5*time.Second, func() error {
+			err := c.backup()
+			return err
+		})
+		if err != nil {
+			log.Fatalf("[%s] failed to backup after try for %d times after restore, err: %v", c, c.config.RetryLimit, err)
+		}
 		restoringLock.Unlock()
 	}
 }
@@ -410,7 +423,6 @@ func (c *backupClient) checkRestoreSuccess(expectedBalances []uint64) {
 		}
 		log.Fatalf("[%s] Balance not match after recover! Check before-recover.log and after-recover.log for the difference", c)
 	}
-	log.Infof("[%s] Restore from backup 0-%d pass the validate", c, c.nextBackupIndex-1)
 }
 
 func (c *backupClient) clearDB() {
@@ -467,7 +479,7 @@ func (c *backupClient) isValidBackupPath(path string) bool {
 	} else if s.IsDir() {
 		files, err := ioutil.ReadDir(path)
 		if err != nil {
-			log.Fatalf("[%s] Failed to read dir %s, err: %v", path, err)
+			log.Fatalf("[%s] Failed to read dir %s, err: %v", c, path, err)
 		}
 		// we cannot just judge whether files are empty here, because
 		// some meta files, like .DS_Store on macOS will interfere the judge
