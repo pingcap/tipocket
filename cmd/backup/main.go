@@ -22,8 +22,19 @@
 //   since we probably won't run this test on the same nodes of TiKV, we cannot check that in this program.
 //
 // Example command to run this case:
-//   with a tidb server running under 127.0.0.1:4000, with async-commit and one-pc on:
-//   ./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
+//   Run locally for development or none strict test:
+//   	with a tidb server running under 127.0.0.1:4000, with async-commit and one-pc on:
+//   	./bin/backup -tidb-server 127.0.0.1:4000 -async-commit 1 -one-pc 1
+//   Run in an k8s cluster:
+//		./bin/backup
+//			-backup-uri "s3://nfs/tipocket/tests/backup?endpoint=http://{internal_host}:9000&access-key={key}&secret-access-key={secret}&force-path-style=true"
+//	        -run-time="6h" -nemesis="critical_skews" -tikv-replicas="5"
+//			-round="1" -client="5" -purge="false" -delNS="false"
+//			-namespace="tpctl-backup-br-txn" -hub="docker.io" -repository="pingcap"
+//			-image-version="nightly" -tikv-image="" -tidb-image="" -pd-image=""
+//			-tikv-config="" -tidb-config="" -pd-config=""
+//			-tidb-replicas="1" -pd-replicas="1" -storage-class="local-storage" -loki-addr=""
+//			-loki-username="" -loki-password=""
 //
 // This case is supposed to run forever, until an error occur or got killed
 // This case should tolerant with all kinds of nemesis with one exception:
@@ -38,6 +49,8 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/ngaut/log"
+	"net/url"
 	"time"
 
 	// use mysql
@@ -60,7 +73,7 @@ var (
 	backupInterval  = flag.Duration("backup-interval", 1*time.Minute, "the backup interval")
 	restoreInterval = flag.Duration("restore-interval", 3*time.Minute, "the restore interval")
 	dbname          = flag.String("dbname", "test", "name of database to test")
-	retryLimit      = flag.Int("retry-limit", 200, "retry count")
+	retryLimit      = flag.Int("retry-limit", 20, "retry count")
 	backupURI       = flag.String("backup-uri", "local:///tmp/backup", "where the backup file should in")
 
 	pessimistic = flag.Bool("pessimistic", true, "use pessimistic transaction")
@@ -79,6 +92,10 @@ func main() {
 		RunRound:    1,
 	}
 
+	u, err := url.Parse(*backupURI)
+	if err != nil {
+		log.Fatalf("invalid backupURI")
+	}
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
@@ -91,7 +108,7 @@ func main() {
 				RetryLimit:      *retryLimit,
 				Contention:      *contention,
 				DbName:          *dbname,
-				BackupURI:       *backupURI,
+				BackupURI:       *u,
 			},
 			Features: backup.Features{
 				Pessimistic: *pessimistic,

@@ -22,10 +22,9 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
-	"io/ioutil"
 	"math/rand"
+	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -93,7 +92,7 @@ type Config struct {
 	DbName          string
 	RetryLimit      int
 	// will backup to BackupURI/full-$nextBackupIndex
-	BackupURI string
+	BackupURI url.URL
 }
 
 type backupClient struct {
@@ -181,7 +180,7 @@ func (c *backupClient) initData(ctx context.Context) {
 
 func (c *backupClient) backup() error {
 	log.Infof("[%s] Try backup once", c)
-	queryString := fmt.Sprintf(`BACKUP DATABASE * TO '%s/full-%d' LAST_BACKUP = %d;`, c.config.BackupURI, c.nextBackupIndex, c.lastBackupTs)
+	queryString := fmt.Sprintf(`BACKUP DATABASE * TO '%s' LAST_BACKUP = %d;`, c.backupURI(c.nextBackupIndex), c.lastBackupTs)
 	row := c.db.QueryRow(queryString)
 	var ignore string
 	var lastBackupTs uint64
@@ -196,11 +195,19 @@ func (c *backupClient) backup() error {
 	return nil
 }
 
+func (c *backupClient) backupURI(index int) []byte {
+	backupURI := c.config.BackupURI
+	backupURI.Path += fmt.Sprintf("/full-%d", index)
+	backupURIString, _ := backupURI.MarshalBinary()
+	return backupURIString
+}
+
 func (c *backupClient) restore() {
 	log.Infof("[%s] Start restore...", c)
 	for ; c.nextRestoreIndex < c.nextBackupIndex; c.nextRestoreIndex++ {
-		log.Infof("[%s] Restoring from %s/full-%d ...", c, c.config.BackupURI, c.nextRestoreIndex)
-		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s/full-%d'`, c.config.BackupURI, c.nextRestoreIndex))
+		backupURI := c.backupURI(c.nextRestoreIndex)
+		log.Infof("[%s] Restoring from %s ...", c, backupURI)
+		_, err := c.db.Exec(fmt.Sprintf(`RESTORE DATABASE * FROM '%s'`, backupURI))
 		if err != nil {
 			// no error should occur during restore
 			log.Fatalf("[%s] Failed, err: %v", c, err)
@@ -468,29 +475,6 @@ func (c *backupClient) saveState() []uint64 {
 		balances = append(balances, balance)
 	}
 	return balances
-}
-
-func (c *backupClient) isValidBackupPath(path string) bool {
-	s, err := os.Stat(path)
-	// the folder will be created by br automatically
-	// so it is ok if the folder doesn't exists
-	if os.IsNotExist(err) {
-		return true
-	} else if s.IsDir() {
-		files, err := ioutil.ReadDir(path)
-		if err != nil {
-			log.Fatalf("[%s] Failed to read dir %s, err: %v", c, path, err)
-		}
-		// we cannot just judge whether files are empty here, because
-		// some meta files, like .DS_Store on macOS will interfere the judge
-		// so just check the files with "full-" prefix, which created by this test
-		for _, f := range files {
-			if strings.HasPrefix(f.Name(), "full-") {
-				return false
-			}
-		}
-	}
-	return true
 }
 
 func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
