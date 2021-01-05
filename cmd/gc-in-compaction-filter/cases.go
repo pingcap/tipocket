@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -86,6 +87,12 @@ func genMvccDelete(key []byte, startTs uint64, commitTs uint64) ([]byte, []byte)
 	return writeKey, writeValue
 }
 
+func genRandomBytes(size int) (blk []byte) {
+	blk = make([]byte, size)
+	_, _ = rand.Read(blk)
+	return
+}
+
 // Case 1: test old versions before the safe point will be cleaned by compaction.
 func (c *client) testGcStaleVersions() {
 	var err error
@@ -96,7 +103,7 @@ func (c *client) testGcStaleVersions() {
 		log.Fatalf("[%s] change gc.ratio-threshold fail, error %v", caseLabel, err)
 	}
 
-	key := []byte("test_gc_stale_versions")
+	key := append([]byte("test_gc_stale_versions"), genRandomBytes(8)...)
 	value := []byte("test_gc_stale_versions")
 
 	safepoint := c.mustGetSafePoint()
@@ -138,7 +145,7 @@ func (c *client) testGcLatestPutBeforeSafePoint() {
 		log.Fatalf("[%s] change gc.ratio-threshold fail, error %v", caseLabel, err)
 	}
 
-	key := []byte("test_gc_latest_put")
+	key := append([]byte("test_gc_latest_put"), genRandomBytes(8)...)
 	value := []byte("test_gc_latest_put")
 
 	safepoint := c.mustGetSafePoint()
@@ -184,7 +191,7 @@ func (c *client) testGcLatestStaleDeleteMark(shouldGc bool) {
 	var err error
 	debugCli := c.mustGetTiKVCtlClient(c.kvAddrs[0])
 
-	key := []byte("test_gc_latest_stale_delete")
+	key := append([]byte("test_gc_latest_stale_delete"), genRandomBytes(8)...)
 	value := []byte("test_gc_latest_stale_delete")
 
 	safepoint := c.mustGetSafePoint()
