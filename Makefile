@@ -17,7 +17,7 @@ default: tidy fmt lint build
 
 build: manager consistency isolation pocket on-dup sqllogic block-writer \
 		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
-		read-stress  tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
+		read-stress tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
 
@@ -28,6 +28,9 @@ bank:
 
 bank2:
 	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
+
+backup:
+	$(GOBUILD) $(GOMOD) -o bin/backup cmd/backup/*.go
 
 pbank:
 	$(GOBUILD) $(GOMOD) -o bin/pbank cmd/pbank/main.go
