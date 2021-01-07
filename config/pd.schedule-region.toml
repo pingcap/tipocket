@@ -1,0 +1,3 @@
+[schedule]
+enable-one-way-merge = false
+enable-cross-table-merge = true

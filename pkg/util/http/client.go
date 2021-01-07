@@ -26,14 +26,15 @@ func (c *Client) Get(url string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("GET request \"%s\", got %v", url, resp.StatusCode))
-	}
-	body, err := ioutil.ReadAll(resp.Body)
+
+	res, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, errors.Wrap(err, "Read GET response failed")
 	}
-	return body, nil
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(fmt.Sprintf("GET request \"%s\", got %v %s", url, resp.StatusCode, string(res)))
+	}
+	return res, nil
 }
 
 // Post sends a HTTP POST request to the specified URL.

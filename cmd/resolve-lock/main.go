@@ -31,8 +31,9 @@ import (
 var (
 	enableGreenGC = flag.Bool("enable-green-gc", true, "whether to enable green gc")
 	regionCount   = flag.Int("region-count", 200, "count of regions")
-	lockPerRegion = flag.Int("lock-per-region", 5, "count of locks in each region")
+	lockPerRegion = flag.Int("lock-per-region", 10, "count of locks in each region")
 	workers       = flag.Int("worker", 10, "count of workers to generate locks")
+	localMode     = flag.Bool("local-mode", false, "run the test in local mode which means use localhost cluster to run the test")
 )
 
 func main() {
@@ -51,6 +52,7 @@ func main() {
 			RegionCount:   *regionCount,
 			LockPerRegion: *lockPerRegion,
 			Worker:        *workers,
+			LocalMode:     *localMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
