@@ -85,7 +85,7 @@ func (c *resolveLockClient) openDB(ctx context.Context, ip string, port int32) e
 	if err != nil {
 		return errors.Trace(err)
 	}
-	_, err = db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE `%s`", c.dbName))
+	_, err = db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", c.dbName))
 	if err != nil {
 		return errors.Trace(err)
 	}
