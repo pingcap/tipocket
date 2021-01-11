@@ -26,13 +26,21 @@ type NoopDB struct {
 
 // SetUp initializes the database.
 func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
-	prepareSQL := fixture.Context.TiDBClusterConfig.PrepareSQL
-	if len(prepareSQL) > 0 && node.Component == cluster.TiDB {
+	isFirstTiDB := false
+	for _, n := range nodes {
+		if n.Component == cluster.TiDB {
+			isFirstTiDB = n == node
+			break
+		}
+	}
+
+	// Run prepare SQLs
+	if isFirstTiDB {
 		db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test?multiStatements=true", node.IP, node.Port))
 		if err != nil {
 			return err
 		}
-		if _, err = db.Exec(prepareSQL); err != nil {
+		if _, err = db.Exec(fixture.Context.TiDBClusterConfig.PrepareSQL); err != nil {
 			return err
 		}
 		if err = db.Close(); err != nil {
@@ -40,8 +48,6 @@ func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node
 		}
 		// Wait until global variables take effect
 		time.Sleep(2100 * time.Millisecond)
-		// Only need to run once
-		fixture.Context.TiDBClusterConfig.PrepareSQL = ""
 	}
 	return nil
 }
