@@ -125,6 +125,8 @@ type TiDBClusterConfig struct {
 	TiDBConfig string
 	TiKVConfig string
 	PDConfig   string
+	// SQLs that run after the TiDB cluster is created
+	PrepareSQL string
 
 	// replicas
 	TiDBReplicas    int
@@ -283,6 +285,7 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.PrepareSQL, "prepare-sql", "", "SQLs that run after the TiDB cluster is created (cluster A in abtest case)")
 	flag.IntVar(&Context.TiDBClusterConfig.TiDBReplicas, "tidb-replicas", 2, "number of tidb replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.PDReplicas, "pd-replicas", 3, "number of pd replicas")
@@ -292,6 +295,7 @@ func init() {
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKVConfig, "abtest.tikv-config", "", "tikv config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PDConfig, "abtest.pd-config", "", "pd config file for cluster B")
+	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.PrepareSQL, "abtest.prepare-sql", "", "SQLs that run after cluster B is created")
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "abtest.tikv-replicas", 3, "number of tikv replicas for cluster B")
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiFlashReplicas, "abtest.tiflash-replicas", 0, "number of tiflash replicas for cluster B, set 0 to disable tiflash")
 
