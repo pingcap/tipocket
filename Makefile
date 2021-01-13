@@ -125,6 +125,10 @@ pipelined-locking:
 manager:
 	$(GOBUILD) $(GOMOD) -o bin/manager cmd/cluster/manager/*.go
 
+gc-in-compaction-filter:
+	$(GOBUILD) $(GOMOD) -o bin/gc-in-compaction-filter cmd/gc-in-compaction-filter/*.go
+
+
 fmt: groupimports
 	go fmt ./...
 
