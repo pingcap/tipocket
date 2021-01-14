@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +24,7 @@ import (
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
 )
 
 // Recommendation ...
@@ -99,6 +99,7 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
 func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
+	reclaimDelete := corev1.PersistentVolumeReclaimDelete
 	r := &Recommendation{
 		InjectionConfigMaps: make([]*corev1.ConfigMap, 0),
 		TidbCluster: &v1alpha1.TidbCluster{
@@ -112,10 +113,10 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 			},
 			Spec: v1alpha1.TidbClusterSpec{
 				Timezone:        "UTC",
-				PVReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
+				PVReclaimPolicy: &reclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
-				PD: v1alpha1.PDSpec{
+				PD: &v1alpha1.PDSpec{
 					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
@@ -123,7 +124,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						Image: util.BuildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
 					},
 				},
-				TiKV: v1alpha1.TiKVSpec{
+				TiKV: &v1alpha1.TiKVSpec{
 					Replicas: int32(clusterConfig.TiKVReplicas),
 					ResourceRequirements: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -142,7 +143,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						Image: util.BuildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage),
 					},
 				},
-				TiDB: v1alpha1.TiDBSpec{
+				TiDB: &v1alpha1.TiDBSpec{
 					Replicas: int32(clusterConfig.TiDBReplicas),
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -204,7 +205,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				Initializer: v1alpha1.InitializerSpec{
 					MonitorContainer: v1alpha1.MonitorContainer{
 						BaseImage: "pingcap/tidb-monitor-initializer",
-						Version:   "v3.0.5",
+						Version:   "v4.0.9",
 					},
 				},
 				Reloader: v1alpha1.ReloaderSpec{
@@ -243,11 +244,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig)
-		r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
-			Replication: &v1alpha1.PDReplicationConfig{
-				EnablePlacementRules: pointer.BoolPtr(true),
-			},
-		}
+		//r.TidbCluster.Spec.PD.Config = &v1alpha1.PDConfig{
+		//	Replication: &v1alpha1.PDReplicationConfig{
+		//		EnablePlacementRules: pointer.BoolPtr(true),
+		//	},
+		//}
 	}
 
 	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {

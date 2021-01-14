@@ -35,14 +35,14 @@ import (
 
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/label"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/tests"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/label"
 )
 
 const (
