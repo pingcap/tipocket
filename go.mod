@@ -20,7 +20,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/go-cmp v0.5.0
-	github.com/google/gofuzz v1.2.0
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.8.0
 	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
@@ -74,7 +74,6 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20200912215256-4140de9c8800
 	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/yaml v1.2.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
