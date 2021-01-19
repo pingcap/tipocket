@@ -330,9 +330,6 @@ func parseNemesisGenerator(name string) (g core.NemesisGenerator) {
 	// TODO: Change that name
 	case "leader-shuffle":
 		g = nemesis.NewLeaderShuffleGenerator(name)
-	case "delay_tikv", "delay_pd", "delay_tiflash", "errno_tikv", "errno_pd",
-		"errno_tiflash", "mixed_tikv", "mixed_pd", "mixed_tiflash", "readerr_tikv", "readerr_tiflash":
-		g = nemesis.NewIOChaosGenerator(name)
 	default:
 		log.Fatalf("invalid nemesis generator %s", name)
 	}
