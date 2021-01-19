@@ -21,8 +21,6 @@ import (
 	"strings"
 
 	"github.com/ngaut/log"
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/controller"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,12 +29,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
-
-// PDAddress ...
-func PDAddress(tc *v1alpha1.TidbCluster) string {
-	pdSvcName := controller.PDMemberName(tc.Name)
-	return fmt.Sprintf("http://%s.%s.svc:2379", pdSvcName, tc.Namespace)
-}
 
 // FindPort get possible correct port when there are multiple ports
 func FindPort(podName, component string, containers []corev1.Container) int32 {

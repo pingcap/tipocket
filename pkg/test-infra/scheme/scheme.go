@@ -16,12 +16,13 @@ package scheme
 import (
 	chaosoperatorv1alpha1 "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	astsv1alpha1 "github.com/pingcap/advanced-statefulset/pkg/client/clientset/versioned/scheme"
-	tidboperatorv1alpha "github.com/pingcap/tidb-operator/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubescheme "k8s.io/client-go/kubernetes/scheme"
+
+	tidboperatorv1alpha "github.com/pingcap/tipocket/pkg/tidb-operator/client/clientset/versioned/scheme"
 )
 
 // Scheme gathers the schemes of native resources and custom resources used by tipocket

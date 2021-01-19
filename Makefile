@@ -135,7 +135,7 @@ tidy:
 
 lint: revive
 	@echo "linting"
-	revive -formatter friendly -config revive.toml $$($(PACKAGES))
+	revive -formatter friendly -config revive.toml $$($(PACKAGES) | grep -v "pkg/tidb-operator")
 
 revive:
 	$(GO) get github.com/mgechev/revive@v1.0.2
