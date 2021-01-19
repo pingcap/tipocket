@@ -48,7 +48,6 @@ func init() {
 		core.RegisterNemesis(networkPartition{client})
 		core.RegisterNemesis(netem{client})
 		core.RegisterNemesis(timeChaos{client})
-		core.RegisterNemesis(iochaos{client})
 		core.RegisterNemesis(scaling{client})
 	}
 	core.RegisterNemesis(scheduler{})
