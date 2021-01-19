@@ -43,7 +43,8 @@ func newDrainer(ns, name string) *Drainer {
 			DownStreamDB: fmt.Sprintf("%s-downstream-tidb", name),
 		}
 		drainerCommandModel = DrainerCommandModel{
-			Component: drainerName,
+			Component:   drainerName,
+			ClusterName: fmt.Sprintf("%s-upstream", name),
 		}
 		configmapMountMode int32 = 420
 	)
@@ -62,7 +63,7 @@ func newDrainer(ns, name string) *Drainer {
 				Name:      drainerName,
 			},
 			Data: map[string]string{
-				"drainer-config": drainerConfigmap,
+				"config-file": drainerConfigmap,
 			},
 		},
 		&corev1.Service{
@@ -140,6 +141,12 @@ func newDrainer(ns, name string) *Drainer {
 										MountPath: "/etc/drainer",
 									},
 								},
+								Env: []corev1.EnvVar{
+									{
+										Name: "TZ",
+										Value: "UTC",
+									},
+								},
 							},
 						},
 						Volumes: []corev1.Volume{
@@ -153,7 +160,7 @@ func newDrainer(ns, name string) *Drainer {
 										DefaultMode: &configmapMountMode,
 										Items: []corev1.KeyToPath{
 											{
-												Key:  "drainer-config",
+												Key:  "config-file",
 												Path: "drainer.toml",
 											},
 										},
