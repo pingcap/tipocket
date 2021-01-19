@@ -12,7 +12,7 @@ spec:
       - name: image-version
         value: release-4.0-nightly
       - name: storage-class
-        value: local-storage
+        value: local-path
       - name: abtest_image-version
         value: release-4.0-nightly
       - name: nemesis
@@ -38,7 +38,7 @@ spec:
       - name: tiflash-replicas
         value: 2
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: ""
       - name: loki-username
         value: "loki"
       - name: loki-password

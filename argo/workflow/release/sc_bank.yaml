@@ -22,7 +22,7 @@ spec:
       - name: pd-image
         value: ""
       - name: storage-class
-        value: sas
+        value: local-path
       - name: nemesis
         value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
       - name: tidb-config
@@ -36,7 +36,7 @@ spec:
       - name: tidb-replica-read
         value: "leader-and-follower"
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: ""
       - name: loki-username
         value: "loki"
       - name: loki-password

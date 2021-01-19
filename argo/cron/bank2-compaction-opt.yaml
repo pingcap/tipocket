@@ -11,6 +11,10 @@ spec:
   timezone: "Asia/Shanghai"
   startingDeadlineSeconds: 0
   workflowSpec:
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-bank2-compaction-opt
     # select the template `main` as the the entrypoint
     entrypoint: main
     templates:
@@ -40,7 +44,7 @@ spec:
                     value: nightly
                   # NOTE: differenct K8s cluster has different storage-class name
                   - name: storage-class
-                    value: sas
+                    value: local-path
                   - name: run-time
                     value: "6h"
                   - name: tikv-replicas
