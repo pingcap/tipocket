@@ -156,7 +156,7 @@ test:
 	$(GOTEST) ./...
 
 image:
-	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
 	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest

@@ -9,9 +9,9 @@ WORKDIR /src
 COPY . .
 COPY .git .git
 
-RUN --mount=type=cache,target=/go/pkg \
-    --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=tmpfs,target=/go/src/ make clean && make build
+RUN --mount=type=cache,id=tipocket_go_pkg,target=/go/pkg \
+    --mount=type=cache,id=tipocket_go_cache,target=/root/.cache/go-build \
+    make clean && make build
 
 FROM alpine:3.8
 
