@@ -34,7 +34,7 @@ If you have a K8s cluster, you can use the below commands to deploy and run the 
 ```sh
 make build
 export KUBECONFIG=$(YOUR_KUBECONFIG_PATH)
-bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -purge=true -storage-class=local-storage
+bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -purge=true -storage-class=local-path
 ```
 
 ### On the local environment

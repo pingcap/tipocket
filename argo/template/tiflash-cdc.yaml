@@ -23,7 +23,7 @@ spec:
           - name: abtest_image-version
             value: latest
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: nemesis
             default: ""
           - name: client
@@ -51,7 +51,7 @@ spec:
           - name: cdc_version
             default: nightly
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password

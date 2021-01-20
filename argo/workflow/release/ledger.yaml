@@ -22,13 +22,13 @@ spec:
       - name: pd-image
         value: ""
       - name: storage-class
-        value: sas
+        value: local-path
       - name: nemesis
         value: ""
       - name: run-time
         value: "60m"
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: ""
       - name: loki-username
         value: "loki"
       - name: loki-password

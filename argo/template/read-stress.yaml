@@ -17,7 +17,7 @@ spec:
           - name: image-version
             default: nightly
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: nemesis
             default: "random_kill, partition_one, shuffle-leader-scheduler"
           - name: run-time
@@ -25,7 +25,7 @@ spec:
           - name: tikv-config
             default: ""
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password

@@ -16,13 +16,13 @@ spec:
         - name: image-version
           value: nightly
         - name: storage-class
-          value: sas
+          value: local-path
         - name: nemesis
           value: "shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,scaling"
         - name: run-time
           value: "12h"
         - name: loki-addr
-          value: "http://gateway.loki.svc"
+          value: ""
         - name: loki-username
           value: "loki"
         - name: loki-password

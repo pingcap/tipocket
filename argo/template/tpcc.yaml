@@ -23,7 +23,7 @@ spec:
           - name: pd-image
             default: ""
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: client
             default: "100"
           - name: request-count
@@ -33,7 +33,7 @@ spec:
           - name: nemesis
             default: ""
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password

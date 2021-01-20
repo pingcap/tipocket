@@ -23,11 +23,11 @@ spec:
           - name: pd-image
             default: ""
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: run-time
             default: "8h"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password

@@ -23,7 +23,7 @@ spec:
           - name: pd-image
             default: ""
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: nemesis
             default: ""
           - name: run-time
@@ -47,7 +47,7 @@ spec:
           - name: abtest_concurrency
             default: "3"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password

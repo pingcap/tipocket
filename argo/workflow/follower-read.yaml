@@ -14,7 +14,7 @@ spec:
       - name: image-version
         value: nightly
       - name: storage-class
-        value: local-storage
+        value: local-path
       - name: nemesis
         value: ""
       - name: run-time
@@ -24,7 +24,7 @@ spec:
       - name: loki-password
         value: admin
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: ""
   templates:
     - name: call-tipocket-follower-read
       steps:

@@ -17,7 +17,7 @@ spec:
           - name: image-version
             default: nightly
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: nemesis
             default: ""
           - name: run-time
@@ -31,7 +31,7 @@ spec:
           - name: binlog_sync-timeout
             default: "1h"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password
