@@ -81,15 +81,14 @@ func NewController(
 	c.logPath = logPath
 	c.plugins = plugins
 
-	if c.lokiClient != nil {
-		if _, err := os.Stat(c.logPath); err != nil {
-			if os.IsNotExist(err) {
-				if err := os.Mkdir(c.logPath, os.ModePerm); err != nil {
-					log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
-				}
-			} else {
+	// create the log artifact dir
+	if _, err := os.Stat(c.logPath); err != nil {
+		if os.IsNotExist(err) {
+			if err := os.Mkdir(c.logPath, os.ModePerm); err != nil {
 				log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
 			}
+		} else {
+			log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
 		}
 	}
 
