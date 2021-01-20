@@ -258,7 +258,7 @@ func init() {
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
-	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-storage", "storage class name")
+	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-path", "storage class name")
 	flag.StringVar(&Context.TiDBMonitorSvcType, "monitor-svc", "NodePort", "TiDB monitor service type")
 	flag.StringVar(&Context.pprofAddr, "pprof", "0.0.0.0:8080", "Pprof address")
 	flag.DurationVar(&Context.WaitClusterReadyDuration, "wait-duration", 4*time.Hour, "clusters ready wait duration")

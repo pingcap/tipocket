@@ -12,7 +12,7 @@ spec:
       - name: image-version
         value: release-4.0-nightly
       - name: storage-class
-        value: local-storage
+        value: local-path
       - name: nemesis
         value: "random_kill,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler,delay_tikv"
       - name: tikv-config

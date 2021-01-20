@@ -10,7 +10,7 @@ spec:
       container:
         name: argo
         image: 'argoproj/argoexec:latest'
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         command:
           - sh
           - '-c'

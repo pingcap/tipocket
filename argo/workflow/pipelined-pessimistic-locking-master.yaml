@@ -18,11 +18,11 @@ spec:
       - name: pd-image
         value: "hub.pingcap.net/qa/pd:master-failpoint"
       - name: storage-class
-        value: local-storage
+        value: local-path
       - name: nemesis
         value: ""
       - name: loki-addr
-        value: "http://gateway.loki.svc"
+        value: ""
       - name: loki-username
         value: "loki"
       - name: loki-password

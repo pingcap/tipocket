@@ -16,13 +16,13 @@ spec:
         - name: image-version
           value: release-4.0-nightly
         - name: storage-class
-          value: sas
+          value: local-path
         - name: nemesis
           value: ""
         - name: run-time
           value: "120m"
         - name: loki-addr
-          value: "http://gateway.loki.svc"
+          value: ""
         - name: loki-username
           value: "loki"
         - name: loki-password
