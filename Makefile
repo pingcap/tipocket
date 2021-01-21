@@ -43,7 +43,7 @@ ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 rawkv-linearizability:
-	cd testcase/rawkv-linearizability make build; \
+	cd testcase/rawkv-linearizability; make build; \
 	cp bin/* ../../bin/
 
 tpcc:
@@ -65,21 +65,21 @@ verifier:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
 
 pocket:
-	cd testcase/pocket make build; \
+	cd testcase/pocket; make build; \
 	cp bin/* ../../bin/
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 on-dup:
-	cd testcase/ondup make build; \
+	cd testcase/ondup; make build; \
 	cp bin/* ../../bin/
 
 block-writer:
 	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
 
 sqllogic:
-	cd testcase/sqllogictest make build; \
+	cd testcase/sqllogictest; make build; \
 	cp bin/* ../../bin/
 
 region-available:
