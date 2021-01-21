@@ -43,7 +43,8 @@ ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 rawkv-linearizability:
-	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
+	cd testcase/rawkv-linearizability make build; \
+	cp bin/* ../../bin/
 
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go

@@ -8,7 +8,6 @@ require (
 	github.com/chaos-mesh/chaos-mesh/api/v1alpha1 v0.0.0-20210118085126-27d3a05f8242
 	github.com/chaos-mesh/matrix v0.0.0-20200715113735-688b14661cd8
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
-	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goccy/go-graphviz v0.0.5
 	github.com/google/go-cmp v0.5.0

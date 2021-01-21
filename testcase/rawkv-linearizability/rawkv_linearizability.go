@@ -1,4 +1,4 @@
-package rawkvlinearizability
+package rawkv_linearizability
 
 import (
 	"context"

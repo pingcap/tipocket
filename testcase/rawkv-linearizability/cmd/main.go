@@ -13,7 +13,8 @@ import (
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
-	rawkvlinearizability "github.com/pingcap/tipocket/tests/rawkv-linearizability"
+
+	rawkv_linearizability "github.com/pingcap/tipocket/testcase/rawkv-linearizability"
 )
 
 var (
@@ -35,9 +36,9 @@ func main() {
 	// TODO should add more checker
 
 	verifySuit := verify.Suit{
-		Model:   rawkvlinearizability.RawkvModel(),
+		Model:   rawkv_linearizability.RawkvModel(),
 		Checker: core.MultiChecker("rawkv-linearizability checkers", checkers...),
-		Parser:  rawkvlinearizability.RawkvParser(),
+		Parser:  rawkv_linearizability.RawkvParser(),
 	}
 	cfg := control.Config{
 		Mode:         control.Mode(control.ModeMixed),
@@ -48,7 +49,7 @@ func main() {
 		History:      fixture.Context.HistoryFile,
 	}
 	log.Printf("request count:%v", cfg.RequestCount)
-	randomValues := rawkvlinearizability.GenerateRandomValueString(rawkvlinearizability.RandomValueConfig{
+	randomValues := rawkv_linearizability.GenerateRandomValueString(rawkv_linearizability.RandomValueConfig{
 		ValueNum10KB:  *valueNum10KB,
 		ValueNum100KB: *valueNum100KB,
 		ValueNum1MB:   *valueNum1MB,
@@ -59,8 +60,8 @@ func main() {
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
 		//Provider: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
-		ClientCreator: rawkvlinearizability.RawkvClientCreator{
-			Cfg: rawkvlinearizability.Config{
+		ClientCreator: rawkv_linearizability.RawkvClientCreator{
+			Cfg: rawkv_linearizability.Config{
 				KeyStart:        *keyStart,
 				KeyNum:          *keyNum,
 				ReadProbability: *readProbability,
