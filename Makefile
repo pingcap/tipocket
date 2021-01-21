@@ -72,13 +72,15 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 on-dup:
-	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+	cd testcase/on-dup make build; \
+	cp bin/* ../../bin/
 
 block-writer:
 	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
 
 sqllogic:
-	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
+	cd testcase/sqllogictest make build; \
+	cp bin/* ../../bin/
 
 region-available:
 	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go

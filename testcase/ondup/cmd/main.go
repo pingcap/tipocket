@@ -26,7 +26,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/tests/ondup"
+	"github.com/pingcap/tipocket/testcase/ondup"
 )
 
 var (
