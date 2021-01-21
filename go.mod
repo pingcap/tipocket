@@ -4,7 +4,6 @@ go 1.13
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/DATA-DOG/go-sqlmock v1.4.1 // indirect
 	github.com/anishathalye/porcupine v0.0.0-20200229220004-848b8b5d43d9
 	github.com/chaos-mesh/chaos-mesh/api/v1alpha1 v0.0.0-20210118085126-27d3a05f8242
 	github.com/chaos-mesh/matrix v0.0.0-20200715113735-688b14661cd8
@@ -40,11 +39,9 @@ require (
 	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
 	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
-	github.com/pingcap/tidb-tools v4.0.1-0.20200612040216-6ddacc75561c+incompatible
-	github.com/pkg/errors v0.9.1
+	github.com/pingcap/tidb-tools v4.0.1-0.20200612040216-6ddacc75561c+incompatible // indirect
 	github.com/prometheus/prometheus v1.8.2 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0
-	github.com/satori/go.uuid v1.2.0
 	github.com/stretchr/testify v1.5.1
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0

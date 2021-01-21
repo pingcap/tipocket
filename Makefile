@@ -17,8 +17,8 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
-		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
-		read-stress tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
+		region-available deadlock-detector crud \
+		read-stress follower-read resolve-lock pipelined-locking \
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
 
@@ -67,7 +67,8 @@ verifier:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
 
 pocket:
-	$(GOBUILD) $(GOMOD) -o bin/pocket cmd/pocket/*.go
+	cd testcase/pocket make build; \
+	cp bin/* ../../bin/
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
@@ -94,26 +95,8 @@ deadlock-detector:
 crud:
 	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go
 
-abtest:
-	$(GOBUILD) $(GOMOD) -o bin/abtest cmd/abtest/*.go
-
-cdc-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
-
-tiflash-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go
-
 read-stress:
 	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
-
-tiflash-abtest:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-abtest cmd/tiflash-abtest/*.go
-
-tiflash-cdc:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-cdc cmd/tiflash-cdc/*.go
-
-dm-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/dm-pocket cmd/dm-pocket/*.go
 
 follower-read:
 	$(GOBUILD) $(GOMOD) -o bin/follower-read cmd/follower-read/*.go
