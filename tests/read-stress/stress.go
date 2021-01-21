@@ -48,6 +48,8 @@ type stressClient struct {
 	replicaRead      string
 }
 
+var letters = []rune("abcdefghijklmnopqrstuvwxyz")
+
 func (c *stressClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	// only prepare data through the first TiDB
 	if idx != 0 {
@@ -102,7 +104,7 @@ func (c *stressClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 				}
 				txnStmt := txn.Stmt(stmt)
 				for id := start; id < start+256 && id < end; id++ {
-					if _, err := txnStmt.Exec(id, rand.Intn(64), string(rand.Intn(26)+'a')); err != nil {
+					if _, err := txnStmt.Exec(id, rand.Intn(64), string(letters[rand.Intn(26)])); err != nil {
 						log.Fatal(err)
 					}
 				}
