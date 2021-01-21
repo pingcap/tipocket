@@ -1,4 +1,4 @@
-package pessimistic
+package pkg
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
+	"github.com/pingcap/tipocket/testcase/pessimistic/pkg/hongbao"
 	"github.com/pingcap/tipocket/util"
 )
 

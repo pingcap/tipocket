@@ -1,4 +1,4 @@
-package pessimistic
+package pkg
 
 import (
 	"database/sql"

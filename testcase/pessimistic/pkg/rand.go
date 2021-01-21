@@ -1,4 +1,4 @@
-package pessimistic
+package pkg
 
 import (
 	"math/rand"

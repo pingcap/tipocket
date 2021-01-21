@@ -23,7 +23,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/tests/pessimistic/pipeline"
+	"github.com/pingcap/tipocket/testcase/pessimistic/pkg/pipeline"
 )
 
 var (

@@ -16,6 +16,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/pingcap/tipocket/testcase/pessimistic/pkg"
 	"log"
 	"strconv"
 	"strings"
@@ -29,8 +30,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/tests/pessimistic"
-	"github.com/pingcap/tipocket/tests/pessimistic/hongbao"
+	"github.com/pingcap/tipocket/testcase/pessimistic/pkg/hongbao"
 )
 
 const caseName = "txn-rand-pessimistic"
@@ -78,8 +78,8 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: pessimistic.ClientCreator{Cfg: &pessimistic.Config{
-			PessimisticClientConfig: pessimistic.ClientConfig{
+		ClientCreator: pkg.ClientCreator{Cfg: &pkg.Config{
+			PessimisticClientConfig: pkg.ClientConfig{
 				DBName:         *randTxnDBName,
 				Concurrency:    *randTxnConcurrency,
 				TableNum:       *tableNum,

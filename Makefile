@@ -17,10 +17,10 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
-		region-available deadlock-detector crud \
-		read-stress follower-read resolve-lock pipelined-locking \
+		region-available crud \
+		read-stress follower-read pessimistic
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic
 
 isolation: append register
 
@@ -48,9 +48,6 @@ rawkv-linearizability:
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
 
-txn-rand-pessimistic:
-	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
-
 append:
 	$(GOBUILD) $(GOMOD) -o bin/append cmd/append/main.go
 
@@ -73,10 +70,6 @@ pocket:
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
-resolve-lock:
-	cd testcase/resolve-lock; make build; \
-	cp bin/* ../../bin/
-
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
 
@@ -89,8 +82,9 @@ sqllogic:
 region-available:
 	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
 
-deadlock-detector:
-	$(GOBUILD) $(GOMOD) -o bin/deadlock-detector cmd/deadlock-detector/*.go
+pessimistic:
+	cd testcase/pessimistic; make build; \
+	cp bin/* ../../bin/
 
 crud:
 	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go

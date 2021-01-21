@@ -23,7 +23,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	dlc "github.com/pingcap/tipocket/tests/pessimistic/deadlock"
+	dlc "github.com/pingcap/tipocket/testcase/pessimistic/pkg/deadlock"
 )
 
 var (
