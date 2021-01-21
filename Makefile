@@ -73,7 +73,8 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 resolve-lock:
-	$(GOBUILD) $(GOMOD) -o bin/resolve-lock cmd/resolve-lock/*.go
+	cd testcase/resolve-lock; make build; \
+	cp bin/* ../../bin/
 
 on-dup:
 	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go

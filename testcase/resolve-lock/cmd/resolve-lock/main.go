@@ -25,7 +25,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	resolvelock "github.com/pingcap/tipocket/tests/resolve-lock"
+
+	resolvelock "github.com/pingcap/tipocket/testcase/resolve-lock"
 )
 
 var (
