@@ -15,7 +15,6 @@ package tidb
 
 import (
 	"fmt"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -32,9 +31,6 @@ type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
 	*corev1.Service
-
-	// ConfigMaps for IO Chaos injection
-	InjectionConfigMaps []*corev1.ConfigMap
 }
 
 // EnablePump ...
@@ -101,7 +97,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	enablePVReclaim, exposeStatus := true, true
 	reclaimDelete := corev1.PersistentVolumeReclaimDelete
 	r := &Recommendation{
-		InjectionConfigMaps: make([]*corev1.ConfigMap, 0),
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -245,47 +240,5 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig)
 	}
-
-	for _, name := range strings.Split(fixture.Context.Nemesis, ",") {
-		name := strings.TrimSpace(name)
-		if len(name) == 0 {
-			continue
-		}
-		switch name {
-		case "delay_tikv", "errno_tikv", "mixed_tikv", "readerr_tikv":
-			r.TidbCluster.Spec.TiKV.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tikv",
-			}
-			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
-				newIOChaosConfigMap(r.Namespace, "tikv", ioChaosConfigTiKV))
-		case "delay_pd", "errno_pd", "mixed_pd":
-			r.TidbCluster.Spec.PD.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-pd",
-			}
-			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
-				newIOChaosConfigMap(r.Namespace, "pd", ioChaosConfigPD))
-		case "delay_tiflash", "errno_tiflash", "mixed_tiflash", "readerr_tiflash":
-			r.TidbCluster.Spec.TiFlash.Annotations = map[string]string{
-				"admission-webhook.pingcap.com/request": "chaosfs-tiflash",
-			}
-			r.InjectionConfigMaps = append(r.InjectionConfigMaps,
-				newIOChaosConfigMap(r.Namespace, "tiflash", ioChaosConfigTiFlash))
-		}
-	}
 	return r
-}
-
-func newIOChaosConfigMap(namespace, component, data string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "chaosfs-" + component,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/component": "webhook",
-			},
-		},
-		Data: map[string]string{
-			"chaosfs": data,
-		},
-	}
 }

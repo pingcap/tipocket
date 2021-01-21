@@ -23,11 +23,9 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,8 +50,6 @@ const (
 	pdDataDir   = "/var/lib/pd/data"
 	// used for tikv data encryption
 	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
-
-	ioChaosAnnotation = "admission-webhook.pingcap.com/request"
 )
 
 // Ops knows how to operate TiDB
@@ -148,17 +144,6 @@ func (o *Ops) Apply() error {
 	tm := o.tc.TidbMonitor
 	desired := tc.DeepCopy()
 
-	if len(o.tc.InjectionConfigMaps) > 0 {
-		log.Info("Apply IO Chaos configs")
-		if err := o.applyInjectionConfigMaps(); err != nil {
-			return err
-		}
-	}
-
-	log.Info("Apply tidb discovery")
-	if err := o.applyDiscovery(tc); err != nil {
-		return err
-	}
 	log.Info("Apply tidb configmap")
 	if err := o.applyTiDBConfigMap(tc, o.config.TiDBConfig); err != nil {
 		return err
@@ -362,63 +347,6 @@ func (o *Ops) applyTiDBService(s *corev1.Service) error {
 	return nil
 }
 
-func (o *Ops) applyDiscovery(tc *v1alpha1.TidbCluster) error {
-	meta, _ := getDiscoveryMeta(tc)
-
-	// Ensure RBAC
-	err := o.cli.Create(context.TODO(), &rbacv1.Role{
-		ObjectMeta: meta,
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups:     []string{"pingcap.com"},
-				Resources:     []string{"TidbOpss"},
-				ResourceNames: []string{tc.Name},
-				Verbs:         []string{"get"},
-			},
-			{
-				APIGroups: []string{""},
-				Resources: []string{"secrets"},
-				Verbs:     []string{"get", "list"},
-			},
-		},
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-	err = o.cli.Create(context.TODO(), &corev1.ServiceAccount{
-		ObjectMeta: meta,
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-	err = o.cli.Create(context.TODO(), &rbacv1.RoleBinding{
-		ObjectMeta: meta,
-		Subjects: []rbacv1.Subject{{
-			Kind: "ServiceAccount",
-			Name: meta.Name,
-		}},
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "Role",
-			Name:     meta.Name,
-			APIGroup: "rbac.authorization.k8s.io",
-		},
-	})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-
-	// RBAC ensured, reconcile
-	err = o.cli.Create(context.TODO(), getTidbDiscoveryService(tc))
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-	err = o.cli.Create(context.TODO(), getTidbDiscoveryDeployment(tc))
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-	return nil
-}
-
 // GetPDMember ...
 func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 	var local v1alpha1.TidbCluster
@@ -448,23 +376,6 @@ func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 		members = append(members, member.Name)
 	}
 	return local.Status.PD.Leader.Name, members, nil
-}
-
-func getTidbDiscoveryService(tc *v1alpha1.TidbCluster) *corev1.Service {
-	meta, l := getDiscoveryMeta(tc)
-	return &corev1.Service{
-		ObjectMeta: meta,
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeClusterIP,
-			Ports: []corev1.ServicePort{{
-				Name:       "discovery",
-				Port:       10261,
-				TargetPort: intstr.FromInt(10261),
-				Protocol:   corev1.ProtocolTCP,
-			}},
-			Selector: l.Labels(),
-		},
-	}
 }
 
 func parseConfig(config string) (string, error) {
@@ -514,9 +425,6 @@ func readBase64AsString(base64config string) (string, error) {
 
 func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	scriptModel := &PDStartScriptModel{DataDir: pdDir}
-	if getIOChaosAnnotation(tc, "pd") == "chaosfs-pd" {
-		scriptModel.DataDir = pdDataDir
-	}
 	s, err := RenderPDStartScript(scriptModel)
 	if err != nil {
 		return nil, err
@@ -550,9 +458,6 @@ func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 
 func getTiKVConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	scriptModel := &TiKVStartScriptModel{DataDir: tikvDir, MasterKey: tikvEncryptionMasterKey}
-	if getIOChaosAnnotation(tc, "tikv") == "chaosfs-tikv" {
-		scriptModel.DataDir = tikvDataDir
-	}
 	s, err := RenderTiKVStartScript(scriptModel)
 	if err != nil {
 		return nil, err
@@ -663,19 +568,6 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
 	return nodes
 }
 
-func (o *Ops) applyInjectionConfigMaps() error {
-	for _, tc := range o.tc.InjectionConfigMaps {
-		des := tc.DeepCopy()
-		if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
-			tc.Data = des.Data
-			return nil
-		}); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func getNodeIP(nodeList *corev1.NodeList) string {
 	if len(nodeList.Items) == 0 {
 		return ""
@@ -690,31 +582,6 @@ func getTiDBNodePort(svc *corev1.Service) int32 {
 		}
 	}
 	return 0
-}
-
-func getIOChaosAnnotation(tc *v1alpha1.TidbCluster, component string) string {
-	switch component {
-	case "tikv":
-		if tc.Spec.TiKV.Annotations != nil {
-			if s, ok := tc.Spec.TiKV.Annotations[ioChaosAnnotation]; ok {
-				return s
-			}
-		}
-	case "pd":
-		if tc.Spec.PD.Annotations != nil {
-			if s, ok := tc.Spec.PD.Annotations[ioChaosAnnotation]; ok {
-				return s
-			}
-		}
-	case "tiflash":
-		if tc.Spec.TiFlash.Annotations != nil {
-			if s, ok := tc.Spec.TiFlash.Annotations[ioChaosAnnotation]; ok {
-				return s
-			}
-		}
-	}
-
-	return ""
 }
 
 // GetTiDBConfig is used for Matrix-related setups

@@ -6,6 +6,7 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|github.com/pingcap/tipocket/||'
 
+LDFLAGS += "-s -w"
 LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
 LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell git rev-parse HEAD)"
 
@@ -156,7 +157,7 @@ test:
 	$(GOTEST) ./...
 
 image:
-	docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
 	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest

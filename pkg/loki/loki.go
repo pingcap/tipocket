@@ -7,8 +7,8 @@ import (
 	"github.com/grafana/loki/pkg/logcli/client"
 	"github.com/grafana/loki/pkg/loghttp"
 	"github.com/grafana/loki/pkg/logproto"
+	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/log"
 )
 
 const (
