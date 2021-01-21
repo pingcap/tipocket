@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c
+	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36 // indirect
 	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/pingcap/tipocket v1.0.0
 	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
