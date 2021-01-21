@@ -1,5 +1,6 @@
 sudo: false
 
+dist: focal
 language: go
 go:
   - 1.13.3
