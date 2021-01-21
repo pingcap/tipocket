@@ -15,7 +15,7 @@ import (
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/util"
+	"github.com/pingcap/tipocket/testcase/ondup/pkg/util"
 )
 
 const stmtCreate = `

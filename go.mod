@@ -10,6 +10,8 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goccy/go-graphviz v0.0.5
+	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -32,8 +34,6 @@ require (
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712 // indirect
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36
-	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
 	github.com/prometheus/prometheus v1.8.2 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/stretchr/testify v1.5.1

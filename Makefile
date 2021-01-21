@@ -72,7 +72,7 @@ compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
 on-dup:
-	cd testcase/on-dup make build; \
+	cd testcase/ondup make build; \
 	cp bin/* ../../bin/
 
 block-writer:

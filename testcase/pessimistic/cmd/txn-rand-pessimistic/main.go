@@ -16,10 +16,11 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/pingcap/tipocket/testcase/pessimistic/pkg"
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/pingcap/tipocket/testcase/pessimistic/pkg"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"

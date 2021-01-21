@@ -36,8 +36,8 @@ import (
 
 	tmysql "github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/terror"
+	"github.com/pingcap/tipocket/testcase/sqllogictest/pkg/util"
 
-	"github.com/pingcap/tipocket/util"
 )
 
 func init() {

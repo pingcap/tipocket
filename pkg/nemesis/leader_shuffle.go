@@ -9,7 +9,7 @@ import (
 
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
-	"github.com/pingcap/kvproto/pkg/metapb"
+	"github.com/pingcap/tipocket/pkg/kvproto/metapb"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -129,7 +129,7 @@ func (l *LeaderShuffler) transferRegion() error {
 	}
 	var onlineStores []uint64
 	for _, store := range stores.Stores {
-		if store.GetState() == metapb.StoreState_Up {
+		if metapb.StoreState(store.GetState()) == metapb.StoreState_Up {
 			onlineStores = append(onlineStores, store.GetId())
 		}
 	}
@@ -212,7 +212,7 @@ func (l *LeaderShuffler) transferOtherRegionToLeader() error {
 			if len(toStores) >= 1 {
 				break
 			}
-			if store.GetState() == metapb.StoreState_Up && store.Id != region.Leader.StoreId {
+			if metapb.StoreState(store.GetState()) == metapb.StoreState_Up && store.Id != region.Leader.StoreId {
 				toStores = append(toStores, store.GetId())
 			}
 		}
