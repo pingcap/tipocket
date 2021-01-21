@@ -802,22 +802,6 @@ func (m *EncryptedContent) GetCiphertextKey() []byte {
 	return nil
 }
 
-func init() {
-	proto.RegisterType((*EncryptionMeta)(nil), "encryptionpb.EncryptionMeta")
-	proto.RegisterType((*FileInfo)(nil), "encryptionpb.FileInfo")
-	proto.RegisterType((*FileDictionary)(nil), "encryptionpb.FileDictionary")
-	proto.RegisterMapType((map[string]*FileInfo)(nil), "encryptionpb.FileDictionary.FilesEntry")
-	proto.RegisterType((*DataKey)(nil), "encryptionpb.DataKey")
-	proto.RegisterType((*KeyDictionary)(nil), "encryptionpb.KeyDictionary")
-	proto.RegisterMapType((map[uint64]*DataKey)(nil), "encryptionpb.KeyDictionary.KeysEntry")
-	proto.RegisterType((*MasterKey)(nil), "encryptionpb.MasterKey")
-	proto.RegisterType((*MasterKeyPlaintext)(nil), "encryptionpb.MasterKeyPlaintext")
-	proto.RegisterType((*MasterKeyFile)(nil), "encryptionpb.MasterKeyFile")
-	proto.RegisterType((*MasterKeyKms)(nil), "encryptionpb.MasterKeyKms")
-	proto.RegisterType((*EncryptedContent)(nil), "encryptionpb.EncryptedContent")
-	proto.RegisterMapType((map[string][]byte)(nil), "encryptionpb.EncryptedContent.MetadataEntry")
-	proto.RegisterEnum("encryptionpb.EncryptionMethod", EncryptionMethod_name, EncryptionMethod_value)
-}
 func (m *EncryptionMeta) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -3082,8 +3066,6 @@ var (
 	ErrInvalidLengthEncryptionpb = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowEncryptionpb   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() { proto.RegisterFile("encryptionpb.proto", fileDescriptor_encryptionpb_d841ba3dd655e1a0) }
 
 var fileDescriptor_encryptionpb_d841ba3dd655e1a0 = []byte{
 	// 761 bytes of a gzipped FileDescriptorProto

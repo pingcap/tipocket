@@ -12,7 +12,7 @@ import (
 
 	_ "github.com/gogo/protobuf/gogoproto"
 
-	encryptionpb "github.com/pingcap/tipocket/pkg/kvproto/encryptionpb"
+	encryptionpb "github.com/pingcap/tipocket/pkg/nemesis/fake_kvproto/encryptionpb"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -552,16 +552,6 @@ func (m *Peer) GetRole() PeerRole {
 	return PeerRole_Voter
 }
 
-func init() {
-	proto.RegisterType((*Cluster)(nil), "metapb.Cluster")
-	proto.RegisterType((*StoreLabel)(nil), "metapb.StoreLabel")
-	proto.RegisterType((*Store)(nil), "metapb.Store")
-	proto.RegisterType((*RegionEpoch)(nil), "metapb.RegionEpoch")
-	proto.RegisterType((*Region)(nil), "metapb.Region")
-	proto.RegisterType((*Peer)(nil), "metapb.Peer")
-	proto.RegisterEnum("metapb.StoreState", StoreState_name, StoreState_value)
-	proto.RegisterEnum("metapb.PeerRole", PeerRole_name, PeerRole_value)
-}
 func (m *Cluster) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2117,8 +2107,6 @@ var (
 	ErrInvalidLengthMetapb = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowMetapb   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() { proto.RegisterFile("metapb.proto", fileDescriptor_metapb_ae2ea404685fd4b3) }
 
 var fileDescriptor_metapb_ae2ea404685fd4b3 = []byte{
 	// 700 bytes of a gzipped FileDescriptorProto

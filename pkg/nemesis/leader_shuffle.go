@@ -10,7 +10,7 @@ import (
 	"github.com/ngaut/log"
 	"github.com/pingcap/errors"
 
-	"github.com/pingcap/tipocket/pkg/kvproto/metapb"
+	"github.com/pingcap/tipocket/pkg/nemesis/fake_kvproto/metapb"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"

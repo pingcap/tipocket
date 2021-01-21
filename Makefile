@@ -107,13 +107,13 @@ pipelined-locking:
 
 fmt: groupimports
 	go fmt ./...
-	find testcase -type d -depth 1 -exec sh -c 'set -ex; cd {}; make fmt' \;
+	find testcase -depth 1 -type d -exec sh -c 'set -ex; cd {}; make fmt' \;
 
 tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.mod
-	find testcase -type d -depth 1 -exec sh -c 'set -ex; cd {}; make tidy' \;
+	find testcase -depth 1 -type d -exec sh -c 'set -ex; cd {}; make tidy' \;
 
 lint: revive
 	@echo "linting"
@@ -121,7 +121,7 @@ lint: revive
 
 revive:
 	$(GO) get github.com/mgechev/revive@v1.0.2
-	find testcase -type d -depth 1 -exec sh -c 'set -ex; cd {}; make revive' \;
+	find testcase -depth 1 -type d -exec sh -c 'set -ex; cd {}; make revive' \;
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
@@ -137,7 +137,7 @@ clean:
 
 test:
 	$(GOTEST) ./...
-	find testcase -type d -depth 1 -exec sh -c 'cd {}; make test' \;
+	find testcase -depth 1 -type d -exec sh -c 'cd {}; make test' \;
 
 image:
 	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
