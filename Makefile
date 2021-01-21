@@ -97,7 +97,8 @@ follower-read:
 	$(GOBUILD) $(GOMOD) -o bin/follower-read cmd/follower-read/*.go
 
 titan:
-	$(GOBUILD) $(GOMOD) -o bin/titan cmd/titan/*.go
+	cd testcase/titan; make build; \
+	cp bin/* ../../bin/
 
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go

@@ -32,14 +32,11 @@ require (
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712 // indirect
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/pingcap/goleveldb v0.0.0-20191226122134-f82aafb29989 // indirect
 	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36
 	github.com/pingcap/parser v0.0.0-20200317021010-cd90cc2a7d87
-	github.com/pingcap/pd v2.1.17+incompatible
 	github.com/prometheus/prometheus v1.8.2 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/stretchr/testify v1.5.1
-	github.com/tikv/client-go v0.0.0-20200110101306-a3ebdb020c83
 	github.com/uber-go/atomic v1.5.0
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.14.0 // indirect

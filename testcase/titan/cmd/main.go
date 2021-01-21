@@ -17,15 +17,16 @@ import (
 	"context"
 	"flag"
 
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	titan "github.com/pingcap/tipocket/tests/titan"
 
-	// use mysql
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/pingcap/tipocket/testcase/titan"
 )
 
 func main() {
