@@ -17,8 +17,9 @@ import (
 	stdjson "encoding/json"
 
 	"github.com/pingcap/errors"
-	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 	"k8s.io/apimachinery/pkg/util/json"
+
+	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 )
 
 type TiFlashConfigWraper struct {

@@ -49,9 +49,10 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/ngaut/log"
 	"net/url"
 	"time"
+
+	"github.com/ngaut/log"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"

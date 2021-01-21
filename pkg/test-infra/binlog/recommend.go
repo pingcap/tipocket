@@ -143,7 +143,7 @@ func newDrainer(ns, name string) *Drainer {
 								},
 								Env: []corev1.EnvVar{
 									{
-										Name: "TZ",
+										Name:  "TZ",
 										Value: "UTC",
 									},
 								},
