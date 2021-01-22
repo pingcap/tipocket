@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ngaut/log"
+	"github.com/pingcap/tidb/store/tikv/oracle"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
@@ -40,7 +41,7 @@ type Config struct {
 type staleRead struct {
 	*Config
 	db      *sql.DB
-	counter uint64
+	counter int64
 }
 
 func init() {
@@ -77,10 +78,8 @@ func (s *staleRead) SetUp(ctx context.Context, nodes []cluster.Node, clientNodes
 	return nil
 }
 
-func (s *staleRead) genTs() uint64 {
-	p := uint64((time.Now().UnixNano() / int64(time.Millisecond)) << 18)
-	l := atomic.AddUint64(&s.counter, 1)
-	return p + l
+func (s *staleRead) encodeTs(t time.Time) uint64 {
+	return oracle.ComposeTS(oracle.GetPhysical(t), atomic.AddInt64(&s.counter, 1))
 }
 
 // Start
@@ -93,9 +92,13 @@ func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 		go func() {
 			defer wg.Done()
 			for {
-				pad := fmt.Sprintf("TIMESTMP_%d", s.genTs())
-				rowID := rand.Intn(s.TotalRows) + 1
-				stmt := fmt.Sprintf(`UPDATE %s.%s SET pad="%s" WHERE id = %d`, s.DBName, Table, pad, rowID)
+				ids := make([]int, rand.Intn(99)+1)
+				for i := range ids {
+					ids[i] = rand.Intn(s.TotalRows) + 1
+				}
+				idsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]")
+				pad := fmt.Sprintf("%d", s.encodeTs(time.Now()))
+				stmt := fmt.Sprintf(`UPDATE %s.%s SET pad="%s" WHERE id in (%s)`, s.DBName, Table, pad, idsStr)
 				if _, err := s.db.Exec(stmt); err != nil {
 					log.Errorf("[stale read] Failed to execute sql [%s], error: %v", stmt, err)
 				}
@@ -132,18 +135,18 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 	count := 0
 	for {
 		// prepare id
-		ids := make([]int, rand.Intn(49)+1)
+		ids := make([]int, rand.Intn(99)+1)
 		for i := range ids {
 			ids[i] = rand.Intn(s.TotalRows) + 1
 		}
 		// 0s-200s ago
 		ago := rand.Intn(s.MaxStaleness)
-		t := time.Now().Add(time.Duration(-ago) * time.Second)
-		stale, ts, err1 := s.staleRead(ctx, conn1, t, ids)
+		timeAgo := time.Now().Add(time.Duration(-ago) * time.Second)
+		stale, ts, err1 := s.staleRead(ctx, conn1, timeAgo, ids)
 		strong, err2 := s.strongRead(ctx, conn2, ts, ids)
 		if err1 == nil && err2 == nil {
 			// The result should be the same
-			if len(stale) != len(strong) {
+			if len(stale) != len(strong) || len(strong) == 0 {
 				log.Fatalf("got different number of resluts at %d ago, ids: %d, stale: %d, strong: %d, stale res: %v, strong res: %v", ago, len(ids), len(stale), len(strong), stale, strong)
 			}
 			for id, pad := range strong {
@@ -207,14 +210,9 @@ func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, 
 }
 
 func (s *staleRead) strongRead(ctx context.Context, conn *sql.Conn, tso uint64, ids []int) (map[int]string, error) {
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("set @@tidb_snapshot = \"%d\"", tso)); err != nil {
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("set @@tidb_snapshot = '%d'", tso)); err != nil {
 		log.Warnf("failed to set tidb_snapshot, tso: %d, err: %v", tso, err)
 		return nil, err
-	}
-
-	var snapshotTS uint64
-	if err := conn.QueryRowContext(ctx, "select @@tidb_snapshot").Scan(&snapshotTS); err != nil || snapshotTS != tso {
-		log.Fatalf("failed to set up tidb_current_ts, query err: %v, tso: %d, tidb_snapshot: %d", err, tso, snapshotTS)
 	}
 
 	idsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]")
