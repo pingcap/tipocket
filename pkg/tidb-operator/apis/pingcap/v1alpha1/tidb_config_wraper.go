@@ -18,9 +18,10 @@ import (
 	"reflect"
 
 	"github.com/pingcap/errors"
+	"k8s.io/apimachinery/pkg/util/json"
+
 	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/util/toml"
-	"k8s.io/apimachinery/pkg/util/json"
 )
 
 var _ stdjson.Marshaler = &TiDBConfigWraper{}

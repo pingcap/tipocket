@@ -22,8 +22,12 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 * partition_one: Isolate single nodes
 * scaling: Scale up/down TiDB/PD/TiKV nodes randomly
 * shuffle-leader-scheduler/shuffle-region-scheduler/random-merge-scheduler: Just as there name implies.
-* delay_tikv, delay_pd, errno_tikv, errno_pd, mixed_tikv, mixed_pd: Inject IO-related fault.
+~~* delay_tikv, delay_pd, errno_tikv, errno_pd, mixed_tikv, mixed_pd: Inject IO-related fault.~~
 * small_skews, subcritical_skews, critical_skews, big_skews, huge_skews: Clock skew, small_skews ~100ms, subcritical_skews ~200ms, critical_skews ~250ms, big_skews ~500ms and huge_skews ~5s.
+
+## Place your test case
+
+The new test case should be placed on ./testcase directory and create a nested sub-module avoiding go module conflict mutually.
 
 ## Debug and Run
 

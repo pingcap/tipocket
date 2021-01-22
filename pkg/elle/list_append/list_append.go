@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ngaut/log"
-	"go.uber.org/zap"
 
 	"github.com/pingcap/tipocket/pkg/elle/core"
 	"github.com/pingcap/tipocket/pkg/elle/txn"
@@ -519,7 +518,7 @@ func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history 
 		currentOp := core.Op{Type: core.OpTypeOk}
 		keyWriter, e := wi[key]
 		if !e {
-			log.Warn("The key doesn't has any writer, the code may has bug", zap.String("key", key))
+			log.Warn("The key doesn't has any writer, the code may has bug", key)
 			continue
 		}
 		for _, v := range valueHistory {
@@ -527,7 +526,7 @@ func dirtyUpdateCases(appendIndexResult map[string][]core.MopValueType, history 
 			writer, e := keyWriter[v]
 			if !e {
 				// value doesn't has any writer
-				log.Warn("The value doesn't has any writer, the code may has bug", zap.String("key", key))
+				log.Warn("The value doesn't has any writer, the code may has bug", key)
 				continue
 			}
 

@@ -8,7 +8,8 @@ import (
 	"strconv"
 
 	"github.com/pingcap/errors"
-	"github.com/pingcap/kvproto/pkg/metapb"
+
+	"github.com/pingcap/tipocket/pkg/nemesis/fake_kvproto/metapb"
 
 	httputil "github.com/pingcap/tipocket/pkg/util/http"
 )

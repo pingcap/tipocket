@@ -16,11 +16,11 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: manager consistency isolation pocket on-dup sqllogic block-writer \
-		region-available deadlock-detector crud abtest cdc-pocket tiflash-pocket \
-		read-stress tiflash-abtest tiflash-cdc dm-pocket follower-read resolve-lock pipelined-locking \
+build: consistency isolation pocket on-dup sqllogic block-writer \
+		region-available crud \
+		read-stress follower-read pessimistic
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc txn-rand-pessimistic
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic
 
 isolation: append register
 
@@ -43,13 +43,11 @@ ledger:
 	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 rawkv-linearizability:
-	$(GOBUILD) $(GOMOD) -o bin/rawkv-linearizability cmd/rawkv-linearizability/*.go
+	cd testcase/rawkv-linearizability; make build; \
+	cp bin/* ../../bin/
 
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
-
-txn-rand-pessimistic:
-	$(GOBUILD) $(GOMOD) -o bin/txn-rand-pessimistic cmd/txn-rand-pessimistic/*.go
 
 append:
 	$(GOBUILD) $(GOMOD) -o bin/append cmd/append/main.go
@@ -67,72 +65,55 @@ verifier:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
 
 pocket:
-	$(GOBUILD) $(GOMOD) -o bin/pocket cmd/pocket/*.go
+	cd testcase/pocket; make build; \
+	cp bin/* ../../bin/
 
 compare:
 	$(GOBUILD) $(GOMOD) -o bin/compare cmd/compare/*.go
 
-resolve-lock:
-	$(GOBUILD) $(GOMOD) -o bin/resolve-lock cmd/resolve-lock/*.go
-
 on-dup:
-	$(GOBUILD) $(GOMOD) -o bin/on-dup cmd/on-dup/*.go
+	cd testcase/ondup; make build; \
+	cp bin/* ../../bin/
 
 block-writer:
 	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
 
 sqllogic:
-	$(GOBUILD) $(GOMOD) -o bin/sqllogic cmd/sqllogic/*.go
+	cd testcase/sqllogictest; make build; \
+	cp bin/* ../../bin/
 
 region-available:
 	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
 
-deadlock-detector:
-	$(GOBUILD) $(GOMOD) -o bin/deadlock-detector cmd/deadlock-detector/*.go
+pessimistic:
+	cd testcase/pessimistic; make build; \
+	cp bin/* ../../bin/
 
 crud:
 	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go
 
-abtest:
-	$(GOBUILD) $(GOMOD) -o bin/abtest cmd/abtest/*.go
-
-cdc-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/cdc-pocket cmd/cdc-pocket/*.go
-
-tiflash-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-pocket cmd/tiflash-pocket/*.go
-
 read-stress:
 	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
-
-tiflash-abtest:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-abtest cmd/tiflash-abtest/*.go
-
-tiflash-cdc:
-	$(GOBUILD) $(GOMOD) -o bin/tiflash-cdc cmd/tiflash-cdc/*.go
-
-dm-pocket:
-	$(GOBUILD) $(GOMOD) -o bin/dm-pocket cmd/dm-pocket/*.go
 
 follower-read:
 	$(GOBUILD) $(GOMOD) -o bin/follower-read cmd/follower-read/*.go
 
 titan:
-	$(GOBUILD) $(GOMOD) -o bin/titan cmd/titan/*.go
+	cd testcase/titan; make build; \
+	cp bin/* ../../bin/
 
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
-manager:
-	$(GOBUILD) $(GOMOD) -o bin/manager cmd/cluster/manager/*.go
-
 fmt: groupimports
 	go fmt ./...
+	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make fmt' \;
 
 tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.mod
+	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make tidy' \;
 
 lint: revive
 	@echo "linting"
@@ -140,6 +121,7 @@ lint: revive
 
 revive:
 	$(GO) get github.com/mgechev/revive@v1.0.2
+	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make revive' \;
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
@@ -155,6 +137,7 @@ clean:
 
 test:
 	$(GOTEST) ./...
+	find testcase -maxdepth 1 -type d -exec sh -c 'cd {}; make test' \;
 
 image:
 	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .

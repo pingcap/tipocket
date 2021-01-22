@@ -3,8 +3,6 @@ package util
 import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/juju/errors"
-	"github.com/ngaut/log"
-	"github.com/pingcap/parser/terror"
 )
 
 // IsErrDupEntry returns true if error code = 1062
@@ -33,20 +31,4 @@ func originError(err error) error {
 		err = e
 	}
 	return err
-}
-
-// IgnoreErrors returs true if ignoreErrs contains err
-func IgnoreErrors(err error, ignoreErrs []terror.ErrCode) bool {
-	mysqlErr, ok := originError(err).(*mysql.MySQLError)
-	if !ok {
-		log.Errorf("[error: %v] is not mysql error", err)
-		return false
-	}
-	errCode := terror.ErrCode(mysqlErr.Number)
-	for _, ignoreErrC := range ignoreErrs {
-		if errCode == ignoreErrC {
-			return true
-		}
-	}
-	return false
 }
