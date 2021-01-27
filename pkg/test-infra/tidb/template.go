@@ -236,10 +236,11 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --config=/etc/tikv/tikv.toml
 "
 
-mkdir -p /var/log/tikvlog
+# Oops, i put tikv log directory with data together for reducing PV.
+mkdir -p /var/lib/tikv/tikvlog
 echo "starting tikv-server ..."
 echo "/tikv-server ${ARGS}"
-exec /tikv-server ${ARGS} 2>&1 | tee /var/log/tikvlog/tikv.log
+exec /tikv-server ${ARGS} 2>&1 | tee /var/lib/tikv/tikvlog/tikv.log
 `))
 
 // TiKVStartScriptModel ...
