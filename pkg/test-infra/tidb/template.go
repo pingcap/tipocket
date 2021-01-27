@@ -74,7 +74,7 @@ then
 fi
 echo "start tidb-server ..."
 echo "/tidb-server ${ARGS}"
-exec /tidb-server ${ARGS}
+/tidb-server ${ARGS} 2>&1 | tee /var/log/tidblog/tidb.log
 `))
 
 // StartScriptModel ...
@@ -153,7 +153,7 @@ ARGS="--data-dir={{.DataDir}} \
 --advertise-peer-urls=http://${domain}:2380 \
 --client-urls=http://0.0.0.0:2379 \
 --advertise-client-urls=http://${domain}:2379 \
---config=/etc/pd/pd.toml \
+--config=/etc/pd/pd.toml
 "
 
 if [[ -f {{.DataDir}}/join ]]
@@ -177,7 +177,7 @@ fi
 echo "starting pd-server ..."
 sleep $((RANDOM % 10))
 echo "/pd-server ${ARGS}"
-exec /pd-server ${ARGS}
+/pd-server ${ARGS} 2>&1 | tee /var/log/pdlog/pd.log
 `))
 
 // PDStartScriptModel ...
@@ -236,9 +236,10 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --config=/etc/tikv/tikv.toml
 "
 
+mkdir -p /var/log/tikvlog
 echo "starting tikv-server ..."
 echo "/tikv-server ${ARGS}"
-exec /tikv-server ${ARGS}
+exec /tikv-server ${ARGS} 2>&1 | tee /var/log/tikvlog/tikv.log
 `))
 
 // TiKVStartScriptModel ...
