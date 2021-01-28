@@ -118,6 +118,13 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Image: util.BuildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
 					},
+					StorageVolumes: []v1alpha1.StorageVolume{
+						{
+							Name:        "log",
+							StorageSize: "200Gi",
+							MountPath:   "/var/log/pdlog",
+						},
+					},
 				},
 				TiKV: &v1alpha1.TiKVSpec{
 					Replicas: int32(clusterConfig.TiKVReplicas),
@@ -156,10 +163,18 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						},
 						ExposeStatus: &exposeStatus,
 					},
+					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Image: util.BuildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage),
+					},
+					StorageVolumes: []v1alpha1.StorageVolume{
+						{
+							Name:        "log",
+							StorageSize: "200Gi",
+							MountPath:   "/var/log/tidblog",
+						},
 					},
 				},
 			},
