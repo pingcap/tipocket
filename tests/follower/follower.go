@@ -73,7 +73,7 @@ func (f *follower) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx
 }
 
 func (f *follower) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (f *follower) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

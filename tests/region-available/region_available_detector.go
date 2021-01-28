@@ -100,7 +100,7 @@ func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []cluster.
 	return nil
 }
 func (d *regionAvailableDetector) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (d *regionAvailableDetector) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

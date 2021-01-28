@@ -86,7 +86,7 @@ func (c *bankClient) ScheduledClientExtensions() core.OnScheduleClientExtensions
 }
 
 func (c *bankClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse {

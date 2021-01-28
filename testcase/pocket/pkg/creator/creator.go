@@ -45,7 +45,7 @@ func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, id
 }
 
 func (p PocketClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (p PocketClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

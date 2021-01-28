@@ -65,7 +65,7 @@ func (c *detectorClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 }
 
 func (c *detectorClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *detectorClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

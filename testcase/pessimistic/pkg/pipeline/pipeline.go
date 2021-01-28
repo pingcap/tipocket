@@ -211,7 +211,7 @@ func (c *pipelineClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 }
 
 func (c *pipelineClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *pipelineClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

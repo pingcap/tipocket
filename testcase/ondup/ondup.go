@@ -87,7 +87,7 @@ func (c *ondupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 }
 
 func (c *ondupClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *ondupClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

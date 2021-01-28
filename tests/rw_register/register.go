@@ -93,7 +93,7 @@ func (c *client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 }
 
 func (c *client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {

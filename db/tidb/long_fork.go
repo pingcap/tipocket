@@ -118,7 +118,7 @@ func (c *longForkClient) ScheduledClientExtensions() core.OnScheduleClientExtens
 }
 
 func (c *longForkClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *longForkClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {

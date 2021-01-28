@@ -198,7 +198,7 @@ func (c *rawkvClient) ScheduledClientExtensions() core.OnScheduleClientExtension
 }
 
 func (c *rawkvClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 // Invoke implements the core.Client interface.

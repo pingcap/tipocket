@@ -84,7 +84,7 @@ func (t *tpccClient) ScheduledClientExtensions() core.OnScheduleClientExtensions
 }
 
 func (t *tpccClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (t *tpccClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) (response core.UnknownResponse) {

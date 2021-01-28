@@ -92,7 +92,7 @@ func (c *crudClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 }
 
 func (c *crudClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *crudClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

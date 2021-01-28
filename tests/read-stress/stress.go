@@ -134,7 +134,7 @@ func (c *stressClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 }
 
 func (c *stressClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *stressClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

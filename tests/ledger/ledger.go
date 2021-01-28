@@ -179,7 +179,7 @@ func (c *ledgerClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 }
 
 func (c *ledgerClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *ledgerClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {

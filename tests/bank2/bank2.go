@@ -254,7 +254,7 @@ func (c *bank2Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 }
 
 func (c *bank2Client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	panic("implement me")
+	return nil
 }
 
 func (c *bank2Client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
