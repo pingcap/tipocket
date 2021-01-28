@@ -53,7 +53,8 @@ ARGS="--store=tikv \
 --advertise-address=${POD_NAME}.${HEADLESS_SERVICE_NAME}.${NAMESPACE}.svc \
 --host=0.0.0.0 \
 --path=${CLUSTER_NAME}-pd:2379 \
---config=/etc/tidb/tidb.toml
+--config=/etc/tidb/tidb.toml \
+--log-file=/var/log/tidblog/tidb.log
 "
 
 if [[ X${BINLOG_ENABLED:-} == Xtrue ]]
@@ -74,8 +75,9 @@ then
 fi
 echo "start tidb-server ..."
 echo "/tidb-server ${ARGS}"
-/tidb-server ${ARGS} 2>&1 | tee -a /var/log/tidblog/tidb.log
-#                               ^^: append mode
+tail -F /var/log/tidblog/tidb.log &
+#    ^^  -F   same as --follow=name --retry, support log rotated
+/tidb-server ${ARGS}
 `))
 
 // StartScriptModel ...
@@ -154,7 +156,8 @@ ARGS="--data-dir={{.DataDir}} \
 --advertise-peer-urls=http://${domain}:2380 \
 --client-urls=http://0.0.0.0:2379 \
 --advertise-client-urls=http://${domain}:2379 \
---config=/etc/pd/pd.toml
+--config=/etc/pd/pd.toml \
+--log-file=/var/log/pdlog/pd.log
 "
 
 if [[ -f {{.DataDir}}/join ]]
@@ -178,8 +181,9 @@ fi
 echo "starting pd-server ..."
 sleep $((RANDOM % 10))
 echo "/pd-server ${ARGS}"
-/pd-server ${ARGS} 2>&1 | tee -a /var/log/pdlog/pd.log
-#                             ^^: append mode
+tail -F /var/log/pdlog/pd.log &
+#    ^^  -F   same as --follow=name --retry, support log rotated
+/pd-server ${ARGS}
 `))
 
 // PDStartScriptModel ...
@@ -235,15 +239,17 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 --status-addr=0.0.0.0:20180 \
 --data-dir={{.DataDir}} \
 --capacity=${CAPACITY} \
---config=/etc/tikv/tikv.toml
+--config=/etc/tikv/tikv.toml \
+--log-file=/var/lib/tikv/tikvlog/tikv.log
 "
 
 # Oops, i put tikv log directory with data together for reducing PV.
 mkdir -p /var/lib/tikv/tikvlog
 echo "starting tikv-server ..."
 echo "/tikv-server ${ARGS}"
-/tikv-server ${ARGS} 2>&1 | tee -a /var/lib/tikv/tikvlog/tikv.log
-#                               ^^: append mode
+tail -F /var/lib/tikv/tikvlog/tikv.log &
+#    ^^  -F   same as --follow=name --retry, support log rotated
+/tikv-server ${ARGS}
 `))
 
 // TiKVStartScriptModel ...
