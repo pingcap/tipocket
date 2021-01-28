@@ -90,19 +90,14 @@ func (c *WriterClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-// Invoke does nothing
-func (c *WriterClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
+// ScheduledClientExtensions extends OnScheduleClientExtensions
+func (c *WriterClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
 }
 
-// NextRequest does nothing
-func (c *WriterClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState does nothing
-func (c *WriterClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+// AutoDriveClientExtensions extends OnScheduleClientExtensions
+func (c *WriterClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 // Start starts test

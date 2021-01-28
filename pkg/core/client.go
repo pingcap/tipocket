@@ -20,6 +20,15 @@ type Client interface {
 	SetUp(ctx context.Context, nodes []cluster.Node, clientNodes []cluster.ClientNode, idx int) error
 	// TearDown tears down the client.
 	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
+	// extends OnScheduleClientExtensions
+	ScheduledClientExtensions() OnScheduleClientExtensions
+	// extends AutoDriveClientExtensions
+	AutoDriveClientExtensions() AutoDriveClientExtensions
+}
+
+// OnScheduleClientExtensions is an interface for on schedule client, e.g.
+// the client is trigger by the TiPocket test suite
+type OnScheduleClientExtensions interface {
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
 	Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) UnknownResponse
@@ -27,7 +36,12 @@ type Client interface {
 	NextRequest() interface{}
 	// DumpState the database state(also the model's state)
 	DumpState(ctx context.Context) (interface{}, error)
-	// Start runs self scheduled cases
+}
+
+// AutoDriveClientExtensions is an interface for auto driver client, e.g.
+// the client take over control from the TiPocket test suite
+type AutoDriveClientExtensions interface {
+	// Start runs  auto driver cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only
 	Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error
@@ -53,6 +67,14 @@ func (NoopClientCreator) Create(node cluster.Node) Client {
 type noopClient struct {
 }
 
+func (c noopClient) ScheduledClientExtensions() OnScheduleClientExtensions {
+	return nil
+}
+
+func (c noopClient) AutoDriveClientExtensions() AutoDriveClientExtensions {
+	return c
+}
+
 // SetUp sets up the client.
 func (noopClient) SetUp(ctx context.Context, _ []cluster.Node, _ []cluster.ClientNode, idx int) error {
 	return nil
@@ -63,28 +85,13 @@ func (noopClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx 
 	return nil
 }
 
+// Start runs self scheduled cases
+func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
+	return nil
+}
+
 type noopResponse struct{}
 
 func (noopResponse) IsUnknown() bool {
 	return false
-}
-
-// Invoke invokes a request to the database.
-func (noopClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) UnknownResponse {
-	return noopResponse{}
-}
-
-// NextRequest generates a request for latter Invoke.
-func (noopClient) NextRequest() interface{} {
-	return nil
-}
-
-// DumpState the database state(also the model's state)
-func (noopClient) DumpState(ctx context.Context) (interface{}, error) {
-	return nil, nil
-}
-
-// Start runs self scheduled cases
-func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
 }

@@ -44,19 +44,12 @@ func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, id
 	return nil
 }
 
-// Invoke invokes a request to the database.
-func (PocketClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	return nil
+func (p PocketClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	panic("implement me")
 }
 
-// NextRequest generates a request for latter Invoke.
-func (PocketClient) NextRequest() interface{} {
-	return nil
-}
-
-// DumpState the database state(also the model's state)
-func (PocketClient) DumpState(ctx context.Context) (interface{}, error) {
-	return nil, nil
+func (p PocketClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return p
 }
 
 // Start runs self scheduled cases

@@ -140,16 +140,12 @@ func (c *bankCase) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx
 	return nil
 }
 
-func (c *bankCase) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
+func (c *bankCase) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
 }
 
-func (c *bankCase) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *bankCase) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *bankCase) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 func (c *bankCase) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {

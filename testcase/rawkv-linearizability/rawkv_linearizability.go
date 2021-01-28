@@ -193,6 +193,14 @@ func (c *rawkvClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
+func (c *rawkvClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return c
+}
+
+func (c *rawkvClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	panic("implement me")
+}
+
 // Invoke implements the core.Client interface.
 func (c *rawkvClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(rawkvRequest)

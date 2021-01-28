@@ -249,6 +249,48 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	return nil
 }
 
+func (c *bank2Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	return nil
+}
+
+func (c *bank2Client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	panic("implement me")
+}
+
+func (c *bank2Client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
+}
+
+func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
+	log.Infof("[%s] start to test...", c)
+	defer func() {
+		log.Infof("[%s] test end...", c)
+	}()
+	var wg sync.WaitGroup
+	for i := 0; i < c.Config.Concurrency; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				if atomic.LoadInt32(&c.stop) != 0 {
+					log.Errorf("[%s] stopped", c)
+					return
+				}
+				c.wg.Add(1)
+				c.moveMoney(c.db)
+				c.wg.Done()
+			}
+		}(i)
+	}
+	wg.Wait()
+	return nil
+}
+
 func (c *bank2Client) startVerify(ctx context.Context, db *sql.DB) {
 	c.verify(db)
 
@@ -299,53 +341,6 @@ func (c *bank2Client) verify(db *sql.DB) {
 		c.wg.Wait()
 		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 	}
-}
-
-func (c *bank2Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
-	return nil
-}
-
-func (c *bank2Client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-
-}
-
-func (c *bank2Client) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *bank2Client) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
-func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	log.Infof("[%s] start to test...", c)
-	defer func() {
-		log.Infof("[%s] test end...", c)
-	}()
-	var wg sync.WaitGroup
-	for i := 0; i < c.Config.Concurrency; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-				if atomic.LoadInt32(&c.stop) != 0 {
-					log.Errorf("[%s] stopped", c)
-					return
-				}
-				c.wg.Add(1)
-				c.moveMoney(c.db)
-				c.wg.Done()
-			}
-		}(i)
-	}
-	wg.Wait()
-	return nil
 }
 
 func (c *bank2Client) moveMoney(db *sql.DB) {

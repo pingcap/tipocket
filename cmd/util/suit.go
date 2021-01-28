@@ -188,7 +188,7 @@ func OnClientLoop(
 
 	procID := atomic.AddInt64(proc, 1)
 	for atomic.AddInt64(requestCount, -1) >= 0 {
-		request := client.NextRequest()
+		request := client.ScheduledClientExtensions().NextRequest()
 
 		if err := recorder.RecordRequest(procID, request); err != nil {
 			log.Fatalf("record request %v failed %v", request, err)
@@ -198,7 +198,7 @@ func OnClientLoop(
 		} else {
 			log.Infof("%d %s: call %+v", procID, node, request)
 		}
-		response := client.Invoke(ctx, node, request)
+		response := client.ScheduledClientExtensions().Invoke(ctx, node, request)
 
 		if stringer, ok := response.(fmt.Stringer); ok {
 			log.Infof("%d %s: return %+v", procID, node, stringer.String())
@@ -261,13 +261,13 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			if _, ok := <-token; !ok {
 				return
 			}
-			request := client.NextRequest()
+			request := client.ScheduledClientExtensions().NextRequest()
 			if err := recorder.RecordRequest(procID, request); err != nil {
 				log.Fatalf("record request %v failed %v", request, err)
 			}
 
 			log.Infof("[%d] %s: call %+v", procID, node.String(), request)
-			response := client.Invoke(ctx, node, request)
+			response := client.ScheduledClientExtensions().Invoke(ctx, node, request)
 			log.Infof("[%d] %s: return %+v", procID, node.String(), response)
 
 			v := response.(core.UnknownResponse)

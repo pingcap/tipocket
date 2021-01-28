@@ -91,16 +91,12 @@ func (c *crudClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 	return nil
 }
 
-func (c *crudClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
+func (c *crudClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	panic("implement me")
 }
 
-func (c *crudClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *crudClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *crudClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 func (c *crudClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {

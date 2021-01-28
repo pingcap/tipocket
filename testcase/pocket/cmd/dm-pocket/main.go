@@ -36,7 +36,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeAutoDrive,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,

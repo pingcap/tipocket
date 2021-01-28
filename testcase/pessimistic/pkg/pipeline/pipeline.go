@@ -210,20 +210,12 @@ func (c *pipelineClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return c.db.Close()
 }
 
-// Invoke invokes a request to the database.
-// Mostly, the return Response should implement UnknownResponse interface
-func (c *pipelineClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("not implemented")
+func (c *pipelineClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	panic("implement me")
 }
 
-// NextRequest generates a request for latter Invoke.
-func (c *pipelineClient) NextRequest() interface{} {
-	panic("not implemented")
-}
-
-// DumpState the database state(also the model's state)
-func (c *pipelineClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("not implemented")
+func (c *pipelineClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 // Start runs self scheduled cases

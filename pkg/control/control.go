@@ -107,12 +107,12 @@ func (c *Controller) Close() {
 // Run runs the controller.
 func (c *Controller) Run() {
 	switch c.cfg.Mode {
-	case ModeMixed:
-		c.RunMixed()
-	case ModeSequential:
+	case ModeAutoDrive:
+		c.TransferControlToClient()
+	case ModeOnSchedule:
+		c.RunClientOnSchedule()
+	case ModeNemesisSequential:
 		c.RunWithNemesisSequential()
-	case ModeSelfScheduled:
-		c.RunSelfScheduled()
 	default:
 		log.Fatalf("unhandled mode %s", c.cfg.Mode)
 	}
@@ -124,9 +124,9 @@ func (c *Controller) setUpPlugin() {
 	}
 }
 
-// RunMixed runs workload round by round, with nemesis injected seamlessly
+// RunClientOnSchedule runs workload round by round, with nemesis injected seamlessly
 // Nemesis and workload are running concurrently, nemesis won't pause when one round of workload is finished
-func (c *Controller) RunMixed() {
+func (c *Controller) RunClientOnSchedule() {
 	c.setUpDB()
 	c.setUpClient()
 	c.setUpPlugin()
@@ -269,8 +269,8 @@ ENTRY:
 	c.tearDownDB()
 }
 
-// RunSelfScheduled runs the controller with self scheduled
-func (c *Controller) RunSelfScheduled() {
+// TransferControlToClient runs the controller with self scheduled
+func (c *Controller) TransferControlToClient() {
 	c.setUpDB()
 	c.setUpClient()
 	c.setUpPlugin()
@@ -295,7 +295,7 @@ func (c *Controller) RunSelfScheduled() {
 		ii := i
 		g.Go(func() error {
 			log.Infof("run client %d...", ii)
-			return client.Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
+			return client.AutoDriveClientExtensions().Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -395,7 +395,7 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 		var err error
 		for _, client := range c.clients {
 			for _, node := range c.cfg.ClientNodes {
-				sum, err = client.DumpState(ctx)
+				sum, err = client.ScheduledClientExtensions().DumpState(ctx)
 				if err == nil {
 					log.Infof("begin to dump on node %s", node)
 					recorder.RecordState(sum)

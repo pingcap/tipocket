@@ -40,18 +40,18 @@ type Mode int
 
 // Modes enum
 const (
-	ModeMixed = iota
-	ModeSequential
-	ModeSelfScheduled
+	ModeOnSchedule = iota
+	ModeAutoDrive
+	ModeNemesisSequential
 )
 
 func (m Mode) String() string {
 	switch m {
-	case ModeMixed:
-		return "Mixed mode"
-	case ModeSelfScheduled:
-		return "Self scheduled mode"
-	case ModeSequential:
+	case ModeOnSchedule:
+		return "On Schedule mode"
+	case ModeAutoDrive:
+		return "Auto-drive mode"
+	case ModeNemesisSequential:
 		return "Nemesis one by one mode"
 	default:
 		return "Unknown mode"

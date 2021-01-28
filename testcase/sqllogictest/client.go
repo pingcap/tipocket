@@ -102,19 +102,12 @@ func (c *sqllogicClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-// Invoke does nothing
-func (c *sqllogicClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
+func (c *sqllogicClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
 }
 
-// NextRequest does nothing
-func (c *sqllogicClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState does nothing
-func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *sqllogicClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 // Start starts test

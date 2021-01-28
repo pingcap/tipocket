@@ -178,16 +178,12 @@ func (c *ledgerClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-func (c *ledgerClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
+func (c *ledgerClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	panic("implement me")
 }
 
-func (c *ledgerClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *ledgerClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *ledgerClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 func (c *ledgerClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {

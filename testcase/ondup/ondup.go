@@ -86,16 +86,12 @@ func (c *ondupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *ondupClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
+func (c *ondupClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	panic("implement me")
 }
 
-func (c *ondupClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *ondupClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *ondupClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	return c
 }
 
 func (c *ondupClient) Start(ctx context.Context, cfg interface{}, clientNode []cluster.ClientNode) error {

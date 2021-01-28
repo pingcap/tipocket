@@ -59,6 +59,14 @@ func (c *multiBankClient) TearDown(ctx context.Context, nodes []cluster.ClientNo
 	return c.db.Close()
 }
 
+func (c *multiBankClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return c
+}
+
+func (c *multiBankClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	panic("implement me")
+}
+
 func (c *multiBankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse {
 	txn, err := c.db.Begin()
 

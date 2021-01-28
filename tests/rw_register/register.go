@@ -88,6 +88,14 @@ func (c *client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx i
 	return c.db.Close()
 }
 
+func (c *client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return c
+}
+
+func (c *client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+	panic("implement me")
+}
+
 func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	request := r.(ellecore.Op)
 	txn, err := c.db.Begin()
