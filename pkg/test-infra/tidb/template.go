@@ -242,8 +242,8 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 mkdir -p /var/lib/tikv/tikvlog
 echo "starting tikv-server ..."
 echo "/tikv-server ${ARGS}"
-exec /tikv-server ${ARGS} 2>&1 | tee -a /var/lib/tikv/tikvlog/tikv.log
-#                                    ^^: append mode
+/tikv-server ${ARGS} 2>&1 | tee -a /var/lib/tikv/tikvlog/tikv.log
+#                               ^^: append mode
 `))
 
 // TiKVStartScriptModel ...
