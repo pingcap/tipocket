@@ -218,9 +218,7 @@ func (c *pipelineClient) AutoDriveClientExtensions() core.AutoDriveClientExtensi
 	return c
 }
 
-// Start runs self scheduled cases
-// this function will block Invoke trigger
-// if you want to schedule cases by yourself, use this function only
+// Start runs auto driver cases
 func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.scheduler.delayScheduling(c.kvStatusAddrs, 200); err != nil {
 		log.Fatalf("failed to enable failpoints: %v", err)

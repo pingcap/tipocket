@@ -236,10 +236,6 @@ func (c *client) DumpState(_ context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (c *client) Start(_ context.Context, _ interface{}, _ []cluster.ClientNode) error {
-	panic("unreachable")
-}
-
 // ClientCreator can create list append client
 type appendClientCreator struct {
 	tableCount  int

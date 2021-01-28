@@ -269,7 +269,7 @@ ENTRY:
 	c.tearDownDB()
 }
 
-// TransferControlToClient runs the controller with self scheduled
+// TransferControlToClient transfer control to client
 func (c *Controller) TransferControlToClient() {
 	c.setUpDB()
 	c.setUpClient()

@@ -52,7 +52,7 @@ func (p PocketClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions
 	return p
 }
 
-// Start runs self scheduled cases
+// Start runs auto driver cases
 func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	var cfgPath = p.Config.ConfigPath
 

@@ -280,11 +280,6 @@ func (c *rawkvClient) DumpState(ctx context.Context) (interface{}, error) {
 	return kvs, nil
 }
 
-// Start implements the core.Client interface.
-func (c *rawkvClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
-}
-
 // Create creates a RawkvClient.
 func (r RawkvClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &rawkvClient{

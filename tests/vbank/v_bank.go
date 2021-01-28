@@ -726,11 +726,6 @@ func (c *Client) DumpState(ctx context.Context) (interface{}, error) {
 	return resp.ReadResult, err
 }
 
-// Start implements the core.Client interface.
-func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
-}
-
 func (c *Client) logStr(err error) string {
 	return fmt.Sprintf("client(%d) error %s", c.idx, err.Error())
 }

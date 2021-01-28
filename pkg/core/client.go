@@ -41,7 +41,7 @@ type OnScheduleClientExtensions interface {
 // AutoDriveClientExtensions is an interface for auto driver client, e.g.
 // the client take over control from the TiPocket test suite
 type AutoDriveClientExtensions interface {
-	// Start runs  auto driver cases
+	// Start runs auto driver cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only
 	Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error
@@ -85,7 +85,7 @@ func (noopClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx 
 	return nil
 }
 
-// Start runs self scheduled cases
+// Start runs auto driver cases
 func (noopClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	return nil
 }
