@@ -74,7 +74,8 @@ then
 fi
 echo "start tidb-server ..."
 echo "/tidb-server ${ARGS}"
-/tidb-server ${ARGS} 2>&1 | tee /var/log/tidblog/tidb.log
+/tidb-server ${ARGS} 2>&1 | tee -a /var/log/tidblog/tidb.log
+#                               ^^: append mode
 `))
 
 // StartScriptModel ...
@@ -177,7 +178,8 @@ fi
 echo "starting pd-server ..."
 sleep $((RANDOM % 10))
 echo "/pd-server ${ARGS}"
-/pd-server ${ARGS} 2>&1 | tee /var/log/pdlog/pd.log
+/pd-server ${ARGS} 2>&1 | tee -a /var/log/pdlog/pd.log
+#                             ^^: append mode
 `))
 
 // PDStartScriptModel ...
@@ -240,7 +242,8 @@ ARGS="--pd=http://${CLUSTER_NAME}-pd:2379 \
 mkdir -p /var/lib/tikv/tikvlog
 echo "starting tikv-server ..."
 echo "/tikv-server ${ARGS}"
-exec /tikv-server ${ARGS} 2>&1 | tee /var/lib/tikv/tikvlog/tikv.log
+exec /tikv-server ${ARGS} 2>&1 | tee -a /var/lib/tikv/tikvlog/tikv.log
+#                                    ^^: append mode
 `))
 
 // TiKVStartScriptModel ...
@@ -273,38 +276,3 @@ type pumpConfigModel struct {
 func RenderPumpConfig(model *pumpConfigModel) (string, error) {
 	return util.RenderTemplateFunc(pumpConfigTpl, model)
 }
-
-const (
-	ioChaosConfigTiKV = `name: chaosfs-tikv
-selector:
-  labelSelectors:
-    "app.kubernetes.io/component": "tikv"
-template: sidecar-template
-arguments:
-  ContainerName: "tikv"
-  DataPath: "/var/lib/tikv/data"
-  MountPath: "/var/lib/tikv"
-  VolumeName: "tikv"`
-
-	ioChaosConfigPD = `name: chaosfs-pd
-selector:
-  labelSelectors:
-    "app.kubernetes.io/component": "pd"
-template: sidecar-template
-arguments:
-  ContainerName: "pd"
-  DataPath: "/var/lib/pd/data"
-  MountPath: "/var/lib/pd"
-  VolumeName: "pd"`
-
-	ioChaosConfigTiFlash = `name: chaosfs-tiflash
-selector:
-  labelSelectors:
-    "app.kubernetes.io/component": "tiflash"
-template: sidecar-template
-arguments:
-  ContainerName: "tiflash"
-  DataPath: "/data0/db"
-  MountPath: "/data0"
-  VolumeName: "data0"`
-)
