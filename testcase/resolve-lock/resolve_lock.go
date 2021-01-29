@@ -188,18 +188,6 @@ func (c *resolveLockClient) TearDown(ctx context.Context, nodes []cluster.Client
 	return c.db.Close()
 }
 
-func (c *resolveLockClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *resolveLockClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *resolveLockClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test")
 	defer func() {

@@ -24,7 +24,7 @@ func main() {
 
 	suit := util.Suit{
 		Config: &control.Config{
-			Mode:         control.Mode(fixture.Context.Mode),
+			Mode:         control.ModeOnSchedule,
 			ClientCount:  fixture.Context.ClientCount,
 			RequestCount: fixture.Context.RequestCount,
 			RunRound:     fixture.Context.RunRound,

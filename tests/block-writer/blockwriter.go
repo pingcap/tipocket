@@ -90,21 +90,6 @@ func (c *WriterClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-// Invoke does nothing
-func (c *WriterClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-// NextRequest does nothing
-func (c *WriterClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState does nothing
-func (c *WriterClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 // Start starts test
 func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)

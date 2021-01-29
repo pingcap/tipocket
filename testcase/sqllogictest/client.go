@@ -102,21 +102,6 @@ func (c *sqllogicClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-// Invoke does nothing
-func (c *sqllogicClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-// NextRequest does nothing
-func (c *sqllogicClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState does nothing
-func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 // Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	startTime := time.Now()
