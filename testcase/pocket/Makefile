@@ -53,7 +53,10 @@ lint: revive
 	revive -formatter friendly -config revive.toml $$($(PACKAGES))
 
 revive:
+ifeq (,$(shell which revive))
+	@echo "installing revive"
 	$(GO) get github.com/mgechev/revive@v1.0.2
+endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket .

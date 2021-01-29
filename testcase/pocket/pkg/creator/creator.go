@@ -44,10 +44,12 @@ func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, id
 	return nil
 }
 
+// ScheduledClientExtensions ...
 func (p PocketClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	return nil
 }
 
+// StandardClientExtensions ...
 func (p PocketClient) StandardClientExtensions() core.StandardClientExtensions {
 	return p
 }

@@ -27,7 +27,7 @@ type Client interface {
 }
 
 // OnScheduleClientExtensions is an interface for on schedule client, e.g.
-// the client is trigger by the TiPocket test suite
+// the client is scheduled by the TiPocket test suite
 type OnScheduleClientExtensions interface {
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface

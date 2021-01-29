@@ -107,6 +107,56 @@ type backupClient struct {
 	nextBackupIndex  int
 }
 
+func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
+	if idx != 0 {
+		return nil
+	}
+	var err error
+	node := clientNodes[idx]
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.config.DbName)
+	log.Infof("[%s] start to init...", c)
+	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		log.Infof("[%s] init end...", c)
+	}()
+	c.applyConfig()
+	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
+	c.db.SetMaxOpenConns(100)
+	if err != nil {
+		return err
+	}
+	c.createTables()
+	c.initData(ctx)
+	return nil
+}
+
+// Refused Bequest, just for implement Client interface
+func (c *backupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	return nil
+}
+
+func (c *backupClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
+}
+
+func (c *backupClient) StandardClientExtensions() core.StandardClientExtensions {
+	return c
+}
+
+// Start the test
+func (c *backupClient) Start(ctx context.Context, _ interface{}, _ []cluster.ClientNode) error {
+	log.Infof("[%s] start to test...", c)
+	var restoringLock sync.RWMutex
+	c.startTransactions(&restoringLock)
+	go c.startBackup(&restoringLock)
+	go c.startRestore(&restoringLock)
+	<-ctx.Done()
+	return nil
+}
+
 func randomString(n int) string {
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
@@ -479,43 +529,6 @@ func (c *backupClient) saveState() []uint64 {
 	return balances
 }
 
-func (c *backupClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
-	if idx != 0 {
-		return nil
-	}
-	var err error
-	node := clientNodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.config.DbName)
-	log.Infof("[%s] start to init...", c)
-	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		log.Infof("[%s] init end...", c)
-	}()
-	c.applyConfig()
-	c.db, err = util.OpenDB(dsn, c.config.Concurrency)
-	c.db.SetMaxOpenConns(100)
-	if err != nil {
-		return err
-	}
-	c.createTables()
-	c.initData(ctx)
-	return nil
-}
-
-// Start the test
-func (c *backupClient) Start(ctx context.Context, _ interface{}, _ []cluster.ClientNode) error {
-	log.Infof("[%s] start to test...", c)
-	var restoringLock sync.RWMutex
-	c.startTransactions(&restoringLock)
-	go c.startBackup(&restoringLock)
-	go c.startRestore(&restoringLock)
-	<-ctx.Done()
-	return nil
-}
-
 func (c *backupClient) String() string {
 	return "backup"
 }
@@ -532,22 +545,4 @@ func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 		features: c.Features,
 		config:   c.Cfg,
 	}
-}
-
-// Refused Bequest, just for implement Client interface
-func (c *backupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
-	return nil
-}
-
-func (c *backupClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-
-}
-
-func (c *backupClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *backupClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
 }

@@ -118,10 +118,13 @@ tidy:
 lint: revive
 	@echo "linting"
 	revive -formatter friendly -config revive.toml $$($(PACKAGES) | grep -v "pkg/tidb-operator")
+	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make lint' \;
 
 revive:
+ifeq (,$(shell which revive))
+	@echo "installing revive"
 	$(GO) get github.com/mgechev/revive@v1.0.2
-	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make revive' \;
+endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
