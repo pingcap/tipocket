@@ -61,16 +61,12 @@ func (c *titanClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *titanClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
+func (c *titanClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
 }
 
-func (c *titanClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *titanClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *titanClient) StandardClientExtensions() core.StandardClientExtensions {
+	return c
 }
 
 func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {

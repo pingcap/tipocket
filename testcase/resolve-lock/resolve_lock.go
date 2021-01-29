@@ -188,16 +188,12 @@ func (c *resolveLockClient) TearDown(ctx context.Context, nodes []cluster.Client
 	return c.db.Close()
 }
 
-func (c *resolveLockClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
+func (c *resolveLockClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
+	return nil
 }
 
-func (c *resolveLockClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *resolveLockClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
+func (c *resolveLockClient) StandardClientExtensions() core.StandardClientExtensions {
+	return c
 }
 
 func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {

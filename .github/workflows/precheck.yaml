@@ -30,4 +30,3 @@ jobs:
           export PATH=${PATH}:`go env GOPATH`/bin
           go get github.com/mgechev/revive@v1.0.2
           make lint
-
