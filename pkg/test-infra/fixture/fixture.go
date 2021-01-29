@@ -41,7 +41,6 @@ type StorageType string
 
 type fixtureContext struct {
 	// Control config
-	Mode         int
 	ClientCount  int
 	Nemesis      string
 	RunRound     int
@@ -246,7 +245,6 @@ func printVersion() {
 func init() {
 	printVersion()
 
-	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
 	// (TODO:yeya24) Now nemesis option is only for one TiDBCluster. If we want to add nemesis in AB Test,
 	// we can add another option for ClusterB.

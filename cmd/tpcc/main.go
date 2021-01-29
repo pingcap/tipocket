@@ -44,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	cfg := control.Config{
-		Mode:         control.ModeSequential,
+		Mode:         control.ModeNemesisSequential,
 		ClientCount:  fixture.Context.ClientCount,
 		RequestCount: fixture.Context.RequestCount,
 		RunRound:     fixture.Context.RunRound,

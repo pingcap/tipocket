@@ -175,11 +175,6 @@ func (c *multiBankClient) DumpState(ctx context.Context) (interface{}, error) {
 	return balances, nil
 }
 
-// Start runs self scheduled cases
-func (c *multiBankClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
-}
-
 // MultiBankClientCreator creates a bank test client for tidb.
 type MultiBankClientCreator struct {
 }

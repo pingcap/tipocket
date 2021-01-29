@@ -10,7 +10,7 @@ require (
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tipocket v1.0.0
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0

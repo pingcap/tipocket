@@ -20,7 +20,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,

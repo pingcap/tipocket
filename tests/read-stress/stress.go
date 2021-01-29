@@ -133,18 +133,6 @@ func (c *stressClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return err
 }
 
-func (c *stressClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *stressClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *stressClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	var wg sync.WaitGroup
 	for i := 0; i < c.largeConcurrency; i++ {

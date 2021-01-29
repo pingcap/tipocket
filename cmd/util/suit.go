@@ -163,7 +163,7 @@ func (suit *Suit) setDefaultPlugins() {
 
 // ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -175,7 +175,7 @@ type ClientLoopFunc func(ctx context.Context,
 // Each request costs a requestCount, and loop finishes after requestCount is used up or the `ctx` has been done.
 func OnClientLoop(
 	ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -229,7 +229,7 @@ func OnClientLoop(
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
-		client core.Client,
+		client core.OnScheduleClientExtensions,
 		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,
