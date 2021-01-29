@@ -44,16 +44,6 @@ func (PocketClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, id
 	return nil
 }
 
-// ScheduledClientExtensions ...
-func (p PocketClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-// StandardClientExtensions ...
-func (p PocketClient) StandardClientExtensions() core.StandardClientExtensions {
-	return p
-}
-
 // Start runs auto driver cases
 func (p PocketClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	var cfgPath = p.Config.ConfigPath

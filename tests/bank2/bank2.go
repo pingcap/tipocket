@@ -253,14 +253,6 @@ func (c *bank2Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *bank2Client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *bank2Client) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {

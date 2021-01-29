@@ -79,14 +79,6 @@ func (t *tpccClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 	return nil
 }
 
-func (t *tpccClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return t
-}
-
-func (t *tpccClient) StandardClientExtensions() core.StandardClientExtensions {
-	return nil
-}
-
 func (t *tpccClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) (response core.UnknownResponse) {
 	s := time.Now()
 	err := t.Workloader.Run(t.workloadCtx, 0)

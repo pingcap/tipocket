@@ -86,14 +86,6 @@ func (c *ondupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *ondupClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *ondupClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *ondupClient) Start(ctx context.Context, cfg interface{}, clientNode []cluster.ClientNode) error {
 	childCtx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()

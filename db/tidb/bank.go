@@ -81,14 +81,6 @@ func (c *bankClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 	return c.db.Close()
 }
 
-func (c *bankClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return c
-}
-
-func (c *bankClient) StandardClientExtensions() core.StandardClientExtensions {
-	return nil
-}
-
 func (c *bankClient) invokeRead(ctx context.Context, r bankRequest) bankResponse {
 	txn, err := c.db.Begin()
 

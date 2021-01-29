@@ -188,14 +188,6 @@ func (c *resolveLockClient) TearDown(ctx context.Context, nodes []cluster.Client
 	return c.db.Close()
 }
 
-func (c *resolveLockClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *resolveLockClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test")
 	defer func() {

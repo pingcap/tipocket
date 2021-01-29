@@ -138,14 +138,6 @@ func (c *backupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-func (c *backupClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *backupClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 // Start the test
 func (c *backupClient) Start(ctx context.Context, _ interface{}, _ []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)

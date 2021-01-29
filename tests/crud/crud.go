@@ -91,14 +91,6 @@ func (c *crudClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, i
 	return nil
 }
 
-func (c *crudClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *crudClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *crudClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)
 	defer func() {

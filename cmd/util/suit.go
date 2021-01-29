@@ -163,7 +163,7 @@ func (suit *Suit) setDefaultPlugins() {
 
 // ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -175,7 +175,7 @@ type ClientLoopFunc func(ctx context.Context,
 // Each request costs a requestCount, and loop finishes after requestCount is used up or the `ctx` has been done.
 func OnClientLoop(
 	ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -188,7 +188,7 @@ func OnClientLoop(
 
 	procID := atomic.AddInt64(proc, 1)
 	for atomic.AddInt64(requestCount, -1) >= 0 {
-		request := client.ScheduledClientExtensions().NextRequest()
+		request := client.NextRequest()
 
 		if err := recorder.RecordRequest(procID, request); err != nil {
 			log.Fatalf("record request %v failed %v", request, err)
@@ -198,7 +198,7 @@ func OnClientLoop(
 		} else {
 			log.Infof("%d %s: call %+v", procID, node, request)
 		}
-		response := client.ScheduledClientExtensions().Invoke(ctx, node, request)
+		response := client.Invoke(ctx, node, request)
 
 		if stringer, ok := response.(fmt.Stringer); ok {
 			log.Infof("%d %s: return %+v", procID, node, stringer.String())
@@ -229,7 +229,7 @@ func OnClientLoop(
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
-		client core.Client,
+		client core.OnScheduleClientExtensions,
 		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,
@@ -261,13 +261,13 @@ func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 			if _, ok := <-token; !ok {
 				return
 			}
-			request := client.ScheduledClientExtensions().NextRequest()
+			request := client.NextRequest()
 			if err := recorder.RecordRequest(procID, request); err != nil {
 				log.Fatalf("record request %v failed %v", request, err)
 			}
 
 			log.Infof("[%d] %s: call %+v", procID, node.String(), request)
-			response := client.ScheduledClientExtensions().Invoke(ctx, node, request)
+			response := client.Invoke(ctx, node, request)
 			log.Infof("[%d] %s: return %+v", procID, node.String(), response)
 
 			v := response.(core.UnknownResponse)

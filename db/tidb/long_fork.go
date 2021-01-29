@@ -113,14 +113,6 @@ func (c *longForkClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return c.db.Close()
 }
 
-func (c *longForkClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return c
-}
-
-func (c *longForkClient) StandardClientExtensions() core.StandardClientExtensions {
-	return nil
-}
-
 func (c *longForkClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
 	arg := r.(lfRequest)
 	if arg.Kind == lfWrite {

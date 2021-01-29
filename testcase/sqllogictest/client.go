@@ -102,14 +102,6 @@ func (c *sqllogicClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-func (c *sqllogicClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *sqllogicClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 // Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	startTime := time.Now()

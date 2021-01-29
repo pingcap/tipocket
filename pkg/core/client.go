@@ -20,15 +20,12 @@ type Client interface {
 	SetUp(ctx context.Context, nodes []cluster.Node, clientNodes []cluster.ClientNode, idx int) error
 	// TearDown tears down the client.
 	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
-	// extends OnScheduleClientExtensions
-	ScheduledClientExtensions() OnScheduleClientExtensions
-	// extends StandardClientExtensions
-	StandardClientExtensions() StandardClientExtensions
 }
 
 // OnScheduleClientExtensions is an interface for on schedule client, e.g.
 // the client is scheduled by the TiPocket test suite
 type OnScheduleClientExtensions interface {
+	Client
 	// Invoke invokes a request to the database.
 	// Mostly, the return Response should implement UnknownResponse interface
 	Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) UnknownResponse
@@ -41,6 +38,7 @@ type OnScheduleClientExtensions interface {
 // StandardClientExtensions is an interface for auto driver client, e.g.
 // the client take over control from the TiPocket test suite
 type StandardClientExtensions interface {
+	Client
 	// Start runs auto driver cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only

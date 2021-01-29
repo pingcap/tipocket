@@ -181,16 +181,6 @@ func (c *Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx i
 	return c.db.Close()
 }
 
-// ScheduledClientExtensions extends ScheduledClientExtensions
-func (c *Client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return c
-}
-
-// StandardClientExtensions ...
-func (c *Client) StandardClientExtensions() core.StandardClientExtensions {
-	return nil
-}
-
 func (c *Client) dropTables(ctx context.Context) {
 	if c.cfg.Partition {
 		c.db.ExecContext(ctx, "drop table if exists v_bank")

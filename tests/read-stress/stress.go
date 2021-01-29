@@ -133,14 +133,6 @@ func (c *stressClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return err
 }
 
-func (c *stressClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *stressClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *stressClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	var wg sync.WaitGroup
 	for i := 0; i < c.largeConcurrency; i++ {

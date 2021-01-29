@@ -90,16 +90,6 @@ func (c *WriterClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-// ScheduledClientExtensions extends OnScheduleClientExtensions
-func (c *WriterClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-// StandardClientExtensions extends OnScheduleClientExtensions
-func (c *WriterClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 // Start starts test
 func (c *WriterClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("[%s] start to test...", c)

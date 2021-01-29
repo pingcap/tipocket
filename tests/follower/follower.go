@@ -72,14 +72,6 @@ func (f *follower) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx
 	return nil
 }
 
-func (f *follower) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (f *follower) StandardClientExtensions() core.StandardClientExtensions {
-	return f
-}
-
 // Start
 func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")

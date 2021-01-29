@@ -210,14 +210,6 @@ func (c *pipelineClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return c.db.Close()
 }
 
-func (c *pipelineClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *pipelineClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 // Start runs auto driver cases
 func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.scheduler.delayScheduling(c.kvStatusAddrs, 200); err != nil {

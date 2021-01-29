@@ -64,14 +64,6 @@ func (c *detectorClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-func (c *detectorClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *detectorClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *detectorClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("start to test...")
 	defer func() {

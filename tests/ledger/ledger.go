@@ -178,14 +178,6 @@ func (c *ledgerClient) TearDown(ctx context.Context, nodes []cluster.ClientNode,
 	return nil
 }
 
-func (c *ledgerClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *ledgerClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *ledgerClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("start to test...")
 	defer func() {

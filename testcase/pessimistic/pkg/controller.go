@@ -120,14 +120,6 @@ func (c *pessimisticClient) TearDown(ctx context.Context, nodes []cluster.Client
 	return nil
 }
 
-func (c *pessimisticClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *pessimisticClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *pessimisticClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	ch := make(chan error)
 

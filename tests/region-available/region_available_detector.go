@@ -99,13 +99,6 @@ func (d *regionAvailableDetector) SetUp(ctx context.Context, _ []cluster.Node, c
 func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
-func (d *regionAvailableDetector) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (d *regionAvailableDetector) StandardClientExtensions() core.StandardClientExtensions {
-	return d
-}
 
 func (d *regionAvailableDetector) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")

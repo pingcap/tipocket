@@ -61,14 +61,6 @@ func (c *titanClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *titanClient) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *titanClient) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *titanClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	for {
 		start := []byte(fmt.Sprintf("v%03d", 1))

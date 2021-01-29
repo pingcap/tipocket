@@ -140,14 +140,6 @@ func (c *bankCase) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx
 	return nil
 }
 
-func (c *bankCase) ScheduledClientExtensions() core.OnScheduleClientExtensions {
-	return nil
-}
-
-func (c *bankCase) StandardClientExtensions() core.StandardClientExtensions {
-	return c
-}
-
 func (c *bankCase) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.Execute(ctx, c.dbConn); err != nil {
 		log.Fatalf("[bank] return with error %v", err)
