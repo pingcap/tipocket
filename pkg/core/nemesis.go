@@ -32,8 +32,6 @@ const (
 	PDLeaderShuffler ChaosKind = "pd-leader-shuffler"
 	// Scaling scales cluster
 	Scaling ChaosKind = "scaling"
-	// IOChaos adds io chaos.
-	IOChaos ChaosKind = "io-chaos"
 )
 
 // Nemesis injects failure and disturbs the database.

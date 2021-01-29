@@ -33,7 +33,7 @@
 //			-namespace="tpctl-backup-br-txn" -hub="docker.io" -repository="pingcap"
 //			-image-version="nightly" -tikv-image="" -tidb-image="" -pd-image=""
 //			-tikv-config="" -tidb-config="" -pd-config=""
-//			-tidb-replicas="1" -pd-replicas="1" -storage-class="local-storage" -loki-addr=""
+//			-tidb-replicas="1" -pd-replicas="1" -storage-class="local-path" -loki-addr=""
 //			-loki-username="" -loki-password=""
 //
 // This case is supposed to run forever, until an error occur or got killed
@@ -49,9 +49,10 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/ngaut/log"
 	"net/url"
 	"time"
+
+	"github.com/ngaut/log"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"

@@ -4,9 +4,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/utils/pointer"
 
-	"github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1"
-	"github.com/pingcap/tidb-operator/pkg/util/config"
-
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -15,6 +12,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/mysql"
 	"github.com/pingcap/tipocket/pkg/test-infra/tidb"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 )
 
 // groupCluster creates clusters concurrently
@@ -169,9 +168,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		ComponentSpec: v1alpha1.ComponentSpec{
 			Image: util.BuildImage("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image),
 		},
-		GenericConfig: config.GenericConfig{
-			Config: map[string]interface{}{},
-		},
+		Config: &config.GenericConfig{},
 	}
 
 	return NewCompositeCluster(

@@ -26,7 +26,7 @@ spec:
         - name: pd-image
           value: ""
         - name: storage-class
-          value: sas
+          value: local-path
         - name: nemesis
           value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
         - name: client
@@ -36,7 +36,7 @@ spec:
         - name: round
           value: "10"
         - name: loki-addr
-          value: "http://gateway.loki.svc"
+          value: ""
         - name: loki-username
           value: "loki"
         - name: loki-password
@@ -117,6 +117,6 @@ spec:
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=2%return\""
                   - name: async-commit
-                    default: "true"
+                    value: "true"
                   - name: one-pc
-                    default: "false"
+                    value: "false"

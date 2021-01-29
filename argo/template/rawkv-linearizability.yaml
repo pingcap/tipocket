@@ -23,7 +23,7 @@ spec:
           - name: pd-image
             default: ""
           - name: storage-class
-            default: local-storage
+            default: local-path
           - name: nemesis
             default: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
           - name: client
@@ -33,7 +33,7 @@ spec:
           - name: round
             default: "100"
           - name: loki-addr
-            default: http://gateway.loki.svc
+            default:
           - name: loki-username
             default: loki
           - name: loki-password
@@ -69,7 +69,7 @@ spec:
           ns: "{{inputs.parameters.ns}}"
       container:
         name: tipocket
-        image: 'pingcap/tipocket:latest'
+        image: 'hub.pingcap.net/qa/tipocket:latest'
         imagePullPolicy: Always
         workingDir: /logs
         command:

@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 )
 
+// copy from https://github.com/pingcap/tidb-binlog/blame/e28b75cac81bea82c2a89ad024d1a37bf3c9bee9/cmd/drainer/drainer.toml#L43
 var drainerConfigTpl = template.Must(template.New("drainer-config-script").Parse(`# drainer Configuration.
 
 # addr (i.e. 'host:port') to listen on for drainer connections
@@ -56,22 +57,33 @@ compressor = ""
 # number of binlog events in a transaction batch
 txn-batch = 20
 
+# sync ddl to downstream db or not
+sync-ddl = true
+
+# This variable works in dual-a. if it is false, the upstream data will all be synchronized to the downstream, except for the filtered table.
+# If it is true, the channel value is set at the same time, and the upstream starts with the mark table ID updated, and the channel ID is the same as its channel ID.
+# this part of data will not be synchronized to the downstream. Therefore, in dual-a scenario,both sides Channel id also needs to be set to the same value
+loopback-control = false
+
+# When loopback control is turned on, the channel ID will work.
+# In the dual-a scenario, the channel ID synchronized from the downstream to the upstream and the channel ID synchronized from
+# the upstream to the downstream need to be set to the same value to avoid loopback synchronization
+channel-id = 1
+
 # work count to execute binlogs
 # if the latency between drainer and downstream(mysql or tidb) are too high, you might want to increase this
 # to get higher throughput by higher concurrent write to the downstream
 worker-count = 16
-
-disable-dispatch = false
 
 # safe mode will split update to delete and insert
 safe-mode = false
 
 # downstream storage, equal to --dest-db-type
 # valid values are "mysql", "pb", "tidb", "flash", "kafka"
-db-type = "mysql"
+db-type = "tidb"
 
 # disable sync these schema
-ignore-schemas = "INFORMATION_SCHEMA,PERFORMANCE_SCHEMA,mysql,test"
+ignore-schemas = "INFORMATION_SCHEMA,PERFORMANCE_SCHEMA,mysql"
 
 ##replicate-do-db priority over replicate-do-table if have same db name
 ##and we support regex expression , start with '~' declare use regex expression.
@@ -102,6 +114,8 @@ log-dir = "{{.RelayPath}}"
 host = "{{.DownStreamDB}}"
 user = "root"
 password = ""
+# if encrypted_password is not empty, password will be ignored.
+encrypted_password = ""
 port = 4000
 
 [syncer.to.checkpoint]
@@ -148,15 +162,24 @@ done
 
 /drainer \
 -L=debug \
--addr=` + "`" + `echo ${HOSTNAME}` + "`" + `.{{.Component}}:8249 \
+-pd-urls=http://{{.ClusterName}}-pd:2379 \
+-addr=0.0.0.0:8249 \
+-advertise-addr=` + "`" + `echo ${HOSTNAME}` + "`" + `.{{.Component}}:8249 \
 -config=/etc/drainer/drainer.toml \
 -disable-detect=false \
 -initial-commit-ts=0 \
--log-file=/data/log/drainer.log`))
+-data-dir=/data \
+-log-file=""
+
+if [ $? == 0 ]; then
+    echo $(date -u +"[%Y/%m/%d %H:%M:%S.%3N %:z]") "drainer offline, please delete my pod"
+    tail -f /dev/null
+fi`))
 
 // DrainerCommandModel ...
 type DrainerCommandModel struct {
-	Component string
+	ClusterName string
+	Component   string
 }
 
 // RenderDrainerCommand ...

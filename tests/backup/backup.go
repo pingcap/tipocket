@@ -17,17 +17,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/ngaut/log"
-	"github.com/pingcap/errors"
-	"github.com/pingcap/tipocket/pkg/cluster"
-	"github.com/pingcap/tipocket/pkg/core"
-	"github.com/pingcap/tipocket/util"
 	"math/rand"
 	"net/url"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ngaut/log"
+	"github.com/pingcap/errors"
+
+	"github.com/pingcap/tipocket/pkg/cluster"
+	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/util"
 )
 
 const (
