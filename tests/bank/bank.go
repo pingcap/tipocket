@@ -144,7 +144,7 @@ func (c *bankCase) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	return nil
 }
 
-func (c *bankCase) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *bankCase) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

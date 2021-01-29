@@ -95,8 +95,8 @@ func (c *WriterClient) ScheduledClientExtensions() core.OnScheduleClientExtensio
 	return nil
 }
 
-// AutoDriveClientExtensions extends OnScheduleClientExtensions
-func (c *WriterClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+// StandardClientExtensions extends OnScheduleClientExtensions
+func (c *WriterClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

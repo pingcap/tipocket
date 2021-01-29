@@ -95,7 +95,7 @@ func (c *crudClient) ScheduledClientExtensions() core.OnScheduleClientExtensions
 	return nil
 }
 
-func (c *crudClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *crudClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

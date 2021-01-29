@@ -106,7 +106,7 @@ func (c *sqllogicClient) ScheduledClientExtensions() core.OnScheduleClientExtens
 	return nil
 }
 
-func (c *sqllogicClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *sqllogicClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

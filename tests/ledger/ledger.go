@@ -182,7 +182,7 @@ func (c *ledgerClient) ScheduledClientExtensions() core.OnScheduleClientExtensio
 	return nil
 }
 
-func (c *ledgerClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *ledgerClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

@@ -83,7 +83,7 @@ func (t *tpccClient) ScheduledClientExtensions() core.OnScheduleClientExtensions
 	return t
 }
 
-func (t *tpccClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (t *tpccClient) StandardClientExtensions() core.StandardClientExtensions {
 	return nil
 }
 

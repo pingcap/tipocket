@@ -117,7 +117,7 @@ func (c *longForkClient) ScheduledClientExtensions() core.OnScheduleClientExtens
 	return c
 }
 
-func (c *longForkClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *longForkClient) StandardClientExtensions() core.StandardClientExtensions {
 	return nil
 }
 

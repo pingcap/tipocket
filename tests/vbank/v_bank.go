@@ -186,8 +186,8 @@ func (c *Client) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	return c
 }
 
-// AutoDriveClientExtensions ...
-func (c *Client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+// StandardClientExtensions ...
+func (c *Client) StandardClientExtensions() core.StandardClientExtensions {
 	return nil
 }
 

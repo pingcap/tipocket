@@ -257,7 +257,7 @@ func (c *bank2Client) ScheduledClientExtensions() core.OnScheduleClientExtension
 	return nil
 }
 
-func (c *bank2Client) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *bank2Client) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

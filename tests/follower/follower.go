@@ -76,7 +76,7 @@ func (f *follower) ScheduledClientExtensions() core.OnScheduleClientExtensions {
 	return nil
 }
 
-func (f *follower) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (f *follower) StandardClientExtensions() core.StandardClientExtensions {
 	return f
 }
 

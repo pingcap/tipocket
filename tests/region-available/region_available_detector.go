@@ -103,7 +103,7 @@ func (d *regionAvailableDetector) ScheduledClientExtensions() core.OnScheduleCli
 	return nil
 }
 
-func (d *regionAvailableDetector) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (d *regionAvailableDetector) StandardClientExtensions() core.StandardClientExtensions {
 	return d
 }
 

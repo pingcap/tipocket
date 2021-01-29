@@ -214,7 +214,7 @@ func (c *pipelineClient) ScheduledClientExtensions() core.OnScheduleClientExtens
 	return nil
 }
 
-func (c *pipelineClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *pipelineClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

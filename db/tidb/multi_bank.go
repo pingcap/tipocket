@@ -63,7 +63,7 @@ func (c *multiBankClient) ScheduledClientExtensions() core.OnScheduleClientExten
 	return c
 }
 
-func (c *multiBankClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *multiBankClient) StandardClientExtensions() core.StandardClientExtensions {
 	return nil
 }
 

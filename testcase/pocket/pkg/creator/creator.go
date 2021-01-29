@@ -48,7 +48,7 @@ func (p PocketClient) ScheduledClientExtensions() core.OnScheduleClientExtension
 	return nil
 }
 
-func (p PocketClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (p PocketClient) StandardClientExtensions() core.StandardClientExtensions {
 	return p
 }
 

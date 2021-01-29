@@ -68,7 +68,7 @@ func (c *detectorClient) ScheduledClientExtensions() core.OnScheduleClientExtens
 	return nil
 }
 
-func (c *detectorClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *detectorClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

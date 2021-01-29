@@ -107,7 +107,7 @@ func (c *Controller) Close() {
 // Run runs the controller.
 func (c *Controller) Run() {
 	switch c.cfg.Mode {
-	case ModeAutoDrive:
+	case ModeStandard:
 		c.TransferControlToClient()
 	case ModeOnSchedule:
 		c.RunClientOnSchedule()
@@ -295,7 +295,7 @@ func (c *Controller) TransferControlToClient() {
 		ii := i
 		g.Go(func() error {
 			log.Infof("run client %d...", ii)
-			return client.AutoDriveClientExtensions().Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
+			return client.StandardClientExtensions().Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
 	if err := g.Wait(); err != nil {

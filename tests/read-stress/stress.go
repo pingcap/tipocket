@@ -137,7 +137,7 @@ func (c *stressClient) ScheduledClientExtensions() core.OnScheduleClientExtensio
 	return nil
 }
 
-func (c *stressClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *stressClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

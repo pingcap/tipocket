@@ -197,7 +197,7 @@ func (c *rawkvClient) ScheduledClientExtensions() core.OnScheduleClientExtension
 	return c
 }
 
-func (c *rawkvClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *rawkvClient) StandardClientExtensions() core.StandardClientExtensions {
 	return nil
 }
 

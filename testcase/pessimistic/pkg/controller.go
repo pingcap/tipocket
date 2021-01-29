@@ -124,7 +124,7 @@ func (c *pessimisticClient) ScheduledClientExtensions() core.OnScheduleClientExt
 	return nil
 }
 
-func (c *pessimisticClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *pessimisticClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

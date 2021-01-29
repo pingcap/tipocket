@@ -90,7 +90,7 @@ func (c *ondupClient) ScheduledClientExtensions() core.OnScheduleClientExtension
 	return nil
 }
 
-func (c *ondupClient) AutoDriveClientExtensions() core.AutoDriveClientExtensions {
+func (c *ondupClient) StandardClientExtensions() core.StandardClientExtensions {
 	return c
 }
 

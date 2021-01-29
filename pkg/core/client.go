@@ -22,8 +22,8 @@ type Client interface {
 	TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error
 	// extends OnScheduleClientExtensions
 	ScheduledClientExtensions() OnScheduleClientExtensions
-	// extends AutoDriveClientExtensions
-	AutoDriveClientExtensions() AutoDriveClientExtensions
+	// extends StandardClientExtensions
+	StandardClientExtensions() StandardClientExtensions
 }
 
 // OnScheduleClientExtensions is an interface for on schedule client, e.g.
@@ -38,9 +38,9 @@ type OnScheduleClientExtensions interface {
 	DumpState(ctx context.Context) (interface{}, error)
 }
 
-// AutoDriveClientExtensions is an interface for auto driver client, e.g.
+// StandardClientExtensions is an interface for auto driver client, e.g.
 // the client take over control from the TiPocket test suite
-type AutoDriveClientExtensions interface {
+type StandardClientExtensions interface {
 	// Start runs auto driver cases
 	// this function will block Invoke trigger
 	// if you want to schedule cases by yourself, use this function only
@@ -71,7 +71,7 @@ func (c noopClient) ScheduledClientExtensions() OnScheduleClientExtensions {
 	return nil
 }
 
-func (c noopClient) AutoDriveClientExtensions() AutoDriveClientExtensions {
+func (c noopClient) StandardClientExtensions() StandardClientExtensions {
 	return c
 }
 
