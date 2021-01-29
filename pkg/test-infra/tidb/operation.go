@@ -262,7 +262,7 @@ func (o *Ops) Delete() error {
 }
 
 func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configString string) error {
-	configMap, err := getTiDBConfigMap(tc)
+	configMap, err := getTiDBConfigMap(tc, o.config)
 	if err != nil {
 		return err
 	}
@@ -440,8 +440,8 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
-func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name, Failpoints: fixture.Context.TiDBFailpoint})
+func getTiDBConfigMap(tc *v1alpha1.TidbCluster, config fixture.TiDBClusterConfig) (*corev1.ConfigMap, error) {
+	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name, Failpoints: config.TiDBFailPoint})
 	if err != nil {
 		return nil, err
 	}
