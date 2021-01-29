@@ -18,7 +18,7 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
-		read-stress follower-read pessimistic
+		read-stress follower-read pessimistic resolve-lock
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic
 
@@ -100,6 +100,10 @@ follower-read:
 
 titan:
 	cd testcase/titan; make build; \
+	cp bin/* ../../bin/
+
+resolve-lock:
+	cd testcase/resolve-lock ; make build; \
 	cp bin/* ../../bin/
 
 pipelined-locking:
