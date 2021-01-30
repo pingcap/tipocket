@@ -89,6 +89,10 @@ pessimistic:
 	cd testcase/pessimistic; make build; \
 	cp bin/* ../../bin/
 
+resolve-lock:
+	cd testcase/resolve-lock; make build; \
+	cp bin/* ../../bin/
+
 crud:
 	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go
 
