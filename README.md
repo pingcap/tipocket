@@ -12,7 +12,7 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 
 ## Toolkit
 
-* [go-sqlsmith](https://github.com/pingcap/tipocket/tree/master/pkg/go-sqlsmith): go-sqlsmith is our Go implementation of sqlsmith, it's a fuzz-testing tool which can generate random MySQL-dialect SQL queries.
+* [go-sqlsmith](https://github.com/chaos-mesh/go-sqlsmith): go-sqlsmith is our Go implementation of sqlsmith, it's a fuzz-testing tool which can generate random MySQL-dialect SQL queries.
 * [go-elle](https://github.com/pingcap/tipocket/tree/master/pkg/elle): Our Go port version of jepsen-io/elle, a general transactional consistency checker for black-box databases.
 
 ## Nemesis
