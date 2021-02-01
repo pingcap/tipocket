@@ -146,11 +146,11 @@ func NewDefaultCluster(namespace, name string, config fixture.TiDBClusterConfig)
 }
 
 // NewCDCCluster creates two TiDB clusters with CDC
-func NewCDCCluster(namespace, name string, conf fixture.TiDBClusterConfig) cluster.Cluster {
+func NewCDCCluster(namespace, name string, upstreamConfig, downstreamConfig fixture.TiDBClusterConfig) cluster.Cluster {
 	return NewCompositeCluster(
 		NewGroupCluster(
-			tidb.New(namespace, name+"-upstream", conf),
-			tidb.New(namespace, name+"-downstream", conf),
+			tidb.New(namespace, name+"-upstream", upstreamConfig),
+			tidb.New(namespace, name+"-downstream", downstreamConfig),
 		),
 		cdc.New(namespace, name),
 	)
