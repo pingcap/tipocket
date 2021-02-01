@@ -35,6 +35,8 @@ spec:
           value: "loki"
         - name: loki-password
           value: "admin"
+        - name: prepare-sql
+          value: "set @@tidb_enable_async_commit = 1;set @@global.tidb_enable_async_commit = 1;set @@tidb_enable_1pc = 0;set @@global.tidb_enable_1pc = 0;"
     templates:
       - name: call-tipocket-scbank2
         steps:
@@ -90,7 +92,5 @@ spec:
                     value: "5000"
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=1%return\""
-                  - name: async-commit
-                    default: "true"
-                  - name: one-pc
-                    default: "false"
+                  - name: prepare-sql
+                    value: "{{workflow.parameters.prepare-sql}}"
