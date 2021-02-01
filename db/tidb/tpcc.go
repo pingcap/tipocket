@@ -116,10 +116,6 @@ func (t tpccClient) DumpState(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
 
-func (t *tpccClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
-}
-
 // TPCCClientCreator creates tpccClient
 type TPCCClientCreator struct {
 	*tpcc.Config

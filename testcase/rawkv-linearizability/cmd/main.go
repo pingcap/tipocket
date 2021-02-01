@@ -41,7 +41,7 @@ func main() {
 		Parser:  rawkv_linearizability.RawkvParser(),
 	}
 	cfg := control.Config{
-		Mode:         control.Mode(control.ModeMixed),
+		Mode:         control.Mode(control.ModeOnSchedule),
 		ClientCount:  fixture.Context.ClientCount,
 		RequestCount: fixture.Context.RequestCount,
 		RunRound:     fixture.Context.RunRound,

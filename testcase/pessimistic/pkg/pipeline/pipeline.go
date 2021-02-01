@@ -210,25 +210,7 @@ func (c *pipelineClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return c.db.Close()
 }
 
-// Invoke invokes a request to the database.
-// Mostly, the return Response should implement UnknownResponse interface
-func (c *pipelineClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("not implemented")
-}
-
-// NextRequest generates a request for latter Invoke.
-func (c *pipelineClient) NextRequest() interface{} {
-	panic("not implemented")
-}
-
-// DumpState the database state(also the model's state)
-func (c *pipelineClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("not implemented")
-}
-
-// Start runs self scheduled cases
-// this function will block Invoke trigger
-// if you want to schedule cases by yourself, use this function only
+// Start runs auto driver cases
 func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.scheduler.delayScheduling(c.kvStatusAddrs, 200); err != nil {
 		log.Fatalf("failed to enable failpoints: %v", err)

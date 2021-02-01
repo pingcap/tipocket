@@ -41,7 +41,6 @@ type StorageType string
 
 type fixtureContext struct {
 	// Control config
-	Mode         int
 	ClientCount  int
 	Nemesis      string
 	RunRound     int
@@ -76,8 +75,6 @@ type fixtureContext struct {
 	// Plugins
 	LeakCheckEatFile string
 	LeakCheckSilent  bool
-	// failpoints
-	TiDBFailpoint string
 
 	ReplicaRead string
 }
@@ -140,6 +137,9 @@ type TiDBClusterConfig struct {
 	PDAddr   addressArrayFlags
 
 	MatrixConfig MatrixConfig
+
+	// TiDB fail-points value
+	TiDBFailPoint string
 }
 
 // Context ...
@@ -245,7 +245,6 @@ func printVersion() {
 func init() {
 	printVersion()
 
-	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
 	// (TODO:yeya24) Now nemesis option is only for one TiDBCluster. If we want to add nemesis in AB Test,
 	// we can add another option for ClusterB.
@@ -291,6 +290,9 @@ func init() {
 	flag.IntVar(&Context.TiDBClusterConfig.PDReplicas, "pd-replicas", 3, "number of pd replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiFlashReplicas, "tiflash-replicas", 0, "number of tiflash replicas, set 0 to disable tiflash")
 
+	// failpoint
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBFailPoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
+
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiKVConfig, "abtest.tikv-config", "", "tikv config file for cluster B")
@@ -333,8 +335,6 @@ func init() {
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
 	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
-	// failpoint
-	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
 
 	flag.StringVar(&Context.ReplicaRead, "replica-read", "", "replica read target [leader, follower, leader-and-follower]")
 

@@ -18,7 +18,7 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
-		read-stress follower-read pessimistic cdc-bank
+		read-stress follower-read pessimistic resolve-lock cdc-bank
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
@@ -105,26 +105,33 @@ titan:
 	cd testcase/titan; make build; \
 	cp bin/* ../../bin/
 
+resolve-lock:
+	cd testcase/resolve-lock ; make build; \
+	cp bin/* ../../bin/
+
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
 fmt: groupimports
 	go fmt ./...
-	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make fmt' \;
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make fmt';
 
 tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	@git diff --exit-code -- go.mod
-	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make tidy' \;
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make tidy';
 
 lint: revive
 	@echo "linting"
 	revive -formatter friendly -config revive.toml $$($(PACKAGES) | grep -v "pkg/tidb-operator")
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make lint';
 
 revive:
+ifeq (,$(shell which revive))
+	@echo "installing revive"
 	$(GO) get github.com/mgechev/revive@v1.0.2
-	find testcase -maxdepth 1 -type d -exec sh -c 'set -ex; cd {}; make revive' \;
+endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
@@ -140,7 +147,7 @@ clean:
 
 test:
 	$(GOTEST) ./...
-	find testcase -maxdepth 1 -type d -exec sh -c 'cd {}; make test' \;
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make test';
 
 image:
 	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .

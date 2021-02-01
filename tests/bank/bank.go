@@ -140,18 +140,6 @@ func (c *bankCase) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx
 	return nil
 }
 
-func (c *bankCase) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *bankCase) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *bankCase) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *bankCase) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	if err := c.Execute(ctx, c.dbConn); err != nil {
 		log.Fatalf("[bank] return with error %v", err)
