@@ -26,6 +26,10 @@ type NoopDB struct {
 
 // SetUp initializes the database.
 func (NoopDB) SetUp(ctx context.Context, nodes []cluster.Node, node cluster.Node) error {
+	// pre-set global variables
+	if len(fixture.Context.TiDBClusterConfig.PrepareSQL) == 0 {
+		return nil
+	}
 	isFirstTiDB := false
 	for _, n := range nodes {
 		if n.Component == cluster.TiDB {
