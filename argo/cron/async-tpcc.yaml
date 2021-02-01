@@ -53,6 +53,8 @@ spec:
           value: "mysql-system-vars.sql,tidb-system-vars.sql"
         - name: tidb-config
           value: ""
+        - name: prepare-sql
+          value: "set @@tidb_enable_async_commit = 1;set @@global.tidb_enable_async_commit = 1;set @@tidb_enable_1pc = 0;set @@global.tidb_enable_1pc = 0;"
     templates:
       - name: call-tipocket-tpcc
         steps:
@@ -116,7 +118,5 @@ spec:
                     value: "/config/tidb/enable-async-commit.toml"
                   - name: tidb-failpoint
                     value: "\"github.com/pingcap/tidb/store/tikv/asyncCommitDoNothing=2%return\""
-                  - name: async-commit
-                    value: "true"
-                  - name: one-pc
-                    value: "false"
+                  - name: prepare-sql
+                    value: "{{workflow.parameters.prepare-sql}}"

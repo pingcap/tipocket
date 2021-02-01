@@ -36,8 +36,6 @@ var (
 	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
 	checkerName = flag.String("checker", "consistency", "consistency or qos")
 	warehouses  = flag.Int("warehouses", 10, "tpcc warehouses")
-	asyncCommit = flag.Bool("async-commit", false, "whether to enable the async commit feature (default false)")
-	onePC       = flag.Bool("one-pc", false, "whether to enable the one-phase commit feature (default false)")
 )
 
 func main() {
@@ -58,8 +56,6 @@ func main() {
 			Warehouses: *warehouses,
 			Parts:      1,
 		},
-		AsyncCommit: *asyncCommit,
-		OnePC:       *onePC,
 	}
 	creator := clientCreator
 	var checker core.Checker
