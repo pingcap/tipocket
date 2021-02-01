@@ -67,18 +67,6 @@ func (c *client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx i
 	return nil
 }
 
-func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *client) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *client) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	var upstream, downstream *sql.DB
 	expectedSum := c.Accounts * initBalance

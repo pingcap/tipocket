@@ -35,7 +35,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -48,6 +48,9 @@ func main() {
 			Delay: time.Minute * time.Duration(2),
 		})
 	}
+	// Only set failpoints in the upstream
+	downstreamCfg := c.TiDBClusterConfig
+	downstreamCfg.TiDBFailPoint = ""
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
@@ -60,7 +63,7 @@ func main() {
 		},
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, downstreamCfg),
 	}
 	suit.Run(context.Background())
 }
