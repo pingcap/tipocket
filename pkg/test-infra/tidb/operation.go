@@ -548,12 +548,19 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
 		} else if component == "discovery" || component == "monitor" {
 			continue
 		}
-
+		var podIP = pod.Status.PodIP
+		if pod.Spec.Hostname != "" && pod.Spec.Subdomain != "" {
+			podIP = fmt.Sprintf("%s.%s.%s.svc",
+				pod.Spec.Hostname,
+				pod.Spec.Subdomain,
+				pod.ObjectMeta.Namespace,
+			)
+		}
 		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			// TODO use better way to retrieve version?
 			PodName:   pod.ObjectMeta.Name,
-			IP:        pod.Status.PodIP,
+			IP:        podIP,
 			Component: cluster.Component(component),
 			Port:      util.FindPort(pod.ObjectMeta.Name, component, pod.Spec.Containers),
 			Client: &cluster.Client{
