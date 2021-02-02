@@ -124,7 +124,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		})
 	} else {
 		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
-		ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
+		ips, err := util.GetNodeIPsFromPod(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 		if err != nil {
 			return nil, err
 		} else if len(ips) == 0 {

@@ -130,11 +130,11 @@ func chooseHub(image string) string {
 	return fixture.Context.HubAddress
 }
 
-// GetNodeIPs gets the IPs (or addresses) for nodes.
-func GetNodeIPs(cli client.Client, namespace string, labels map[string]string) ([]string, error) {
+// GetNodeIPsFromPod gets the IPs (or addresses) for nodes.
+func GetNodeIPsFromPod(cli client.Client, namespace string, podLabels map[string]string) ([]string, error) {
 	var ips []string
 	pods := &corev1.PodList{}
-	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(podLabels)); err != nil {
 		return ips, err
 	}
 
