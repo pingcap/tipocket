@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"os"
 	"strings"
 
 	"github.com/ngaut/log"
@@ -155,4 +156,10 @@ func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, 
 		return nil, err
 	}
 	return clone, nil
+}
+
+// IsInK8sPodEnvironment checks whether in the k8s pod environment
+// refer: https://stackoverflow.com/questions/36639062/how-do-i-tell-if-my-container-is-running-inside-a-kubernetes-cluster/54130803#54130803
+func IsInK8sPodEnvironment() bool {
+	return os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 }

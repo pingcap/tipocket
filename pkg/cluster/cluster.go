@@ -59,7 +59,7 @@ type Node struct {
 
 // String ...
 func (node Node) String() string {
-	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
+	return fmt.Sprintf("node[ns=%s,ip=%s:%d]", node.PodName, node.IP, node.Port)
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
@@ -78,7 +78,7 @@ func (clientNode ClientNode) Address() string {
 
 // String ...
 func (clientNode ClientNode) String() string {
-	return fmt.Sprintf("%s %s:%d", clientNode.ClusterName, clientNode.IP, clientNode.Port)
+	return fmt.Sprintf("client_node[ns=%s,ip=%s:%d]", clientNode.Namespace, clientNode.IP, clientNode.Port)
 }
 
 // Cluster interface

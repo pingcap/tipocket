@@ -72,9 +72,12 @@ func (o *Ops) GetTiDBCluster() *v1alpha1.TidbCluster {
 	return o.tc.TidbCluster
 }
 
-func (o *Ops) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
+func (o *Ops) getTiDBServiceByClusterName(ns string, clusterName string) (*corev1.Service, error) {
 	svc := &corev1.Service{
-		ObjectMeta: *meta,
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      fmt.Sprintf("%s-tidb", clusterName),
+		},
 	}
 	key, err := client.ObjectKeyFromObject(svc)
 	if err != nil {
@@ -108,23 +111,36 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	var clientNodes []cluster.ClientNode
 
-	ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
-	if err != nil {
-		return clientNodes, err
-	} else if len(ips) == 0 {
-		return clientNodes, errors.New("k8s node not found")
+	if util.IsInK8sPodEnvironment() {
+		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return nil, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			ClusterName: o.name,
+			IP:          svc.Spec.ClusterIP,
+			Port:        getTiDBServicePort(svc),
+		})
+	} else {
+		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
+		ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
+		if err != nil {
+			return nil, err
+		} else if len(ips) == 0 {
+			return nil, errors.New("k8s node not found")
+		}
+		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return clientNodes, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			ClusterName: o.name,
+			IP:          ips[0],
+			Port:        getTiDBServicePort(svc),
+		})
 	}
-
-	svc, err := o.getTiDBServiceByMeta(&o.tc.Service.ObjectMeta)
-	if err != nil {
-		return clientNodes, err
-	}
-	clientNodes = append(clientNodes, cluster.ClientNode{
-		Namespace:   svc.ObjectMeta.Namespace,
-		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
-		IP:          ips[0], // compatible with the old code, can anyone FIXME?
-		Port:        getTiDBNodePort(svc),
-	})
 	return clientNodes, nil
 }
 
@@ -586,6 +602,15 @@ func getTiDBNodePort(svc *corev1.Service) int32 {
 	for _, port := range svc.Spec.Ports {
 		if port.Port == 4000 {
 			return port.NodePort
+		}
+	}
+	return 0
+}
+
+func getTiDBServicePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 4000 {
+			return port.Port
 		}
 	}
 	return 0
