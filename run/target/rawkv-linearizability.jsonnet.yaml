@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: tipocket-list-append-
+  generateName: tipocket-rawkv-linearizability-
 spec:
   entrypoint: starter
   onExit: delete-ns
@@ -17,10 +17,7 @@ spec:
           - sh
           - -c
           - |-
-            /bin/append \
-            -table-count=7 \
-            -read-lock="FOR UPDATE" \
-            -txn-mode=pessimistic \
+            /bin/rawkv-linearizability \
             -client=5 \
             -delNS=false \
             -failpoint.tidb= \
@@ -33,8 +30,8 @@ spec:
             -prepare-sql= \
             -purge=false \
             -repository=pingcap \
-            -request-count=100000 \
-            -round=10 \
+            -request-count=20000 \
+            -round=50 \
             -run-time=100m \
             -storage-class=local-storage \
             -tidb-config= \

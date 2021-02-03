@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: tipocket-list-append-
+  generateName: tipocket-rw-register-
 spec:
   entrypoint: starter
   onExit: delete-ns
@@ -17,7 +17,7 @@ spec:
           - sh
           - -c
           - |-
-            /bin/append \
+            /bin/register \
             -table-count=7 \
             -read-lock="FOR UPDATE" \
             -txn-mode=pessimistic \

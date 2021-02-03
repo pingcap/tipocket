@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: tipocket-list-append-
+  generateName: tipocket-txn-rand-pessimistic-
 spec:
   entrypoint: starter
   onExit: delete-ns
@@ -17,11 +17,8 @@ spec:
           - sh
           - -c
           - |-
-            /bin/append \
-            -table-count=7 \
-            -read-lock="FOR UPDATE" \
-            -txn-mode=pessimistic \
-            -client=5 \
+            /bin/txn-rand-pessimistic \
+            -client=1 \
             -delNS=false \
             -failpoint.tidb= \
             -hub=docker.io \
@@ -33,15 +30,15 @@ spec:
             -prepare-sql= \
             -purge=false \
             -repository=pingcap \
-            -request-count=100000 \
-            -round=10 \
+            -request-count=10000 \
+            -round=1 \
             -run-time=100m \
             -storage-class=local-storage \
             -tidb-config= \
             -tidb-image= \
             -tikv-config= \
             -tikv-image= \
-            -tikv-replicas=3
+            -tikv-replicas=4
         image: hub.pingcap.net/qa/tipocket
         imagePullPolicy: Always
         name: tipocket
