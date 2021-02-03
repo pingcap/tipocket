@@ -18,9 +18,9 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
-		read-stress follower-read pessimistic resolve-lock
+		read-stress follower-read pessimistic resolve-lock cdc-bank
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
 isolation: append register
 
@@ -91,6 +91,9 @@ pessimistic:
 
 crud:
 	$(GOBUILD) $(GOMOD) -o bin/crud cmd/crud/*.go
+
+cdc-bank:
+	$(GOBUILD) $(GOMOD) -o bin/cdc-bank cmd/cdc-bank/*.go
 
 read-stress:
 	$(GOBUILD) $(GOMOD) -o bin/read-stress cmd/read-stress/*.go
