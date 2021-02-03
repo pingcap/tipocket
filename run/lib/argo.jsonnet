@@ -34,7 +34,7 @@
           command: [
             'sh',
             '-c',
-            $._config.command,
+            std.join(' \\n', $._config.command),
           ],
         },
       },
