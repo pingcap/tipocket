@@ -171,6 +171,15 @@ ifeq (, $(shell which jb))
 	}
 endif
 
+clean_workflow:
+	rm -rf run/target/*
+
+fmt_workflow:
+	find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
+
+build_workflow: fmt_workflow clean_workflow install-yq
+	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/workflow/% -J run/lib | yq eval -P - > run/target/%.yaml'
+
 clean:
 	@rm -rf bin/*
 

@@ -1,10 +1,13 @@
-(import 'argo.jsonnet') +
+(import 'argo/workflow.jsonnet') +
 (import 'case.jsonnet') +
+(import 'util.jsonnet') +
+(import 'config.jsonnet') +
 {
   _config+:: {
     case_name: 'list-append',
-    image_name: 'hub.pingcap.net/mahjonp/tipocket',
-    command: $.list_append(tablecount='7', read_lock='"FOR UPDATE"', txn_mode='pessimistic')
-             + $.fixture(namespace='{{workflow.name}}', delete_ns='true', storage_class='local-storage'),
+    image_name: 'hub.pingcap.net/qa/tipocket',
+    args+: {
+    },
+    command: $.list_append(tablecount='7', read_lock='"FOR UPDATE"', txn_mode='pessimistic'),
   },
 }

@@ -27,14 +27,29 @@
       },
       {
         name: 'run-tipocket',
+        outputs: {
+          artifacts: [
+            {
+              name: 'case-logs',
+              archiveLogs: true,
+              path: 'path',
+            },
+            {
+              name: 'tidb-logs',
+              archiveLogs: true,
+              path: '/var/run/tipocket-logs',
+            },
+          ],
+        },
         container: {
           name: 'tipocket',
           image: $._config.image_name,
           imagePullPolicy: 'Always',
+          workingDir: '/logs',
           command: [
             'sh',
             '-c',
-            std.join(' \\n', $._config.command),
+            $.build_command(),
           ],
         },
       },
