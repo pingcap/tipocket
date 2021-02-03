@@ -90,9 +90,18 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig, enableMonitor bool) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	reclaimDelete := corev1.PersistentVolumeReclaimDelete
+	pdDataStorageClass := fixture.Context.LocalVolumeStorageClass
+	if clusterConfig.PDStorageClassName != "" {
+		pdDataStorageClass = clusterConfig.PDStorageClassName
+	}
+	tikvDataStorageClass := fixture.Context.LocalVolumeStorageClass
+	if clusterConfig.TiKVStorageClassName != "" {
+		tikvDataStorageClass = clusterConfig.PDStorageClassName
+	}
+
 	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -111,15 +120,16 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				PD: &v1alpha1.PDSpec{
 					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
-					StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
+					StorageClassName:     &pdDataStorageClass,
 					ComponentSpec: v1alpha1.ComponentSpec{
 						Image: util.BuildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
-							Name:        "log",
-							StorageSize: "200Gi",
-							MountPath:   "/var/log/pdlog",
+							Name:             "log",
+							StorageSize:      "200Gi",
+							MountPath:        "/var/log/pdlog",
+							StorageClassName: &clusterConfig.LogStorageClassName,
 						},
 					},
 				},
@@ -135,7 +145,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					}, "200Gi"),
-					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+					StorageClassName: &tikvDataStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
@@ -160,7 +170,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						},
 						ExposeStatus: &exposeStatus,
 					},
-					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					ComponentSpec: v1alpha1.ComponentSpec{
@@ -168,9 +177,10 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
-							Name:        "log",
-							StorageSize: "200Gi",
-							MountPath:   "/var/log/tidblog",
+							Name:             "log",
+							StorageSize:      "200Gi",
+							MountPath:        "/var/log/tidblog",
+							StorageClassName: &clusterConfig.LogStorageClassName,
 						},
 					},
 				},
@@ -225,9 +235,16 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 			},
 		},
 	}
-
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig)
+	}
+	if !enableMonitor {
+		r.TidbMonitor = nil
+	}
+	if clusterConfig.PDSvcType != nil {
+		r.TidbCluster.Spec.PD.Service = &v1alpha1.ServiceSpec{
+			Type: *clusterConfig.PDSvcType,
+		}
 	}
 	return r
 }

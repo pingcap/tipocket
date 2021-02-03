@@ -49,6 +49,7 @@ type fixtureContext struct {
 	HistoryFile  string
 	// Test-infra
 	Namespace                string
+	Name                     string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
 	DeleteNS                 bool
@@ -140,6 +141,12 @@ type TiDBClusterConfig struct {
 
 	// TiDB fail-points value
 	TiDBFailPoint string
+
+	PDStorageClassName   string
+	TiKVStorageClassName string
+	LogStorageClassName  string
+
+	PDSvcType   *corev1.ServiceType
 }
 
 // Context ...

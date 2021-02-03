@@ -63,7 +63,12 @@ type Ops struct {
 
 // New ...
 func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
-	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config),
+	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config, true),
+		ns: namespace, name: name, config: config}
+}
+
+func NewWithOutMonitor(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
+	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config, false),
 		ns: namespace, name: name, config: config}
 }
 
@@ -77,6 +82,25 @@ func (o *Ops) getTiDBServiceByClusterName(ns string, clusterName string) (*corev
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ns,
 			Name:      fmt.Sprintf("%s-tidb", clusterName),
+		},
+	}
+	key, err := client.ObjectKeyFromObject(svc)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := o.cli.Get(context.TODO(), key, svc); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
+}
+
+func (o *Ops) getPDServiceByClusterName(ns string, clusterName string) (*corev1.Service, error) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      fmt.Sprintf("%s-pd", clusterName),
 		},
 	}
 	key, err := client.ObjectKeyFromObject(svc)
@@ -109,6 +133,7 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 
 // GetClientNodes ...
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
+	log.Info("OPs GetClientNodes")
 	var clientNodes []cluster.ClientNode
 
 	if util.IsInK8sPodEnvironment() {
@@ -121,8 +146,23 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getTiDBServicePort(svc),
+			NodePort:    getTiDBNodePort(svc),
+			Component:   cluster.TiDB,
+		})
+		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return nil, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			ClusterName: o.name,
+			IP:          svc.Spec.ClusterIP,
+			Port:        getPDServicePort(svc),
+			NodePort:    getPDNodePort(svc),
+			Component:   cluster.PD,
 		})
 	} else {
+		log.Info("OPs GetClientNodes InK8S")
 		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
 		ips, err := util.GetNodeIPsFromPod(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 		if err != nil {
@@ -139,6 +179,20 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          ips[0],
 			Port:        getTiDBServicePort(svc),
+			NodePort:    getTiDBNodePort(svc),
+			Component:   cluster.TiDB,
+		})
+		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return nil, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			ClusterName: o.name,
+			IP:          svc.Spec.ClusterIP,
+			Port:        getPDServicePort(svc),
+			NodePort:    getPDNodePort(svc),
+			Component:   cluster.PD,
 		})
 	}
 	return clientNodes, nil
@@ -614,6 +668,26 @@ func getTiDBServicePort(svc *corev1.Service) int32 {
 		}
 	}
 	panic("couldn't find the tidb exposed port")
+}
+
+func getPDServicePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 2379 {
+			return port.Port
+		}
+	}
+	panic("couldn't find the pd exposed port")
+}
+
+func getPDNodePort(svc *corev1.Service) int32 {
+	log.Info("getPDNodePort")
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 2379 {
+			log.Info("getPDNodePort success")
+			return port.NodePort
+		}
+	}
+	return 0
 }
 
 // GetTiDBConfig is used for Matrix-related setups
