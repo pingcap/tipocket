@@ -21,23 +21,23 @@ spec:
             -table-count=7 \
             -read-lock="FOR UPDATE" \
             -txn-mode=pessimistic \
-            -client=1 \
-            -delete_ns=false \
+            -client=5 \
+            -delNS=false \
             -hub=docker.io \
-            -image_version=nightly \
+            -image-version=nightly \
             -namespace={{workflow.name}} \
             -nemesis=random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler \
-            -pd_config= \
-            -pd_image= \
+            -pd-config= \
+            -pd-image= \
             -purge=false \
             -repository=pingcap \
-            -request_count=10000 \
-            -round=1 \
-            -storage_class=local-path \
-            -tidb_config= \
-            -tidb_image= \
-            -tikv_config= \
-            -tikv_image=
+            -request-count=100000 \
+            -round=10 \
+            -storage-class=local-storage \
+            -tidb-config= \
+            -tidb-image= \
+            -tikv-config= \
+            -tikv-image=
         image: hub.pingcap.net/qa/tipocket
         imagePullPolicy: Always
         name: tipocket
