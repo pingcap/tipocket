@@ -92,7 +92,7 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 // GetClientNodes returns the client nodes.
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	var clientNodes []cluster.ClientNode
-	ips, err := util.GetNodeIPs(o.cli, o.mysql.Sts.Namespace, o.mysql.Sts.ObjectMeta.Labels)
+	ips, err := util.GetNodeIPsFromPod(o.cli, o.mysql.Sts.Namespace, o.mysql.Sts.ObjectMeta.Labels)
 	if err != nil {
 		return clientNodes, err
 	} else if len(ips) == 0 {

@@ -14,8 +14,6 @@
 package tidb
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +28,6 @@ import (
 type Recommendation struct {
 	TidbCluster *v1alpha1.TidbCluster
 	TidbMonitor *v1alpha1.TidbMonitor
-	*corev1.Service
 }
 
 // EnablePump ...
@@ -225,29 +222,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					},
 				},
 				ImagePullPolicy: corev1.PullIfNotPresent,
-			},
-		},
-		Service: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-tidb", name),
-				Namespace: ns,
-			},
-			Spec: corev1.ServiceSpec{
-				Type: "NodePort",
-				Ports: []corev1.ServicePort{
-					{
-						Name: PortNameMySQLClient,
-						Port: 4000,
-					},
-					{
-						Name: PortNameStatus,
-						Port: 10080,
-					},
-				},
-				Selector: map[string]string{
-					"app.kubernetes.io/component": "tidb",
-					"app.kubernetes.io/name":      "tidb-cluster",
-				},
 			},
 		},
 	}
