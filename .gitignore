@@ -6,6 +6,8 @@ bin
 vendor
 test-infra/vendor
 
+run/vendor
+
 .vscode
 
 # bank log files
