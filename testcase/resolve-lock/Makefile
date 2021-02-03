@@ -5,7 +5,7 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 
 PACKAGES := go list ./...| grep -vE 'vendor'
 
-LDFLAGS += "-s -w"
+LDFLAGS += -s -w
 LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
 LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell git rev-parse HEAD)"
 
