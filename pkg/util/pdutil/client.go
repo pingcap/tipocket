@@ -3,24 +3,26 @@ package pdutil
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/pingcap/errors"
-
 	"github.com/pingcap/tipocket/pkg/nemesis/fake_kvproto/metapb"
-
 	httputil "github.com/pingcap/tipocket/pkg/util/http"
 )
 
 const (
-	schedulersPrefix     = "/pd/api/v1/schedulers"
-	regionKeyPrefix      = "/pd/api/v1/region/key/"
-	regionsSiblingPrefix = "/pd/api/v1/regions/sibling/"
-	operatorsPrefix      = "/pd/api/v1/operators"
-	storesPrefix         = "/pd/api/v1/stores"
-	regionsPrefix        = "/pd/api/v1/regions"
+	schedulersPrefix        = "/pd/api/v1/schedulers"
+	regionKeyPrefix         = "/pd/api/v1/region/key/"
+	regionsSiblingPrefix    = "/pd/api/v1/regions/sibling/"
+	operatorsPrefix         = "/pd/api/v1/operators"
+	storesPrefix            = "/pd/api/v1/stores"
+	regionsPrefix           = "/pd/api/v1/regions"
+	pdLeaderTransferPrefix  = "/pd/api/v1/leader/transfer"
+	membersPrefix           = "/pd/api/v1/members"
+	transferAllocatorPrefix = "/pd/api/v1/tso/allocator/transfer"
 
 	contentJSON = "application/json"
 )
@@ -139,4 +141,43 @@ func (p *Client) GetSiblingRegions(id uint64) ([]*RegionInfo, error) {
 		return nil, errors.Wrap(err, "Unmarshal `[]RegionInfo` failed")
 	}
 	return body.Regions, nil
+}
+
+func (p *Client) TransferPDLeader(memberName string) error {
+	_, err := p.c.Post(p.pdAddr+pdLeaderTransferPrefix+"/"+memberName, contentJSON, nil)
+	return err
+}
+
+func (p *Client) GetMembers() (*MembersInfo, error) {
+	resp, err := p.c.Get(p.pdAddr + membersPrefix)
+	if err != nil {
+		return nil, err
+	}
+	members := &MembersInfo{}
+	err = json.Unmarshal(resp, members)
+	if err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
+func (p *Client) TransferAllocator(name, dclocation string) error {
+	url := fmt.Sprintf("%s%s/%s?dcLocation=%s", p.pdAddr, transferAllocatorPrefix, name, dclocation)
+	_, err := p.c.Post(url, contentJSON, nil)
+	return err
+}
+
+// MembersInfo is PD members info returned from PD RESTful interface
+//type Members map[string][]*pdpb.Member
+type MembersInfo struct {
+	Members    []*Member `json:"members,omitempty"`
+	Leader     *Member   `json:"leader,omitempty"`
+	EtcdLeader *Member   `json:"etcd_leader,omitempty"`
+}
+
+type Member struct {
+	// name is the name of the PD member.
+	Name string `json:"name,omitempty"`
+	// member_id is the unique id of the PD member.
+	MemberId uint64 `json:"member_id,omitempty"`
 }

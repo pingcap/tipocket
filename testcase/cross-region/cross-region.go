@@ -6,18 +6,20 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pingcap/log"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/util/pdutil"
 	"github.com/pingcap/tipocket/util"
 	pdClient "github.com/tikv/pd/client"
+	"go.uber.org/zap"
 )
 
 type Config struct {
 	DBName string
 }
 
-// ClientCreator creates ondupClient
+// ClientCreator creates crossRegionClient
 type ClientCreator struct {
 	Cfg *Config
 }
@@ -72,6 +74,23 @@ func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes [
 	if err != nil {
 		return err
 	}
+	members, err := c.pdHttpClient.GetMembers()
+	if err != nil {
+		return err
+	}
+	for _, member := range members.Members {
+		log.Info("Start member", zap.String("name", member.Name))
+	}
+	for _, member := range members.Members {
+		if member.Name != members.Leader.Name {
+			err = c.pdHttpClient.TransferPDLeader(member.Name)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
 	_, err = c.db.Begin()
 	if err != nil {
 		return err
