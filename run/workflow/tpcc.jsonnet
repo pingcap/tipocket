@@ -11,6 +11,6 @@
       'storage-class': 'local-storage',
       'tikv-replicas': '4',
     },
-    command: $.tpcc(),
+    command: {},
   },
 }

@@ -14,6 +14,6 @@
       'request-count': 20000,
       round: 50,
     },
-    command: $.bank(),
+    command: {},
   },
 }

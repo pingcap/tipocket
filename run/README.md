@@ -13,13 +13,13 @@ For example, If I have written a test case named `list-append` which has three p
 To let it runnable, I need to fill on the metadata about list-append case on [lib/case.jsonnet](./lib/case.jsonnet) just like below:
 
 ```jsonnet
-list_append(tablecount, read_lock, txn_mode)::
-    [
-      '/bin/append',
-      '-table-count=%s' % tablecount,
-      '-read-lock=%s' % read_lock,
-      '-txn-mode=%s' % txn_mode,
-    ]
+list_append(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
+  [
+    '/bin/append',
+    '-table-count=%s' % args.tablecount,
+    '-read-lock=%s' % args.read_lock,
+    '-txn-mode=%s' % args.txn_mode,
+  ],
 ```
 
 Looks simple right? Jsonnet is a simple extension of JSON, on above I define a function named list_append which has three arguments, and returns an array.
@@ -33,7 +33,7 @@ After fill on the testcase metadata, I should write a workflow file on [workflow
 (import 'config.jsonnet') +
 {
   _config+:: {
-    case_name: 'list-append',
+    case_name: 'list_append',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations
@@ -43,11 +43,12 @@ After fill on the testcase metadata, I should write a workflow file on [workflow
       'request-count': 100000,
       round: 10,
     },
-    command: $.list_append(tablecount='7', read_lock='"FOR UPDATE"', txn_mode='pessimistic'),
+    command: { tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' },
   },
 }
 ```
-Explain in short here, `_config+` means override some key-value defined on [lib/config.jsonnet](./lib/config.jsonnet).
+
+Explain a little here, `_config+` means override some key-value defined on [lib/config.jsonnet](./lib/config.jsonnet).
 
 On the `args+` part, I set `storage-class`, `client` and `round` etc parameters declared on the `fixture.go` file which is the common flag all over test cases.
 

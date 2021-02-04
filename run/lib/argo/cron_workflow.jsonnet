@@ -2,7 +2,7 @@
   apiVersion: 'argoproj.io/v1alpha1',
   kind: 'CronWorkflow',
   metadata: {
-    name: 'tipocket-%s' % $._config.case_name,
+    name: 'tipocket-%s' % std.strReplace($._config.case_name, '_', '-'),
   },
   spec: {
     schedule: $._config.schedule,

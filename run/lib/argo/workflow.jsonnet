@@ -2,7 +2,7 @@
   apiVersion: 'argoproj.io/v1alpha1',
   kind: 'Workflow',
   metadata: {
-    generateName: 'tipocket-%s-' % $._config.case_name,
+    generateName: 'tipocket-%s-' % std.strReplace($._config.case_name, '_', '-'),
   },
   spec: {
     entrypoint: 'starter',

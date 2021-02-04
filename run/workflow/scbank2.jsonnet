@@ -11,6 +11,6 @@
       'storage-class': 'local-storage',
       'tikv-replicas': '4',
     },
-    command: $.scbank2(concurrency='200', accounts='1000000', tidb_replica_read='leader-and-follower'),
+    command: { concurrency: '200', accounts: '1000000', tidb_replica_read: 'leader-and-follower' },
   },
 }

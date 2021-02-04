@@ -10,6 +10,6 @@
       // k8s configurations
       'storage-class': 'local-storage',
     },
-    command: $.ledger(),
+    command: {},
   },
 }

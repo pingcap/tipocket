@@ -4,7 +4,7 @@
 (import 'config.jsonnet') +
 {
   _config+:: {
-    case_name: 'rw-register',
+    case_name: 'rw_register',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations
@@ -14,6 +14,6 @@
       'request-count': 100000,
       round: 10,
     },
-    command: $.rw_register(tablecount='7', read_lock='"FOR UPDATE"', txn_mode='pessimistic'),
+    command: { tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' },
   },
 }

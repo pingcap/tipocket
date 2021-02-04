@@ -4,7 +4,7 @@
 (import 'config.jsonnet') +
 {
   _config+:: {
-    case_name: 'rawkv-linearizability',
+    case_name: 'rawkv_linearizability',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations
@@ -14,6 +14,6 @@
       'request-count': 20000,
       round: 50,
     },
-    command: $.rawkv_linearizability(),
+    command: {},
   },
 }
