@@ -149,13 +149,35 @@ ifeq (, $(shell which goimports))
 	}
 endif
 
+install-jsonnet:
+ifeq (, $(shell which jsonnet))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnet ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
+install-jsonnetfmt:
+ifeq (, $(shell which jsonnetfmt))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnetfmt ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
 install-yq:
 ifeq (, $(shell which yq))
 	@{ \
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get github.com/mikefarah/yq/v4@v4.4.1
+	GO111MODULE=on go get github.com/mikefarah/yq/v4@v4.4.1 ;\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -174,10 +196,10 @@ endif
 clean_workflow:
 	rm -rf run/target/*
 
-fmt_workflow:
+fmt_workflow: install-jsonnetfmt
 	find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
 
-build_workflow: fmt_workflow clean_workflow install-yq
+build_workflow: fmt_workflow clean_workflow install-jsonnet install-yq
 	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/workflow/% -J run/lib | yq eval -P - > run/target/%.yaml'
 
 clean:

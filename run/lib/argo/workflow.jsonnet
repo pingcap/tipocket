@@ -32,7 +32,7 @@
             {
               name: 'case-logs',
               archiveLogs: true,
-              path: 'path',
+              path: '/logs',
             },
             {
               name: 'tidb-logs',

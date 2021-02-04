@@ -48,7 +48,7 @@ spec:
         artifacts:
           - archiveLogs: true
             name: case-logs
-            path: path
+            path: /logs
           - archiveLogs: true
             name: tidb-logs
             path: /var/run/tipocket-logs
