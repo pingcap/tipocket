@@ -27,17 +27,13 @@ Looks simple right? Jsonnet is a simple extension of JSON, on above I define a f
 After fill on the testcase metadata, I should write a workflow file on [workflow/list-append.jsonnet](./workflow/list-append.jsonnet), it's content:
 
 ```jsonnet
-(import 'argo/argo.jsonnet') +
-(import 'case.jsonnet') +
-(import 'util.jsonnet') +
-(import 'config.jsonnet') +
 {
   _config+:: {
     case_name: 'list_append',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations
-      'storage-class': 'local-storage',
+      // 'storage-class': 'local-storage',
       // client configurations
       client: 5,
       'request-count': 100000,
