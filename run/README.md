@@ -27,7 +27,7 @@ Looks simple right? Jsonnet is a simple extension of JSON, on above I define a f
 After fill on the testcase metadata, I should write a workflow file on [workflow/list-append.jsonnet](./workflow/list-append.jsonnet), it's content:
 
 ```jsonnet
-(import 'argo/workflow.jsonnet') +
+(import 'argo/argo.jsonnet') +
 (import 'case.jsonnet') +
 (import 'util.jsonnet') +
 (import 'config.jsonnet') +

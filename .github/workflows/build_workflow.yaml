@@ -14,4 +14,4 @@ jobs:
         run: |
           export PATH=${PATH}:`go env GOPATH`/bin
           make build_workflow
-          git diff --exit-code -- run/
+          make build_cron_workflow

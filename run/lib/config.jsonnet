@@ -1,5 +1,6 @@
 {
   _config:: {
+    schedule: '0 0 * * *',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args: {
       // cluster configurations

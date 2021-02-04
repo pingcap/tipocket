@@ -6,7 +6,7 @@
   },
   spec: {
     entrypoint: 'starter',
-    onExit: 'delete-ns',
+    onExit: 'exit-handler',
     templates: [
       {
         name: 'starter',
@@ -67,6 +67,18 @@
           action: 'delete',
           manifest: 'apiVersion: v1\nkind: Namespace\nmetadata:\n  name: {{workflow.name}}\n',
         },
+      },
+      {
+        name: 'exit-handler',
+        steps: [
+          [
+            {
+              name: 'delete-ns',
+              template: 'delete-ns',
+              when: '{{workflow.status}} == Succeeded',
+            },
+          ],
+        ],
       },
     ],
   },
