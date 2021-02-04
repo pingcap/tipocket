@@ -13,5 +13,6 @@ jobs:
       - name: "build workflow"
         run: |
           export PATH=${PATH}:`go env GOPATH`/bin
+          make clean_workflow
           make build_workflow
           make build_cron_workflow
