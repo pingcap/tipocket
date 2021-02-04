@@ -1,17 +1,76 @@
 # Intro
 
-This directory contains some manifests for running tipocket in [argo](https://github.com/argoproj/argo). The [template](./template) directory
-contains the manifests for argo [workflow-template](https://github.com/argoproj/argo/blob/master/docs/workflow-templates.md) resources. And the [workflow](./workflow) directory contains the manifests for argo workflow resources.
+This directory contains some manifests for running TiPocket in [argo](https://github.com/argoproj/argo). 
 
-For more information about argo and its workflows, this [doc](https://argoproj.github.io/docs/argo/examples/readme.html) is really a good start.
+Don't worry, usually you're able to run the cases quickly even you don't know the argo workflow very well. 
+
+Here we use jsonnet to generate workflows based on some basic metadata. So for test case writers, you only need to fill in very little metadata letting us know how to generate the workflow.
 
 ## Usage
 
-Since we already have the workflow and workflow templates manifest, it is more recommended to use argo-cli to submit the workflow.
+For example, If I have written a test case named `list-append` which has three parameters: tablecount, read_lock, txn_mode.
+
+To let it runnable, I need to fill on the metadata about list-append case on [lib/case.jsonnet](./lib/case.jsonnet) just like below:
+
+```jsonnet
+list_append(tablecount, read_lock, txn_mode)::
+    [
+      '/bin/append',
+      '-table-count=%s' % tablecount,
+      '-read-lock=%s' % read_lock,
+      '-txn-mode=%s' % txn_mode,
+    ]
+```
+
+Looks simple right? Jsonnet is a simple extension of JSON, on above I define a function named list_append which has three arguments, and returns an array.
+
+After fill on the testcase metadata, I should write a workflow file on [workflow/list-append.jsonnet](./workflow/list-append.jsonnet), it's context is:
+
+```jsonnet
+(import 'argo/workflow.jsonnet') +
+(import 'case.jsonnet') +
+(import 'util.jsonnet') +
+(import 'config.jsonnet') +
+{
+  _config+:: {
+    case_name: 'list-append',
+    image_name: 'hub.pingcap.net/qa/tipocket',
+    args+: {
+      // k8s configurations
+      'storage-class': 'local-storage',
+      // client configurations
+      client: 5,
+      'request-count': 100000,
+      round: 10,
+    },
+    command: $.list_append(tablecount='7', read_lock='"FOR UPDATE"', txn_mode='pessimistic'),
+  },
+}
+```
+Explain in short here, `_config+` means override some key-value defined on [lib/config.jsonnet](./lib/config.jsonnet).
+
+On the `args+` part, I set `storage-class`, `client` and `round` etc these three parameters declared on the `fixture.go` file are common flags all over the test cases.
+
+Then, the `command` field is set to invoke list_append case with 7 tables, use `FOR UPDATE` as the read_lock.
+
+Now I could run `make build_workflow` to generate the workflow file.
+
+```bash
+$ make build_workflow
+find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
+rm -rf run/manifest/*
+find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/workflow/% -J run/lib | yq eval -P - > run/manifest/%.yaml'
+```
+
+Lucky, everything goes well. ☺
+
+## Run a case
+
+Since we already have the workflow manifest, it is more recommended to use argo-cli to submit the workflow.
 
 For downloading argo-cli, please check [releases](https://github.com/argoproj/argo/releases).
 
-After downloading the cli, we can list the current workflows, submit new workflow or template.
+After downloading the cli, we can list the current workflows, submit a new workflow.
 
 ### List all workflows
 
@@ -28,34 +87,30 @@ tipocket-ledger-iochaos-wx4zl         Succeeded   2h    1h         0
 ### Submit a new workflow
 
 ```bash
-$ argo submit bank.yaml -n argo
-
-Name:                tipocket-bank-d8vr4
+ argo submit run/manifest/vbank.jsonnet.yaml -n argo
+Name:                tipocket-vbank-9whq7
 Namespace:           argo
 ServiceAccount:      default
 Status:              Pending
-Created:             Sat Mar 21 13:24:31 -0400 (1 second ago)
-Parameters:
-  image-version:     latest
-  storage-class:     sas
+Created:             Thu Feb 04 11:28:52 +0800 (now)
 ```
 
 ### Validate workflow manifests
 
 ```bash
-$ argo lint target/*.yaml
-target/bank.jsonnet.yaml is valid
-target/block-writer.jsonnet.yaml is valid
-target/ledger.jsonnet.yaml is valid
-target/list-append.jsonnet.yaml is valid
-target/rawkv-linearizability.jsonnet.yaml is valid
-target/region-available.jsonnet.yaml is valid
-target/rw-register.jsonnet.yaml is valid
-target/scbank.jsonnet.yaml is valid
-target/scbank2.jsonnet.yaml is valid
-target/sqllogic.jsonnet.yaml is valid
-target/tpcc.jsonnet.yaml is valid
-target/txn-rand-pessimistic.jsonnet.yaml is valid
-target/vbank.jsonnet.yaml is valid
-Workflow manifests validated
+$ argo lint run/manifest/*.yaml
+run/manifest/bank.jsonnet.yaml is valid
+run/manifest/block-writer.jsonnet.yaml is valid
+run/manifest/ledger.jsonnet.yaml is valid
+run/manifest/list-append.jsonnet.yaml is valid
+run/manifest/rawkv-linearizability.jsonnet.yaml is valid
+run/manifest/region-available.jsonnet.yaml is valid
+run/manifest/rw-register.jsonnet.yaml is valid
+run/manifest/scbank.jsonnet.yaml is valid
+run/manifest/scbank2.jsonnet.yaml is valid
+run/manifest/sqllogic.jsonnet.yaml is valid
+run/manifest/tpcc.jsonnet.yaml is valid
+run/manifest/txn-rand-pessimistic.jsonnet.yaml is valid
+run/manifest/vbank.jsonnet.yaml is valid
+run/Workflow manifests validated
 ```
