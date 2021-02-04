@@ -1,0 +1,17 @@
+name: "Build-workflow"
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+      - uses: actions/checkout@v2
+
+      - name: "build workflow"
+        run: |
+          export PATH=${PATH}:`go env GOPATH`/bin
+          make build_workflow
+          git diff --exit-code -- run/

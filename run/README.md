@@ -1,8 +1,8 @@
 # Intro
 
-This directory contains some manifests for running TiPocket in [argo](https://github.com/argoproj/argo). 
+This directory contains some manifests for running TiPocket in [argo](https://github.com/argoproj/argo).
 
-Don't worry, usually you're able to run the cases quickly even you don't know the argo workflow very well. 
+Don't worry, usually, you're able to run the cases quickly even you don't know the argo workflow very well.
 
 Here we use jsonnet to generate workflows based on some basic metadata. So for test case writers, you only need to fill in very little metadata letting us know how to generate the workflow.
 
@@ -24,7 +24,7 @@ list_append(tablecount, read_lock, txn_mode)::
 
 Looks simple right? Jsonnet is a simple extension of JSON, on above I define a function named list_append which has three arguments, and returns an array.
 
-After fill on the testcase metadata, I should write a workflow file on [workflow/list-append.jsonnet](./workflow/list-append.jsonnet), it's context is:
+After fill on the testcase metadata, I should write a workflow file on [workflow/list-append.jsonnet](./workflow/list-append.jsonnet), it's content:
 
 ```jsonnet
 (import 'argo/workflow.jsonnet') +
@@ -49,7 +49,7 @@ After fill on the testcase metadata, I should write a workflow file on [workflow
 ```
 Explain in short here, `_config+` means override some key-value defined on [lib/config.jsonnet](./lib/config.jsonnet).
 
-On the `args+` part, I set `storage-class`, `client` and `round` etc these three parameters declared on the `fixture.go` file are common flags all over the test cases.
+On the `args+` part, I set `storage-class`, `client` and `round` etc parameters declared on the `fixture.go` file which is the common flag all over test cases.
 
 Then, the `command` field is set to invoke list_append case with 7 tables, use `FOR UPDATE` as the read_lock.
 
