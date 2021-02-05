@@ -25,8 +25,8 @@ func main() {
 		RunRound:    1,
 	}
 	np := corev1.ServiceTypeNodePort
-	fixture.Context.TiDBClusterConfig.PDReplicas = 1
-	fixture.Context.TiDBClusterConfig.TiKVReplicas = 1
+	fixture.Context.TiDBClusterConfig.PDReplicas = 6
+	fixture.Context.TiDBClusterConfig.TiKVReplicas = 3
 	fixture.Context.TiDBClusterConfig.TiDBReplicas = 1
 	fixture.Context.Namespace = "cross-region"
 	fixture.Context.Name = "cross-region"

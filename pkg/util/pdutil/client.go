@@ -23,6 +23,7 @@ const (
 	pdLeaderTransferPrefix  = "/pd/api/v1/leader/transfer"
 	membersPrefix           = "/pd/api/v1/members"
 	transferAllocatorPrefix = "/pd/api/v1/tso/allocator/transfer"
+	storePrefix             = "/pd/api/v1/store"
 
 	contentJSON = "application/json"
 )
@@ -162,9 +163,23 @@ func (p *Client) GetMembers() (*MembersInfo, error) {
 }
 
 func (p *Client) TransferAllocator(name, dclocation string) error {
-	url := fmt.Sprintf("%s%s/%s?dcLocation=%s", p.pdAddr, transferAllocatorPrefix, name, dclocation)
-	_, err := p.c.Post(url, contentJSON, nil)
+	apiURL := fmt.Sprintf("%s%s/%s?dcLocation=%s", p.pdAddr, transferAllocatorPrefix, name, dclocation)
+	_, err := p.c.Post(apiURL, contentJSON, nil)
 	return err
+}
+
+func (p *Client) SetStoreLabels(storeID uint64, labels map[string]string) error {
+	apiURL := fmt.Sprintf("%s%s/%v/label", p.pdAddr, storePrefix, storeID)
+	data, err := json.Marshal(labels)
+	if err != nil {
+		return err
+	}
+	_, err = p.c.Post(apiURL, contentJSON, bytes.NewBuffer(data))
+	return err
+}
+
+func (p *Client) SetMemberDCLocation(name, dcLocation string) error {
+	return nil
 }
 
 // MembersInfo is PD members info returned from PD RESTful interface
