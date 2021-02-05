@@ -122,25 +122,93 @@ tidy:
 	@git diff --exit-code -- go.mod
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make tidy';
 
-lint: revive
+lint: install-revive
 	@echo "linting"
 	revive -formatter friendly -config revive.toml $$($(PACKAGES) | grep -v "pkg/tidb-operator")
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make lint';
 
-revive:
-ifeq (,$(shell which revive))
-	@echo "installing revive"
-	$(GO) get github.com/mgechev/revive@v1.0.2
+install-revive:
+ifeq (, $(shell which revive))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/mgechev/revive@v1.0.2 ;\
+	rm -rf $$TMP_DIR ;\
+	}
 endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
 
 install-goimports:
-ifeq (,$(shell which goimports))
-	@echo "installing goimports"
-	go get golang.org/x/tools/cmd/goimports
+ifeq (, $(shell which goimports))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get golang.org/x/tools/cmd/goimports ;\
+	rm -rf $$TMP_DIR ;\
+	}
 endif
+
+install-jsonnet:
+ifeq (, $(shell which jsonnet))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnet ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
+install-jsonnetfmt:
+ifeq (, $(shell which jsonnetfmt))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnetfmt ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
+install-yq:
+ifeq (, $(shell which yq))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/mikefarah/yq/v4@v4.4.1 ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
+install-jb:
+ifeq (, $(shell which jb))
+	@{ \
+	set -e ;\
+	TMP_DIR=$$(mktemp -d) ;\
+	cd $$TMP_DIR ;\
+	GO111MODULE=on go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb ;\
+	rm -rf $$TMP_DIR ;\
+	}
+endif
+
+clean_workflow:
+	rm -rf run/manifest
+	mkdir -p run/manifest/workflow
+	mkdir -p run/manifest/cron_workflow
+
+fmt_workflow: install-jsonnetfmt
+	find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
+
+build_workflow: fmt_workflow install-jsonnet install-yq
+	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/workflow/%.yaml'
+
+build_cron_workflow: fmt_workflow install-jsonnet install-yq
+	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="cron_workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/cron_workflow/%.yaml'
 
 clean:
 	@rm -rf bin/*
