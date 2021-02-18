@@ -14,6 +14,7 @@ import (
 	util2 "github.com/pingcap/tipocket/testcase/cross-region/pkg/util"
 	"github.com/pingcap/tipocket/util"
 	pdClient "github.com/tikv/pd/client"
+	"go.uber.org/zap"
 )
 
 const stmtDrop = `
@@ -35,6 +36,7 @@ add placement policy
 	replicas=1`
 
 type Config struct {
+	TestTSO         bool
 	TSORequestTimes int
 	DBName          string
 }
@@ -68,14 +70,21 @@ func (c *crossRegionClient) SetUp(ctx context.Context, nodes []cluster.Node, cno
 			tidbNodePort = cnode.NodePort
 		}
 	}
-	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, buildAddr("172.16.4.19", pdNodePort))
+	pdAddr := buildAddr("172.16.4.19", pdNodePort)
+	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, pdAddr)
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", "172.16.4.19", tidbNodePort, c.DBName)
 	db, err := util.OpenDB(dsn, 20)
 	if err != nil {
 		return fmt.Errorf("[on_dup] create db client error %v", err)
 	}
 	c.db = db
-	err = c.setup()
+	err = c.setup(cnodes[idx].Component)
+	if c.Config.TestTSO {
+		c.pdClient, err = pdClient.NewClientWithContext(ctx, []string{pdAddr}, pdClient.SecurityOption{})
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -109,22 +118,26 @@ func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes [
 	return util2.WrapErrors(errs)
 }
 
-func (c *crossRegionClient) setup() error {
-	err := c.setupPD()
-	if err != nil {
-		return err
+func (c *crossRegionClient) setup(typ cluster.Component) error {
+	switch typ {
+	case cluster.PD:
+		err := c.setupPD()
+		if err != nil {
+			return err
+		}
+		log.Info("PD setup successfully")
+		err = c.setupStore()
+		if err != nil {
+			return err
+		}
+		log.Info("TiKV setup successfully")
+	case cluster.TiDB:
+		err := c.setupDB()
+		if err != nil {
+			return err
+		}
+		log.Info("DB setup successfully")
 	}
-	log.Info("PD setup successfully")
-	err = c.setupStore()
-	if err != nil {
-		return err
-	}
-	log.Info("TiKV setup successfully")
-	err = c.setupDB()
-	if err != nil {
-		return err
-	}
-	log.Info("DB setup successfully")
 	return nil
 }
 
@@ -172,12 +185,15 @@ func (c *crossRegionClient) setupStore() error {
 func (c *crossRegionClient) setupDB() error {
 	_, err := c.db.Exec(stmtDrop)
 	if err != nil {
+		log.Info("setupDB stmtDrop failed", zap.Error(err))
 		return err
 	}
 	_, err = c.db.Exec(stmtCreate)
 	if err != nil {
+		log.Info("setupDB stmtCreate failed", zap.Error(err))
 		return err
 	}
+	log.Info("setupDB stmtCreate success")
 	_, err = c.db.Exec(`set global tidb_enable_alter_placement=1`)
 	if err != nil {
 		return err
@@ -201,10 +217,11 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context, wg *sync.WaitGroup,
 	tsoErrCh := make(chan error, 4)
 	go c.requestTSO(tsoCtx, "global", tsoWg, errCh)
 	for i := 1; i <= 3; i++ {
-		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), wg, tsoErrCh)
+		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoErrCh)
 	}
 	tsoWg.Wait()
 	if len(tsoErrCh) < 1 {
+		log.Info("requestTSOs success")
 		return
 	}
 	var tsoErrors []error
@@ -221,6 +238,7 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 		for i := 0; i < c.TSORequestTimes; i++ {
 			_, _, err := c.pdClient.GetLocalTS(ctx, dcLocation)
 			if err != nil {
+				log.Info("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
 				errCh <- err
 				return
 			}

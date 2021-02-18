@@ -16,6 +16,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+var (
+	testTSO     = flag.Bool("enable-tso-test", false, "whether to test tso requests")
+)
+
 func main() {
 	flag.Parse()
 	cfg := control.Config{
@@ -25,6 +29,7 @@ func main() {
 		RunRound:    1,
 	}
 	np := corev1.ServiceTypeNodePort
+	fixture.Context.ClientCount = 1
 	fixture.Context.TiDBClusterConfig.PDReplicas = 6
 	fixture.Context.TiDBClusterConfig.TiKVReplicas = 3
 	fixture.Context.TiDBClusterConfig.TiDBReplicas = 1
@@ -39,7 +44,8 @@ func main() {
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: crossregion.ClientCreator{
 			Cfg: &crossregion.Config{
-				DBName: "test",
+				DBName:  "test",
+				TestTSO: *testTSO,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),

@@ -370,6 +370,7 @@ func (c *Controller) tearDownDB() {
 
 func (c *Controller) setUpClient() {
 	log.Infof("begin to set up client")
+	fmt.Println("client count", len(c.clients))
 	c.syncClientExec(func(i int) {
 		client := c.clients[i]
 		log.Infof("begin to set up db client for node %s", c.cfg.ClientNodes[i])
