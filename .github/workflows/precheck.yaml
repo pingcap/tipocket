@@ -1,5 +1,5 @@
 name: "Pre-Check"
-on: push
+on: [push, pull_request]
 
 jobs:
   pre-check:
