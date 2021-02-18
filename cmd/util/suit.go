@@ -69,11 +69,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	// note this is just a approximate value
 	startTime := time.Now()
 
-	matrixEnabled := false
-	var matrixSetupNodes func([]cluster.Node) error
-	// Apply Matrix config
-	matrixEnabled, tmatrixSetupNodes, matrixCleanup, err := matrixnize(&clusterSpec)
-	matrixSetupNodes = tmatrixSetupNodes
+	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&clusterSpec)
 	if err != nil {
 		log.Fatalf("Matrix init failed, err: %s", err)
 	} else if matrixEnabled {
@@ -86,6 +82,8 @@ func (suit *Suit) Run(ctx context.Context) {
 		_ = suit.Provider.TearDown(context.TODO(), clusterSpec)
 		log.Fatalf("deploy a cluster failed, maybe has no enough resources, err: %s", err)
 	}
+	log.Infof("deploy cluster success, node:%+v, client node:%+v", suit.Config.Nodes, suit.Config.ClientNodes)
+
 	if matrixEnabled {
 		err = matrixSetupNodes(suit.Config.Nodes)
 		if err != nil {

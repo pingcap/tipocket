@@ -67,11 +67,6 @@ func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
 		ns: namespace, name: name, config: config}
 }
 
-func NewWithOutMonitor(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
-	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config, false),
-		ns: namespace, name: name, config: config}
-}
-
 // GetTiDBCluster ...
 func (o *Ops) GetTiDBCluster() *v1alpha1.TidbCluster {
 	return o.tc.TidbCluster
@@ -133,7 +128,6 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 
 // GetClientNodes ...
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
-	log.Info("OPs GetClientNodes")
 	var clientNodes []cluster.ClientNode
 
 	if util.IsInK8sPodEnvironment() {
@@ -162,7 +156,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			Component:   cluster.PD,
 		})
 	} else {
-		log.Info("OPs GetClientNodes InK8S")
 		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
 		ips, err := util.GetNodeIPsFromPod(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
 		if err != nil {
@@ -680,10 +673,8 @@ func getPDServicePort(svc *corev1.Service) int32 {
 }
 
 func getPDNodePort(svc *corev1.Service) int32 {
-	log.Info("getPDNodePort")
 	for _, port := range svc.Spec.Ports {
 		if port.Port == 2379 {
-			log.Info("getPDNodePort success")
 			return port.NodePort
 		}
 	}
