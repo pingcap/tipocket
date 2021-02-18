@@ -58,6 +58,11 @@ type Node struct {
 	*Client   `json:"-"`
 }
 
+// Address returns the endpoint address of node
+func (node Node) Address() string {
+	return fmt.Sprintf("%s:%d", node.IP, node.Port)
+}
+
 // String ...
 func (node Node) String() string {
 	sb := new(strings.Builder)
@@ -81,7 +86,7 @@ type ClientNode struct {
 	Port        int32
 }
 
-// Address returns the endpoint address of node
+// Address returns the endpoint address of clientNode
 func (clientNode ClientNode) Address() string {
 	return fmt.Sprintf("%s:%d", clientNode.IP, clientNode.Port)
 }
