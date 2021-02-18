@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
@@ -59,7 +60,16 @@ type Node struct {
 
 // String ...
 func (node Node) String() string {
-	return fmt.Sprintf("node[ns=%s,ip=%s:%d]", node.Namespace, node.IP, node.Port)
+	sb := new(strings.Builder)
+	fmt.Fprintf(sb, "node[comp=%s,ip=%s:%d", node.Component, node.IP, node.Port)
+	if node.Namespace != "" {
+		fmt.Fprintf(sb, ",ns=%s", node.Namespace)
+	}
+	if node.PodName != "" {
+		fmt.Fprintf(sb, ",pod=%s", node.PodName)
+	}
+	fmt.Fprint(sb, "]")
+	return sb.String()
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
@@ -78,7 +88,16 @@ func (clientNode ClientNode) Address() string {
 
 // String ...
 func (clientNode ClientNode) String() string {
-	return fmt.Sprintf("client_node[ns=%s,ip=%s:%d]", clientNode.Namespace, clientNode.IP, clientNode.Port)
+	sb := new(strings.Builder)
+	fmt.Fprintf(sb, "client_node[comp=%s,ip=%s:%d", clientNode.Component, clientNode.IP, clientNode.Port)
+	if clientNode.Namespace != "" {
+		fmt.Fprintf(sb, ",ns=%s", clientNode.Namespace)
+	}
+	if clientNode.ClusterName != "" {
+		fmt.Fprintf(sb, ",cluster=%s", clientNode.ClusterName)
+	}
+	fmt.Fprint(sb, "]")
+	return sb.String()
 }
 
 // Cluster interface
