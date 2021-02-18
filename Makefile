@@ -18,7 +18,9 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
-		read-stress follower-read pessimistic resolve-lock cdc-bank
+		read-stress follower-read pessimistic resolve-lock cdc-bank \
+    example \
+# +tipocket:scaffold:makefile_build
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
@@ -112,6 +114,15 @@ resolve-lock:
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
+example:
+	cd testcase/example ; make build; \
+	cp bin/* ../../bin/
+
+# +tipocket:scaffold:makefile_build_cmd
+
+tipocket:
+	$(GOBUILD) $(GOMOD) -o bin/tipocket cmd/tipocket/*.go
+
 fmt: groupimports
 	go fmt ./...
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make fmt';
@@ -140,6 +151,9 @@ endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
+
+init: tipocket
+	bin/tipocket init -c $(c)
 
 install-goimports:
 ifeq (, $(shell which goimports))

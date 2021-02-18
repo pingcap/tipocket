@@ -60,4 +60,9 @@
     [
       '/bin/vbank',
     ],
+  example(args={})::
+    [
+      '/bin/example',
+    ],
+  // +tipocket:scaffold:case_decls
 }
