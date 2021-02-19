@@ -60,7 +60,7 @@
     [
       '/bin/vbank',
     ],
-  example(args={})::
+  'example'(args={})::
     [
       '/bin/example',
     ],
