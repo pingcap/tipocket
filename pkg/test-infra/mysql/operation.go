@@ -177,10 +177,10 @@ func (m *MySQL) DSN() string {
 
 // newMySQL creates a spec for MySQL.
 func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
-	mysqlName := fmt.Sprintf("tipocket-mysql-%s", name)
+	stsName, svcName, volumeName := name, name, "mysql"
 	mysqlLabels := map[string]string{
 		"app":      "tipocket-mysql",
-		"instance": mysqlName,
+		"instance": name,
 	}
 	version := conf.Version
 	if version == "" {
@@ -190,7 +190,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 	mysql := &MySQL{
 		Svc: &corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      mysqlName,
+				Name:      svcName,
 				Namespace: namespace,
 				Labels:    mysqlLabels,
 			},
@@ -207,12 +207,12 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 		},
 		Sts: &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      mysqlName,
+				Name:      stsName,
 				Namespace: namespace,
 				Labels:    mysqlLabels,
 			},
 			Spec: appsv1.StatefulSetSpec{
-				ServiceName: mysqlName,
+				ServiceName: svcName,
 				Replicas:    pointer.Int32Ptr(1),
 				Selector:    &metav1.LabelSelector{MatchLabels: mysqlLabels},
 				Template: corev1.PodTemplateSpec{
@@ -228,7 +228,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 								"/var/lib/mysql/lost+found",
 							},
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      name,
+								Name:      volumeName,
 								MountPath: "/var/lib/mysql",
 							}},
 						}},
@@ -237,7 +237,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 							Image:           fmt.Sprintf("mysql:%s", version),
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							VolumeMounts: []corev1.VolumeMount{{
-								Name:      name,
+								Name:      volumeName,
 								MountPath: "/var/lib/mysql",
 							}},
 							Env: []corev1.EnvVar{
@@ -261,7 +261,7 @@ func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
 					},
 				},
 				VolumeClaimTemplates: []corev1.PersistentVolumeClaim{{
-					ObjectMeta: metav1.ObjectMeta{Name: name},
+					ObjectMeta: metav1.ObjectMeta{Name: volumeName},
 					Spec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{
 							corev1.ReadWriteOnce,
