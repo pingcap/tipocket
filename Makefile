@@ -219,9 +219,11 @@ fmt_workflow: install-jsonnetfmt
 	find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
 
 build_workflow: fmt_workflow install-jsonnet install-yq
+	mkdir -p run/manifest/workflow
 	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/workflow/%.yaml'
 
 build_cron_workflow: fmt_workflow install-jsonnet install-yq
+	mkdir -p run/manifest/cron_workflow
 	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="cron_workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/cron_workflow/%.yaml'
 
 clean:

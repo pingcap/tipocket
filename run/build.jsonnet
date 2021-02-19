@@ -1,4 +1,4 @@
-(import 'argo/argo.jsonnet') +
-(import 'case.jsonnet') +
-(import 'util.jsonnet') +
-(import 'config.jsonnet') + std.extVar('file')
+(import 'argo/argo.libsonnet') +
+(import 'case.libsonnet') +
+(import 'util.libsonnet') +
+(import 'config.libsonnet') + std.extVar('file')
