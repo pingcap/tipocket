@@ -26,9 +26,9 @@ func newInitCmd() *cobra.Command {
 		Short:   "Initialize a new test case",
 		Example: "",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			r, _ := regexp.Compile("^[a-z][a-z_]*$")
+			r, _ := regexp.Compile("^[a-z][a-z-]*[a-z]+$")
 			if !r.MatchString(caseNameFlag) {
-				return fmt.Errorf("case-name must in the form of [a-z][a-z_]*")
+				return fmt.Errorf("case-name must in the form of [a-z][a-z-]*[a-z]+")
 			}
 			return nil
 		},

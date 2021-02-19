@@ -2,12 +2,13 @@ package template
 
 import (
 	"fmt"
+
 	"github.com/pingcap/tipocket/pkg/scaffolds/file"
 )
 
 const (
 	caseJsonnetMarker            = "// +tipocket:scaffold:case_decls"
-	caseJsonnetInsertionTemplate = `  %[1]s(args={})::
+	caseJsonnetInsertionTemplate = `  '%[1]s'(args={})::
     [
       '/bin/%[1]s',
     ],

@@ -67,7 +67,7 @@ import (
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 
-	"github.com/pingcap/tipocket/testcase/{{ .CaseName }}"
+	testcase "github.com/pingcap/tipocket/testcase/{{ .CaseName }}"
 )
 
 func main() {
@@ -76,13 +76,12 @@ func main() {
 		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
-		RunRound:    1,
 	}
 	c := fixture.Context
 	suit := util.Suit{
 		Config:        &cfg,
 		Provider:      cluster.NewDefaultClusterProvider(),
-		ClientCreator: {{ .CaseName }}.CaseCreator{},
+		ClientCreator: testcase.CaseCreator{},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
 	}
