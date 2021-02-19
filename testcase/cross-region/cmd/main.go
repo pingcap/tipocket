@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	testTSO     = flag.Bool("enable-tso-test", false, "whether to test tso requests")
+	testTSO = flag.Bool("enable-tso-test", false, "whether to test tso requests")
 )
 
 func main() {
@@ -29,7 +29,6 @@ func main() {
 		RunRound:    1,
 	}
 	np := corev1.ServiceTypeNodePort
-	fixture.Context.ClientCount = 1
 	fixture.Context.TiDBClusterConfig.PDReplicas = 6
 	fixture.Context.TiDBClusterConfig.TiKVReplicas = 3
 	fixture.Context.TiDBClusterConfig.TiDBReplicas = 1
@@ -44,8 +43,9 @@ func main() {
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: crossregion.ClientCreator{
 			Cfg: &crossregion.Config{
-				DBName:  "test",
-				TestTSO: *testTSO,
+				DBName:          "test",
+				TestTSO:         *testTSO,
+				TSORequestTimes: 100,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),

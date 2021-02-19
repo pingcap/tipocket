@@ -246,6 +246,14 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 	}
 }
 
+func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
+	members, err := c.pdHttpClient.GetMembers()
+	if err != nil {
+		return err
+	}
+
+}
+
 func buildPDSvcName(name, namespace string) string {
 	return fmt.Sprintf("%s-pd.%s.svc:2379", name, namespace)
 }

@@ -185,9 +185,10 @@ func (p *Client) SetMemberDCLocation(name, dcLocation string) error {
 // MembersInfo is PD members info returned from PD RESTful interface
 //type Members map[string][]*pdpb.Member
 type MembersInfo struct {
-	Members    []*Member `json:"members,omitempty"`
-	Leader     *Member   `json:"leader,omitempty"`
-	EtcdLeader *Member   `json:"etcd_leader,omitempty"`
+	Members             []*Member          `json:"members,omitempty"`
+	Leader              *Member            `json:"leader,omitempty"`
+	EtcdLeader          *Member            `json:"etcd_leader,omitempty"`
+	TsoAllocatorLeaders map[string]*Member `json:"tso_allocator_leaders,omitempty"`
 }
 
 type Member struct {
