@@ -118,6 +118,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		}
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
+			Component:   "tidb",
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getTiDBServicePort(svc),
@@ -137,6 +138,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
 			ClusterName: o.name,
+			Component:   "tidb",
 			IP:          ips[0],
 			Port:        getTiDBNodePort(svc),
 		})
