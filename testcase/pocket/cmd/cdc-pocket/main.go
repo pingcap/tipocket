@@ -42,7 +42,7 @@ func main() {
 	}
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = fixture.Context.CDCConfig.LogPath
+	pocketConfig.Options.Path = "cdc.log"
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.SyncTimeout.Duration = fixture.Context.BinlogConfig.SyncTimeout

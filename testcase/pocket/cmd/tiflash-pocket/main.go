@@ -40,7 +40,7 @@ func main() {
 	}
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = fixture.Context.TiFlashConfig.LogPath
+	pocketConfig.Options.Path = "tiflash.log"
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	suit := util.Suit{
 		Config:   &cfg,
