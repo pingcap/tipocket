@@ -102,20 +102,10 @@ func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode
 }
 
 func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
-	errCh := make(chan error, 1)
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	go c.requestTSOs(ctx, wg, errCh)
-	wg.Wait()
-	if len(errCh) < 1 {
-		return nil
+	if c.TestTSO {
+		return c.testTSO(ctx)
 	}
-	var errs []error
-	for len(errCh) < 1 {
-		err := <-errCh
-		errs = append(errs, err)
-	}
-	return util2.WrapErrors(errs)
+	return nil
 }
 
 func (c *crossRegionClient) setup(typ cluster.Component) error {
@@ -208,28 +198,41 @@ func (c *crossRegionClient) setupDB() error {
 	return nil
 }
 
-func (c *crossRegionClient) requestTSOs(ctx context.Context, wg *sync.WaitGroup, errCh chan<- error) {
-	defer wg.Done()
+func (c *crossRegionClient) testTSO(ctx context.Context) error {
+	err := c.requestTSOs(ctx)
+	if err != nil {
+		return err
+	}
+	for i := 1; i <= 3; i++ {
+		err = c.TransferPDAllocator(fmt.Sprintf("dc-%d", i))
+		if err != nil {
+			return err
+		}
+	}
+	return c.requestTSOs(ctx)
+}
+
+func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 	tsoCtx, tsoCancel := context.WithCancel(ctx)
 	defer tsoCancel()
 	tsoWg := &sync.WaitGroup{}
 	tsoWg.Add(4)
 	tsoErrCh := make(chan error, 4)
-	go c.requestTSO(tsoCtx, "global", tsoWg, errCh)
+	go c.requestTSO(tsoCtx, "global", tsoWg, tsoErrCh)
 	for i := 1; i <= 3; i++ {
 		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoErrCh)
 	}
 	tsoWg.Wait()
 	if len(tsoErrCh) < 1 {
 		log.Info("requestTSOs success")
-		return
+		return nil
 	}
 	var tsoErrors []error
 	for len(tsoErrCh) > 0 {
 		tsoErr := <-tsoErrCh
 		tsoErrors = append(tsoErrors, tsoErr)
 	}
-	errCh <- util2.WrapErrors(tsoErrors)
+	return util2.WrapErrors(tsoErrors)
 }
 
 func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, errCh chan<- error) {
@@ -251,7 +254,33 @@ func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
 	if err != nil {
 		return err
 	}
-
+	var names []string
+	for _, member := range members.Members {
+		if member.DcLocation == dcLocation {
+			names = append(names, member.Name)
+		}
+	}
+	allocatorName := ""
+	for dcLocation, allocator := range members.TsoAllocatorLeaders {
+		if dcLocation == dcLocation {
+			allocatorName = allocator.Name
+			break
+		}
+	}
+	if allocatorName == "" || len(names) < 2 {
+		return fmt.Errorf("dclocation %v don't have enough member", dcLocation)
+	}
+	transferName := ""
+	for _, name := range names {
+		if name != allocatorName {
+			transferName = name
+			break
+		}
+	}
+	if transferName == "" {
+		return fmt.Errorf("dclocation %v haven't find transfer pd member", dcLocation)
+	}
+	return c.pdHttpClient.TransferAllocator(transferName, dcLocation)
 }
 
 func buildPDSvcName(name, namespace string) string {
