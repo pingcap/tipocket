@@ -54,7 +54,7 @@ func newInitCmd() *cobra.Command {
 				InserterMixin: file.InserterMixin{Path: "Makefile"},
 				CaseName:      caseNameFlag,
 			}, &template.CaseJsonnetUpdater{
-				InserterMixin: file.InserterMixin{Path: filepath.Join("run", "lib", "case.jsonnet")},
+				InserterMixin: file.InserterMixin{Path: filepath.Join("run", "lib", "case.libsonnet")},
 				CaseName:      caseNameFlag,
 			}, &workflow.CaseJsonnetTemplate{
 				TemplateMixin: file.TemplateMixin{Path: filepath.Join("run", "workflow", fmt.Sprintf("%s.jsonnet", caseNameFlag))},

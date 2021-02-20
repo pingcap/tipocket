@@ -42,7 +42,7 @@ func (s *scaffold) Execute(universe *model.Universe, files ...file.Builder) erro
 		}
 		if i, ok := f.(file.Inserter); ok {
 			if err := s.updateFileModel(i, universe.Files); err != nil {
-				return nil
+				return err
 			}
 		}
 	}
