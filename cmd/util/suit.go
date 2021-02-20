@@ -97,7 +97,10 @@ func (suit *Suit) Run(ctx context.Context) {
 		log.Fatal("no client nodes exist")
 	}
 	if suit.Config.ClientCount == 0 {
-		log.Fatal("suit.Config.ClientCount is required")
+		suit.Config.ClientCount = 1
+	}
+	if suit.Config.RunRound == 0 {
+		suit.Config.RunRound = 1
 	}
 	// fill clientNodes
 	retClientCount := len(suit.Config.ClientNodes)

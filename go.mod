@@ -36,6 +36,7 @@ require (
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 	github.com/prometheus/prometheus v1.8.2 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0
+	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0
 	go.uber.org/multierr v1.5.0 // indirect

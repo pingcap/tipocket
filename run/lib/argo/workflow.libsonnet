@@ -34,11 +34,6 @@
               archiveLogs: true,
               path: '/logs',
             },
-            {
-              name: 'tidb-logs',
-              archiveLogs: true,
-              path: '/var/run/tipocket-logs',
-            },
           ],
         },
         container: {

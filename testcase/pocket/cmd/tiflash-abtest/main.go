@@ -43,7 +43,7 @@ func main() {
 		Sleep:              10,
 	}}
 	c := fixture.Context
-	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Path = "abtest.log"
 	pocketConfig.Options.Concurrency = 1
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	suit := util.Suit{
