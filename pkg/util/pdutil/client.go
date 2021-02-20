@@ -24,6 +24,7 @@ const (
 	membersPrefix           = "/pd/api/v1/members"
 	transferAllocatorPrefix = "/pd/api/v1/tso/allocator/transfer"
 	storePrefix             = "/pd/api/v1/store"
+	transferLeaderPrefix    = "/pd/api/v1/leader/transfer"
 
 	contentJSON = "application/json"
 )
@@ -178,6 +179,12 @@ func (p *Client) SetStoreLabels(storeID uint64, labels map[string]string) error 
 	return err
 }
 
+func (p *Client) TransferLeader(name string) error {
+	apiURL := fmt.Sprintf("%s%s/%v/%v", p.pdAddr, transferLeaderPrefix, name)
+	_, err := p.c.Post(apiURL, contentJSON, nil)
+	return err
+}
+
 func (p *Client) SetMemberDCLocation(name, dcLocation string) error {
 	return nil
 }
@@ -195,7 +202,7 @@ type Member struct {
 	// name is the name of the PD member.
 	Name string `json:"name,omitempty"`
 	// member_id is the unique id of the PD member.
-	MemberId   uint64 `json:"member_id,omitempty"`
+	MemberId uint64 `json:"member_id,omitempty"`
 	// dc_location is the dcLocation of the PD member
 	DcLocation string `json:"dc_location,omitempty"`
 }

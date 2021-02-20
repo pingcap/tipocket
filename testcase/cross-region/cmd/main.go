@@ -32,6 +32,7 @@ func main() {
 	fixture.Context.TiDBClusterConfig.PDReplicas = 6
 	fixture.Context.TiDBClusterConfig.TiKVReplicas = 3
 	fixture.Context.TiDBClusterConfig.TiDBReplicas = 1
+	fixture.Context.TiDBClusterConfig.PDImage = "hub.pingcap.net/gaosong/pd:c7fcc9c4"
 	fixture.Context.Namespace = "cross-region"
 	fixture.Context.Name = "cross-region"
 	fixture.Context.TiDBClusterConfig.PDStorageClassName = "shared-nvme-disks"

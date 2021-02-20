@@ -203,6 +203,10 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	err = c.TransferLeader()
+	if err != nil {
+		return err
+	}
 	for i := 1; i <= 3; i++ {
 		err = c.TransferPDAllocator(fmt.Sprintf("dc-%d", i))
 		if err != nil {
@@ -239,12 +243,15 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 	defer wg.Done()
 	if c.pdClient != nil {
 		for i := 0; i < c.TSORequestTimes; i++ {
-			_, _, err := c.pdClient.GetLocalTS(ctx, dcLocation)
+			physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
 			if err != nil {
-				log.Info("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
+				log.Error("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
 				errCh <- err
 				return
 			}
+			log.Info("request TSO", zap.String("dcLocation", dcLocation),
+				zap.Int64("physical", physical),
+				zap.Int64("logical", logical))
 		}
 	}
 }
@@ -280,7 +287,36 @@ func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
 	if transferName == "" {
 		return fmt.Errorf("dclocation %v haven't find transfer pd member", dcLocation)
 	}
-	return c.pdHttpClient.TransferAllocator(transferName, dcLocation)
+	err = c.pdHttpClient.TransferAllocator(transferName, dcLocation)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *crossRegionClient) TransferLeader() error {
+	members, err := c.pdHttpClient.GetMembers()
+	if err != nil {
+		return err
+	}
+	for _, member := range members.Members {
+		if member.Name != members.Leader.Name {
+			err = c.pdHttpClient.TransferPDLeader(member.Name)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return fmt.Errorf("failed to transfer pd leader")
+}
+
+func (c *crossRegionClient) WaitLeader(name string) error {
+	return nil
+}
+
+func (c *crossRegionClient) WaitAllocator(name, dclocation string) error {
+	return nil
 }
 
 func buildPDSvcName(name, namespace string) string {
