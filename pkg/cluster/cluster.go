@@ -68,7 +68,6 @@ type ClientNode struct {
 	ClusterName string // Cluster name, use to differentiate different TiDB clusters running on same namespace
 	Component   Component
 	IP          string
-	NodePort    int32
 	Port        int32
 }
 

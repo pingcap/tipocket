@@ -140,7 +140,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getTiDBServicePort(svc),
-			NodePort:    getTiDBNodePort(svc),
 			Component:   cluster.TiDB,
 		})
 		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
@@ -152,7 +151,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getPDServicePort(svc),
-			NodePort:    getPDNodePort(svc),
 			Component:   cluster.PD,
 		})
 	} else {
@@ -172,7 +170,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          ips[0],
 			Port:        getTiDBServicePort(svc),
-			NodePort:    getTiDBNodePort(svc),
 			Component:   cluster.TiDB,
 		})
 		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
@@ -184,7 +181,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getPDServicePort(svc),
-			NodePort:    getPDNodePort(svc),
 			Component:   cluster.PD,
 		})
 	}
@@ -645,15 +641,6 @@ func getNodeIP(nodeList *corev1.NodeList) string {
 	return nodeList.Items[0].Status.Addresses[0].Address
 }
 
-func getTiDBNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 4000 {
-			return port.NodePort
-		}
-	}
-	return 0
-}
-
 func getTiDBServicePort(svc *corev1.Service) int32 {
 	for _, port := range svc.Spec.Ports {
 		if port.Port == 4000 {
@@ -670,15 +657,6 @@ func getPDServicePort(svc *corev1.Service) int32 {
 		}
 	}
 	panic("couldn't find the pd exposed port")
-}
-
-func getPDNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 2379 {
-			return port.NodePort
-		}
-	}
-	return 0
 }
 
 // GetTiDBConfig is used for Matrix-related setups
