@@ -61,18 +61,11 @@ type crossRegionClient struct {
 }
 
 func (c *crossRegionClient) SetUp(ctx context.Context, nodes []cluster.Node, cnodes []cluster.ClientNode, idx int) error {
-	pdNodePort := int32(0)
-	tidbNodePort := int32(0)
-	for _, cnode := range cnodes {
-		if cnode.Component == cluster.PD {
-			pdNodePort = cnode.NodePort
-		} else if cnode.Component == cluster.TiDB {
-			tidbNodePort = cnode.NodePort
-		}
-	}
-	pdAddr := buildAddr("172.16.4.19", pdNodePort)
+	name := cnodes[idx].ClusterName
+	namespace := cnodes[idx].Namespace
+	pdAddr := buildPDSvcName(name, namespace)
 	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, pdAddr)
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", "172.16.4.19", tidbNodePort, c.DBName)
+	dsn := fmt.Sprintf("root@tcp(%s)/%s", buildTiDBSvcName(name, namespace), c.DBName)
 	db, err := util.OpenDB(dsn, 20)
 	if err != nil {
 		return fmt.Errorf("[on_dup] create db client error %v", err)
@@ -321,6 +314,10 @@ func (c *crossRegionClient) WaitAllocator(name, dclocation string) error {
 
 func buildPDSvcName(name, namespace string) string {
 	return fmt.Sprintf("%s-pd.%s.svc:2379", name, namespace)
+}
+
+func buildTiDBSvcName(name, namespace string) string {
+	return fmt.Sprintf("%s-tidb.%s.svc:4000", name, namespace)
 }
 
 func buildAddr(addr string, port int32) string {

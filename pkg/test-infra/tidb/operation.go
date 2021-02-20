@@ -63,7 +63,7 @@ type Ops struct {
 
 // New ...
 func New(namespace, name string, config fixture.TiDBClusterConfig) *Ops {
-	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config, true),
+	return &Ops{cli: tests.TestClient.Cli, tc: RecommendedTiDBCluster(namespace, name, config),
 		ns: namespace, name: name, config: config}
 }
 

@@ -69,6 +69,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	// note this is just a approximate value
 	startTime := time.Now()
 
+	// Apply Matrix config
 	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&clusterSpec)
 	if err != nil {
 		log.Fatalf("Matrix init failed, err: %s", err)
@@ -114,7 +115,6 @@ func (suit *Suit) Run(ctx context.Context) {
 	// set plugins
 	suit.setDefaultPlugins()
 
-	fixture.Context.LogPath = ""
 	c := control.NewController(
 		sctx,
 		suit.Config,

@@ -90,7 +90,7 @@ func (t *Recommendation) TiDBReplicas(replicas int32) *Recommendation {
 }
 
 // RecommendedTiDBCluster does a recommendation, tidb-operator do not have same defaults yet
-func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig, enableMonitor bool) *Recommendation {
+func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterConfig) *Recommendation {
 	enablePVReclaim, exposeStatus := true, true
 	reclaimDelete := corev1.PersistentVolumeReclaimDelete
 	pdDataStorageClass := fixture.Context.LocalVolumeStorageClass
@@ -237,9 +237,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	}
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig)
-	}
-	if !enableMonitor {
-		r.TidbMonitor = nil
 	}
 	if clusterConfig.PDSvcType != nil {
 		r.TidbCluster.Spec.PD.Service = &v1alpha1.ServiceSpec{
