@@ -177,7 +177,7 @@ func (m *MySQL) DSN() string {
 
 // newMySQL creates a spec for MySQL.
 func newMySQL(namespace, name string, conf fixture.MySQLConfig) *MySQL {
-	stsName, svcName, volumeName := name, name, "mysql"
+	stsName, svcName, volumeName := fmt.Sprintf("%s-mysql", name), fmt.Sprintf("%s-mysql", name), "mysql"
 	mysqlLabels := map[string]string{
 		"app":      "tipocket-mysql",
 		"instance": name,
