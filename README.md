@@ -45,7 +45,11 @@ If you have a K8s cluster, you can use the below commands to deploy and run the 
 ```sh
 make build
 export KUBECONFIG=$(YOUR_KUBECONFIG_PATH)
-bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -purge=true -storage-class=local-path
+# direct connect
+bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+# or uses k8s-proxy
+kubectl apply -f hacks/k8s-proxy.yaml -n ${ns}
+bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path -k8s-proxy=socks5://${select_a_node}:30080
 ```
 
 ### On the local environment

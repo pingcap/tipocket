@@ -9,17 +9,19 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	netproxy "golang.org/x/net/proxy"
+
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 var (
 	setMySQLProxyOnce sync.Once
 )
 
-// SetMySQLProxyFromEnvironment sets the mysql dial specified by the proxy-related variables in the environment,
+// SetMySQLProxy sets the mysql dial specified by the proxy-related variables in the environment,
 // and makes underlying connections directly.
 // ALL_PROXY/all_proxy, NO_PROXY/no_proxy
-func SetMySQLProxyFromEnvironment() {
-	dialer := fromEnvironment()
+func SetMySQLProxy() {
+	dialer := fromContextFlag()
 
 	setMySQLProxyOnce.Do(func() {
 		mysql.RegisterDialContext("tcp", func(ctx context.Context, addr string) (net.Conn, error) {
@@ -62,13 +64,31 @@ func (e *envOnce) init() {
 }
 
 func fromEnvironment() netproxy.Dialer {
-	direct := &net.Dialer{Resolver: &net.Resolver{PreferGo: true}}
+	direct := &net.Dialer{}
 	kubeProxy := kubeProxyEnv.Get()
 
 	if len(kubeProxy) == 0 {
 		return direct
 	}
 	proxyURL, err := url.Parse(kubeProxy)
+
+	if err != nil {
+		return direct
+	}
+	proxy, err := netproxy.FromURL(proxyURL, direct)
+	if err != nil {
+		return direct
+	}
+	return proxy
+}
+
+func fromContextFlag() netproxy.Dialer {
+	direct := &net.Dialer{}
+	if fixture.Context.K8sProxy == "" {
+		return direct
+	}
+
+	proxyURL, err := url.Parse(fixture.Context.K8sProxy)
 
 	if err != nil {
 		return direct
