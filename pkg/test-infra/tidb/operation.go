@@ -123,7 +123,7 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	for _, pod := range pods.Items {
 		r.Items = append(r.Items, pod)
 	}
-	return o.parseNodeFromPodList(r), nil
+	return o.parseNodeFromPodList(r)
 }
 
 // GetClientNodes ...
@@ -172,7 +172,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			Namespace:   o.ns,
 			ClusterName: o.name,
 			IP:          ips[0],
-			Port:        getTiDBServicePort(svc),
+			Port:        getTiDBNodePort(svc),
 			Component:   cluster.TiDB,
 		})
 		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
@@ -183,7 +183,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 			Namespace:   o.ns,
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
-			Port:        getPDServicePort(svc),
+			Port:        getPDNodePort(svc),
 			Component:   cluster.PD,
 		})
 	}
@@ -377,7 +377,7 @@ func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configString string) er
 	configData := ""
 	if len(o.config.PDRawConfig) > 0 {
 		configData = o.config.PDRawConfig
-	}else {
+	} else {
 		configData, err = parseConfig(configString)
 		if err != nil {
 			return err
@@ -632,26 +632,28 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
+func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) ([]cluster.Node, error) {
 	var nodes []cluster.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
 		if !ok {
 			component = ""
+			continue
 		} else if component == "discovery" || component == "monitor" {
 			continue
 		}
 		var podIP = pod.Status.PodIP
-		if pod.Spec.Hostname != "" && pod.Spec.Subdomain != "" {
-			podIP = fmt.Sprintf("%s.%s.%s.svc",
-				pod.Spec.Hostname,
-				pod.Spec.Subdomain,
-				pod.ObjectMeta.Namespace,
-			)
+		// because all tidb components are managed by statefulset with a related -peer headless service
+		// we use the fqdn as the the node ip
+		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" {
+			var err error
+			podIP, err = util.GetFQDNFromStsPod(&pod)
+			if err != nil {
+				return nil, err
+			}
 		}
 		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
-			// TODO use better way to retrieve version?
 			PodName:   pod.ObjectMeta.Name,
 			IP:        podIP,
 			Component: cluster.Component(component),
@@ -665,7 +667,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
 			},
 		})
 	}
-	return nodes
+	return nodes, nil
 }
 
 func getNodeIP(nodeList *corev1.NodeList) string {
@@ -673,6 +675,24 @@ func getNodeIP(nodeList *corev1.NodeList) string {
 		return ""
 	}
 	return nodeList.Items[0].Status.Addresses[0].Address
+}
+
+func getTiDBNodePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 4000 {
+			return port.NodePort
+		}
+	}
+	return 0
+}
+
+func getPDNodePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 2379 {
+			return port.NodePort
+		}
+	}
+	return 0
 }
 
 func getTiDBServicePort(svc *corev1.Service) int32 {

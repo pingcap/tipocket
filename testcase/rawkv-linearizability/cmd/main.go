@@ -59,7 +59,6 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		//Provider: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
 		ClientCreator: rawkv_linearizability.RawkvClientCreator{
 			Cfg: rawkv_linearizability.Config{
 				KeyStart:        *keyStart,

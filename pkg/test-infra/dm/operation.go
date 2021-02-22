@@ -83,11 +83,18 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	}
 
 	nodes := make([]cluster.Node, 0, len(podsMaster.Items)+len(podsWorker.Items))
+	// because dmMasters have a NodePort kind service, dmWorkers have a headless kind service,
+	// and they all are managed by statefulset,
+	// so we use their fqdn as node ip here.
 	for _, pod := range podsMaster.Items {
+		fqdn, err := util.GetFQDNFromStsPod(&pod)
+		if err != nil {
+			return nil, err
+		}
 		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
 			PodName:   pod.ObjectMeta.Name,
-			IP:        pod.Status.PodIP,
+			IP:        fqdn,
 			Component: cluster.DM,
 			Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.DM), pod.Spec.Containers),
 		})
@@ -258,7 +265,7 @@ func newDM(namespace, name string, conf fixture.DMConfig) *DM {
 			},
 			Spec: corev1.ServiceSpec{
 				Type:      corev1.ServiceTypeClusterIP,
-				ClusterIP: "None",
+				ClusterIP: corev1.ClusterIPNone,
 				Ports: []corev1.ServicePort{{
 					Name:       "dm-worker",
 					Port:       8262,

@@ -41,7 +41,7 @@ func main() {
 
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = true
-	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Path = "abtest.log"
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
