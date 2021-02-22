@@ -42,14 +42,34 @@ If you have a K8s cluster, you can use the below commands to deploy and run the 
 
 ### On a K8s cluster
 
+
+#### Access directly
+
 ```sh
 make build
-export KUBECONFIG=$(YOUR_KUBECONFIG_PATH)
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+
 # direct connect
 bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
-# or uses k8s-proxy
-kubectl apply -f hacks/k8s-proxy.yaml -n ${ns}
-bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path -k8s-proxy=socks5://${select_a_node}:30080
+```
+
+This method can't resolve the k8s cluster network accessing and DNS resolution issues, but it's useful for most cases.
+
+#### Access by a proxy on k8s cluster
+
+```bash
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
+bin/${testcase} -k8s-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+```
+
+This method overcomes the k8s cluster network accessing problem, but one flaw is retained: DNS resolution, so proxychains-ng is recommended here (if you don't mind to install it: `brew install proxychains-ng`).
+
+```bash
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
+# edit hacks/debug/proxychains.conf, replace REPLACE_ME_WITH_REAL_NODE_IP with a k8s node ip
+proxychains4 -f hacks/debug/proxychains.conf bin/${testcase} -k8s-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
 ```
 
 ### On the local environment
@@ -65,13 +85,13 @@ tiup playground --kv 3
 * Specify that cluster address through `-tidb-server` `-tikv-server` and `-pd-server`
 
 ```bash
--tidb-server 127.0.0.1:4000 
+bin/${testcase} -tidb-server 127.0.0.1:4000 
 ```
 
 * If a cluster has many service addresses, you can pass a flag multiple times
 
 ```bash
--tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
+bin/${testcase} -tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
 ```
 
 ## Workloads
