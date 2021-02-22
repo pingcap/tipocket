@@ -265,38 +265,32 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 			return false, nil
 		}
 
-		if local.Spec.PD.Replicas > 0 {
-			if local.Status.PD.StatefulSet == nil {
-				return false, nil
-			}
-			pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
-			if pdReady < pdDesired {
-				log.Infof("PD[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, pdReady, pdDesired)
-				return false, nil
-			}
+		if local.Status.PD.StatefulSet == nil {
+			return false, nil
 		}
-		if local.Spec.TiKV.Replicas > 0 {
-			if local.Status.TiKV.StatefulSet == nil {
-				return false, nil
-			}
-			tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
-			if tikvReady < tikvDesired {
-				log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
-				return false, nil
-			}
+		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
+		if pdReady < pdDesired {
+			log.Infof("PD[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, pdReady, pdDesired)
+			return false, nil
 		}
 		if local.Status.TiKV.StatefulSet == nil {
 			return false, nil
 		}
-		if local.Spec.TiDB.Replicas > 0 {
-			if local.Status.TiDB.StatefulSet == nil {
-				return false, nil
-			}
-			tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
-			if tidbReady < tidbDesired {
-				log.Infof("TiDB[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tidbReady, tidbDesired)
-				return false, nil
-			}
+		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
+		if tikvReady < tikvDesired {
+			log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
+			return false, nil
+		}
+		if local.Status.TiKV.StatefulSet == nil {
+			return false, nil
+		}
+		if local.Status.TiDB.StatefulSet == nil {
+			return false, nil
+		}
+		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
+		if tidbReady < tidbDesired {
+			log.Infof("TiDB[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tidbReady, tidbDesired)
+			return false, nil
 		}
 		if tc.Spec.TiFlash != nil {
 			if local.Status.TiFlash.StatefulSet == nil {
