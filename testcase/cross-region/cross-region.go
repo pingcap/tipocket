@@ -60,6 +60,7 @@ type crossRegionClient struct {
 	db           *sql.DB
 }
 
+// SetUp...
 func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []cluster.ClientNode, idx int) error {
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
@@ -83,6 +84,7 @@ func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes 
 	return err
 }
 
+// TearDown...
 func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode, idx int) error {
 	if c.db != nil {
 		c.db.Close()
@@ -93,6 +95,7 @@ func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode
 	return nil
 }
 
+// Start...
 func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
 	if c.TestTSO {
 		return c.testTSO(ctx)
@@ -127,12 +130,12 @@ func (c *crossRegionClient) setupPD() error {
 	if len(members.Members) != 6 {
 		return fmt.Errorf("PD member count should be 6")
 	}
-	err = c.WaitLeaderReady()
+	err = c.waitLeaderReady()
 	if err != nil {
 		return err
 	}
 	log.Info("pd leader ready")
-	err = c.WaitAllocatorReady([]string{
+	err = c.waitAllocatorReady([]string{
 		"dc-1",
 		"dc-2",
 		"dc-3",
@@ -197,18 +200,18 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		return err
 	}
 	log.Info("start to transfer Leader")
-	err = c.TransferLeader()
+	err = c.transferLeader()
 	if err != nil {
 		return err
 	}
 	log.Info("leader transfer committed")
-	err = c.WaitLeaderReady()
+	err = c.waitLeaderReady()
 	if err != nil {
 		return err
 	}
 	log.Info("leader ready")
 	for i := 1; i <= 3; i++ {
-		err = c.TransferPDAllocator(fmt.Sprintf("dc-%d", i))
+		err = c.transferPDAllocator(fmt.Sprintf("dc-%d", i))
 		if err != nil {
 			return err
 		}
@@ -257,7 +260,7 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 	}
 }
 
-func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
+func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 	members, err := c.pdHttpClient.GetMembers()
 	if err != nil {
 		return err
@@ -298,7 +301,7 @@ func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
 	return nil
 }
 
-func (c *crossRegionClient) TransferLeader() error {
+func (c *crossRegionClient) transferLeader() error {
 	members, err := c.pdHttpClient.GetMembers()
 	if err != nil {
 		return err
@@ -314,10 +317,10 @@ func (c *crossRegionClient) TransferLeader() error {
 			break
 		}
 	}
-	return c.WaitLeader(targetLeader)
+	return c.waitLeader(targetLeader)
 }
 
-func (c *crossRegionClient) WaitLeaderReady() error {
+func (c *crossRegionClient) waitLeaderReady() error {
 	return util2.WaitUntil(func() bool {
 		members, err := c.pdHttpClient.GetMembers()
 		if err != nil {
@@ -327,7 +330,7 @@ func (c *crossRegionClient) WaitLeaderReady() error {
 	})
 }
 
-func (c *crossRegionClient) WaitAllocatorReady(dcLocations []string) error {
+func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 	return util2.WaitUntil(func() bool {
 		members, err := c.pdHttpClient.GetMembers()
 		if err != nil {
@@ -343,7 +346,7 @@ func (c *crossRegionClient) WaitAllocatorReady(dcLocations []string) error {
 	})
 }
 
-func (c *crossRegionClient) WaitLeader(name string) error {
+func (c *crossRegionClient) waitLeader(name string) error {
 	return util2.WaitUntil(func() bool {
 		mems, err := c.pdHttpClient.GetMembers()
 		if err != nil {
@@ -356,7 +359,7 @@ func (c *crossRegionClient) WaitLeader(name string) error {
 	})
 }
 
-func (c *crossRegionClient) WaitAllocator(name, dclocation string) error {
+func (c *crossRegionClient) waitAllocator(name, dclocation string) error {
 	return nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/log"
 )
 
+// WrapErrors wrap errors into error
 func WrapErrors(errs []error) error {
 	if len(errs) < 1 {
 		return nil

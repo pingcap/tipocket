@@ -79,6 +79,7 @@ type fixtureContext struct {
 	ReplicaRead string
 }
 
+// ClusterRef references a TidbCluster
 type ClusterRef struct {
 	Name      string
 	Namespace string

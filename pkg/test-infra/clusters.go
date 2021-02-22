@@ -221,6 +221,7 @@ func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiD
 	)
 }
 
+// NewCrossRegionTestCluster creates multi tidbcluster in different regions
 func NewCrossRegionTestCluster(namespace string, names []string, confs []fixture.TiDBClusterConfig) cluster.Cluster {
 	var clusters []cluster.Cluster
 	for i, conf := range confs {

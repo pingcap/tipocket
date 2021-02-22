@@ -197,7 +197,7 @@ type Member struct {
 	// name is the name of the PD member.
 	Name string `json:"name,omitempty"`
 	// member_id is the unique id of the PD member.
-	MemberId uint64 `json:"member_id,omitempty"`
+	MemberID uint64 `json:"member_id,omitempty"`
 	// dc_location is the dcLocation of the PD member
 	DcLocation string `json:"dc_location,omitempty"`
 }
