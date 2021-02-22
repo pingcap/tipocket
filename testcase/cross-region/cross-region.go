@@ -8,13 +8,14 @@ import (
 	"sync"
 
 	"github.com/pingcap/log"
+	pdClient "github.com/tikv/pd/client"
+	"go.uber.org/zap"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/util/pdutil"
 	util2 "github.com/pingcap/tipocket/testcase/cross-region/pkg/util"
 	"github.com/pingcap/tipocket/util"
-	pdClient "github.com/tikv/pd/client"
-	"go.uber.org/zap"
 )
 
 const stmtDrop = `
@@ -35,6 +36,7 @@ add placement policy
 	role=leader
 	replicas=1`
 
+// Config exposes the config
 type Config struct {
 	TestTSO         bool
 	TSORequestTimes int
@@ -56,7 +58,7 @@ func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 type crossRegionClient struct {
 	*Config
 	pdClient     pdClient.Client
-	pdHttpClient *pdutil.Client
+	pdHTTPClient *pdutil.Client
 	db           *sql.DB
 }
 
@@ -65,8 +67,8 @@ func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes 
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
 	pdAddr := buildPDSvcName(name, namespace)
-	if c.pdHttpClient == nil {
-		c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, "http://"+pdAddr)
+	if c.pdHTTPClient == nil {
+		c.pdHTTPClient = pdutil.NewPDClient(http.DefaultClient, "http://"+pdAddr)
 	}
 	dsn := fmt.Sprintf("root@tcp(%s)/%s", buildTiDBSvcName(name, namespace), c.DBName)
 	db, err := util.OpenDB(dsn, 20)
@@ -123,7 +125,7 @@ func (c *crossRegionClient) setup() error {
 }
 
 func (c *crossRegionClient) setupPD() error {
-	members, err := c.pdHttpClient.GetMembers()
+	members, err := c.pdHTTPClient.GetMembers()
 	if err != nil {
 		return err
 	}
@@ -148,7 +150,7 @@ func (c *crossRegionClient) setupPD() error {
 }
 
 func (c *crossRegionClient) setupStore() error {
-	stores, err := c.pdHttpClient.GetStores()
+	stores, err := c.pdHTTPClient.GetStores()
 	if err != nil {
 		return err
 	}
@@ -158,7 +160,7 @@ func (c *crossRegionClient) setupStore() error {
 	i := 0
 	for _, store := range stores.Stores {
 		i++
-		err = c.pdHttpClient.SetStoreLabels(store.Id, map[string]string{
+		err = c.pdHTTPClient.SetStoreLabels(store.Id, map[string]string{
 			"zone": fmt.Sprintf("dc-%v", i),
 		})
 		if err != nil {
@@ -261,7 +263,7 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 }
 
 func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
-	members, err := c.pdHttpClient.GetMembers()
+	members, err := c.pdHTTPClient.GetMembers()
 	if err != nil {
 		return err
 	}
@@ -291,7 +293,7 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 	if transferName == "" {
 		return fmt.Errorf("dclocation %v haven't find transfer pd member", dcLocation)
 	}
-	err = c.pdHttpClient.TransferAllocator(transferName, dcLocation)
+	err = c.pdHTTPClient.TransferAllocator(transferName, dcLocation)
 	if err != nil {
 		return err
 	}
@@ -302,14 +304,14 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 }
 
 func (c *crossRegionClient) transferLeader() error {
-	members, err := c.pdHttpClient.GetMembers()
+	members, err := c.pdHTTPClient.GetMembers()
 	if err != nil {
 		return err
 	}
 	targetLeader := ""
 	for _, member := range members.Members {
 		if member.Name != members.Leader.Name {
-			err = c.pdHttpClient.TransferPDLeader(member.Name)
+			err = c.pdHTTPClient.TransferPDLeader(member.Name)
 			if err != nil {
 				return err
 			}
@@ -322,7 +324,7 @@ func (c *crossRegionClient) transferLeader() error {
 
 func (c *crossRegionClient) waitLeaderReady() error {
 	return util2.WaitUntil(func() bool {
-		members, err := c.pdHttpClient.GetMembers()
+		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
 		}
@@ -332,7 +334,7 @@ func (c *crossRegionClient) waitLeaderReady() error {
 
 func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 	return util2.WaitUntil(func() bool {
-		members, err := c.pdHttpClient.GetMembers()
+		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
 		}
@@ -348,7 +350,7 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 
 func (c *crossRegionClient) waitLeader(name string) error {
 	return util2.WaitUntil(func() bool {
-		mems, err := c.pdHttpClient.GetMembers()
+		mems, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 
 	// use mysql
@@ -18,7 +19,7 @@ import (
 
 var (
 	testTSO        = flag.Bool("enable-tso-test", false, "whether to test tso requests")
-	PDConfTemplate = `
+	pdConfTemplate = `
 enable-local-tso = true
 [labels]
 zone = '%v'
@@ -81,6 +82,6 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.TiKVStorageClassName = "nvme-disks"
 	cloned.LogStorageClassName = "shared-sas-disks"
 	cloned.Ref = ref
-	cloned.PDRawConfig = fmt.Sprintf(PDConfTemplate, dcLocation)
+	cloned.PDRawConfig = fmt.Sprintf(pdConfTemplate, dcLocation)
 	return cloned
 }
