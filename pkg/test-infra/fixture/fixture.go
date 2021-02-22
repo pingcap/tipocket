@@ -80,6 +80,11 @@ type fixtureContext struct {
 	ReplicaRead string
 }
 
+type ClusterRef struct {
+	Name      string
+	Namespace string
+}
+
 type addressArrayFlags []string
 
 func (a *addressArrayFlags) String() string {
@@ -146,7 +151,10 @@ type TiDBClusterConfig struct {
 	TiKVStorageClassName string
 	LogStorageClassName  string
 
-	PDSvcType   *corev1.ServiceType
+	PDSvcType *corev1.ServiceType
+	Ref       *ClusterRef
+
+	PDRawConfig string
 }
 
 // Context ...

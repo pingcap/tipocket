@@ -14,6 +14,7 @@
 package tidb
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -242,6 +243,13 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 		r.TidbCluster.Spec.PD.Service = &v1alpha1.ServiceSpec{
 			Type: *clusterConfig.PDSvcType,
 		}
+	}
+	if clusterConfig.Ref != nil {
+		r.TidbCluster.Spec.PDAddresses = []string{
+			fmt.Sprintf("http://%s-pd-0.%s-pd-peer.%s.svc:2379",
+				clusterConfig.Ref.Name, clusterConfig.Ref.Name, clusterConfig.Ref.Namespace),
+		}
+		r.TidbMonitor = nil
 	}
 	return r
 }

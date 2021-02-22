@@ -1,9 +1,7 @@
 package testinfra
 
 import (
-	"golang.org/x/sync/errgroup"
-	"k8s.io/utils/pointer"
-
+	"github.com/pingcap/log"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -14,6 +12,8 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/utils/pointer"
 )
 
 // groupCluster creates clusters concurrently
@@ -39,6 +39,7 @@ func (c *groupCluster) Apply() error {
 	if err := g.Wait(); err != nil {
 		return err
 	}
+	log.Info("groupCluster Deployed finish")
 	return nil
 }
 
@@ -219,4 +220,12 @@ func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiD
 		),
 		cdc.New(namespace, name),
 	)
+}
+
+func NewCrossRegionTestCluster(namespace string, names []string, confs []fixture.TiDBClusterConfig) cluster.Cluster {
+	var clusters []cluster.Cluster
+	for i, conf := range confs {
+		clusters = append(clusters, tidb.New(namespace, names[i], conf))
+	}
+	return NewGroupCluster(clusters...)
 }

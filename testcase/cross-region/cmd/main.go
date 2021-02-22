@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
@@ -10,14 +12,18 @@ import (
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
-	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	crossregion "github.com/pingcap/tipocket/testcase/cross-region"
 	corev1 "k8s.io/api/core/v1"
 )
 
 var (
-	testTSO = flag.Bool("enable-tso-test", false, "whether to test tso requests")
+	testTSO        = flag.Bool("enable-tso-test", false, "whether to test tso requests")
+	PDConfTemplate = `
+enable-local-tso = true
+[labels]
+zone = '%v'
+`
 )
 
 func main() {
@@ -28,17 +34,7 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-	np := corev1.ServiceTypeNodePort
-	fixture.Context.TiDBClusterConfig.PDReplicas = 6
-	fixture.Context.TiDBClusterConfig.TiKVReplicas = 3
-	fixture.Context.TiDBClusterConfig.TiDBReplicas = 1
-	fixture.Context.TiDBClusterConfig.PDImage = "hub.pingcap.net/gaosong/pd:c7fcc9c4"
 	fixture.Context.Namespace = "cross-region"
-	fixture.Context.Name = "cross-region"
-	fixture.Context.TiDBClusterConfig.PDStorageClassName = "shared-nvme-disks"
-	fixture.Context.TiDBClusterConfig.TiKVStorageClassName = "nvme-disks"
-	fixture.Context.TiDBClusterConfig.LogStorageClassName = "shared-sas-disks"
-	fixture.Context.TiDBClusterConfig.PDSvcType = &np
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
@@ -50,8 +46,44 @@ func main() {
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Name,
-			fixture.Context.TiDBClusterConfig),
+		ClusterDefs: provideCrossRegionCluster(),
 	}
 	suit.Run(context.Background())
+}
+
+func provideCrossRegionCluster() cluster.Cluster {
+	namespace := "cross-region"
+	names := []string{
+		"dc-1",
+		"dc-2",
+		"dc-3",
+	}
+	confs := []fixture.TiDBClusterConfig{
+		provideConf(2, 1, 1, nil, "dc-1"),
+		provideConf(2, 1, 1, &fixture.ClusterRef{
+			Name:      "dc-1",
+			Namespace: namespace,
+		}, "dc-2"),
+		provideConf(2, 1, 1, &fixture.ClusterRef{
+			Name:      "dc-1",
+			Namespace: namespace,
+		}, "dc-3"),
+	}
+	return test_infra.NewCrossRegionTestCluster(namespace, names, confs)
+}
+
+func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef, dcLocation string) fixture.TiDBClusterConfig {
+	cloned := fixture.Context.TiDBClusterConfig
+	cloned.PDReplicas = pdReplicas
+	cloned.TiKVReplicas = kvReplicas
+	cloned.TiDBReplicas = dbReplicas
+	cloned.PDImage = "hub.pingcap.net/gaosong/pd:d28e248d"
+	cloned.PDStorageClassName = "shared-nvme-disks"
+	cloned.TiKVStorageClassName = "nvme-disks"
+	cloned.LogStorageClassName = "shared-sas-disks"
+	np := corev1.ServiceTypeNodePort
+	cloned.PDSvcType = &np
+	cloned.Ref = ref
+	cloned.PDRawConfig = fmt.Sprintf(PDConfTemplate, dcLocation)
+	return cloned
 }

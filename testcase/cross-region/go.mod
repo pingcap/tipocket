@@ -7,8 +7,9 @@ require (
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8
 	github.com/pingcap/tipocket v1.0.0
-	github.com/tikv/pd v1.1.0-beta.0.20210203032945-ede64a0eac7e
+	github.com/tikv/pd v1.1.0-beta.0.20210220042138-d28e248dffea
 	go.uber.org/zap v1.15.0
+	k8s.io/api v0.17.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0

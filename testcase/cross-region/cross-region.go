@@ -132,15 +132,20 @@ func (c *crossRegionClient) setupPD() error {
 	if len(members.Members) != 6 {
 		return fmt.Errorf("PD member count should be 6")
 	}
-	i := 0
-	for _, member := range members.Members {
-		i++
-		dcLocation := fmt.Sprintf("dc-%v", i/2+i%2)
-		err = c.pdHttpClient.SetMemberDCLocation(member.Name, dcLocation)
-		if err != nil {
-			return err
-		}
+	err = c.WaitLeaderReady()
+	if err != nil {
+		return err
 	}
+	log.Info("pd leader ready")
+	err = c.WaitAllocatorReady([]string{
+		"dc-1",
+		"dc-2",
+		"dc-3",
+	})
+	if err != nil {
+		return err
+	}
+	log.Info("pd allocator ready")
 	return nil
 }
 
@@ -196,17 +201,25 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	log.Info("start to transfer Leader")
 	err = c.TransferLeader()
 	if err != nil {
 		return err
 	}
+	log.Info("leader transfer committed")
+	err = c.WaitLeaderReady()
+	if err != nil {
+		return err
+	}
+	log.Info("leader ready")
 	for i := 1; i <= 3; i++ {
 		err = c.TransferPDAllocator(fmt.Sprintf("dc-%d", i))
 		if err != nil {
 			return err
 		}
 	}
-	return c.requestTSOs(ctx)
+	log.Info("transfer allocator committed")
+	return nil
 }
 
 func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
@@ -284,6 +297,9 @@ func (c *crossRegionClient) TransferPDAllocator(dcLocation string) error {
 	if err != nil {
 		return err
 	}
+	log.Info("TransferAllocator committed", zap.String("dclocation", dcLocation),
+		zap.String("target-allocator", transferName),
+		zap.String("origin-allocator", allocatorName))
 	return nil
 }
 
@@ -302,6 +318,32 @@ func (c *crossRegionClient) TransferLeader() error {
 		}
 	}
 	return fmt.Errorf("failed to transfer pd leader")
+}
+
+func (c *crossRegionClient) WaitLeaderReady() error {
+	return util2.WaitUntil(func() bool {
+		members, err := c.pdHttpClient.GetMembers()
+		if err != nil {
+			return false
+		}
+		return members.Leader != nil
+	})
+}
+
+func (c *crossRegionClient) WaitAllocatorReady(dcLocations []string) error {
+	return util2.WaitUntil(func() bool {
+		members, err := c.pdHttpClient.GetMembers()
+		if err != nil {
+			return false
+		}
+		for _, dclocation := range dcLocations {
+			_, ok := members.TsoAllocatorLeaders[dclocation]
+			if !ok {
+				return false
+			}
+		}
+		return true
+	})
 }
 
 func (c *crossRegionClient) WaitLeader(name string) error {

@@ -131,6 +131,9 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	var clientNodes []cluster.ClientNode
 
 	if util.IsInK8sPodEnvironment() {
+		if len(o.tc.TidbCluster.Spec.PDAddresses) > 0 {
+			return []cluster.ClientNode{}, nil
+		}
 		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
 		if err != nil {
 			return nil, err
@@ -233,10 +236,21 @@ func (o *Ops) Apply() error {
 	if err := o.waitTiDBReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
-	return o.applyTiDBMonitor(tm)
+	log.Info(fmt.Sprintf("TidbCluster[%s/%s] ready", tc.Namespace, tc.Name))
+	if tm != nil {
+		err := o.applyTiDBMonitor(tm)
+		if err != nil {
+			return err
+		}
+		log.Info(fmt.Sprintf("TidbMonitor[%s/%s] ready", tm.Namespace, tm.Name))
+		return nil
+	}
+	return nil
 }
 
 func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+	name := tc.Name
+	namespace := tc.Namespace
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -251,29 +265,38 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 			return false, nil
 		}
 
-		if local.Status.PD.StatefulSet == nil {
-			return false, nil
+		if local.Spec.PD.Replicas > 0 {
+			if local.Status.PD.StatefulSet == nil {
+				return false, nil
+			}
+			pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
+			if pdReady < pdDesired {
+				log.Infof("PD[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, pdReady, pdDesired)
+				return false, nil
+			}
 		}
-		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
-		if pdReady < pdDesired {
-			log.Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
-			return false, nil
+		if local.Spec.TiKV.Replicas > 0 {
+			if local.Status.TiKV.StatefulSet == nil {
+				return false, nil
+			}
+			tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
+			if tikvReady < tikvDesired {
+				log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
+				return false, nil
+			}
 		}
 		if local.Status.TiKV.StatefulSet == nil {
 			return false, nil
 		}
-		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
-		if tikvReady < tikvDesired {
-			log.Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
-			return false, nil
-		}
-		if local.Status.TiDB.StatefulSet == nil {
-			return false, nil
-		}
-		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
-		if tidbReady < tidbDesired {
-			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
-			return false, nil
+		if local.Spec.TiDB.Replicas > 0 {
+			if local.Status.TiDB.StatefulSet == nil {
+				return false, nil
+			}
+			tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
+			if tidbReady < tidbDesired {
+				log.Infof("TiDB[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tidbReady, tidbDesired)
+				return false, nil
+			}
 		}
 		if tc.Spec.TiFlash != nil {
 			if local.Status.TiFlash.StatefulSet == nil {
@@ -291,6 +314,9 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 
 func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
 	desired := tm.DeepCopy()
+	if tm == nil {
+		return nil
+	}
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tm, func() error {
 		tm.Spec = desired.Spec
 		tm.Annotations = desired.Annotations
@@ -311,6 +337,9 @@ func (o *Ops) Delete() error {
 		return nil
 	})
 	g.Go(func() error {
+		if o.tc.TidbMonitor == nil {
+			return nil
+		}
 		err := o.cli.Delete(context.TODO(), o.tc.TidbMonitor)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
@@ -345,9 +374,14 @@ func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configString string) er
 	if err != nil {
 		return err
 	}
-	configData, err := parseConfig(configString)
-	if err != nil {
-		return err
+	configData := ""
+	if len(o.config.PDRawConfig) > 0 {
+		configData = o.config.PDRawConfig
+	}else {
+		configData, err = parseConfig(configString)
+		if err != nil {
+			return err
+		}
 	}
 	configMap.Data["config-file"] = configData
 	desired := configMap.DeepCopy()
