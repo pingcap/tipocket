@@ -14,7 +14,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	crossregion "github.com/pingcap/tipocket/testcase/cross-region"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -81,8 +80,6 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.PDStorageClassName = "shared-nvme-disks"
 	cloned.TiKVStorageClassName = "nvme-disks"
 	cloned.LogStorageClassName = "shared-sas-disks"
-	np := corev1.ServiceTypeNodePort
-	cloned.PDSvcType = &np
 	cloned.Ref = ref
 	cloned.PDRawConfig = fmt.Sprintf(PDConfTemplate, dcLocation)
 	return cloned

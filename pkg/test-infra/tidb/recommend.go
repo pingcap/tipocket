@@ -130,7 +130,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							Name:             "log",
 							StorageSize:      "200Gi",
 							MountPath:        "/var/log/pdlog",
-							StorageClassName: &clusterConfig.LogStorageClassName,
 						},
 					},
 				},
@@ -181,7 +180,6 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							Name:             "log",
 							StorageSize:      "200Gi",
 							MountPath:        "/var/log/tidblog",
-							StorageClassName: &clusterConfig.LogStorageClassName,
 						},
 					},
 				},
@@ -239,10 +237,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	if clusterConfig.TiFlashReplicas > 0 {
 		r.EnableTiFlash(clusterConfig)
 	}
-	if clusterConfig.PDSvcType != nil {
-		r.TidbCluster.Spec.PD.Service = &v1alpha1.ServiceSpec{
-			Type: *clusterConfig.PDSvcType,
-		}
+	if len(clusterConfig.LogStorageClassName) > 0 {
+		r.TidbCluster.Spec.PD.StorageVolumes[0].StorageClassName = &clusterConfig.LogStorageClassName
+		r.TidbCluster.Spec.TiDB.StorageVolumes[0].StorageClassName = &clusterConfig.LogStorageClassName
 	}
 	if clusterConfig.Ref != nil {
 		r.TidbCluster.Spec.PDAddresses = []string{

@@ -151,9 +151,10 @@ type TiDBClusterConfig struct {
 	TiKVStorageClassName string
 	LogStorageClassName  string
 
-	PDSvcType *corev1.ServiceType
+	// If Ref is defined, the target TidbCluster will add it into Spec.PDAddresses
 	Ref       *ClusterRef
 
+	// If RawConfig is defined, pd server will use raw config first
 	PDRawConfig string
 }
 

@@ -195,16 +195,7 @@ func (o *Ops) Apply() error {
 	if err := o.waitTiDBReady(tc, fixture.Context.WaitClusterReadyDuration); err != nil {
 		return err
 	}
-	log.Info(fmt.Sprintf("TidbCluster[%s/%s] ready", tc.Namespace, tc.Name))
-	if tm != nil {
-		err := o.applyTiDBMonitor(tm)
-		if err != nil {
-			return err
-		}
-		log.Info(fmt.Sprintf("TidbMonitor[%s/%s] ready", tm.Namespace, tm.Name))
-		return nil
-	}
-	return nil
+	return o.applyTiDBMonitor(tm)
 }
 
 func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
@@ -238,9 +229,6 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
 			log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
-			return false, nil
-		}
-		if local.Status.TiKV.StatefulSet == nil {
 			return false, nil
 		}
 		if local.Status.TiDB.StatefulSet == nil {
