@@ -9,7 +9,6 @@ require (
 	github.com/pingcap/tipocket v1.0.0
 	github.com/tikv/pd v1.1.0-beta.0.20210220042138-d28e248dffea
 	go.uber.org/zap v1.15.0
-	k8s.io/api v0.17.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
