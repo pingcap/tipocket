@@ -42,6 +42,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	log.Info("start to setup client...")
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	util.SetMySQLProxyFromEnvironment()
 	db, err := util.OpenDB(dsn, 1)
 	if err != nil {
 		log.Fatalf("open db error: %v", err)
