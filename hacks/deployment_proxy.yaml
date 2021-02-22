@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tipocket-proxy-deployment
+  labels:
+    app: tipocket-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tipocket-proxy
+  template:
+    metadata:
+      labels:
+        app: tipocket-proxy
+    spec:
+      containers:
+      - name: socks5
+        image: xkuma/socks5
+        ports:
+        - containerPort: 1080
+
