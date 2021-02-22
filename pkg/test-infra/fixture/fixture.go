@@ -49,7 +49,6 @@ type fixtureContext struct {
 	HistoryFile  string
 	// Test-infra
 	Namespace                string
-	Name                     string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
 	DeleteNS                 bool

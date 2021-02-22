@@ -1,7 +1,6 @@
 package testinfra
 
 import (
-	"github.com/pingcap/log"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -39,7 +38,6 @@ func (c *groupCluster) Apply() error {
 	if err := g.Wait(); err != nil {
 		return err
 	}
-	log.Info("groupCluster Deployed finish")
 	return nil
 }
 

@@ -78,6 +78,7 @@ func (suit *Suit) Run(ctx context.Context) {
 	}
 
 	suit.Config.Nodes, suit.Config.ClientNodes, err = suit.Provider.SetUp(sctx, clusterSpec)
+
 	if err != nil {
 		// we can release resources safely in this case.
 		_ = suit.Provider.TearDown(context.TODO(), clusterSpec)

@@ -204,7 +204,6 @@ func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
 func (o *Ops) Apply() error {
 	tc := o.tc.TidbCluster
 	tm := o.tc.TidbMonitor
-	ttc := tc.DeepCopy()
 	desired := tc.DeepCopy()
 
 	log.Info("Apply tidb configmap")
@@ -226,10 +225,10 @@ func (o *Ops) Apply() error {
 		}
 	}
 	// apply tc
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, ttc, func() error {
-		ttc.Spec = desired.Spec
-		ttc.Annotations = desired.Annotations
-		ttc.Labels = desired.Labels
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
+		tc.Spec = desired.Spec
+		tc.Annotations = desired.Annotations
+		tc.Labels = desired.Labels
 		return nil
 	}); err != nil {
 		return err
@@ -314,10 +313,10 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 }
 
 func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
-	desired := tm.DeepCopy()
 	if tm == nil {
 		return nil
 	}
+	desired := tm.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tm, func() error {
 		tm.Spec = desired.Spec
 		tm.Annotations = desired.Annotations
@@ -682,7 +681,7 @@ func getTiDBServicePort(svc *corev1.Service) int32 {
 			return port.Port
 		}
 	}
-	panic("couldn't find the tidb exposed port")
+	return 0
 }
 
 func getPDServicePort(svc *corev1.Service) int32 {
@@ -691,7 +690,7 @@ func getPDServicePort(svc *corev1.Service) int32 {
 			return port.Port
 		}
 	}
-	panic("couldn't find the pd exposed port")
+	return 0
 }
 
 // GetTiDBConfig is used for Matrix-related setups
