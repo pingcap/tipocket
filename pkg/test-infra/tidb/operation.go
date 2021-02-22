@@ -91,25 +91,6 @@ func (o *Ops) getTiDBServiceByClusterName(ns string, clusterName string) (*corev
 	return svc, nil
 }
 
-func (o *Ops) getPDServiceByClusterName(ns string, clusterName string) (*corev1.Service, error) {
-	svc := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      fmt.Sprintf("%s-pd", clusterName),
-		},
-	}
-	key, err := client.ObjectKeyFromObject(svc)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := o.cli.Get(context.TODO(), key, svc); err != nil {
-		return nil, err
-	}
-
-	return svc, nil
-}
-
 // GetNodes ...
 func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	pods := &corev1.PodList{}
@@ -140,21 +121,10 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		}
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
+			Component:   "tidb",
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getTiDBServicePort(svc),
-			Component:   cluster.TiDB,
-		})
-		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
-		if err != nil {
-			return nil, err
-		}
-		clientNodes = append(clientNodes, cluster.ClientNode{
-			Namespace:   o.ns,
-			ClusterName: o.name,
-			IP:          svc.Spec.ClusterIP,
-			Port:        getPDServicePort(svc),
-			Component:   cluster.PD,
 		})
 	} else {
 		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
@@ -171,20 +141,9 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
 			ClusterName: o.name,
+			Component:   "tidb",
 			IP:          ips[0],
 			Port:        getTiDBNodePort(svc),
-			Component:   cluster.TiDB,
-		})
-		svc, err = o.getPDServiceByClusterName(o.ns, o.name)
-		if err != nil {
-			return nil, err
-		}
-		clientNodes = append(clientNodes, cluster.ClientNode{
-			Namespace:   o.ns,
-			ClusterName: o.name,
-			IP:          svc.Spec.ClusterIP,
-			Port:        getPDNodePort(svc),
-			Component:   cluster.PD,
 		})
 	}
 	return clientNodes, nil
@@ -680,15 +639,6 @@ func getTiDBNodePort(svc *corev1.Service) int32 {
 	return 0
 }
 
-func getPDNodePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 2379 {
-			return port.NodePort
-		}
-	}
-	return 0
-}
-
 func getTiDBServicePort(svc *corev1.Service) int32 {
 	for _, port := range svc.Spec.Ports {
 		if port.Port == 4000 {
@@ -696,15 +646,6 @@ func getTiDBServicePort(svc *corev1.Service) int32 {
 		}
 	}
 	panic("couldn't find the tidb exposed port")
-}
-
-func getPDServicePort(svc *corev1.Service) int32 {
-	for _, port := range svc.Spec.Ports {
-		if port.Port == 2379 {
-			return port.Port
-		}
-	}
-	panic("couldn't find the pd exposed port")
 }
 
 // GetTiDBConfig is used for Matrix-related setups

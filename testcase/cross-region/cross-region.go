@@ -60,19 +60,21 @@ type crossRegionClient struct {
 	db           *sql.DB
 }
 
-func (c *crossRegionClient) SetUp(ctx context.Context, nodes []cluster.Node, cnodes []cluster.ClientNode, idx int) error {
+func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []cluster.ClientNode, idx int) error {
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
 	pdAddr := buildPDSvcName(name, namespace)
-	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, "http://"+pdAddr)
+	if c.pdHttpClient == nil {
+		c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, "http://"+pdAddr)
+	}
 	dsn := fmt.Sprintf("root@tcp(%s)/%s", buildTiDBSvcName(name, namespace), c.DBName)
 	db, err := util.OpenDB(dsn, 20)
 	if err != nil {
 		return fmt.Errorf("[on_dup] create db client error %v", err)
 	}
 	c.db = db
-	err = c.setup(cnodes[idx].Component)
-	if c.Config.TestTSO {
+	err = c.setup()
+	if c.Config.TestTSO && c.pdClient == nil {
 		c.pdClient, err = pdClient.NewClientWithContext(ctx, []string{pdAddr}, pdClient.SecurityOption{})
 		if err != nil {
 			return err
@@ -98,26 +100,22 @@ func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes [
 	return nil
 }
 
-func (c *crossRegionClient) setup(typ cluster.Component) error {
-	switch typ {
-	case cluster.PD:
-		err := c.setupPD()
-		if err != nil {
-			return err
-		}
-		log.Info("PD setup successfully")
-		err = c.setupStore()
-		if err != nil {
-			return err
-		}
-		log.Info("TiKV setup successfully")
-	case cluster.TiDB:
-		err := c.setupDB()
-		if err != nil {
-			return err
-		}
-		log.Info("DB setup successfully")
+func (c *crossRegionClient) setup() error {
+	err := c.setupPD()
+	if err != nil {
+		return err
 	}
+	log.Info("PD setup successfully")
+	err = c.setupStore()
+	if err != nil {
+		return err
+	}
+	log.Info("TiKV setup successfully")
+	err = c.setupDB()
+	if err != nil {
+		return err
+	}
+	log.Info("DB setup successfully")
 	return nil
 }
 
@@ -368,8 +366,4 @@ func buildPDSvcName(name, namespace string) string {
 
 func buildTiDBSvcName(name, namespace string) string {
 	return fmt.Sprintf("%s-tidb.%s.svc:4000", name, namespace)
-}
-
-func buildAddr(addr string, port int32) string {
-	return fmt.Sprintf("http://%s:%v", addr, port)
 }

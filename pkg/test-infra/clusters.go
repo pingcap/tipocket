@@ -1,6 +1,9 @@
 package testinfra
 
 import (
+	"golang.org/x/sync/errgroup"
+	"k8s.io/utils/pointer"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/test-infra/binlog"
 	"github.com/pingcap/tipocket/pkg/test-infra/cdc"
@@ -11,8 +14,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
-	"golang.org/x/sync/errgroup"
-	"k8s.io/utils/pointer"
 )
 
 // groupCluster creates clusters concurrently
