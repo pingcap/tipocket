@@ -64,7 +64,7 @@ func (c *crossRegionClient) SetUp(ctx context.Context, nodes []cluster.Node, cno
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
 	pdAddr := buildPDSvcName(name, namespace)
-	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, pdAddr)
+	c.pdHttpClient = pdutil.NewPDClient(http.DefaultClient, "http://"+pdAddr)
 	dsn := fmt.Sprintf("root@tcp(%s)/%s", buildTiDBSvcName(name, namespace), c.DBName)
 	db, err := util.OpenDB(dsn, 20)
 	if err != nil {
@@ -84,9 +84,6 @@ func (c *crossRegionClient) SetUp(ctx context.Context, nodes []cluster.Node, cno
 func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode, idx int) error {
 	if c.db != nil {
 		c.db.Close()
-	}
-	if c.pdClient != nil {
-		c.pdClient.Close()
 	}
 	if c.pdClient != nil {
 		c.pdClient.Close()
@@ -308,16 +305,18 @@ func (c *crossRegionClient) TransferLeader() error {
 	if err != nil {
 		return err
 	}
+	targetLeader := ""
 	for _, member := range members.Members {
 		if member.Name != members.Leader.Name {
 			err = c.pdHttpClient.TransferPDLeader(member.Name)
 			if err != nil {
 				return err
 			}
+			targetLeader = member.Name
 			break
 		}
 	}
-	return fmt.Errorf("failed to transfer pd leader")
+	return c.WaitLeader(targetLeader)
 }
 
 func (c *crossRegionClient) WaitLeaderReady() error {
@@ -347,7 +346,16 @@ func (c *crossRegionClient) WaitAllocatorReady(dcLocations []string) error {
 }
 
 func (c *crossRegionClient) WaitLeader(name string) error {
-	return nil
+	return util2.WaitUntil(func() bool {
+		mems, err := c.pdHttpClient.GetMembers()
+		if err != nil {
+			return false
+		}
+		if mems.Leader == nil || mems.Leader.Name != name {
+			return false
+		}
+		return true
+	})
 }
 
 func (c *crossRegionClient) WaitAllocator(name, dclocation string) error {

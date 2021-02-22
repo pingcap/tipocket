@@ -204,6 +204,7 @@ func (o *Ops) getK8sNodes() (*corev1.NodeList, error) {
 func (o *Ops) Apply() error {
 	tc := o.tc.TidbCluster
 	tm := o.tc.TidbMonitor
+	ttc := tc.DeepCopy()
 	desired := tc.DeepCopy()
 
 	log.Info("Apply tidb configmap")
@@ -225,10 +226,10 @@ func (o *Ops) Apply() error {
 		}
 	}
 	// apply tc
-	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tc, func() error {
-		tc.Spec = desired.Spec
-		tc.Annotations = desired.Annotations
-		tc.Labels = desired.Labels
+	if _, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, ttc, func() error {
+		ttc.Spec = desired.Spec
+		ttc.Annotations = desired.Annotations
+		ttc.Labels = desired.Labels
 		return nil
 	}); err != nil {
 		return err

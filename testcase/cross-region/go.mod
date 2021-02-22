@@ -48,4 +48,4 @@ replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net 
 
 replace github.com/pingcap/tipocket => ../../.
 
-replace github.com/tikv/pd => github.com/yisaer/pd v1.1.0-beta.0.20210203122405-b8fb241be030
+replace github.com/tikv/pd => github.com/yisaer/pd v1.1.0-beta.0.20210222060835-921105eb1132

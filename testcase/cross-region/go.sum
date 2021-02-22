@@ -895,8 +895,8 @@ github.com/pingcap/failpoint v0.0.0-20200702092429-9f69995143ce/go.mod h1:w4PEZ5
 github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3/go.mod h1:YToE6BW+r+aWksQm1kuFnzKgEzaTKsVIHD36rxVYaWc=
 github.com/pingcap/kvproto v0.0.0-20191211054548-3c6b38ea5107/go.mod h1:WWLmULLO7l8IOcQG+t+ItJ3fEcrL5FxF0Wu+HrMy26w=
 github.com/pingcap/kvproto v0.0.0-20200411081810-b85805c9476c/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
-github.com/pingcap/kvproto v0.0.0-20210118091648-29d65899faf7 h1:74r4YTCSKC3aainPaXovtz+VwioQvej0mQj1xDDPN64=
-github.com/pingcap/kvproto v0.0.0-20210118091648-29d65899faf7/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
+github.com/pingcap/kvproto v0.0.0-20210219064844-c1844a4775d6 h1:lNGXD00uNXOKMM2pnTe9XvUv3IOEOtFhqNQljlTDZKc=
+github.com/pingcap/kvproto v0.0.0-20210219064844-c1844a4775d6/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
 github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9/go.mod h1:4rbK1p9ILyIfb6hU7OG2CiWSqMXnp3JMbiaVJ6mvoY8=
 github.com/pingcap/log v0.0.0-20200117041106-d28c14d3b1cd/go.mod h1:4rbK1p9ILyIfb6hU7OG2CiWSqMXnp3JMbiaVJ6mvoY8=
 github.com/pingcap/log v0.0.0-20200511115504-543df19646ad/go.mod h1:4rbK1p9ILyIfb6hU7OG2CiWSqMXnp3JMbiaVJ6mvoY8=
@@ -1124,8 +1124,8 @@ github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q
 github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1/go.mod h1:QcJo0QPSfTONNIgpN5RA8prR7fF8nkF6cTWTcNerRO8=
 github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6/go.mod h1:ce1O1j6UtZfjr22oyGxGLbauSBp2YVXpARAosm7dHBg=
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
-github.com/yisaer/pd v1.1.0-beta.0.20210203122405-b8fb241be030 h1:hwnSENPWuj68oSogfjOYimiSNj71V2qTn2uXBJL7mVI=
-github.com/yisaer/pd v1.1.0-beta.0.20210203122405-b8fb241be030/go.mod h1:k+Fn3sSUehToySqpzTYeBGWVzA8dyBU7LH2emeGqDKU=
+github.com/yisaer/pd v1.1.0-beta.0.20210222060835-921105eb1132 h1:x7eaotwnh5XxDdKxEU0woZRiRdzB9WqV/NM3ZlRi7Ac=
+github.com/yisaer/pd v1.1.0-beta.0.20210222060835-921105eb1132/go.mod h1:j/1d/Bwya6ApgCnXUGuKQ2YCwS0slGnBxA/i8Elowqg=
 github.com/yookoala/realpath v1.0.0/go.mod h1:gJJMA9wuX7AcqLy1+ffPatSCySA1FQ2S8Ya9AIoYBpE=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
