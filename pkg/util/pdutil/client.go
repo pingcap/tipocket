@@ -145,11 +145,13 @@ func (p *Client) GetSiblingRegions(id uint64) ([]*RegionInfo, error) {
 	return body.Regions, nil
 }
 
+// TransferPDLeader transfer pd leader
 func (p *Client) TransferPDLeader(memberName string) error {
 	_, err := p.c.Post(p.pdAddr+pdLeaderTransferPrefix+"/"+memberName, contentJSON, nil)
 	return err
 }
 
+// GetMembers get PD members info
 func (p *Client) GetMembers() (*MembersInfo, error) {
 	resp, err := p.c.Get(p.pdAddr + membersPrefix)
 	if err != nil {
@@ -163,12 +165,14 @@ func (p *Client) GetMembers() (*MembersInfo, error) {
 	return members, nil
 }
 
+// TransferAllocator transfer tso allocator to the target pd member
 func (p *Client) TransferAllocator(name, dclocation string) error {
 	apiURL := fmt.Sprintf("%s%s/%s?dcLocation=%s", p.pdAddr, transferAllocatorPrefix, name, dclocation)
 	_, err := p.c.Post(apiURL, contentJSON, nil)
 	return err
 }
 
+// SetStoreLabels set store labels
 func (p *Client) SetStoreLabels(storeID uint64, labels map[string]string) error {
 	apiURL := fmt.Sprintf("%s%s/%v/label", p.pdAddr, storePrefix, storeID)
 	data, err := json.Marshal(labels)
@@ -177,16 +181,6 @@ func (p *Client) SetStoreLabels(storeID uint64, labels map[string]string) error 
 	}
 	_, err = p.c.Post(apiURL, contentJSON, bytes.NewBuffer(data))
 	return err
-}
-
-func (p *Client) TransferLeader(name string) error {
-	apiURL := fmt.Sprintf("%s%s/%v/%v", p.pdAddr, transferLeaderPrefix, name)
-	_, err := p.c.Post(apiURL, contentJSON, nil)
-	return err
-}
-
-func (p *Client) SetMemberDCLocation(name, dcLocation string) error {
-	return nil
 }
 
 // MembersInfo is PD members info returned from PD RESTful interface
@@ -198,6 +192,7 @@ type MembersInfo struct {
 	TsoAllocatorLeaders map[string]*Member `json:"tso_allocator_leaders,omitempty"`
 }
 
+// Member is the PD member info
 type Member struct {
 	// name is the name of the PD member.
 	Name string `json:"name,omitempty"`
