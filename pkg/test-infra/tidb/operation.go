@@ -681,7 +681,7 @@ func getTiDBServicePort(svc *corev1.Service) int32 {
 			return port.Port
 		}
 	}
-	return 0
+	panic("couldn't find the tidb exposed port")
 }
 
 func getPDServicePort(svc *corev1.Service) int32 {
@@ -690,7 +690,7 @@ func getPDServicePort(svc *corev1.Service) int32 {
 			return port.Port
 		}
 	}
-	return 0
+	panic("couldn't find the pd exposed port")
 }
 
 // GetTiDBConfig is used for Matrix-related setups
