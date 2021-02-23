@@ -43,7 +43,7 @@ type Config struct {
 	TSORequestTimes int
 	DBName          string
 	//TODO: support configure DCLocationNum instead of fixed 6
-	DCLocationNum   int
+	DCLocationNum int
 }
 
 // ClientCreator creates crossRegionClient
@@ -54,7 +54,9 @@ type ClientCreator struct {
 // Create ...
 func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &crossRegionClient{
-		Config: l.Cfg,
+		Config:      l.Cfg,
+		initialized: false,
+		closed:      false,
 	}
 }
 
@@ -63,10 +65,15 @@ type crossRegionClient struct {
 	pdClient     pdClient.Client
 	pdHTTPClient *pdutil.Client
 	db           *sql.DB
+	initialized  bool
+	closed       bool
 }
 
 // SetUp...
 func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []cluster.ClientNode, idx int) error {
+	if c.initialized {
+		return nil
+	}
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
 	pdAddr := buildPDSvcName(name, namespace)
@@ -86,17 +93,25 @@ func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes 
 			return err
 		}
 	}
-	return err
+	if err != nil {
+		return err
+	}
+	c.initialized = true
+	return nil
 }
 
 // TearDown...
 func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode, idx int) error {
+	if c.closed {
+		return nil
+	}
 	if c.db != nil {
 		c.db.Close()
 	}
 	if c.pdClient != nil {
 		c.pdClient.Close()
 	}
+	c.closed = true
 	return nil
 }
 

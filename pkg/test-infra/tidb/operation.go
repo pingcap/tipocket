@@ -112,9 +112,6 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	var clientNodes []cluster.ClientNode
 
 	if util.IsInK8sPodEnvironment() {
-		if len(o.tc.TidbCluster.Spec.PDAddresses) > 0 {
-			return []cluster.ClientNode{}, nil
-		}
 		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
 		if err != nil {
 			return nil, err
