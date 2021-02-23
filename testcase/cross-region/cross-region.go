@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/pingcap/log"
@@ -41,6 +42,8 @@ type Config struct {
 	TestTSO         bool
 	TSORequestTimes int
 	DBName          string
+	//TODO: support configure DCLocationNum instead of fixed 6
+	DCLocationNum   int
 }
 
 // ClientCreator creates crossRegionClient
@@ -197,29 +200,28 @@ func (c *crossRegionClient) setupDB() error {
 }
 
 func (c *crossRegionClient) testTSO(ctx context.Context) error {
-	err := c.requestTSOs(ctx)
-	if err != nil {
+	if err := c.requestTSOs(ctx); err != nil {
 		return err
 	}
 	log.Info("start to transfer Leader")
-	err = c.transferLeader()
-	if err != nil {
+	if err := c.transferLeader(); err != nil {
 		return err
 	}
 	log.Info("leader transfer committed")
-	err = c.waitLeaderReady()
-	if err != nil {
+	if err := c.waitLeaderReady(); err != nil {
 		return err
 	}
-	log.Info("leader ready")
+	log.Info("new leader ready")
 	for i := 1; i <= 3; i++ {
-		err = c.transferPDAllocator(fmt.Sprintf("dc-%d", i))
-		if err != nil {
+		if err := c.transferPDAllocator(fmt.Sprintf("dc-%d", i)); err != nil {
 			return err
 		}
 	}
-	log.Info("transfer allocator committed")
-	return nil
+	log.Info("new allocators ready")
+	if err := c.requestGlobalTSOErr(ctx); err != nil {
+		return err
+	}
+	return c.requestTSOs(ctx)
 }
 
 func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
@@ -300,6 +302,12 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 	log.Info("TransferAllocator committed", zap.String("dclocation", dcLocation),
 		zap.String("target-allocator", transferName),
 		zap.String("origin-allocator", allocatorName))
+	err = c.waitAllocator(transferName, dcLocation)
+	if err != nil {
+		return err
+	}
+	log.Info("TransferAllocator finish", zap.String("dclocation", dcLocation),
+		zap.String("target-allocator", transferName))
 	return nil
 }
 
@@ -361,7 +369,29 @@ func (c *crossRegionClient) waitLeader(name string) error {
 	})
 }
 
-func (c *crossRegionClient) waitAllocator(name, dclocation string) error {
+func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
+	return util2.WaitUntil(func() bool {
+		members, err := c.pdHTTPClient.GetMembers()
+		if err != nil {
+			return false
+		}
+		for dc, member := range members.TsoAllocatorLeaders {
+			if dcLocation == dc && member.Name == name {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func (c *crossRegionClient) requestGlobalTSOErr(ctx context.Context) error {
+	_, _, err := c.pdClient.GetTS(ctx)
+	if err == nil {
+		return fmt.Errorf("global tso should return error")
+	}
+	if !strings.Contains(err.Error(), "mismatch leader id") {
+		return fmt.Errorf("global tso should return mismatch leader id error")
+	}
 	return nil
 }
 
