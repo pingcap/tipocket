@@ -63,7 +63,7 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, errCh chan<- error) {
 	defer wg.Done()
 	if c.pdClient != nil {
-		for i := 0; i < c.TSORequestTimes; i++ {
+		for i := 0; i < c.TSORequests; i++ {
 			physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
 			if err != nil {
 				log.Error("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))

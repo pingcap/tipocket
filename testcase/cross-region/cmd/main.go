@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	testTSO        = flag.Bool("enable-tso-test", false, "whether to test tso requests")
+	tsoRequests    = flag.Int("tso-request-count", 100, "tso requests count for each allocator")
 	pdConfTemplate = `
 enable-local-tso = true
 [labels]
@@ -40,9 +40,8 @@ func main() {
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: crossregion.ClientCreator{
 			Cfg: &crossregion.Config{
-				DBName:          "test",
-				TestTSO:         *testTSO,
-				TSORequestTimes: 100,
+				DBName:      "test",
+				TSORequests: *tsoRequests,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),

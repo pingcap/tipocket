@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
+
 	"github.com/pingcap/log"
 	pdClient "github.com/tikv/pd/client"
 	"go.uber.org/zap"
-	"net/http"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -35,9 +36,8 @@ add placement policy
 
 // Config exposes the config
 type Config struct {
-	TestTSO         bool
-	TSORequestTimes int
-	DBName          string
+	TSORequests int
+	DBName      string
 	//TODO: support configure DCLocationNum instead of fixed 6
 	DCLocationNum int
 }
@@ -83,7 +83,7 @@ func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes 
 	}
 	c.db = db
 	err = c.setup()
-	if c.Config.TestTSO && c.pdClient == nil {
+	if c.pdClient == nil {
 		c.pdClient, err = pdClient.NewClientWithContext(ctx, []string{pdAddr}, pdClient.SecurityOption{})
 		if err != nil {
 			return err
@@ -113,10 +113,7 @@ func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode
 
 // Start...
 func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
-	if c.TestTSO {
-		return c.testTSO(ctx)
-	}
-	return nil
+	return c.testTSO(ctx)
 }
 
 func (c *crossRegionClient) setup() error {
