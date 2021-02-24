@@ -7,9 +7,8 @@ import (
 	"sync"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/ngaut/log"
 	netproxy "golang.org/x/net/proxy"
-
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
 
 var (
@@ -18,11 +17,11 @@ var (
 
 // SetMySQLProxy sets the proxy mysql dial specified in the command flag,
 // and makes underlying connections directly.
-func SetMySQLProxy() {
-	if fixture.Context.K8sProxy == "" {
+func SetMySQLProxy(proxyURL string) {
+	if proxyURL == "" {
 		return
 	}
-	dialer := fromURL(fixture.Context.K8sProxy)
+	dialer := fromURL(proxyURL)
 
 	setMySQLProxyOnce.Do(func() {
 		mysql.RegisterDialContext("tcp", func(ctx context.Context, addr string) (net.Conn, error) {
@@ -39,6 +38,7 @@ func fromURL(proxyStr string) netproxy.Dialer {
 	proxyURL, err := url.Parse(proxyStr)
 
 	if err != nil {
+		log.Warnf("parse proxy URL error, fallback to direct dialer: %v", err)
 		return direct
 	}
 	proxy, err := netproxy.FromURL(proxyURL, direct)

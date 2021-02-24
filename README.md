@@ -60,7 +60,7 @@ This method can't resolve the k8s cluster network accessing and DNS resolution i
 ```bash
 export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
 kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
-bin/${testcase} -k8s-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+bin/${testcase} -mysql-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
 ```
 
 This method overcomes the k8s cluster network accessing problem, but one flaw is retained: DNS resolution, so proxychains-ng is recommended here (if you don't mind to install it: `brew install proxychains-ng`).
@@ -68,8 +68,9 @@ This method overcomes the k8s cluster network accessing problem, but one flaw is
 ```bash
 export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
 kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
-# edit hacks/debug/proxychains.conf, replace REPLACE_ME_WITH_REAL_NODE_IP with a k8s node ip
-proxychains4 -f hacks/debug/proxychains.conf bin/${testcase} -k8s-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+# edit hacks/debug/proxychains.conf, replace REPLACE_ME_WITH_REAL_NODE_IP with a k8s node ip,
+# you can connect to the k8s administrator to get a k8s node ip
+proxychains4 -f hacks/debug/proxychains.conf bin/${testcase} -mysql-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
 ```
 
 ### On the local environment
