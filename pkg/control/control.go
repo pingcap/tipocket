@@ -3,7 +3,6 @@ package control
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
-	"github.com/pingcap/tipocket/pkg/loki"
 	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/util"
 
@@ -48,10 +46,6 @@ type Controller struct {
 	proc         int64
 	requestCount int64
 
-	// TODO(yeya24): make log service an interface
-	lokiClient *loki.Client
-	logPath    string
-
 	suit    verify.Suit
 	plugins []Plugin
 }
@@ -65,8 +59,6 @@ func NewController(
 	clientRequestGenerator func(ctx context.Context, client core.OnScheduleClientExtensions, node cluster.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	plugins []Plugin,
-	lokiCli *loki.Client,
-	logPath string,
 ) *Controller {
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
@@ -77,20 +69,7 @@ func NewController(
 	c.nemesisGenerators = nemesisGenerators
 	c.clientRequestGenerator = clientRequestGenerator
 	c.suit = verifySuit
-	c.lokiClient = lokiCli
-	c.logPath = logPath
 	c.plugins = plugins
-
-	// create the log artifact dir
-	if _, err := os.Stat(c.logPath); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.Mkdir(c.logPath, os.ModePerm); err != nil {
-				log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
-			}
-		} else {
-			log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
-		}
-	}
 
 	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))
