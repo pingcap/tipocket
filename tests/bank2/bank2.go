@@ -39,7 +39,8 @@ var (
 		name VARCHAR(32),
 		remark VARCHAR(2048),
 		PRIMARY KEY (id),
-		UNIQUE INDEX byName (name)
+		UNIQUE INDEX byName (name),
+		KEY byBalance (balance)
 	);`,
 		`CREATE TABLE IF NOT EXISTS bank2_transaction (
 		id INT,
@@ -76,11 +77,9 @@ type Config struct {
 	// NumAccounts is total accounts
 	NumAccounts   int           `toml:"num_accounts"`
 	Interval      time.Duration `toml:"interval"`
-	TableNum      int           `toml:"table_num"`
 	Concurrency   int           `toml:"concurrency"`
 	RetryLimit    int           `toml:"retry_limit"`
 	EnableLongTxn bool          `toml:"enable_long_txn"`
-	RunMode       string        `toml:"run_mode"` // useless?
 	Contention    string        `toml:"contention"`
 	Pessimistic   bool          `toml:"pessimistic"`
 	MinLength     int           `toml:"min_length"`
@@ -152,6 +151,7 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 			log.Fatalf("execute statement %s error %v", stmt, err)
 		}
 	}
+
 	var wg sync.WaitGroup
 	type Job struct {
 		begin, end int
@@ -294,22 +294,41 @@ func (c *bank2Client) verify(db *sql.DB) {
 	}
 
 	var total int64
+	expectTotal := (int64(c.Config.NumAccounts) * initialBalance) * 2
+
+	// query with IndexScan
 	uuid := fastuuid.MustNewGenerator().Hex128()
 	query := fmt.Sprintf("SELECT SUM(balance) AS total, '%s' as uuid FROM bank2_accounts", uuid)
 	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
-		// bank2VerifyFailedCounter.Inc()
 		_ = errors.Trace(err)
 		return
 	}
-
-	// bank2VerifyDuration.Observe(time.Since(start).Seconds())
-
-	expectTotal := (int64(c.Config.NumAccounts) * initialBalance) * 2
 	if total != expectTotal {
 		log.Errorf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 		atomic.StoreInt32(&c.stop, 1)
 		c.wg.Wait()
 		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
+	}
+
+	// query with TableScan
+	uuid = fastuuid.MustNewGenerator().Hex128()
+	query = fmt.Sprintf("SELECT SUM(balance) AS total, '%s' as uuid FROM bank2_accounts ignore index(byBalance)", uuid)
+	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
+		_ = errors.Trace(err)
+		return
+	}
+	if total != expectTotal {
+		log.Errorf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
+		atomic.StoreInt32(&c.stop, 1)
+		c.wg.Wait()
+		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
+	}
+
+	if _, err := tx.Exec("ADMIN CHECK TABLE bank2_accounts"); err != nil {
+		log.Errorf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
+		atomic.StoreInt32(&c.stop, 1)
+		c.wg.Wait()
+		log.Fatalf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
 	}
 }
 
