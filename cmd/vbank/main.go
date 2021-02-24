@@ -29,6 +29,8 @@ import (
 )
 
 var (
+	clusterName = flag.String("cluster-name", "", "tidb cluster name (default to namespace)")
+
 	pkType        = flag.String("pk_type", "int", "primary key type, int,decimal,string")
 	partition     = flag.Bool("partition", true, "use partitioned table")
 	useRange      = flag.Bool("range", false, "use range condition")
@@ -38,6 +40,9 @@ var (
 
 func main() {
 	flag.Parse()
+	if len(*clusterName) == 0 {
+		*clusterName = fixture.Context.Namespace
+	}
 	cfg := control.Config{
 		Mode:         control.ModeOnSchedule,
 		ClientCount:  fixture.Context.ClientCount,
@@ -65,7 +70,7 @@ func main() {
 		VerifySuit:       verifySuit,
 		Provider:         cluster.NewDefaultClusterProvider(),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, *clusterName, fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

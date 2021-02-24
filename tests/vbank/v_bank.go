@@ -48,6 +48,8 @@ const (
 	vbCreateInitialBalance = 10
 )
 
+func (c *Client) multiTable() bool { return !c.cfg.Partition }
+
 func (c *Client) genCreateTableSQL(i int) string {
 	var pkType string
 	switch c.cfg.PKType {
@@ -79,7 +81,7 @@ func (c *Client) genCreateTableSQL(i int) string {
 
 func (c *Client) genInitialInsertSQL(id int) string {
 	rowID := id
-	if !c.cfg.Partition {
+	if c.multiTable() {
 		rowID = 0
 	}
 	return fmt.Sprintf("insert into %s (id, balance, created_at) VALUES (%s, %d, '%.19s')",
@@ -152,7 +154,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	}
 	c.dropTables(ctx)
 	tblCnt := vbAccountNum
-	if c.cfg.Partition {
+	if !c.multiTable() {
 		tblCnt = 1
 	}
 	_, err = db.ExecContext(ctx, "CREATE TABLE IF NOT EXISTS v_bank_txn_status (ts BIGINT UNSIGNED PRIMARY KEY)")
@@ -182,12 +184,12 @@ func (c *Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx i
 }
 
 func (c *Client) dropTables(ctx context.Context) {
-	if c.cfg.Partition {
-		c.db.ExecContext(ctx, "drop table if exists v_bank")
-	} else {
+	if c.multiTable() {
 		for i := 0; i < vbAccountNum; i++ {
 			c.db.ExecContext(ctx, "drop table if exists "+c.getTableName(i))
 		}
+	} else {
+		c.db.ExecContext(ctx, "drop table if exists v_bank")
 	}
 	c.db.ExecContext(ctx, "DROP TABLE IF EXISTS v_bank_txn_status")
 }
@@ -312,14 +314,14 @@ func (c *Client) checkTxnStatus(ctx context.Context, ts uint64) (committed bool)
 }
 
 func (c *Client) getTableName(accID int) string {
-	if c.cfg.Partition {
-		return "v_bank"
+	if c.multiTable() {
+		return "v_bank_" + strconv.Itoa(accID)
 	}
-	return "v_bank_" + strconv.Itoa(accID)
+	return "v_bank"
 }
 
 func (c *Client) getWhereClause(accID int) string {
-	if c.cfg.Partition {
+	if !c.multiTable() {
 		if c.cfg.Range {
 			return fmt.Sprintf("id > %s and id < %s", c.idValue(accID-1), c.idValue(accID+1))
 		}
@@ -332,6 +334,9 @@ func (c *Client) getWhereClause(accID int) string {
 }
 
 func (c *Client) idValue(id int) string {
+	if c.multiTable() {
+		id = 0
+	}
 	if c.cfg.PKType == PKTypeString {
 		return fmt.Sprintf("'%d'", id)
 	}
@@ -356,6 +361,9 @@ func (bs *BankState) equal(bs2 *BankState) bool {
 }
 
 func (bs *BankState) transfer(from, to int, amount float64) {
+	if from == to {
+		return
+	}
 	for i := range bs.Accounts {
 		acc := &bs.Accounts[i]
 		if acc.ID == from {
@@ -426,7 +434,7 @@ func (bs *BankState) append(id int, balance float64) {
 }
 
 func (c *Client) invokeRead(ctx context.Context) (*BankState, error) {
-	if !c.cfg.Partition {
+	if c.multiTable() {
 		return c.invokeReadMultiTable(ctx)
 	}
 	return c.invokeReadSingleTable(ctx)
