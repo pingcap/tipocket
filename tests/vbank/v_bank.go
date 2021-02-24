@@ -646,7 +646,6 @@ func (c *Client) invokeDeleteAccount(ctx context.Context) (res *DeleteResult, er
 	}
 	deleteStmt := fmt.Sprintf("DELETE FROM %s WHERE %s", c.getTableName(res.VictimID), c.getWhereClause(res.VictimID))
 	_, err = c.tx.ExecContext(ctx, deleteStmt)
-	// fmt.Printf(">> delete account %q -> %v\n", deleteStmt, err)
 	if err != nil {
 		return
 	}
@@ -676,7 +675,6 @@ func (c *Client) invokeCreateAccount(ctx context.Context) (resp *CreateResult, e
 	insertStmt := fmt.Sprintf("INSERT INTO %s (id, balance) VALUES (%s, %d)",
 		c.getTableName(resp.NewID), c.idValue(resp.NewID), vbCreateInitialBalance)
 	_, err = c.tx.ExecContext(ctx, insertStmt)
-	// fmt.Printf(">> create account %q -> %v\n", insertStmt, err)
 	if err != nil {
 		return
 	}
