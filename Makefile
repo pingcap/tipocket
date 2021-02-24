@@ -61,6 +61,9 @@ rawkv:
 txnkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-txnkv cmd/txnkv/main.go
 
+ttl:
+	$(GOBUILD) $(GOMOD) -o bin/ttl cmd/ttl/main.go
+
 verifier:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
 
