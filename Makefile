@@ -18,7 +18,9 @@ default: tidy fmt lint build
 
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
-		read-stress follower-read pessimistic resolve-lock cdc-bank
+		read-stress follower-read pessimistic resolve-lock cdc-bank \
+    example \
+# +tipocket:scaffold:makefile_build
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
@@ -115,6 +117,15 @@ resolve-lock:
 pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
+example:
+	cd testcase/example ; make build; \
+	cp bin/* ../../bin/
+
+# +tipocket:scaffold:makefile_build_cmd
+
+tipocket:
+	$(GOBUILD) $(GOMOD) -o bin/tipocket cmd/tipocket/*.go
+
 fmt: groupimports
 	go fmt ./...
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make fmt';
@@ -143,6 +154,9 @@ endif
 
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
+
+init: tipocket
+	bin/tipocket init -c $(c)
 
 install-goimports:
 ifeq (, $(shell which goimports))
@@ -208,9 +222,11 @@ fmt_workflow: install-jsonnetfmt
 	find run -name "*.jsonnet" | xargs -I{} jsonnetfmt -i {}
 
 build_workflow: fmt_workflow install-jsonnet install-yq
+	mkdir -p run/manifest/workflow
 	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/workflow/%.yaml'
 
 build_cron_workflow: fmt_workflow install-jsonnet install-yq
+	mkdir -p run/manifest/cron_workflow
 	find run/workflow -name "*.jsonnet" -type f -exec basename {} \;  | xargs -I% sh -c 'jsonnet run/build.jsonnet -J run/lib -J run/workflow --ext-str build_mode="cron_workflow" --ext-code-file file=run/workflow/% | yq eval -P - > run/manifest/cron_workflow/%.yaml'
 
 clean:

@@ -104,7 +104,7 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	for _, pod := range pods.Items {
 		r.Items = append(r.Items, pod)
 	}
-	return o.parseNodeFromPodList(r), nil
+	return o.parseNodeFromPodList(r)
 }
 
 // GetClientNodes ...
@@ -118,6 +118,7 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		}
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
+			Component:   "tidb",
 			ClusterName: o.name,
 			IP:          svc.Spec.ClusterIP,
 			Port:        getTiDBServicePort(svc),
@@ -137,8 +138,9 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 		clientNodes = append(clientNodes, cluster.ClientNode{
 			Namespace:   o.ns,
 			ClusterName: o.name,
+			Component:   "tidb",
 			IP:          ips[0],
-			Port:        getTiDBServicePort(svc),
+			Port:        getTiDBNodePort(svc),
 		})
 	}
 	return clientNodes, nil
@@ -555,26 +557,28 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
+func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) ([]cluster.Node, error) {
 	var nodes []cluster.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
 		if !ok {
 			component = ""
+			continue
 		} else if component == "discovery" || component == "monitor" {
 			continue
 		}
 		var podIP = pod.Status.PodIP
-		if pod.Spec.Hostname != "" && pod.Spec.Subdomain != "" {
-			podIP = fmt.Sprintf("%s.%s.%s.svc",
-				pod.Spec.Hostname,
-				pod.Spec.Subdomain,
-				pod.ObjectMeta.Namespace,
-			)
+		// because all tidb components are managed by statefulset with a related -peer headless service
+		// we use the fqdn as the the node ip
+		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" {
+			var err error
+			podIP, err = util.GetFQDNFromStsPod(&pod)
+			if err != nil {
+				return nil, err
+			}
 		}
 		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
-			// TODO use better way to retrieve version?
 			PodName:   pod.ObjectMeta.Name,
 			IP:        podIP,
 			Component: cluster.Component(component),
@@ -588,7 +592,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
 			},
 		})
 	}
-	return nodes
+	return nodes, nil
 }
 
 func getNodeIP(nodeList *corev1.NodeList) string {

@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql" // mysql driver
 	"github.com/ngaut/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -205,10 +204,15 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 		return []cluster.Node{}, err
 	}
 
+	// because sts with a service, we use qfdn of pod as the node ip.
+	fqdn, err := util.GetFQDNFromStsPod(pod)
+	if err != nil {
+		return nil, err
+	}
 	return []cluster.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
-		IP:        pod.Status.PodIP,
+		IP:        fqdn,
 		Component: cluster.CDC,
 		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.CDC), pod.Spec.Containers),
 	}}, nil

@@ -301,12 +301,10 @@ func init() {
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "abtest.tikv-replicas", 3, "number of tikv replicas for cluster B")
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiFlashReplicas, "abtest.tiflash-replicas", 0, "number of tiflash replicas for cluster B, set 0 to disable tiflash")
 
-	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
 	flag.StringVar(&Context.CDCConfig.Image, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
-	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 	flag.BoolVar(&Context.CDCConfig.EnableKafka, "cdc.enable-kafka", false, "enable kafka sink")
 	flag.StringVar(&Context.CDCConfig.KafkaConsumerImage, "cdc.kafka-consumer-image", "docker.io/pingcap/ticdc-kafka:nightly", "the kafka consumer image to use when kafka is enabled")
 	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
@@ -322,15 +320,13 @@ func init() {
 	flag.IntVar(&Context.DMConfig.MasterReplica, "dm.master-replicas", 3, "number of DM-master replicas")
 	flag.IntVar(&Context.DMConfig.WorkerReplica, "dm.worker-replicas", 3, "number of DM-worker replicas")
 
-	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
-
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.StringVar(&Context.BinlogConfig.Image, "binlog-image", "", `overwrite "-image-version" flag for drainer`)
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 
-	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
+	flag.StringVar(&Context.LogPath, "log-path", "tipocket-logs", "tipocket logs path")
 
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")

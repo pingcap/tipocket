@@ -25,9 +25,16 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 * ~~delay_tikv, delay_pd, errno_tikv, errno_pd, mixed_tikv, mixed_pd: Inject IO-related fault.~~
 * small_skews, subcritical_skews, critical_skews, big_skews, huge_skews: Clock skew, small_skews ~100ms, subcritical_skews ~200ms, critical_skews ~250ms, big_skews ~500ms and huge_skews ~5s.
 
-## Place your test case
+## Create a new case
 
-The new test case should be placed on ./testcase directory and create a nested sub-module avoiding go module conflict mutually.
+run `make init c=$case`, for example:
+
+```sh
+$ make init c=demo
+GO15VENDOREXPERIMENT="1" CGO_ENABLED=1 GOOS= GOARCH=amd64 GO111MODULE=on go build -ldflags '-s -w -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=2021-02-05 07:13:54" -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=a70411f45605864da28a5000aff72a226a1ab27f"'  -o bin/tipocket cmd/tipocket/*.go
+bin/tipocket init -c demo
+create a new case `demo`: testcase/demo
+```
 
 ## Debug and Run
 

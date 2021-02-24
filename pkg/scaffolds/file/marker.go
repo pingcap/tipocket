@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,15 +11,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fixture
+package file
 
-// CDCConfig for binlog component
-type CDCConfig struct {
-	Image              string
-	EnableKafka        bool
-	KafkaConsumerImage string
-	LogLevel           string
-	Timezone           string
-	SortEngine         string
-	SortDir            string
-}
+// Marker defines the inserter marker string
+type Marker string
+
+// CodeFragment defines the inserter lines, multiple line are split by '\n'
+type CodeFragment []string

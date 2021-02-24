@@ -163,3 +163,14 @@ func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, 
 func IsInK8sPodEnvironment() bool {
 	return os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 }
+
+// GetFQDNFromStsPod generates the full qualified domain name from a pod of sts which has a headless(or other service kinds) service with it
+func GetFQDNFromStsPod(pod *corev1.Pod) (string, error) {
+	if pod.Spec.Hostname == "" {
+		return "", fmt.Errorf("expect non-empty .spec.hostname of %s/%s", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	}
+	if pod.Spec.Subdomain == "" {
+		return "", fmt.Errorf("expect non-empty .spec.subdomain of %s/%s", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	}
+	return fmt.Sprintf("%s.%s.%s.svc", pod.Spec.Hostname, pod.Spec.Subdomain, pod.Namespace), nil
+}

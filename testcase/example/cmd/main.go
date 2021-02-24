@@ -1,4 +1,4 @@
-// Copyright 2020 PingCAP, Inc.
+// Copyright 2021 PingCAP, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,17 +17,16 @@ import (
 	"context"
 	"flag"
 
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/testcase/pocket/pkg/config"
-	"github.com/pingcap/tipocket/testcase/pocket/pkg/creator"
-)
 
-var (
-	configPath = flag.String("config", "", "config file path")
+	testcase "github.com/pingcap/tipocket/testcase/example"
 )
 
 func main() {
@@ -36,26 +35,14 @@ func main() {
 		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
-		RunRound:    1,
 	}
-	pocketConfig := config.Init()
-	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = "tiflash.log"
-	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
+	c := fixture.Context
 	suit := util.Suit{
-		Config:   &cfg,
-		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: creator.PocketCreator{
-			Config: creator.Config{
-				ConfigPath: *configPath,
-				Mode:       "tiflash",
-				Config:     pocketConfig,
-			},
-		},
-		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: test_infra.NewTiFlashCluster(fixture.Context.Namespace, fixture.Context.Namespace,
-			fixture.Context.TiDBClusterConfig),
+		Config:        &cfg,
+		Provider:      cluster.NewDefaultClusterProvider(),
+		ClientCreator: testcase.CaseCreator{},
+		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }
