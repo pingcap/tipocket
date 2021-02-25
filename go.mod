@@ -3,6 +3,9 @@ module github.com/pingcap/tipocket
 go 1.13
 
 require (
+	cloud.google.com/go v0.49.0 // indirect
+	github.com/Azure/go-autorest/autorest v0.9.3-0.20191028180845-3492b2aff503 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.8.1-0.20191028180845-3492b2aff503 // indirect
 	github.com/BurntSushi/toml v0.3.1
 	github.com/anishathalye/porcupine v0.0.0-20200229220004-848b8b5d43d9
 	github.com/chaos-mesh/chaos-mesh/api/v1alpha1 v0.0.0-20210118085126-27d3a05f8242
@@ -11,13 +14,13 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/goccy/go-graphviz v0.0.5
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/grafana/loki v1.3.1-0.20200316172301-1eb139c37c1c
-	github.com/hashicorp/go-multierror v1.1.0 // indirect
+	github.com/gophercloud/gophercloud v0.6.0 // indirect
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
@@ -34,7 +37,7 @@ require (
 	github.com/pingcap/check v0.0.0-20200212061837-5e12011dc712 // indirect
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
-	github.com/prometheus/prometheus v1.8.2 // indirect
+	github.com/prometheus/client_golang v1.5.0 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.5.1
@@ -47,7 +50,9 @@ require (
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/sys v0.0.0-20200918174421-af09f7315aff // indirect
 	golang.org/x/text v0.3.3 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/tools v0.0.0-20200921210052-fa0125251cc4 // indirect
+	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect

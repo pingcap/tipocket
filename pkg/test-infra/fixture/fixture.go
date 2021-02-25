@@ -64,10 +64,6 @@ type fixtureContext struct {
 	DMConfig                 DMConfig
 	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
-	// Loki
-	LokiAddress  string
-	LokiUsername string
-	LokiPassword string
 	// Other
 	pprofAddr  string
 	EnableHint bool
@@ -267,10 +263,6 @@ func init() {
 
 	flag.BoolVar(&Context.Purge, "purge", false, "purge the whole cluster on success")
 	flag.BoolVar(&Context.DeleteNS, "delNS", false, "delete the deployed namespace")
-
-	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
-	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
-	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBHubAddress, "tidb-hub", "", "tidb hub address, will overwrite -hub")
