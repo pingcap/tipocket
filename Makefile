@@ -19,7 +19,7 @@ default: tidy fmt lint build
 build: consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
 		read-stress follower-read pessimistic resolve-lock cdc-bank \
-    example \
+    example ttl \
 # +tipocket:scaffold:makefile_build
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
@@ -62,9 +62,6 @@ rawkv:
 
 txnkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-txnkv cmd/txnkv/main.go
-
-ttl:
-	$(GOBUILD) $(GOMOD) -o bin/ttl cmd/ttl/main.go
 
 verifier:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
@@ -119,6 +116,10 @@ pipelined-locking:
 
 example:
 	cd testcase/example ; make build; \
+	cp bin/* ../../bin/
+
+ttl:
+	cd testcase/ttl ; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd
