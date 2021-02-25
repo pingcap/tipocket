@@ -153,9 +153,6 @@ type TiDBClusterConfig struct {
 
 	// If Ref is defined, the target TidbCluster will add it into Spec.PDAddresses
 	Ref *ClusterRef
-
-	// If RawConfig is defined, pd server will use raw config first
-	PDRawConfig string
 }
 
 // Context ...

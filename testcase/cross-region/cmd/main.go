@@ -24,6 +24,7 @@ enable-local-tso = true
 [labels]
 zone = '%v'
 `
+	plaintextProtocolHeader = "plaintext://"
 )
 
 func main() {
@@ -81,6 +82,6 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.TiKVStorageClassName = "nvme-disks"
 	cloned.LogStorageClassName = "shared-sas-disks"
 	cloned.Ref = ref
-	cloned.PDRawConfig = fmt.Sprintf(pdConfTemplate, dcLocation)
+	cloned.PDConfig = fmt.Sprintf("%s%s", plaintextProtocolHeader, fmt.Sprintf(pdConfTemplate, dcLocation))
 	return cloned
 }

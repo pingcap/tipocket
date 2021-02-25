@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -50,6 +51,7 @@ const (
 	pdDataDir   = "/var/lib/pd/data"
 	// used for tikv data encryption
 	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
+	plaintextProtocolHeader = "plaintext://"
 )
 
 // Ops knows how to operate TiDB
@@ -312,14 +314,9 @@ func (o *Ops) applyPDConfigMap(tc *v1alpha1.TidbCluster, configString string) er
 	if err != nil {
 		return err
 	}
-	configData := ""
-	if len(o.config.PDRawConfig) > 0 {
-		configData = o.config.PDRawConfig
-	} else {
-		configData, err = parseConfig(configString)
-		if err != nil {
-			return err
-		}
+	configData, err := parseConfig(configString)
+	if err != nil {
+		return err
 	}
 	configMap.Data["config-file"] = configData
 	desired := configMap.DeepCopy()
@@ -410,6 +407,9 @@ func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 }
 
 func parseConfig(config string) (string, error) {
+	if strings.HasPrefix(config, plaintextProtocolHeader) && len(config) > len(plaintextProtocolHeader) {
+		return extractRawConfig(config), nil
+	}
 	// Parse config
 	configData, err := readFileAsString(config)
 	if err == nil {
@@ -433,6 +433,10 @@ func parseConfig(config string) (string, error) {
 		// Add more Scheme support here, like http
 	}
 	return configData, nil
+}
+
+func extractRawConfig(raw string) string {
+	return raw[len(plaintextProtocolHeader):]
 }
 
 func readFileAsString(filename string) (string, error) {
