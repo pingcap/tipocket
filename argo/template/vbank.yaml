@@ -61,9 +61,6 @@ spec:
           - name: case-logs
             archiveLogs: true
             path: /logs
-          - name: tidb-logs
-            archiveLogs: true
-            path: /var/run/tipocket-logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"

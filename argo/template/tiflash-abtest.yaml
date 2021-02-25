@@ -60,9 +60,9 @@ spec:
             default: "mysql-system-vars.sql,tidb-system-vars.sql"
       outputs:
         artifacts:
-          - name: tidb-logs
+          - name: case-logs
             archiveLogs: true
-            path: /var/run/tipocket-logs
+            path: /logs
       metadata:
         labels:
           ns: "{{inputs.parameters.ns}}"
@@ -70,6 +70,7 @@ spec:
         name: tipocket
         image: 'hub.pingcap.net/qa/tipocket:latest'
         imagePullPolicy: Always
+        workingDir: /logs
         command:
           - sh
           - '-c'
