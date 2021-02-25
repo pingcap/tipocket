@@ -43,9 +43,10 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 	tsoWg := &sync.WaitGroup{}
 	tsoWg.Add(4)
 	tsoErrCh := make(chan error, 4)
-	go c.requestTSO(tsoCtx, "global", tsoWg, tsoErrCh)
+	tsoCh := make(chan TSO, 4*c.TSORequests)
+	go c.requestTSO(tsoCtx, "global", tsoWg, tsoCh, tsoErrCh)
 	for i := 1; i <= 3; i++ {
-		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoErrCh)
+		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoCh, tsoErrCh)
 	}
 	tsoWg.Wait()
 	if len(tsoErrCh) < 1 {
@@ -57,11 +58,29 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 		tsoErr := <-tsoErrCh
 		tsoErrors = append(tsoErrors, tsoErr)
 	}
+	recordTSO := make(map[[2]int64]struct{}, 0)
+	for len(tsoCh) > 0 {
+		tso := <-tsoCh
+		key := [2]int64{
+			tso.physical,
+			tso.logical,
+		}
+		_, ok := recordTSO[key]
+		if ok {
+			tsoErrors = append(tsoErrors,
+				fmt.Errorf("tso repeated,physcial %v,logical %v,dclocation %v",
+					tso.physical, tso.logical, tso.dcLocation))
+			break
+		}
+	}
+
 	return util2.WrapErrors(tsoErrors)
 }
 
-func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, errCh chan<- error) {
+func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, tsoCh chan<- TSO, errCh chan<- error) {
 	defer wg.Done()
+	lastPhysical := int64(0)
+	lastLogical := int64(0)
 	if c.pdClient != nil {
 		for i := 0; i < c.TSORequests; i++ {
 			physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
@@ -73,6 +92,24 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 			log.Info("request TSO", zap.String("dcLocation", dcLocation),
 				zap.Int64("physical", physical),
 				zap.Int64("logical", logical))
+			// assert tso won't fallback
+			if physical < lastPhysical {
+				errCh <- fmt.Errorf("tso fallback phsical:%v,logical:%v,dclocation:%v,last-phsical:%v,last-logical:%v",
+					physical, logical, dcLocation, lastPhysical, lastLogical)
+				return
+			}
+			if physical == lastPhysical && logical < lastLogical {
+				errCh <- fmt.Errorf("tso fallback phsical:%v,logical:%v,dclocation:%v,last-phsical:%v,last-logical:%v",
+					physical, logical, dcLocation, lastPhysical, lastLogical)
+				return
+			}
+			tsoCh <- struct {
+				physical   int64
+				logical    int64
+				dcLocation string
+			}{physical: physical, logical: logical, dcLocation: dcLocation}
+			lastPhysical = physical
+			lastLogical = logical
 		}
 	}
 }
@@ -206,4 +243,10 @@ func (c *crossRegionClient) requestGlobalTSOErr(ctx context.Context) error {
 		return fmt.Errorf("global tso should return mismatch leader id error")
 	}
 	return nil
+}
+
+type TSO struct {
+	physical   int64
+	logical    int64
+	dcLocation string
 }
