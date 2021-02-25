@@ -45,5 +45,3 @@ replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net 
 replace github.com/pingcap/tipocket => ../../.
 
 replace github.com/coreos/etcd => github.com/coreos/etcd v3.3.15+incompatible
-
-replace github.com/tikv/client-go => github.com/ofey404/client-go v0.0.0-20210224082935-56abf62353a2
