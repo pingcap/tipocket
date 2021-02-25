@@ -1,4 +1,4 @@
-package ttl
+package testcase
 
 import (
 	"bytes"
@@ -248,7 +248,6 @@ func (c *ttlClient) expectGetSucceed(ctx context.Context, keys, values [][]byte,
 	}
 }
 
-
 func (c *ttlClient) expectGetNilValue(ctx context.Context, keys [][]byte) {
 	for _, key := range keys {
 		val, err := c.cli.Get(ctx, key)
@@ -277,7 +276,7 @@ func (c *ttlClient) expectKeyTTL(ctx context.Context, keys [][]byte, TTL, expect
 func (c *ttlClient) expectScanSucceed(ctx context.Context, keys, values [][]byte, limit int, TTL uint64) {
 	// TODO: A better scan test method is required...
 	startKey := keys[0]
-	endKey := append(keys[len(keys)-1], '\0')
+	endKey := keys[len(keys)-1]
 	scanKeys, scanValues, err := c.cli.Scan(
 		ctx,
 		startKey,
@@ -328,9 +327,8 @@ func equalInToleranceCreator(tolerance uint64) func(uint64, uint64) bool {
 		}
 		if gap <= tolerance {
 			return true
-		} else {
-			return false
 		}
+		return false
 	}
 }
 

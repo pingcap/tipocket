@@ -6,11 +6,11 @@ import (
 
 	"github.com/pingcap/tipocket/cmd/util"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
+	testcase "github.com/pingcap/tipocket/testcase/ttl"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/tests/ttl"
 )
 
 var (
@@ -31,8 +31,8 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: ttl.ClientCreator{
-			Cfg: &ttl.Config{
+		ClientCreator: testcase.ClientCreator{
+			Cfg: &testcase.Config{
 				Concurrency:   *concurrency,
 				DataPerWorker: *dataPerWorker,
 			},
