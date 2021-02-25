@@ -64,10 +64,6 @@ type fixtureContext struct {
 	DMConfig                 DMConfig
 	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
-	// Loki
-	LokiAddress  string
-	LokiUsername string
-	LokiPassword string
 	// Other
 	pprofAddr  string
 	EnableHint bool
@@ -77,6 +73,9 @@ type fixtureContext struct {
 	LeakCheckSilent  bool
 
 	ReplicaRead string
+
+	// mysql proxy, for example: socks://address:port
+	MySQLProxy string
 }
 
 // ClusterRef references a TidbCluster
@@ -278,10 +277,6 @@ func init() {
 	flag.BoolVar(&Context.Purge, "purge", false, "purge the whole cluster on success")
 	flag.BoolVar(&Context.DeleteNS, "delNS", false, "delete the deployed namespace")
 
-	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
-	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
-	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
-
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBHubAddress, "tidb-hub", "", "tidb hub address, will overwrite -hub")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVHubAddress, "tikv-hub", "", "tikv hub address, will overwrite -hub")
@@ -360,6 +355,7 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.PDStorageClassName, "pd-storage-class", "", "PD dedicated storage class")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVStorageClassName, "tikv-storage-class", "", "TiKV dedicated storage class")
 	flag.StringVar(&Context.TiDBClusterConfig.LogStorageClassName, "log-storage-class", "", "log dedicated storage class")
+	flag.StringVar(&Context.MySQLProxy, "mysql-proxy", "", "mysql proxy is just like HTTP(S)_PROXY, only uses for MySQL connection now")
 
 	log.SetHighlighting(false)
 	go func() {
