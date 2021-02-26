@@ -34,11 +34,9 @@ import (
 var (
 	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
 	interval    = flag.Duration("interval", 2*time.Second, "the interval")
-	tables      = flag.Int("tables", 1, "the number of the tables")
 	concurrency = flag.Int("concurrency", 200, "concurrency worker count")
 	retryLimit  = flag.Int("retry-limit", 200, "retry count")
 	longTxn     = flag.Bool("long-txn", true, "enable long-term transactions")
-	runMode     = flag.String("run-mode", "online", "case mode, support values: online / dev, default value: online")
 	contention  = flag.String("contention", "low", "contention level, support values: high / low, default value: low")
 	pessimistic = flag.Bool("pessimistic", false, "use pessimistic transaction")
 	minLength   = flag.Int("min-value-length", 0, "minimum value inserted into rocksdb")
@@ -64,10 +62,8 @@ func main() {
 			Cfg: &bank2.Config{
 				NumAccounts:   *accounts,
 				Interval:      *interval,
-				TableNum:      *tables,
 				Concurrency:   *concurrency,
 				RetryLimit:    *retryLimit,
-				RunMode:       *runMode,
 				MinLength:     *minLength,
 				MaxLength:     *maxLength,
 				EnableLongTxn: *longTxn,
