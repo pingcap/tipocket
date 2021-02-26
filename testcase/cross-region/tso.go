@@ -242,6 +242,7 @@ func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc stri
 	}
 }
 
+// TSO wraps the tso response
 type TSO struct {
 	physical   int64
 	logical    int64
