@@ -77,7 +77,7 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.PDReplicas = pdReplicas
 	cloned.TiKVReplicas = kvReplicas
 	cloned.TiDBReplicas = dbReplicas
-	cloned.PDImage = "hub.pingcap.net/gaosong/pd:d28e248d"
+	cloned.PDImage = "hub.pingcap.net/gaosong/pd:c436e988"
 	cloned.PDStorageClassName = "shared-nvme-disks"
 	cloned.TiKVStorageClassName = "nvme-disks"
 	cloned.LogStorageClassName = "shared-sas-disks"

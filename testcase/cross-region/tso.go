@@ -3,8 +3,8 @@ package crossregion
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
+	"time"
 
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
@@ -31,9 +31,10 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		}
 	}
 	log.Info("new allocators ready")
-	if err := c.requestGlobalTSOErr(ctx); err != nil {
-		return err
-	}
+	c.requestTSOAfterTransfer(ctx, "global")
+	c.requestTSOAfterTransfer(ctx, "dc-1")
+	c.requestTSOAfterTransfer(ctx, "dc-2")
+	c.requestTSOAfterTransfer(ctx, "dc-3")
 	return c.requestTSOs(ctx)
 }
 
@@ -231,18 +232,14 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 			}
 		}
 		return false
-	})
+	}, util2.WithSleepInterval(5*time.Second), util2.WithRetryTimes(30))
 }
 
-func (c *crossRegionClient) requestGlobalTSOErr(ctx context.Context) error {
-	_, _, err := c.pdClient.GetTS(ctx)
-	if err == nil {
-		return fmt.Errorf("global tso should return error")
+func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc string) {
+	_, _, err := c.pdClient.GetLocalTS(ctx, dc)
+	if err != nil {
+		log.Info("requestTSOAfterTransfer", zap.Error(err), zap.String("dcLocation", dc))
 	}
-	if !strings.Contains(err.Error(), "mismatch leader id") {
-		return fmt.Errorf("global tso should return mismatch leader id error")
-	}
-	return nil
 }
 
 type TSO struct {

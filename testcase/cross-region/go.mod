@@ -7,7 +7,7 @@ require (
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8
 	github.com/pingcap/tipocket v1.0.0
-	github.com/tikv/pd v1.1.0-beta.0.20210220042138-d28e248dffea
+	github.com/tikv/pd v1.1.0-beta.0.20210225143804-1f200cbcd647
 	go.uber.org/zap v1.15.0
 )
 
@@ -46,5 +46,3 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+inc
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 
 replace github.com/pingcap/tipocket => ../../.
-
-replace github.com/tikv/pd => github.com/yisaer/pd v1.1.0-beta.0.20210222060835-921105eb1132
