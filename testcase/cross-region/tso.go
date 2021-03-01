@@ -31,7 +31,7 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		}
 	}
 	log.Info("new allocators ready")
-	c.requestTSOAfterTransfer(ctx, "global")
+	// after transfer allocator and leader, we can tolerate tso failed once for each dc.	c.requestTSOAfterTransfer(ctx, "global")
 	c.requestTSOAfterTransfer(ctx, "dc-1")
 	c.requestTSOAfterTransfer(ctx, "dc-2")
 	c.requestTSOAfterTransfer(ctx, "dc-3")
