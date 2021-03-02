@@ -3,24 +3,28 @@ package pdutil
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"github.com/pingcap/errors"
-
 	"github.com/pingcap/tipocket/pkg/nemesis/fake_kvproto/metapb"
-
 	httputil "github.com/pingcap/tipocket/pkg/util/http"
 )
 
 const (
-	schedulersPrefix     = "/pd/api/v1/schedulers"
-	regionKeyPrefix      = "/pd/api/v1/region/key/"
-	regionsSiblingPrefix = "/pd/api/v1/regions/sibling/"
-	operatorsPrefix      = "/pd/api/v1/operators"
-	storesPrefix         = "/pd/api/v1/stores"
-	regionsPrefix        = "/pd/api/v1/regions"
+	schedulersPrefix        = "/pd/api/v1/schedulers"
+	regionKeyPrefix         = "/pd/api/v1/region/key/"
+	regionsSiblingPrefix    = "/pd/api/v1/regions/sibling/"
+	operatorsPrefix         = "/pd/api/v1/operators"
+	storesPrefix            = "/pd/api/v1/stores"
+	regionsPrefix           = "/pd/api/v1/regions"
+	pdLeaderTransferPrefix  = "/pd/api/v1/leader/transfer"
+	membersPrefix           = "/pd/api/v1/members"
+	transferAllocatorPrefix = "/pd/api/v1/tso/allocator/transfer"
+	storePrefix             = "/pd/api/v1/store"
+	transferLeaderPrefix    = "/pd/api/v1/leader/transfer"
 
 	contentJSON = "application/json"
 )
@@ -139,4 +143,61 @@ func (p *Client) GetSiblingRegions(id uint64) ([]*RegionInfo, error) {
 		return nil, errors.Wrap(err, "Unmarshal `[]RegionInfo` failed")
 	}
 	return body.Regions, nil
+}
+
+// TransferPDLeader transfer pd leader
+func (p *Client) TransferPDLeader(memberName string) error {
+	_, err := p.c.Post(p.pdAddr+pdLeaderTransferPrefix+"/"+memberName, contentJSON, nil)
+	return err
+}
+
+// GetMembers get PD members info
+func (p *Client) GetMembers() (*MembersInfo, error) {
+	resp, err := p.c.Get(p.pdAddr + membersPrefix)
+	if err != nil {
+		return nil, err
+	}
+	members := &MembersInfo{}
+	err = json.Unmarshal(resp, members)
+	if err != nil {
+		return nil, err
+	}
+	return members, nil
+}
+
+// TransferAllocator transfer tso allocator to the target pd member
+func (p *Client) TransferAllocator(name, dclocation string) error {
+	apiURL := fmt.Sprintf("%s%s/%s?dcLocation=%s", p.pdAddr, transferAllocatorPrefix, name, dclocation)
+	_, err := p.c.Post(apiURL, contentJSON, nil)
+	return err
+}
+
+// SetStoreLabels set store labels
+func (p *Client) SetStoreLabels(storeID uint64, labels map[string]string) error {
+	apiURL := fmt.Sprintf("%s%s/%v/label", p.pdAddr, storePrefix, storeID)
+	data, err := json.Marshal(labels)
+	if err != nil {
+		return err
+	}
+	_, err = p.c.Post(apiURL, contentJSON, bytes.NewBuffer(data))
+	return err
+}
+
+// MembersInfo is PD members info returned from PD RESTful interface
+//type Members map[string][]*pdpb.Member
+type MembersInfo struct {
+	Members             []*Member          `json:"members,omitempty"`
+	Leader              *Member            `json:"leader,omitempty"`
+	EtcdLeader          *Member            `json:"etcd_leader,omitempty"`
+	TsoAllocatorLeaders map[string]*Member `json:"tso_allocator_leaders,omitempty"`
+}
+
+// Member is the PD member info
+type Member struct {
+	// name is the name of the PD member.
+	Name string `json:"name,omitempty"`
+	// member_id is the unique id of the PD member.
+	MemberID uint64 `json:"member_id,omitempty"`
+	// dc_location is the dcLocation of the PD member
+	DcLocation string `json:"dc_location,omitempty"`
 }
