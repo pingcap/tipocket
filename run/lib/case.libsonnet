@@ -61,7 +61,7 @@
       '/bin/vbank',
       '-cluster-name=%s' % args.clusterName,
     ],
-  crossregion(args={ tso_request_count: '100' })::
+  crossregion(args={ tso_request_count: '2000' })::
     [
       '/bin/cross-region',
        '-tso-request-count=%s' % args.tso_request_count,
