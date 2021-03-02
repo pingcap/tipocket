@@ -12,6 +12,8 @@ import (
 	util2 "github.com/pingcap/tipocket/testcase/cross-region/pkg/util"
 )
 
+var recordTSO = make(map[[2]int64]struct{}, 0)
+
 func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	if err := c.requestTSOs(ctx); err != nil {
 		return err
@@ -31,7 +33,8 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		}
 	}
 	log.Info("new allocators ready")
-	// after transfer allocator and leader, we can tolerate tso failed once for each dc.	c.requestTSOAfterTransfer(ctx, "global")
+	// after transfer allocator and leader, we can tolerate tso failed once for each dc.
+	c.requestTSOAfterTransfer(ctx, "global")
 	c.requestTSOAfterTransfer(ctx, "dc-1")
 	c.requestTSOAfterTransfer(ctx, "dc-2")
 	c.requestTSOAfterTransfer(ctx, "dc-3")
@@ -59,7 +62,6 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 		tsoErr := <-tsoErrCh
 		tsoErrors = append(tsoErrors, tsoErr)
 	}
-	recordTSO := make(map[[2]int64]struct{}, 0)
 	for len(tsoCh) > 0 {
 		tso := <-tsoCh
 		key := [2]int64{
@@ -238,7 +240,9 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc string) {
 	_, _, err := c.pdClient.GetLocalTS(ctx, dc)
 	if err != nil {
-		log.Info("requestTSOAfterTransfer", zap.Error(err), zap.String("dcLocation", dc))
+		log.Info("requestTSOAfterTransfer failed", zap.Error(err), zap.String("dcLocation", dc))
+	} else {
+		log.Info("requestTSOAfterTransfer success", zap.String("dcLocation", dc))
 	}
 }
 

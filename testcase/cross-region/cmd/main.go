@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	tsoRequests    = flag.Int("tso-request-count", 100, "tso requests count for each allocator")
+	tsoRequests    = flag.Int("tso-request-count", 2000, "tso requests count for each allocator")
 	pdConfTemplate = `
 enable-local-tso = true
 [labels]
