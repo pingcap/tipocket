@@ -82,6 +82,7 @@ function thread_done()
                       ", count(id): " .. count_id .. ", count(k): " .. count_k)
             os.exit(-1)
         end
+        print("consistency check for sbtest" .. tid .. " success")
     end
     close_statements()
     con:disconnect()

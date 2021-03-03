@@ -1,8 +1,7 @@
 host=$1
 port=$2
 
-# init_timeout=--thread-init-timeout=10000 
-init_timeout=""
+init_timeout=--thread-init-timeout=1000
 
 for i in `seq 1 100`; do
     if [ $(($i % 2)) -eq 1 ]; then
