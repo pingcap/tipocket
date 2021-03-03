@@ -40,6 +40,8 @@ type Config struct {
 	// When UpdateInPlace is set to true, we update with `set balance = balance - @amount`, otherwise we select for update first,
 	// Then update by `set balance = @new_balance`.
 	UpdateInPlace bool
+	// ConnParams are parameters passed to the mysql-driver, see https://github.com/go-sql-driver/mysql#parameters .
+	ConnParams string
 }
 
 const (
@@ -144,7 +146,11 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	c.idx = idx
 	c.r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	node := clientNodes[idx]
-	db, err := sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	if len(c.cfg.ConnParams) > 0 {
+		dsn = dsn + "?" + c.cfg.ConnParams
+	}
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return err
 	}

@@ -36,6 +36,7 @@ var (
 	useRange      = flag.Bool("range", false, "use range condition")
 	updateInPlace = flag.Bool("update_in_place", false, "use update in place mode")
 	readCommitted = flag.Bool("read_committed", false, "use READ-COMMITTED isolation level")
+	connParams    = flag.String("conn_params", "", "connection parameters")
 )
 
 func main() {
@@ -62,6 +63,7 @@ func main() {
 		Range:         *useRange,
 		ReadCommitted: *readCommitted,
 		UpdateInPlace: *updateInPlace,
+		ConnParams:    *connParams,
 	}
 	suit := util.Suit{
 		Config:           &cfg,
