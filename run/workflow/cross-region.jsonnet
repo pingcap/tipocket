@@ -10,6 +10,6 @@
       // 'tikv-storage-class': 'local-storage',
       // 'log-storage-class': 'shared-sas',
     },
-    command: { tso_request_count: '100' },
+    command: { tso_request_count: '2000' },
   },
 }
