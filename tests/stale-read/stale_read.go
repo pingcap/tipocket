@@ -3,6 +3,7 @@ package staleread
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -74,7 +75,6 @@ func (s *staleRead) SetUp(ctx context.Context, nodes []cluster.Node, clientNodes
 	// Load data
 	s.prepareData()
 
-	time.Sleep(time.Duration(s.MaxStaleness) * time.Second)
 	return nil
 }
 
@@ -100,7 +100,7 @@ func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 				pad := fmt.Sprintf("%d", s.encodeTs(time.Now()))
 				stmt := fmt.Sprintf(`UPDATE %s.%s SET pad="%s" WHERE id in (%s)`, s.DBName, Table, pad, idsStr)
 				if _, err := s.db.Exec(stmt); err != nil {
-					log.Errorf("[stale read] Failed to execute sql [%s], error: %v", stmt, err)
+					log.Warnf("[stale read] Failed to execute sql [%s], error: %v", stmt, err)
 				}
 				select {
 				case <-ctx.Done():
@@ -111,6 +111,8 @@ func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 			}
 		}()
 	}
+	// Wait `MaxStaleness` elapsed so all read can reture data
+	time.Sleep(time.Duration(s.MaxStaleness) * time.Second)
 	// Read data
 	for i := 0; i < s.Concurrency; i++ {
 		wg.Add(1)
@@ -175,22 +177,25 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, ids []int) (map[int]string, uint64, error) {
 	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		log.Fatal(err)
+		log.Warnf("failed to start a read-only transaction, err: %v", err)
+		return nil, 0, err
 	}
 
 	if _, err := txn.ExecContext(ctx, fmt.Sprintf("START TRANSACTION READ ONLY WITH TIMESTAMP BOUND READ TIMESTAMP '%s'", t.String())); err != nil {
-		log.Fatalf("failed to start stale read-only transaction, time: %s, err: %v", t.String(), err)
+		log.Warnf("failed to start stale read-only transaction, time: %s, err: %v", t.String(), err)
+		return nil, 0, err
 	}
 
 	var tso uint64
 	if err = txn.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
-		log.Fatalf("failed to get tidb_current_ts, err: %v", err)
+		log.Warnf("failed to get tidb_current_ts, err: %v", err)
+		return nil, 0, err
 	}
 
 	idsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]")
 	rows, err := txn.QueryContext(ctx, fmt.Sprintf("select * from %s.%s where id in (%s)", s.DBName, Table, idsStr))
 	if err != nil {
-		return nil, 0, err
+		return nil, tso, err
 	}
 	defer rows.Close()
 	results := make(map[int]string, len(ids))
@@ -198,18 +203,22 @@ func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, 
 		var id int
 		var pad string
 		if err = rows.Scan(&id, &pad); err != nil {
-			return nil, 0, err
+			return nil, tso, err
 		}
 		results[id] = pad
 	}
 
 	if err := txn.Commit(); err != nil {
-		log.Fatal(err)
+		log.Warnf("failed to commit a read-only transaction, err: %v", err)
+		return nil, tso, err
 	}
 	return results, tso, nil
 }
 
 func (s *staleRead) strongRead(ctx context.Context, conn *sql.Conn, tso uint64, ids []int) (map[int]string, error) {
+	if tso == 0 {
+		return nil, errors.New("tso can't be zero")
+	}
 	if _, err := conn.ExecContext(ctx, fmt.Sprintf("set @@tidb_snapshot = '%d'", tso)); err != nil {
 		log.Warnf("failed to set tidb_snapshot, tso: %d, err: %v", tso, err)
 		return nil, err
