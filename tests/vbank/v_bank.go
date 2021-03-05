@@ -452,6 +452,7 @@ func (c *Client) invokeReadMultiTable(ctx context.Context) (result *BankState, e
 		var balance float64
 		err = c.tx.QueryRowContext(ctx, "select balance from "+c.getTableName(i)).Scan(&balance)
 		if err == sql.ErrNoRows {
+			err = nil
 			continue
 		}
 		if err != nil {
