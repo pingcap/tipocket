@@ -14,6 +14,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/util"
 
@@ -46,8 +47,9 @@ type Controller struct {
 	proc         int64
 	requestCount int64
 
-	suit    verify.Suit
-	plugins []Plugin
+	suit       verify.Suit
+	plugins    []Plugin
+	logsClient logs.SearchLogClient
 }
 
 // NewController creates a controller.
@@ -59,6 +61,7 @@ func NewController(
 	clientRequestGenerator func(ctx context.Context, client core.OnScheduleClientExtensions, node cluster.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	plugins []Plugin,
+	logsClient logs.SearchLogClient,
 ) *Controller {
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
@@ -70,6 +73,7 @@ func NewController(
 	c.clientRequestGenerator = clientRequestGenerator
 	c.suit = verifySuit
 	c.plugins = plugins
+	c.logsClient = logsClient
 
 	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))

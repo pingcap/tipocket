@@ -30,6 +30,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
+	"github.com/pingcap/tipocket/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -52,6 +53,8 @@ type Suit struct {
 	ClusterDefs cluster.Cluster
 	// Plugins
 	Plugins []control.Plugin
+	// LogsSearch client
+	LogsClient logs.SearchLogClient
 }
 
 // Run runs the suit.
@@ -116,6 +119,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.ClientRequestGen,
 		suit.VerifySuit,
 		suit.Plugins,
+		suit.LogsClient,
 	)
 
 	sigs := make(chan os.Signal, 1)
@@ -144,6 +148,7 @@ func (suit *Suit) Run(ctx context.Context) {
 func (suit *Suit) setDefaultPlugins() {
 	var defaultPlugins = []control.Plugin{
 		&control.LeakCheck{},
+		&control.PanicCheck{},
 	}
 	if len(suit.Plugins) == 0 {
 		suit.Plugins = defaultPlugins

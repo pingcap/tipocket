@@ -17,6 +17,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/ngaut/log"
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -65,6 +66,8 @@ func (c *Client) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx i
 
 // Start implements the core.StandardClientExtensions interface.
 func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
+	time.Sleep(time.Second * 1000)
+
 	rows, err := c.db.QueryContext(ctx, "select count(*) from t where id = 1")
 	if err != nil {
 		return err
