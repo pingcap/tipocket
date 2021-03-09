@@ -26,7 +26,7 @@ type PanicCheck struct {
 	*Controller
 	PanicIf bool
 	// maps from string to *os.File
-	lastQueryTime time.Time
+	lastQueryTimeM sync.Map
 }
 
 // PanicRecord records panic logs
@@ -54,17 +54,17 @@ func (e PanicRecords) String() string {
 
 // InitPlugin ...
 func (c *PanicCheck) InitPlugin(control *Controller) {
-	c.Controller = control
-	c.lastQueryTime = minTime
-
-	if c.logsClient == nil {
+	if control.logsClient == nil {
 		log.Warn("plugin panic check won't work since logs client is nil")
 		return
+	}
+	c.Controller = control
+	for _, node := range control.cfg.Nodes {
+		c.lastQueryTimeM.Store(node.String(), minTime)
 	}
 
 	log.Info("panic checker is running...")
 	panicTicker := time.NewTicker(time.Minute)
-
 	go func() {
 		for {
 			select {
@@ -87,16 +87,9 @@ func (c *PanicCheck) InitPlugin(control *Controller) {
 }
 
 func (c *PanicCheck) checkTiDBClusterPanic(ctx context.Context, nodes []cluster.Node) PanicRecords {
-	var err error
-	to, from := time.Now(), c.lastQueryTime
 	wg, mu, panicRecords := sync.WaitGroup{}, sync.Mutex{}, PanicRecords(nil)
 
-	defer func() {
-		if err == nil {
-			c.lastQueryTime = to
-		}
-	}()
-
+	now := time.Now()
 	for _, n := range nodes {
 		switch n.Component {
 		case cluster.TiDB, cluster.TiKV, cluster.PD:
@@ -109,13 +102,23 @@ func (c *PanicCheck) checkTiDBClusterPanic(ctx context.Context, nodes []cluster.
 			}
 			node := n
 			panicRecord := PanicRecord{Node: &node}
+
+			from, _ := c.lastQueryTimeM.Load(node.String())
 			wg.Add(1)
 			go func() {
-				defer wg.Done()
-				logLines, err := c.Controller.logsClient.SearchLog(ctx, node.IP, int(node.Port),
-					from, to,
+				defer func() {
+					c.lastQueryTimeM.Store(node.String(), now)
+					wg.Done()
+				}()
+				ip, port := node.IP, int(node.Port)
+				if node.Component == cluster.TiDB {
+					port = 10080
+				}
+				logLines, err := c.Controller.logsClient.SearchLog(ctx,
+					ip, port,
+					from.(time.Time), now,
 					[]logs.LogLevel{logs.LogLevelCritical, logs.LogLevelDebug, logs.LogLevelError, logs.LogLevelInfo, logs.LogLevelTrace, logs.LogLevelUnknown, logs.LogLevelWarn},
-					[]string{"Welcome"},
+					[]string{"(?i)panic"},
 					logLimit,
 				)
 				if err != nil {
