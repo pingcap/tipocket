@@ -1,46 +1,4 @@
-// Copyright 2021 PingCAP, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
-package testcase
-
-import (
-	"github.com/pingcap/tipocket/pkg/scaffolds/file"
-)
-
-// Makefile uses fro Makefile
-type Makefile struct {
-	file.TemplateMixin
-	// CaseName is test case name
-	CaseName string
-}
-
-// GetIfExistsAction ...
-func (m *Makefile) GetIfExistsAction() file.IfExistsAction {
-	return file.IfExistsActionError
-}
-
-// Validate ...
-func (m *Makefile) Validate() error {
-	return m.TemplateMixin.Validate()
-}
-
-// SetTemplateDefaults ...
-func (m *Makefile) SetTemplateDefaults() error {
-	m.TemplateBody = makefileTemplate
-	return nil
-}
-
-const makefileTemplate = `
 GOARCH := $(if $(GOARCH),$(GOARCH),amd64)
 GO=GO15VENDOREXPERIMENT="1" CGO_ENABLED=1 GOOS=$(GOOS) GOARCH=$(GOARCH) GO111MODULE=on go
 GOTEST=GO15VENDOREXPERIMENT="1" CGO_ENABLED=1 GO111MODULE=on go test # go race detector requires cgo
@@ -58,10 +16,10 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: mod-sum {{ .CaseName }}
+build: mod-sum list-append
 
-{{ .CaseName }}:
-	$(GOBUILD) $(GOMOD) -o bin/{{ .CaseName }} cmd/*.go
+list-append:
+	$(GOBUILD) $(GOMOD) -o bin/list-append cmd/*.go
 
 fmt: groupimports
 	go fmt ./...
@@ -100,4 +58,3 @@ test:
 	$(GOTEST) ./...
 
 .PHONY: all clean build
-`

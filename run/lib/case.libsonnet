@@ -1,5 +1,5 @@
 {
-  list_append(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
+  'list-append'(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
     [
       '/bin/append',
       '-table-count=%s' % args.tablecount,

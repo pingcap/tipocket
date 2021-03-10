@@ -1,6 +1,6 @@
 {
   _config+:: {
-    case_name: 'list_append',
+    case_name: 'list-append',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations
