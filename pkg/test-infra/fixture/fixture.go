@@ -122,6 +122,7 @@ type TiDBClusterConfig struct {
 	TiKVImage    string
 	PDImage      string
 	TiFlashImage string
+	TiCDCImage   string
 
 	// configurations
 	TiDBConfig string
@@ -135,6 +136,7 @@ type TiDBClusterConfig struct {
 	TiKVReplicas    int
 	PDReplicas      int
 	TiFlashReplicas int
+	TiCDCReplicas   int
 
 	// Database address
 	TiDBAddr addressArrayFlags
@@ -288,6 +290,7 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVImage, "tikv-image", "", "tikv image")
 	flag.StringVar(&Context.TiDBClusterConfig.PDImage, "pd-image", "", "pd image")
 	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImage, "tiflash-image", "", "tiflash image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiCDCImage, "ticdc-image", "", "cdc image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
@@ -312,11 +315,8 @@ func init() {
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
-	flag.StringVar(&Context.CDCConfig.Image, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
 	flag.BoolVar(&Context.CDCConfig.EnableKafka, "cdc.enable-kafka", false, "enable kafka sink")
 	flag.StringVar(&Context.CDCConfig.KafkaConsumerImage, "cdc.kafka-consumer-image", "docker.io/pingcap/ticdc-kafka:nightly", "the kafka consumer image to use when kafka is enabled")
-	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
-	flag.StringVar(&Context.CDCConfig.Timezone, "cdc.timezone", "UTC", "timezone of cdc cluster, default UTC")
 	flag.StringVar(&Context.CDCConfig.SortEngine, "cdc.sort-engine", "memory", "sort engine")
 	flag.StringVar(&Context.CDCConfig.SortDir, "cdc.sort-dir", "/tmp/sort_cache", "file sort dir")
 

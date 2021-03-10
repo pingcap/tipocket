@@ -15,11 +15,8 @@ package fixture
 
 // CDCConfig for binlog component
 type CDCConfig struct {
-	Image              string
 	EnableKafka        bool
 	KafkaConsumerImage string
-	LogLevel           string
-	Timezone           string
 	SortEngine         string
 	SortDir            string
 }

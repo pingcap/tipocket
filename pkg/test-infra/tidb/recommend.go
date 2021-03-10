@@ -15,6 +15,7 @@ package tidb
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -209,6 +210,22 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							Name:        "log",
 							StorageSize: "200Gi",
 							MountPath:   "/var/log/tidblog",
+						},
+					},
+				},
+				TiCDC: &v1alpha1.TiCDCSpec{
+					Replicas: int32(clusterConfig.TiCDCReplicas),
+					ComponentSpec: v1alpha1.ComponentSpec{
+						Image: util.BuildImage("ticdc", clusterConfig.ImageVersion, clusterConfig.TiCDCImage),
+					},
+					ResourceRequirements: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("8Gi"),
 						},
 					},
 				},
