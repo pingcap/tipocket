@@ -18,6 +18,7 @@ import (
 	"flag"
 
 	"github.com/pingcap/tipocket/cmd/util"
+	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/check/porcupine"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
@@ -25,7 +26,7 @@ import (
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
-	"github.com/pingcap/tipocket/tests/vbank"
+	"github.com/pingcap/tipocket/testcase/vbank"
 )
 
 var (
@@ -73,6 +74,7 @@ func main() {
 		Provider:         cluster.NewDefaultClusterProvider(),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, *clusterName, fixture.Context.TiDBClusterConfig),
+		LogsClient:       logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }

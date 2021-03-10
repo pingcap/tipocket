@@ -22,27 +22,15 @@ build: consistency isolation pocket on-dup sqllogic block-writer \
     example \
 # +tipocket:scaffold:makefile_build
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
+consistency: bank bank-two pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
 isolation: list-append rw-register
-
-bank:
-	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
-
-bank2:
-	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/bank2/*.go
 
 backup:
 	$(GOBUILD) $(GOMOD) -o bin/backup cmd/backup/*.go
 
 pbank:
 	$(GOBUILD) $(GOMOD) -o bin/pbank cmd/pbank/main.go
-
-vbank:
-	$(GOBUILD) $(GOMOD) -o bin/vbank cmd/vbank/*.go
-
-ledger:
-	$(GOBUILD) $(GOMOD) -o bin/ledger cmd/ledger/*.go
 
 rawkv-linearizability:
 	cd testcase/rawkv-linearizability; make build; \
@@ -57,9 +45,6 @@ rawkv:
 txnkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-txnkv cmd/txnkv/main.go
 
-verifier:
-	$(GOBUILD) $(GOMOD) -o bin/chaos-verifier cmd/verifier/main.go
-
 pocket:
 	cd testcase/pocket; make build; \
 	cp bin/* ../../bin/
@@ -70,9 +55,6 @@ compare:
 on-dup:
 	cd testcase/ondup; make build; \
 	cp bin/* ../../bin/
-
-block-writer:
-	$(GOBUILD) $(GOMOD) -o bin/block-writer cmd/block-writer/*.go
 
 sqllogic:
 	cd testcase/sqllogictest; make build; \
@@ -109,15 +91,39 @@ pipelined-locking:
 	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
 
 example:
-	cd testcase/example ; make build; \
+	cd testcase/example; make build; \
 	cp bin/* ../../bin/
 
 list-append:
-	cd testcase/list-append ; make build; \
+	cd testcase/list-append; make build; \
 	cp bin/* ../../bin/
 
 rw-register:
-	cd testcase/rw-register ; make build; \
+	cd testcase/rw-register; make build; \
+	cp bin/* ../../bin/
+
+ledger:
+	cd testcase/ledger; make build; \
+	cp bin/* ../../bin/
+
+bank:
+	cd testcase/bank; make build; \
+	cp bin/* ../../bin/
+
+block-writer:
+	cd testcase/block-writer; make build; \
+	cp bin/* ../../bin/
+
+vbank:
+	cd testcase/vbank; make build; \
+	cp bin/* ../../bin/
+
+bank-two:
+	cd testcase/bank-two; make build; \
+	cp bin/* ../../bin/
+
+verifier:
+	cd testcase/verifier; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd

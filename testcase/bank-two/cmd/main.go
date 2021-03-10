@@ -21,6 +21,7 @@ import (
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
+	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/verify"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	"github.com/pingcap/tipocket/tests/bank2"
+	client "github.com/pingcap/tipocket/testcase/bank-two"
 )
 
 var (
@@ -58,8 +59,8 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: bank2.ClientCreator{
-			Cfg: &bank2.Config{
+		ClientCreator: client.ClientCreator{
+			Cfg: &client.Config{
 				NumAccounts:   *accounts,
 				Interval:      *interval,
 				Concurrency:   *concurrency,
@@ -77,6 +78,7 @@ func main() {
 		VerifySuit:  verify.Suit{},
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
+		LogsClient: logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }

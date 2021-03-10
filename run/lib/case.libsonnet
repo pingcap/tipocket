@@ -15,11 +15,7 @@
     ],
   bank(args={})::
     [
-      '/bin/pbank',
-    ],
-  block_writer(args={})::
-    [
-      '/bin/block-writer',
+      '/bin/bank',
     ],
   ledger(args={})::
     [
@@ -35,11 +31,11 @@
     ],
   scbank(args={})::
     [
-      '/bin/bank',
+      '/bin/scbank',
     ],
-  scbank2(args={ concurrency: '200', accounts: '1000000', tidb_replica_read: 'leader-and-follower' })::
+  'scbank-two'(args={ concurrency: '200', accounts: '1000000', tidb_replica_read: 'leader-and-follower' })::
     [
-      '/bin/bank2',
+      '/bin/scbank-two',
       '-concurrency=%s' % args.concurrency,
       '-accounts=%s' % args.accounts,
       '-tidb-replica-read=%s' % args.tidb_replica_read,
@@ -70,6 +66,14 @@
   'example'(args={})::
     [
       '/bin/example',
+    ],
+  'block-writer'(args={})::
+    [
+      '/bin/block-writer',
+    ],
+  'bank-two'(args={})::
+    [
+      '/bin/bank-two',
     ],
   // +tipocket:scaffold:case_decls
 }

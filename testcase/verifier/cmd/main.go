@@ -22,16 +22,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/pingcap/tipocket/db/tidb"
-	"github.com/pingcap/tipocket/pkg/check/porcupine"
-	"github.com/pingcap/tipocket/pkg/model"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
-	listappend "github.com/pingcap/tipocket/tests/list_append"
+	listappend "github.com/pingcap/tipocket/testcase/list-append"
+	rwregister "github.com/pingcap/tipocket/testcase/rw-register"
 )
 
 var (
-	names = flag.String("names", "append", "model names, separated by comma")
+	names = flag.String("names", "list-append", "model names, separated by comma")
 )
 
 func main() {
@@ -52,19 +50,10 @@ func main() {
 		for _, name := range strings.Split(*names, ",") {
 			s := verify.Suit{}
 			switch name {
-			case "tidb_bank":
-				s.Model, s.Parser, s.Checker = tidb.BankModel(), tidb.BankParser(), porcupine.Checker{}
-			case "tidb_bank_tso":
-				// Actually we can omit BankModel, since BankTsoChecker does not require a Model.
-				s.Model, s.Parser, s.Checker = tidb.BankModel(), tidb.BankParser(), tidb.BankTsoChecker()
-			//case "sequential":
-			//	s.Parser, s.Checker = tidb.NewSequentialParser(), tidb.NewSequentialChecker()
-			case "register":
-				s.Model, s.Parser, s.Checker = model.RegisterModel(), model.RegisterParser(), porcupine.Checker{}
-			case "append":
+			case "list-append":
 				s.Model, s.Parser, s.Checker = nil, listappend.AppendParser{}, listappend.AppendChecker{}
-			case "":
-				continue
+			case "rw-register":
+				s.Model, s.Parser, s.Checker = nil, rwregister.RegisterParser{}, rwregister.RegisterChecker{}
 			default:
 				log.Printf("%s is not supported", name)
 				continue

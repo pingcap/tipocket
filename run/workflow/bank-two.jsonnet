@@ -1,6 +1,6 @@
 {
   _config+:: {
-    case_name: 'block-writer',
+    case_name: 'bank-two',
     image_name: 'hub.pingcap.net/qa/tipocket',
     args+: {
       // k8s configurations

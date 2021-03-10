@@ -16,26 +16,23 @@ package main
 import (
 	"context"
 	"flag"
-	"time"
 
 	// use mysql
 	_ "github.com/go-sql-driver/mysql"
 
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 
-	"github.com/pingcap/tipocket/tests/ledger"
-
 	"github.com/pingcap/tipocket/cmd/util"
+	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	blockwriter "github.com/pingcap/tipocket/testcase/block-writer"
 )
 
 var (
-	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
-	interval    = flag.Duration("interval", 2*time.Second, "check interval")
+	tables      = flag.Int("tables", 10, "the number of the tables")
 	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
 )
 
 func main() {
@@ -47,17 +44,13 @@ func main() {
 		RunRound:    1,
 	}
 	suit := util.Suit{
-		Config:   &cfg,
-		Provider: cluster.NewDefaultClusterProvider(),
-		ClientCreator: ledger.ClientCreator{Cfg: &ledger.Config{
-			NumAccounts: *accounts,
-			Concurrency: *concurrency,
-			Interval:    *interval,
-			TxnMode:     *txnMode,
-		}},
-		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		Config:        &cfg,
+		Provider:      cluster.NewDefaultClusterProvider(),
+		ClientCreator: blockwriter.ClientCreator{TableNum: *tables, Concurrency: *concurrency},
+		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
 			fixture.Context.TiDBClusterConfig),
+		LogsClient: logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }
