@@ -218,7 +218,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 					}
 					_ = txn.Rollback()
-					log.Infof("[cdc-bank] [validatorId=%d] success", idx)
+					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
 				}
 			}
 		}(validatorIdx)
