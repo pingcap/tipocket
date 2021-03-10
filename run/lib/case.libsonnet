@@ -1,14 +1,14 @@
 {
   'list-append'(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
     [
-      '/bin/append',
+      '/bin/list-append',
       '-table-count=%s' % args.tablecount,
       '-read-lock=%s' % args.read_lock,
       '-txn-mode=%s' % args.txn_mode,
     ],
-  rw_register(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
+  'rw-register'(args={ tablecount: '7', read_lock: '"FOR UPDATE"', txn_mode: 'pessimistic' })::
     [
-      '/bin/register',
+      '/bin/rw-register',
       '-table-count=%s' % args.tablecount,
       '-read-lock=%s' % args.read_lock,
       '-txn-mode=%s' % args.txn_mode,

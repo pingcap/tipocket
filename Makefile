@@ -24,7 +24,7 @@ build: consistency isolation pocket on-dup sqllogic block-writer \
 
 consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
 
-isolation: list-append register
+isolation: list-append rw-register
 
 bank:
 	$(GOBUILD) $(GOMOD) -o bin/bank cmd/bank/*.go
@@ -50,9 +50,6 @@ rawkv-linearizability:
 
 tpcc:
 	$(GOBUILD) $(GOMOD) -o bin/tpcc cmd/tpcc/main.go
-
-register:
-	$(GOBUILD) $(GOMOD) -o bin/register cmd/register/main.go
 
 rawkv:
 	$(GOBUILD) $(GOMOD) -o bin/chaos-rawkv cmd/rawkv/main.go
@@ -117,6 +114,10 @@ example:
 
 list-append:
 	cd testcase/list-append ; make build; \
+	cp bin/* ../../bin/
+
+rw-register:
+	cd testcase/rw-register ; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd
