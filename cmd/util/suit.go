@@ -147,8 +147,8 @@ func (suit *Suit) Run(ctx context.Context) {
 
 func (suit *Suit) setDefaultPlugins() {
 	var defaultPlugins = []control.Plugin{
-		&control.LeakCheck{},
-		&control.PanicCheck{},
+		control.NewLeakCheck(fixture.Context.LeakCheckEatFile, fixture.Context.LogPath, fixture.Context.LeakCheckSilent),
+		control.NewPanicCheck(fixture.Context.PanicCheckSilent),
 	}
 	if len(suit.Plugins) == 0 {
 		suit.Plugins = defaultPlugins

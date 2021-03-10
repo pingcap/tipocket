@@ -13,20 +13,23 @@ import (
 	"github.com/pingcap/tipocket/pkg/logs"
 )
 
-const (
-	logLimit = 10000
-)
-
 var (
-	minTime = time.Unix(0, 0)
+	logLimit        = 10000
+	minTime         = time.Unix(0, 0)
+	_        Plugin = &PanicCheck{}
 )
 
 // PanicCheck impls Plugin
 type PanicCheck struct {
 	*Controller
-	PanicIf bool
+	silent bool
 	// maps from string to *os.File
 	lastQueryTimeM sync.Map
+}
+
+// NewPanicCheck creates an panic check instance
+func NewPanicCheck(silent bool) *PanicCheck {
+	return &PanicCheck{silent: silent}
 }
 
 // PanicRecord records panic logs
@@ -38,6 +41,7 @@ type PanicRecord struct {
 // PanicRecords is []PanicRecord
 type PanicRecords []PanicRecord
 
+// String ...
 func (e PanicRecords) String() string {
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprint("panic found:\n"))
@@ -75,10 +79,10 @@ func (c *PanicCheck) InitPlugin(control *Controller) {
 			case <-panicTicker.C:
 				records := c.checkTiDBClusterPanic(c.Controller.ctx, c.cfg.Nodes)
 				if records != nil {
-					if c.PanicIf {
-						log.Fatalf("%s\n", records.String())
-					} else {
+					if c.silent {
 						log.Warnf("%s\n", records.String())
+					} else {
+						log.Fatalf("%s\n", records.String())
 					}
 				}
 			}

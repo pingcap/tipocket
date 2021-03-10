@@ -5,8 +5,10 @@ import (
 	"time"
 )
 
+// LogLevel defines log level when searching
 type LogLevel int32
 
+// LogLevel ...
 const (
 	LogLevelUnknown  = LogLevel(0)
 	LogLevelDebug    = LogLevel(1)
