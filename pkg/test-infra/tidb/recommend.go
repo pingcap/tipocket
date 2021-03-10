@@ -267,7 +267,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				Initializer: v1alpha1.InitializerSpec{
 					MonitorContainer: v1alpha1.MonitorContainer{
 						BaseImage: "pingcap/tidb-monitor-initializer",
-						Version:   "v4.0.9",
+						Version:   "nightly",
 					},
 				},
 				Reloader: v1alpha1.ReloaderSpec{
