@@ -17,6 +17,9 @@ package fixture
 type CDCConfig struct {
 	EnableKafka        bool
 	KafkaConsumerImage string
+	LogLevel           string
+	Timezone           string
 	SortEngine         string
 	SortDir            string
+	LogFile            string
 }

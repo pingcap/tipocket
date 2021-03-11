@@ -228,6 +228,12 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							fixture.Memory: resource.MustParse("8Gi"),
 						},
 					},
+					Config: &v1alpha1.TiCDCConfig{
+						Timezone: &fixture.Context.CDCConfig.Timezone,
+						LogLevel: &fixture.Context.CDCConfig.LogLevel,
+						// FIXME(@mahjonp): tidb-operator haven't supported StorageVolume claims now.
+						LogFile: &fixture.Context.CDCConfig.LogFile,
+					},
 				},
 			},
 		},
