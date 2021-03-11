@@ -90,9 +90,6 @@ resolve-lock:
 	cd testcase/resolve-lock ; make build; \
 	cp bin/* ../../bin/
 
-pipelined-locking:
-	$(GOBUILD) $(GOMOD) -o bin/pipelined-locking cmd/pipelined-pessimistic-locking/*.go
-
 example:
 	cd testcase/example; make build; \
 	cp bin/* ../../bin/
