@@ -71,6 +71,8 @@ type fixtureContext struct {
 	// Plugins
 	LeakCheckEatFile string
 	LeakCheckSilent  bool
+	// Only warning if panic found?
+	PanicCheckSilent bool
 
 	ReplicaRead string
 
@@ -342,6 +344,7 @@ func init() {
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
 	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
+	flag.BoolVar(&Context.PanicCheckSilent, "plugin.panic.silent", false, "panic check silent mode")
 
 	flag.StringVar(&Context.ReplicaRead, "replica-read", "", "replica read target [leader, follower, leader-and-follower]")
 

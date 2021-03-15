@@ -58,13 +58,16 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: {{ .CaseName }}
+build: mod-sum {{ .CaseName }}
 
 {{ .CaseName }}:
 	$(GOBUILD) $(GOMOD) -o bin/{{ .CaseName }} cmd/*.go
 
 fmt: groupimports
 	go fmt ./...
+
+mod-sum:
+	$(GO) mod tidy
 
 tidy:
 	@echo "go mod tidy"
