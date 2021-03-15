@@ -27,7 +27,7 @@ type TSO struct {
 }
 
 var (
-	recordTSO = make(map[TSO]struct{}, 0)
+	recordTSO = make(map[TSO]struct{})
 	lastTSO   = sync.Map{} // stored as [string]*TSO, dcLocation -> *TSO
 	tsoSuffix = sync.Map{} // stored as [string]int, dcLocation -> suffix
 )
@@ -112,7 +112,7 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 		_, ok := recordTSO[key]
 		if ok {
 			tsoErrors = append(tsoErrors,
-				fmt.Errorf("tso repeated, physcial: %v, logical: %v, dc-location %v",
+				fmt.Errorf("tso repeated, physical: %v, logical: %v, dc-location %v",
 					tsoRes.physical, tsoRes.logical, tsoRes.dcLocation))
 			break
 		}
@@ -142,7 +142,7 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 			zap.Int64("logical", logical))
 		// assert tso won't fallback
 		if physical < lastPhysical || (physical == lastPhysical && logical <= lastLogical) {
-			errCh <- fmt.Errorf("tso fallback phsical: %v, logical: %v, dc-location: %v,last-phsical: %v, last-logical: %v",
+			errCh <- fmt.Errorf("tso fallback physical: %v, logical: %v, dc-location: %v, last-physical: %v, last-logical: %v",
 				physical, logical, dcLocation, lastPhysical, lastLogical)
 			return
 		}
@@ -153,6 +153,7 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 				oldSuffix, newSuffix, dcLocation)
 			return
 		}
+		log.Info("matched tso suffix", zap.String("dc-location", dcLocation), zap.Int("suffix", oldSuffix))
 		tsoCh <- TSO{physical: physical, logical: logical, dcLocation: dcLocation}
 		lastPhysical, lastLogical = physical, logical
 	}
@@ -171,8 +172,8 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 		}
 	}
 	allocatorName := ""
-	for dcLocation, allocator := range members.TsoAllocatorLeaders {
-		if dcLocation == dcLocation {
+	for dc, allocator := range members.TsoAllocatorLeaders {
+		if dc == dcLocation {
 			allocatorName = allocator.Name
 			break
 		}
