@@ -12,7 +12,50 @@ import (
 	util2 "github.com/pingcap/tipocket/testcase/cross-region/pkg/util"
 )
 
-var recordTSO = make(map[[2]int64]struct{}, 0)
+const (
+	dcLocationNumber  = 3
+	physicalShiftBits = 18
+	logicalMask       = (1 << physicalShiftBits) - 1
+	suffixMask        = logicalMask >> (physicalShiftBits - 2) // Log2(3+1) = 2
+)
+
+// TSO wraps the tso response
+type TSO struct {
+	physical   int64
+	logical    int64
+	dcLocation string
+}
+
+var (
+	recordTSO = make(map[TSO]struct{})
+	lastTSO   = sync.Map{} // stored as [string]*TSO, dcLocation -> *TSO
+	tsoSuffix = sync.Map{} // stored as [string]int, dcLocation -> suffix
+)
+
+func getLastTSO(dcLocation string) (int64, int64) {
+	tso, ok := lastTSO.Load(dcLocation)
+	if !ok {
+		return 0, 0
+	}
+	return tso.(*TSO).physical, tso.(*TSO).logical
+}
+
+func setLastTSO(dcLocation string, physical, logical int64) {
+	lastTSO.Store(dcLocation, &TSO{
+		physical:   physical,
+		logical:    logical,
+		dcLocation: dcLocation,
+	})
+}
+
+func checkTSOSuffix(dcLocation string, suffix int) (int, bool) {
+	suffixStored, loaded := tsoSuffix.LoadOrStore(dcLocation, suffix)
+	if !loaded {
+		return suffix, true
+	}
+	oldSuffix := suffixStored.(int)
+	return oldSuffix, oldSuffix == suffix
+}
 
 func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	if err := c.requestTSOs(ctx); err != nil {
@@ -27,7 +70,7 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		return err
 	}
 	log.Info("new leader ready")
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= dcLocationNumber; i++ {
 		if err := c.transferPDAllocator(fmt.Sprintf("dc-%d", i)); err != nil {
 			return err
 		}
@@ -46,75 +89,75 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 	defer tsoCancel()
 	tsoWg := &sync.WaitGroup{}
 	tsoWg.Add(4)
-	tsoErrCh := make(chan error, 4)
-	tsoCh := make(chan TSO, 4*c.TSORequests)
+	tsoErrCh := make(chan error, dcLocationNumber+1)
+	tsoCh := make(chan TSO, (dcLocationNumber+1)*c.TSORequests)
 	go c.requestTSO(tsoCtx, "global", tsoWg, tsoCh, tsoErrCh)
-	for i := 1; i <= 3; i++ {
+	for i := 1; i <= dcLocationNumber; i++ {
 		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoCh, tsoErrCh)
 	}
 	tsoWg.Wait()
+	var tsoErrors []error
 	if len(tsoErrCh) < 1 {
 		log.Info("requestTSOs success")
-		return nil
-	}
-	var tsoErrors []error
-	for len(tsoErrCh) > 0 {
-		tsoErr := <-tsoErrCh
-		tsoErrors = append(tsoErrors, tsoErr)
-	}
-	for len(tsoCh) > 0 {
-		tso := <-tsoCh
-		key := [2]int64{
-			tso.physical,
-			tso.logical,
+	} else {
+		log.Warn("requestTSOs meets error")
+		for len(tsoErrCh) > 0 {
+			tsoErrors = append(tsoErrors, <-tsoErrCh)
 		}
+	}
+	// Check uniqueness
+	for len(tsoCh) > 0 {
+		tsoRes := <-tsoCh
+		key := TSO{physical: tsoRes.physical, logical: tsoRes.logical, dcLocation: tsoRes.dcLocation}
 		_, ok := recordTSO[key]
 		if ok {
 			tsoErrors = append(tsoErrors,
-				fmt.Errorf("tso repeated,physcial %v,logical %v,dclocation %v",
-					tso.physical, tso.logical, tso.dcLocation))
+				fmt.Errorf("tso repeated, physical: %v, logical: %v, dc-location %v",
+					tsoRes.physical, tsoRes.logical, tsoRes.dcLocation))
 			break
 		}
 	}
-
-	return util2.WrapErrors(tsoErrors)
+	if len(tsoErrors) > 0 {
+		return util2.WrapErrors(tsoErrors)
+	}
+	return nil
 }
 
 func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, tsoCh chan<- TSO, errCh chan<- error) {
 	defer wg.Done()
-	lastPhysical := int64(0)
-	lastLogical := int64(0)
-	if c.pdClient != nil {
-		for i := 0; i < c.TSORequests; i++ {
-			physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
-			if err != nil {
-				log.Error("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
-				errCh <- err
-				return
-			}
-			log.Info("request TSO", zap.String("dcLocation", dcLocation),
-				zap.Int64("physical", physical),
-				zap.Int64("logical", logical))
-			// assert tso won't fallback
-			if physical < lastPhysical {
-				errCh <- fmt.Errorf("tso fallback phsical:%v,logical:%v,dclocation:%v,last-phsical:%v,last-logical:%v",
-					physical, logical, dcLocation, lastPhysical, lastLogical)
-				return
-			}
-			if physical == lastPhysical && logical < lastLogical {
-				errCh <- fmt.Errorf("tso fallback phsical:%v,logical:%v,dclocation:%v,last-phsical:%v,last-logical:%v",
-					physical, logical, dcLocation, lastPhysical, lastLogical)
-				return
-			}
-			tsoCh <- struct {
-				physical   int64
-				logical    int64
-				dcLocation string
-			}{physical: physical, logical: logical, dcLocation: dcLocation}
-			lastPhysical = physical
-			lastLogical = logical
-		}
+	if c.pdClient == nil {
+		log.Error("pd client is not set up", zap.String("dc-location", dcLocation))
+		return
 	}
+	lastPhysical, lastLogical := getLastTSO(dcLocation)
+	for i := 0; i < c.TSORequests; i++ {
+		physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
+		if err != nil {
+			log.Error("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
+			errCh <- err
+			return
+		}
+		log.Info("request TSO", zap.String("dcLocation", dcLocation),
+			zap.Int64("physical", physical),
+			zap.Int64("logical", logical))
+		// assert tso won't fallback
+		if physical < lastPhysical || (physical == lastPhysical && logical <= lastLogical) {
+			errCh <- fmt.Errorf("tso fallback physical: %v, logical: %v, dc-location: %v, last-physical: %v, last-logical: %v",
+				physical, logical, dcLocation, lastPhysical, lastLogical)
+			return
+		}
+		newSuffix := int(logical & suffixMask)
+		oldSuffix, ok := checkTSOSuffix(dcLocation, newSuffix)
+		if !ok {
+			errCh <- fmt.Errorf("tso suffix changed, oldSuffix: %v, newSuffix: %v, dc-location: %v",
+				oldSuffix, newSuffix, dcLocation)
+			return
+		}
+		log.Info("matched tso suffix", zap.String("dc-location", dcLocation), zap.Int("suffix", oldSuffix))
+		tsoCh <- TSO{physical: physical, logical: logical, dcLocation: dcLocation}
+		lastPhysical, lastLogical = physical, logical
+	}
+	setLastTSO(dcLocation, lastPhysical, lastLogical)
 }
 
 func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
@@ -129,14 +172,14 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 		}
 	}
 	allocatorName := ""
-	for dcLocation, allocator := range members.TsoAllocatorLeaders {
-		if dcLocation == dcLocation {
+	for dc, allocator := range members.TsoAllocatorLeaders {
+		if dc == dcLocation {
 			allocatorName = allocator.Name
 			break
 		}
 	}
 	if allocatorName == "" || len(names) < 2 {
-		return fmt.Errorf("dclocation %v don't have enough member", dcLocation)
+		return fmt.Errorf("dc-location %v don't have enough member", dcLocation)
 	}
 	transferName := ""
 	for _, name := range names {
@@ -146,20 +189,20 @@ func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
 		}
 	}
 	if transferName == "" {
-		return fmt.Errorf("dclocation %v haven't find transfer pd member", dcLocation)
+		return fmt.Errorf("dc-location %v haven't find transfer pd member", dcLocation)
 	}
 	err = c.pdHTTPClient.TransferAllocator(transferName, dcLocation)
 	if err != nil {
 		return err
 	}
-	log.Info("TransferAllocator committed", zap.String("dclocation", dcLocation),
+	log.Info("TransferAllocator committed", zap.String("dc-location", dcLocation),
 		zap.String("target-allocator", transferName),
 		zap.String("origin-allocator", allocatorName))
 	err = c.waitAllocator(transferName, dcLocation)
 	if err != nil {
 		return err
 	}
-	log.Info("TransferAllocator finish", zap.String("dclocation", dcLocation),
+	log.Info("TransferAllocator finish", zap.String("dc-location", dcLocation),
 		zap.String("target-allocator", transferName))
 	return nil
 }
@@ -199,8 +242,8 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 		if err != nil {
 			return false
 		}
-		for _, dclocation := range dcLocations {
-			_, ok := members.TsoAllocatorLeaders[dclocation]
+		for _, dcLocation := range dcLocations {
+			_, ok := members.TsoAllocatorLeaders[dcLocation]
 			if !ok {
 				return false
 			}
@@ -244,11 +287,4 @@ func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc stri
 	} else {
 		log.Info("requestTSOAfterTransfer success", zap.String("dcLocation", dc))
 	}
-}
-
-// TSO wraps the tso response
-type TSO struct {
-	physical   int64
-	logical    int64
-	dcLocation string
 }

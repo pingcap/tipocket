@@ -19,6 +19,7 @@ import (
 
 var (
 	tsoRequests    = flag.Int("tso-request-count", 2000, "tso requests count for each allocator")
+	pdImage        = flag.String("cross-region-pd-image", "hub.pingcap.net/jmpotato/pd:release-5.0-4615539", "Cross-region PD docker image address")
 	pdConfTemplate = `
 enable-local-tso = true
 [labels]
@@ -77,7 +78,7 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.PDReplicas = pdReplicas
 	cloned.TiKVReplicas = kvReplicas
 	cloned.TiDBReplicas = dbReplicas
-	cloned.PDImage = "hub.pingcap.net/gaosong/pd:c436e988"
+	cloned.PDImage = *pdImage
 	cloned.PDStorageClassName = "shared-nvme-disks"
 	cloned.TiKVStorageClassName = "nvme-disks"
 	cloned.LogStorageClassName = "shared-sas-disks"
