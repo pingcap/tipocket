@@ -1,4 +1,4 @@
-module github.com/pingcap/tipocket/testcase/bank-two
+module github.com/pingcap/tipocket/testcase/bank2
 
 go 1.15
 

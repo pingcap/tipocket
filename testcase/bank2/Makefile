@@ -16,10 +16,10 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: mod-sum bank-two
+build: mod-sum bank2
 
-bank-two:
-	$(GOBUILD) $(GOMOD) -o bin/bank-two cmd/*.go
+bank2:
+	$(GOBUILD) $(GOMOD) -o bin/bank2 cmd/*.go
 
 fmt: groupimports
 	go fmt ./...

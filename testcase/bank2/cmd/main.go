@@ -29,7 +29,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
-	client "github.com/pingcap/tipocket/testcase/bank-two"
+	client "github.com/pingcap/tipocket/testcase/bank2"
 )
 
 var (

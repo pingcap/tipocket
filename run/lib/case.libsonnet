@@ -13,10 +13,6 @@
       '-read-lock=%s' % args.read_lock,
       '-txn-mode=%s' % args.txn_mode,
     ],
-  bank(args={})::
-    [
-      '/bin/bank',
-    ],
   ledger(args={})::
     [
       '/bin/ledger',
@@ -29,13 +25,13 @@
     [
       '/bin/region-available',
     ],
-  scbank(args={})::
+  bank(args={})::
     [
-      '/bin/scbank',
+      '/bin/bank',
     ],
-  'scbank-two'(args={ concurrency: '200', accounts: '1000000', tidb_replica_read: 'leader-and-follower' })::
+  'bank2'(args={ concurrency: '200', accounts: '1000000', tidb_replica_read: 'leader-and-follower' })::
     [
-      '/bin/scbank-two',
+      '/bin/bank2',
       '-concurrency=%s' % args.concurrency,
       '-accounts=%s' % args.accounts,
       '-tidb-replica-read=%s' % args.tidb_replica_read,
@@ -70,10 +66,6 @@
   'block-writer'(args={})::
     [
       '/bin/block-writer',
-    ],
-  'bank-two'(args={})::
-    [
-      '/bin/bank-two',
     ],
   // +tipocket:scaffold:case_decls
 }
