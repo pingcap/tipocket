@@ -326,9 +326,15 @@ func (c *bank2Client) verify(db *sql.DB) {
 
 	if _, err := tx.Exec("ADMIN CHECK TABLE bank2_accounts"); err != nil {
 		log.Errorf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
-		atomic.StoreInt32(&c.stop, 1)
-		c.wg.Wait()
-		log.Fatalf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
+		errStr := err.Error()
+		if strings.Contains(errStr, "1105") &&
+			!(strings.Contains(errStr, "cancelled DDL job") ||
+				strings.Contains(errStr, "Information schema is changed") ||
+				strings.Contains(errStr, "TiKV server timeout")) {
+			atomic.StoreInt32(&c.stop, 1)
+			c.wg.Wait()
+			log.Fatalf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
+		}
 	}
 }
 
