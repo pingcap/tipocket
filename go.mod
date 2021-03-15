@@ -18,7 +18,6 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.1.1
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
@@ -38,7 +37,6 @@ require (
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
 	github.com/pingcap/go-tpc v0.0.0-20200229030315-98ee0f8f09d3
 	github.com/prometheus/client_golang v1.5.0 // indirect
-	github.com/rogpeppe/fastuuid v1.2.0
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.5.1
 	github.com/uber-go/atomic v1.5.0

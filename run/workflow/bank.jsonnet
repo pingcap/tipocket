@@ -5,10 +5,7 @@
     args+: {
       // k8s configurations
       // 'storage-class': 'local-storage',
-      // client configurations
-      client: 5,
-      'request-count': 20000,
-      round: 50,
+      'tikv-replicas': '4',
     },
     command: {},
   },

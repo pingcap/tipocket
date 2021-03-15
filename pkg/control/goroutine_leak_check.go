@@ -16,21 +16,35 @@ import (
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
-	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+)
+
+var (
+	_ Plugin = &LeakCheck{}
 )
 
 // LeakCheck ...
 type LeakCheck struct {
 	*Controller
+
+	eatFile string
+	logPath string
+	silent  bool
+
+	legal map[string]*Stack
+}
+
+// NewLeakCheck creates a leak check instance
+func NewLeakCheck(eatFile, logPath string, silent bool) *LeakCheck {
+	return &LeakCheck{eatFile: eatFile, logPath: logPath, silent: silent, legal: make(map[string]*Stack)}
 }
 
 // InitPlugin ...
 func (l *LeakCheck) InitPlugin(control *Controller) {
 	l.Controller = control
-	if len(fixture.Context.LeakCheckEatFile) == 0 {
+	if len(l.eatFile) == 0 {
 		return
 	}
-	if err := template(); err != nil {
+	if err := l.template(); err != nil {
 		log.Warnf("plugin leak check won't work: %v", err)
 		return
 	}
@@ -48,7 +62,7 @@ func (l *LeakCheck) InitPlugin(control *Controller) {
 				log.Info("leak check is finished")
 				return
 			default:
-				if err := checkTiDBProcess(tidbNodes); err != nil {
+				if err := l.checkTiDBProcess(tidbNodes); err != nil {
 					log.Warnf("leak check occurred an error: %+v", err)
 				}
 				time.Sleep(30 * time.Second)
@@ -57,24 +71,22 @@ func (l *LeakCheck) InitPlugin(control *Controller) {
 	}()
 }
 
-func checkTiDBProcess(tidbNodes []cluster.Node) error {
+func (l *LeakCheck) checkTiDBProcess(tidbNodes []cluster.Node) error {
 	for _, tidbNode := range tidbNodes {
 		// tidbAddr is host:4000, but we need host:10080
 		tidbAddr := fmt.Sprintf("%s.%s-tidb-peer.%s.svc", tidbNode.PodName, tidbNode.ClusterName, tidbNode.ClusterName)
-		stacks, body, err := goroutineProfile(tidbAddr)
+		stacks, body, err := l.goroutineProfile(tidbAddr)
 		if err != nil {
 			return errors.Trace(err)
 		}
-		if err := checkLeak(stacks, body, tidbAddr); err != nil {
+		if err := l.checkLeak(stacks, body, tidbAddr); err != nil {
 			return errors.Trace(err)
 		}
 	}
 	return nil
 }
 
-var leagel map[string]*Stack
-
-func checkLeak(stacks []*Stack, body, tidbIP string) error {
+func (l *LeakCheck) checkLeak(stacks []*Stack, body, tidbIP string) error {
 	var leak bool
 	var buf bytes.Buffer
 	for _, s := range stacks {
@@ -84,7 +96,7 @@ func checkLeak(stacks []*Stack, body, tidbIP string) error {
 		}
 
 		sig := s.Signature()
-		if _, ok := leagel[string(sig)]; !ok {
+		if _, ok := l.legal[string(sig)]; !ok {
 			buf.WriteString("\ngoroutine seems to leak:\n")
 			buf.Write(s.Raw)
 			fmt.Fprintf(&buf, "\n--------%s %s", tidbIP, time.Now())
@@ -92,7 +104,7 @@ func checkLeak(stacks []*Stack, body, tidbIP string) error {
 		}
 	}
 	if leak {
-		file, err := os.OpenFile(path.Join(fixture.Context.LogPath, "leak-check"),
+		file, err := os.OpenFile(path.Join(l.logPath, "leak-check"),
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatalf("failed to open leak-check file: %v", err)
@@ -104,7 +116,7 @@ func checkLeak(stacks []*Stack, body, tidbIP string) error {
 		if _, err := file.Write(buf.Bytes()); err != nil {
 			log.Fatalf("failed to write leak-check result: %v", err)
 		}
-		if fixture.Context.LeakCheckSilent {
+		if l.silent {
 			log.Warn(buf.String())
 		} else {
 			log.Fatal(buf.String())
@@ -114,24 +126,23 @@ func checkLeak(stacks []*Stack, body, tidbIP string) error {
 	return nil
 }
 
-func template() error {
-	stacks, err := parseFile()
+func (l *LeakCheck) template() error {
+	stacks, err := l.parseFile()
 	if err != nil {
 		return errors.Trace(err)
 	}
-	leagel = make(map[string]*Stack)
 
 	for i := 0; i < len(stacks); i++ {
 		s := stacks[i]
 		if s.Up > 0 {
 			sig := s.Signature()
-			leagel[string(sig)] = s
+			l.legal[string(sig)] = s
 		}
 	}
 	return nil
 }
 
-func goroutineProfile(host string) ([]*Stack, string, error) {
+func (l *LeakCheck) goroutineProfile(host string) ([]*Stack, string, error) {
 	url := fmt.Sprintf("http://%s:10080/debug/pprof/goroutine?debug=2", host)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -143,7 +154,7 @@ func goroutineProfile(host string) ([]*Stack, string, error) {
 	if err != nil {
 		return nil, "", errors.Trace(err)
 	}
-	stack, err := parseData(body)
+	stack, err := l.parseData(body)
 	return stack, string(body), err
 }
 
@@ -175,8 +186,8 @@ func (s *Stack) Signature() []byte {
 	return h.Sum(nil)
 }
 
-func parseFile() ([]*Stack, error) {
-	resp, err := http.Get(fixture.Context.LeakCheckEatFile)
+func (l *LeakCheck) parseFile() ([]*Stack, error) {
+	resp, err := http.Get(l.eatFile)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -186,14 +197,14 @@ func parseFile() ([]*Stack, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	return parseData(text)
+	return l.parseData(text)
 }
 
-func parseData(text []byte) ([]*Stack, error) {
+func (l *LeakCheck) parseData(text []byte) ([]*Stack, error) {
 	texts := splitText(text)
 	ret := make([]*Stack, 0, len(texts))
 	for _, text := range texts {
-		s, err := parseStack(text)
+		s, err := l.parseStack(text)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -202,13 +213,13 @@ func parseData(text []byte) ([]*Stack, error) {
 	return ret, nil
 }
 
-func parseStack(text []byte) (*Stack, error) {
+func (l *LeakCheck) parseStack(text []byte) (*Stack, error) {
 	var stack Stack
 	lines := bytes.Split(text, []byte{'\n'})
 	if len(lines) < 3 {
 		return nil, errors.Errorf("wrong input:\n%s", text)
 	}
-	if err := parseGoroutineLine(string(lines[0]), &stack); err != nil {
+	if err := l.parseGoroutineLine(string(lines[0]), &stack); err != nil {
 		return nil, errors.Trace(err)
 	}
 
@@ -224,7 +235,7 @@ func parseStack(text []byte) (*Stack, error) {
 	return &stack, nil
 }
 
-func parseGoroutineLine(text string, s *Stack) error {
+func (l *LeakCheck) parseGoroutineLine(text string, s *Stack) error {
 	// text looks like that "goroutine 124 [select, 72 minutes]:"
 	fmt.Sscanf(text, "goroutine %d", &s.ID)
 	pos := strings.IndexByte(text, '[')

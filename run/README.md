@@ -84,7 +84,7 @@ tipocket-ledger-iochaos-wx4zl         Succeeded   2h    1h         0
 ### Submit a new workflow
 
 ```bash
- argo submit run/manifest/vbank.jsonnet.yaml -n argo
+ argo submit run/manifest/workflow/vbank.jsonnet.yaml -n argo
 Name:                tipocket-vbank-9whq7
 Namespace:           argo
 ServiceAccount:      default
@@ -95,19 +95,20 @@ Created:             Thu Feb 04 11:28:52 +0800 (now)
 ### Validate workflow manifests
 
 ```bash
-$ argo lint run/manifest/*.yaml
-run/manifest/bank.jsonnet.yaml is valid
-run/manifest/block-writer.jsonnet.yaml is valid
-run/manifest/ledger.jsonnet.yaml is valid
-run/manifest/list-append.jsonnet.yaml is valid
-run/manifest/rawkv-linearizability.jsonnet.yaml is valid
-run/manifest/region-available.jsonnet.yaml is valid
-run/manifest/rw-register.jsonnet.yaml is valid
-run/manifest/scbank.jsonnet.yaml is valid
-run/manifest/scbank2.jsonnet.yaml is valid
-run/manifest/sqllogic.jsonnet.yaml is valid
-run/manifest/tpcc.jsonnet.yaml is valid
-run/manifest/txn-rand-pessimistic.jsonnet.yaml is valid
-run/manifest/vbank.jsonnet.yaml is valid
-run/Workflow manifests validated
+$ argo lint run/manifest/workflow/*.yaml
+run/manifest/workflow/bank.jsonnet.yaml is valid
+run/manifest/workflow/bank2.jsonnet.yaml is valid
+run/manifest/workflow/block-writer.jsonnet.yaml is valid
+run/manifest/workflow/cross-region.jsonnet.yaml is valid
+run/manifest/workflow/example.jsonnet.yaml is valid
+run/manifest/workflow/ledger.jsonnet.yaml is valid
+run/manifest/workflow/list-append.jsonnet.yaml is valid
+run/manifest/workflow/rawkv-linearizability.jsonnet.yaml is valid
+run/manifest/workflow/region-available.jsonnet.yaml is valid
+run/manifest/workflow/rw-register.jsonnet.yaml is valid
+run/manifest/workflow/sqllogic.jsonnet.yaml is valid
+run/manifest/workflow/tpcc.jsonnet.yaml is valid
+run/manifest/workflow/txn-rand-pessimistic.jsonnet.yaml is valid
+run/manifest/workflow/vbank.jsonnet.yaml is valid
+Workflow manifests validated
 ```

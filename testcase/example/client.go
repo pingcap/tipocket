@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"

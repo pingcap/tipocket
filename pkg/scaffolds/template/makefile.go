@@ -12,7 +12,7 @@ const (
 	makefileBuildInsertionTemplate = `    %s \
 `
 	makefileCmdInsertionTemplate = `%[1]s:
-	cd testcase/%[1]s ; make build; \
+	cd testcase/%[1]s; make build; \
 	cp bin/* ../../bin/
 
 `
