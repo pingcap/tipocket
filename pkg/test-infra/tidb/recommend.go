@@ -15,6 +15,7 @@ package tidb
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -212,6 +213,28 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						},
 					},
 				},
+				TiCDC: &v1alpha1.TiCDCSpec{
+					Replicas: int32(clusterConfig.TiCDCReplicas),
+					ComponentSpec: v1alpha1.ComponentSpec{
+						Image: util.BuildImage("ticdc", clusterConfig.ImageVersion, clusterConfig.TiCDCImage),
+					},
+					ResourceRequirements: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("1Gi"),
+						},
+						Limits: corev1.ResourceList{
+							fixture.CPU:    resource.MustParse("1000m"),
+							fixture.Memory: resource.MustParse("8Gi"),
+						},
+					},
+					Config: &v1alpha1.TiCDCConfig{
+						Timezone: &fixture.Context.CDCConfig.Timezone,
+						LogLevel: &fixture.Context.CDCConfig.LogLevel,
+						// FIXME(@mahjonp): tidb-operator haven't supported StorageVolume claims now.
+						LogFile: &fixture.Context.CDCConfig.LogFile,
+					},
+				},
 			},
 		},
 		TidbMonitor: &v1alpha1.TidbMonitor{
@@ -250,7 +273,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				Initializer: v1alpha1.InitializerSpec{
 					MonitorContainer: v1alpha1.MonitorContainer{
 						BaseImage: "pingcap/tidb-monitor-initializer",
-						Version:   "v4.0.9",
+						Version:   "nightly",
 					},
 				},
 				Reloader: v1alpha1.ReloaderSpec{
