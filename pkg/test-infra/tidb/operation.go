@@ -587,7 +587,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) ([]cluster.Node, error)
 		var podIP = pod.Status.PodIP
 		// because all tidb components are managed by statefulset with a related -peer headless service
 		// we use the fqdn as the the node ip
-		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" {
+		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" || component == "ticdc" {
 			var err error
 			podIP, err = util.GetFQDNFromStsPod(&pod)
 			if err != nil {

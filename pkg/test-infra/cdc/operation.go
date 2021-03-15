@@ -15,7 +15,6 @@ package cdc
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ngaut/log"
@@ -23,7 +22,6 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -42,20 +40,20 @@ type Ops struct {
 }
 
 // New creates cdc ops
-func New(ns, name string) *Ops {
+func New(ns, name, upstreamClusterName, downstreamClusterName string) *Ops {
 	var kafka *Kafka
 	if fixture.Context.CDCConfig.EnableKafka {
 		kafka = newKafka(ns, name)
 	}
-	return &Ops{cli: tests.TestClient.Cli, ns: ns, cdc: newCDC(ns, name), kafka: kafka}
+	return &Ops{cli: tests.TestClient.Cli,
+		ns:    ns,
+		cdc:   newCDC(ns, name, upstreamClusterName, downstreamClusterName),
+		kafka: kafka,
+	}
 }
 
 // Apply CDC cluster
 func (o *Ops) Apply() error {
-	if err := o.applyCDC(); err != nil {
-		return err
-	}
-
 	if err := o.applyKafka(); err != nil {
 		return err
 	}
@@ -68,29 +66,10 @@ func (o *Ops) Apply() error {
 
 // Delete CDC cluster
 func (o *Ops) Delete() error {
-	if err := o.cli.Delete(context.TODO(), o.cdc.Service); err != nil {
+	if err := o.cli.Delete(context.TODO(), o.cdc.Job); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
-	}
-	if err := o.cli.Delete(context.TODO(), o.cdc.StatefulSet); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	return nil
-}
-
-func (o *Ops) applyCDC() error {
-	if err := util.ApplyObject(o.cli, o.cdc.Service); err != nil {
-		return err
-	}
-	if err := util.ApplyObject(o.cli, o.cdc.StatefulSet); err != nil {
-		return err
-	}
-
-	if err := o.waitServiceReady(o.cdc.StatefulSet, 5*time.Minute); err != nil {
-		return err
 	}
 	return nil
 }
@@ -105,7 +84,7 @@ func (o *Ops) applyKafka() error {
 	if err := util.ApplyObject(o.cli, o.kafka.Zookeeper.StatefulSet); err != nil {
 		return err
 	}
-	if err := o.waitServiceReady(o.kafka.Zookeeper.StatefulSet, 5*time.Minute); err != nil {
+	if err := o.waitStsReady(o.kafka.Zookeeper.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
 
@@ -115,7 +94,7 @@ func (o *Ops) applyKafka() error {
 	if err := util.ApplyObject(o.cli, o.kafka.StatefulSet); err != nil {
 		return err
 	}
-	if err := o.waitServiceReady(o.kafka.StatefulSet, 5*time.Minute); err != nil {
+	if err := o.waitStsReady(o.kafka.StatefulSet, 5*time.Minute); err != nil {
 		return err
 	}
 	if err := util.ApplyObject(o.cli, o.kafka.Job); err != nil {
@@ -124,7 +103,14 @@ func (o *Ops) applyKafka() error {
 	return nil
 }
 
-func (o *Ops) waitServiceReady(st *appsv1.StatefulSet, timeout time.Duration) error {
+func (o *Ops) applyJob() error {
+	if err := util.ApplyObject(o.cli, o.cdc.Job); err != nil {
+		return err
+	}
+	return o.waitJobCompleted(o.cdc.Job)
+}
+
+func (o *Ops) waitStsReady(st *appsv1.StatefulSet, timeout time.Duration) error {
 	local := st.DeepCopy()
 	log.Infof("Waiting up to %v for StatefulSet %s to have all replicas ready",
 		timeout, st.Name)
@@ -180,13 +166,6 @@ func (o *Ops) waitJobCompleted(job *batchv1.Job) error {
 	})
 }
 
-func (o *Ops) applyJob() error {
-	if err := util.ApplyObject(o.cli, o.cdc.Job); err != nil {
-		return err
-	}
-	return o.waitJobCompleted(o.cdc.Job)
-}
-
 // GetClientNodes returns the client nodes
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	return nil, nil
@@ -194,26 +173,5 @@ func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 
 // GetNodes returns cdc nodes
 func (o *Ops) GetNodes() ([]cluster.Node, error) {
-	pod := &corev1.Pod{}
-	err := o.cli.Get(context.Background(), client.ObjectKey{
-		Namespace: o.cdc.StatefulSet.ObjectMeta.Namespace,
-		Name:      fmt.Sprintf("%s-0", o.cdc.StatefulSet.ObjectMeta.Name),
-	}, pod)
-
-	if err != nil {
-		return []cluster.Node{}, err
-	}
-
-	// because sts with a service, we use qfdn of pod as the node ip.
-	fqdn, err := util.GetFQDNFromStsPod(pod)
-	if err != nil {
-		return nil, err
-	}
-	return []cluster.Node{{
-		Namespace: pod.ObjectMeta.Namespace,
-		PodName:   pod.ObjectMeta.Name,
-		IP:        fqdn,
-		Component: cluster.CDC,
-		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.CDC), pod.Spec.Containers),
-	}}, nil
+	return nil, nil
 }

@@ -28,8 +28,9 @@ import (
 )
 
 var (
-	accounts    = flag.Int("accounts", 50, "the number of accounts")
-	concurrency = flag.Int("concurrency", 32, "concurrency worker count")
+	accounts      = flag.Int("accounts", 50, "the number of accounts")
+	concurrency   = flag.Int("concurrency", 32, "concurrency worker count")
+	ticdcReplicas = flag.Int("ticdc-replicas", 1, "the ticdc replicas")
 )
 
 func main() {
@@ -51,6 +52,7 @@ func main() {
 	// Only set failpoints in the upstream
 	downstreamCfg := c.TiDBClusterConfig
 	downstreamCfg.TiDBFailPoint = ""
+	c.TiDBClusterConfig.TiCDCReplicas = *ticdcReplicas
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),

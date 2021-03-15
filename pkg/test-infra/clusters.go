@@ -152,7 +152,7 @@ func NewCDCCluster(namespace, name string, upstreamConfig, downstreamConfig fixt
 			tidb.New(namespace, name+"-upstream", upstreamConfig),
 			tidb.New(namespace, name+"-downstream", downstreamConfig),
 		),
-		cdc.New(namespace, name),
+		cdc.New(namespace, name, name+"-upstream", name+"-downstream"),
 	)
 }
 
@@ -217,7 +217,7 @@ func NewTiFlashCDCABTestCluster(namespace, name string, confA, confB fixture.TiD
 			NewTiFlashCluster(namespace, name+"-upstream", confA),
 			tidb.New(namespace, name+"-downstream", confB),
 		),
-		cdc.New(namespace, name),
+		cdc.New(namespace, name, name+"-upstream", name+"-downstream"),
 	)
 }
 
