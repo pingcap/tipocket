@@ -25,7 +25,7 @@ build: bindir consistency isolation pocket on-dup sqllogic block-writer \
 bindir:
 	mkdir -p bin
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank cross-region
 
 isolation: list-append rw-register
 
@@ -124,6 +124,10 @@ bank2:
 
 verifier:
 	cd testcase/verifier; make build; \
+	cp bin/* ../../bin/
+
+cross-region:
+	cd testcase/cross-region; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd
