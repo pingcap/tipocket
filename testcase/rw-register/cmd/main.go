@@ -40,7 +40,7 @@ func main() {
 			Checker: rwregister.RegisterChecker{},
 			Parser:  rwregister.RegisterParser{},
 		},
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 		LogsClient: logs.NewDiagnosticLogClient(),
 	}

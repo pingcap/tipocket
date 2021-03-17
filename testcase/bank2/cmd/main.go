@@ -76,7 +76,7 @@ func main() {
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		VerifySuit:  verify.Suit{},
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 		LogsClient: logs.NewDiagnosticLogClient(),
 	}

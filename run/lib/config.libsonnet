@@ -19,6 +19,7 @@
       'failpoint.tidb': '',
       // k8s configurations
       namespace: '{{workflow.name}}',
+      'cluster-name': '{{workflow.name}}',
       'storage-class': 'local-path',
       purge: 'false',
       delNS: 'false',
