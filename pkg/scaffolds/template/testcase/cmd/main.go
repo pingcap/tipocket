@@ -84,7 +84,7 @@ func main() {
 		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: testcase.CaseCreator{},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
 		LogsClient:    logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())

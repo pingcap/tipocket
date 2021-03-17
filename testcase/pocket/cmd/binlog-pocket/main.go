@@ -58,7 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewBinlogCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewBinlogCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }
