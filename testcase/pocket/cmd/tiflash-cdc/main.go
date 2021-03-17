@@ -58,7 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(c.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewTiFlashCDCABTestCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
+		ClusterDefs:      test_infra.NewTiFlashCDCABTestCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())
 }

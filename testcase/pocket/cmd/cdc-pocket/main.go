@@ -68,7 +68,7 @@ func main() {
 		},
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }
