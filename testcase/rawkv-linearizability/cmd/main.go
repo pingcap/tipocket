@@ -71,7 +71,7 @@ func main() {
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName, fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

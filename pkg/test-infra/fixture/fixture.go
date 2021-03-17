@@ -49,6 +49,7 @@ type fixtureContext struct {
 	HistoryFile  string
 	// Test-infra
 	Namespace                string
+	ClusterName              string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
 	DeleteNS                 bool
@@ -271,6 +272,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
+	flag.StringVar(&Context.ClusterName, "cluster-name", "", "test cluster name")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-path", "storage class name")

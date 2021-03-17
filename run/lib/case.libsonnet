@@ -48,10 +48,9 @@
     [
       '/bin/txn-rand-pessimistic',
     ],
-  vbank(args={ clusterName: 'vbank', connParams: '' })::
+  vbank(args={ connParams: '' })::
     [
       '/bin/vbank',
-      '-cluster-name=%s' % args.clusterName,
       '-conn_params=%s' % args.connParams,
     ],
   crossregion(args={ tso_request_count: '2000' })::

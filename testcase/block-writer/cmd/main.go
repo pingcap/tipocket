@@ -48,7 +48,7 @@ func main() {
 		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: blockwriter.ClientCreator{TableNum: *tables, Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 		LogsClient: logs.NewDiagnosticLogClient(),
 	}
