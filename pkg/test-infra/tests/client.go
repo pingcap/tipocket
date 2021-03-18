@@ -69,6 +69,13 @@ func (e *TestCli) CreateNamespace(name string) error {
 			Name: name,
 		},
 	}
+
+	if err := e.Cli.Get(context.TODO(), types.NamespacedName{Name: name}, ns); err == nil {
+		return nil
+	} else if !errors.IsNotFound(err) {
+		return fmt.Errorf("get namespace %s failed: %+v", name, err)
+	}
+
 	if _, err := controllerutil.CreateOrUpdate(context.TODO(), e.Cli, ns, func() error {
 		if ns.Labels != nil {
 			ns.Labels["admission-webhook"] = "enabled"
