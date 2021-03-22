@@ -19,7 +19,6 @@ import (
 
 var (
 	tsoRequests    = flag.Int("tso-request-count", 2000, "tso requests count for each allocator")
-	pdImage        = flag.String("cross-region-pd-image", "hub.pingcap.net/jmpotato/pd:release-5.0-4615539", "Cross-region PD docker image address")
 	pdConfTemplate = `
 enable-local-tso = true
 [labels]
@@ -29,6 +28,13 @@ zone = '%v'
 )
 
 func main() {
+	// set the default values
+	_ = flag.Set("namespace", "cross-region")
+	_ = flag.Set("pd-image", "hub.pingcap.net/jmpotato/pd:release-5.0-4615539")
+	_ = flag.Set("pd-storage-class", "shared-nvme-disks")
+	_ = flag.Set("tikv-storage-class", "nvme-disks")
+	_ = flag.Set("log-storage-class", "shared-sas-disks")
+
 	flag.Parse()
 	cfg := control.Config{
 		Mode:        control.ModeStandard,
@@ -36,7 +42,6 @@ func main() {
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
-	fixture.Context.Namespace = "cross-region"
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
@@ -53,7 +58,7 @@ func main() {
 }
 
 func provideCrossRegionCluster() cluster.Cluster {
-	namespace := "cross-region"
+	namespace := fixture.Context.Namespace
 	names := []string{
 		"dc-1",
 		"dc-2",
@@ -78,10 +83,6 @@ func provideConf(pdReplicas, kvReplicas, dbReplicas int, ref *fixture.ClusterRef
 	cloned.PDReplicas = pdReplicas
 	cloned.TiKVReplicas = kvReplicas
 	cloned.TiDBReplicas = dbReplicas
-	cloned.PDImage = *pdImage
-	cloned.PDStorageClassName = "shared-nvme-disks"
-	cloned.TiKVStorageClassName = "nvme-disks"
-	cloned.LogStorageClassName = "shared-sas-disks"
 	cloned.Ref = ref
 	cloned.PDConfig = fmt.Sprintf("%s%s", plaintextProtocolHeader, fmt.Sprintf(pdConfTemplate, dcLocation))
 	return cloned
