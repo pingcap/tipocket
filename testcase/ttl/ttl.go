@@ -202,10 +202,10 @@ func (c *ttlClient) checkTTLNil(ctx context.Context, keys [][]byte) {
 			log.Infof("[%s] verify error: %v in %v", c, err, time.Now())
 		}
 		if ttl != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] ttl of key %s exists before insertion, ttl value %v", c, key, ttl))
+			c.waitAndFatal(fmt.Sprintf("[%s] ttl of key %v exists before insertion, ttl value %v", c, key, ttl))
 		}
 	}
-	log.Infof("[%s] GetKeyTTL() in key range %s to %s return nil", c, keys[0], keys[len(keys)-1])
+	log.Infof("[%s] GetKeyTTL() in key range %v to %v return nil", c, keys[0], keys[len(keys)-1])
 }
 
 // Any error in seperatePutWithTTL will cause case to fail.
@@ -218,10 +218,10 @@ func (c *ttlClient) seperatePutWithTTL(ctx context.Context, keys, values [][]byt
 			rawkv.PutOption{TTL: TTL},
 		)
 		if err != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL put error %s, key %s, TTL %v seconds", c, err, key, TTL))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL put error %s, key %v, TTL %v seconds", c, err, key, TTL))
 		}
 	}
-	log.Infof("[%s] Put() in key range %s to %s succeed", c, keys[0], keys[len(keys)-1])
+	log.Infof("[%s] Put() in key range %v to %v succeed", c, keys[0], keys[len(keys)-1])
 }
 
 // Any error in batchPutWithTTL will cause case to fail.
@@ -235,7 +235,7 @@ func (c *ttlClient) batchPutWithTTL(ctx context.Context, keys, values [][]byte, 
 	if err != nil {
 		c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL batch put error %s, TTL %v seconds", c, err, TTL))
 	}
-	log.Infof("[%s] BatchPut() in key range %s to %s succeed", c, keys[0], keys[len(keys)-1])
+	log.Infof("[%s] BatchPut() in key range %v to %v succeed", c, keys[0], keys[len(keys)-1])
 }
 
 // Any error will cause case to fail.
@@ -243,13 +243,13 @@ func (c *ttlClient) expectGetSucceed(ctx context.Context, keys, values [][]byte,
 	for i, key := range keys {
 		val, err := c.cli.Get(ctx, key)
 		if err != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get error %s, key %s, TTL %v seconds", c, err, key, TTL))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get error %s, key %v, TTL %v seconds", c, err, key, TTL))
 		}
 		if !bytes.Equal(val, values[i]) {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get value error, on key %s, expect %s, get %s, TTL %v seconds", c, err, key, values[i], TTL))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get value error, on key %v, expect %v, get %v, TTL %v seconds", c, err, key, values[i], TTL))
 		}
 	}
-	log.Infof("[%s] Get() in key range %s to %s succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
+	log.Infof("[%s] Get() in key range %v to %v succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
 }
 
 // Any error will cause case to fail.
@@ -257,13 +257,13 @@ func (c *ttlClient) expectGetNilValue(ctx context.Context, keys [][]byte) {
 	for _, key := range keys {
 		val, err := c.cli.Get(ctx, key)
 		if err != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL expect get failed error %s, key %s", c, err, key))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL expect get failed error %s, key %v", c, err, key))
 		}
 		if val != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get unexpected value, key %s, val %s", c, key, val))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL get unexpected value, key %v, val %v", c, key, val))
 		}
 	}
-	log.Infof("[%s] Get() in key range %s to %s succeed, TTL is nil", c, keys[0], keys[len(keys)-1])
+	log.Infof("[%s] Get() in key range %v to %v succeed, TTL is nil", c, keys[0], keys[len(keys)-1])
 }
 
 // expectKeyTTL checks if given keys' TTL are equal to expected TTL in user-defined tolerance.
@@ -273,13 +273,13 @@ func (c *ttlClient) expectKeyTTL(ctx context.Context, keys [][]byte, TTL, expect
 	for _, key := range keys {
 		ttl, err := c.cli.GetKeyTTL(ctx, key)
 		if err != nil {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL GetKeyTTL error %s, key %s, TTL %v seconds", c, err, key, TTL))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL GetKeyTTL error %s, key %v, TTL %v seconds", c, err, key, TTL))
 		}
 		if !eqInTolerance(*ttl, expectTTL) {
 			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL time error, get ttl %v, expect ttl %v", c, *ttl, expectTTL))
 		}
 	}
-	log.Infof("[%s] GetKeyTTL() in key range %s to %s succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
+	log.Infof("[%s] GetKeyTTL() in key range %v to %v succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
 }
 
 // Any error will cause case to fail.
@@ -293,14 +293,14 @@ func (c *ttlClient) expectScanSucceed(ctx context.Context, keys, values [][]byte
 		limit,
 	)
 	if err != nil {
-		c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL scan error %s, startkey %s, endkey %s, TTL %v seconds", c, err, startKey, endKey, TTL))
+		c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL scan error %s, startkey %v, endkey %v, TTL %v seconds", c, err, startKey, endKey, TTL))
 	}
 	for i, key := range scanKeys {
 		if !bytes.Equal(values[i], scanValues[i]) {
-			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL scan value error %s, on key %s, expect %s, get %s, TTL %v seconds", c, err, key, values[i], scanValues[i], TTL))
+			c.waitAndFatal(fmt.Sprintf("[%s] RawKV TTL scan value error %s, on key %v, expect %v, get %v, TTL %v seconds", c, err, key, values[i], scanValues[i], TTL))
 		}
 	}
-	log.Infof("[%s] GetKeyTTL() in key range %s to %s succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
+	log.Infof("[%s] GetKeyTTL() in key range %v to %v succeed, TTL %v seconds", c, keys[0], keys[len(keys)-1], TTL)
 }
 
 func (c *ttlClient) waitAndFatal(errmsg string) {
