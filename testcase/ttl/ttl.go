@@ -20,14 +20,7 @@ import (
 )
 
 var (
-	typicalTTLs = [...]uint64{
-		0,
-		600,  // 10m
-		3600, // 1h
-	}
-	zeroTTLVerifyTime uint64 = 600
-	toleranceOfTTL    uint64 = 60
-	placeHolderValue         = [...]byte{42, 42}
+	placeHolderValue = [...]byte{42, 42}
 )
 
 // ClientCreator ...
@@ -37,9 +30,11 @@ type ClientCreator struct {
 
 // Config ...
 type Config struct {
-	Concurrency   int
-	DataPerWorker int
-	TTLCandidates []uint64
+	Concurrency        int
+	DataPerWorker      int
+	TTLCandidates      []uint64
+	ToleranceOfTTL     uint64
+	ZeroTTLVerifyDelay uint64
 }
 
 type ttlClient struct {
@@ -108,8 +103,8 @@ func (c *ttlClient) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 
 	for i := 0; i < c.cfg.Concurrency; i++ {
 		run(i, func(id int) {
-			randIdx := rand.Intn(len(typicalTTLs))
-			TTL := typicalTTLs[randIdx]
+			randIdx := rand.Intn(len(c.cfg.TTLCandidates))
+			TTL := c.cfg.TTLCandidates[randIdx]
 			prefix := c.intToBigEndianByte(i)
 			log.Infof("[%s] run case, id %i, TTL %s", c, i, TTL)
 			c.RunCase(ctx, prefix, TTL)
@@ -144,7 +139,7 @@ func (c *ttlClient) RunCase(ctx context.Context, prefix []byte, TTL uint64) {
 	var sleepTime time.Duration
 	var expectTTL uint64
 	if TTL == 0 {
-		sleepTime = time.Duration(zeroTTLVerifyTime) * time.Second
+		sleepTime = time.Duration(c.cfg.ZeroTTLVerifyDelay) * time.Second
 		expectTTL = 0
 	} else {
 		sleepTime = time.Duration(TTL/2) * time.Second
@@ -158,15 +153,15 @@ func (c *ttlClient) RunCase(ctx context.Context, prefix []byte, TTL uint64) {
 
 	// Test Get
 	c.expectGetSucceed(ctx, keys, values, TTL)
-	c.expectKeyTTL(ctx, keys, TTL, expectTTL, toleranceOfTTL)
+	c.expectKeyTTL(ctx, keys, TTL, expectTTL, c.cfg.ToleranceOfTTL)
 
 	// Test Scan
 	c.expectScanSucceed(ctx, keys, values, c.cfg.DataPerWorker+1, TTL)
 
 	// Random pick a non zero TTL
 	for {
-		randIdx := rand.Intn(len(typicalTTLs))
-		TTL = typicalTTLs[randIdx]
+		randIdx := rand.Intn(len(c.cfg.TTLCandidates))
+		TTL = c.cfg.TTLCandidates[randIdx]
 		if TTL != 0 {
 			break
 		}
@@ -175,7 +170,7 @@ func (c *ttlClient) RunCase(ctx context.Context, prefix []byte, TTL uint64) {
 	half = len(keys) / 2
 	c.batchPutWithTTL(ctx, keys[half:], values[half:], TTL)
 	c.seperatePutWithTTL(ctx, keys[:half], values[:half], TTL)
-	c.expectKeyTTL(ctx, keys, TTL, TTL, toleranceOfTTL)
+	c.expectKeyTTL(ctx, keys, TTL, TTL, c.cfg.ToleranceOfTTL)
 
 	sleepTime = time.Duration(TTL/2) * time.Second
 	expectTTL = TTL / 2
@@ -183,14 +178,14 @@ func (c *ttlClient) RunCase(ctx context.Context, prefix []byte, TTL uint64) {
 
 	// Test Get
 	c.expectGetSucceed(ctx, keys, values, TTL)
-	c.expectKeyTTL(ctx, keys, TTL, expectTTL, toleranceOfTTL)
+	c.expectKeyTTL(ctx, keys, TTL, expectTTL, c.cfg.ToleranceOfTTL)
 
 	// Test Scan
 	c.expectScanSucceed(ctx, keys, values, c.cfg.DataPerWorker+1, TTL)
 
 	// Sleep until TTL expired.
 	// Total sleep time = TTL + 4 * tolerance
-	sleepTime = time.Duration(TTL/2+4*toleranceOfTTL) * time.Second
+	sleepTime = time.Duration(TTL/2+4*c.cfg.ToleranceOfTTL) * time.Second
 	time.Sleep(sleepTime)
 	c.expectGetNilValue(ctx, keys)
 }

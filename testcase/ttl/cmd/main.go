@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"strconv"
 
 	"github.com/pingcap/tipocket/cmd/util"
@@ -17,15 +18,19 @@ import (
 type arrayIntFlags []uint64
 
 var (
-	concurrency   = flag.Int("concurrency", 200, "concurrency worker count")
-	dataPerWorker = flag.Int("data-per-worker", 2000, "data count for each concurrency worker")
+	concurrency   = flag.Int("concurrency", 200, "concurrent worker count")
+	dataPerWorker = flag.Int("data-per-worker", 2000, "data count for each concurrent worker")
 	ttlCandidates arrayIntFlags
+
+	// Some internal magic numbers
+	toleranceOfTTL     = flag.Uint64("tolerance-of-ttl", 60, "tolerance when comparing TTL with expected TTL.")
+	zeroTTLVerifyDelay = flag.Uint64("zero-ttl-verify-delay", 600, "the timeout to verify the input when ttl is set to zero")
 )
 
 func (a *arrayIntFlags) String() string {
 	str := ""
 	for i := range *a {
-		str += ", " + string(i)
+		str += ", " + fmt.Sprint(i)
 	}
 	return str
 }
@@ -39,6 +44,8 @@ func (a *arrayIntFlags) Set(value string) error {
 	return nil
 }
 
+
+// Usage: ./bin/ttl --concurrency 200 --data-per-worker 1000 --ttl 0 --ttl 600 --ttl 3600
 func main() {
 	flag.Var(&ttlCandidates, "ttl", "Time to live, If pass multiple ttls, each worker would randomly pick one")
 	flag.Parse()
@@ -55,9 +62,11 @@ func main() {
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: testcase.ClientCreator{
 			Cfg: &testcase.Config{
-				Concurrency:   *concurrency,
-				DataPerWorker: *dataPerWorker,
-				TTLCandidates: ttlCandidates,
+				Concurrency:        *concurrency,
+				DataPerWorker:      *dataPerWorker,
+				TTLCandidates:      ttlCandidates,
+				ToleranceOfTTL:     *toleranceOfTTL,
+				ZeroTTLVerifyDelay: *zeroTTLVerifyDelay,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
