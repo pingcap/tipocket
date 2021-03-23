@@ -31,12 +31,6 @@ spec:
         value: "1000000"
       - name: round
         value: "10"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
       - name: matrix-config
         value: ""
       - name: matrix-tidb
@@ -82,12 +76,6 @@ spec:
                   value: "{{workflow.parameters.request-count}}"
                 - name: round
                   value: "{{workflow.parameters.round}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: matrix-config
                   value: "{{workflow.parameters.matrix-config}}"
                 - name: matrix-tidb

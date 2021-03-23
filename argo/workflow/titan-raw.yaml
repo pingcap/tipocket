@@ -17,12 +17,6 @@ metadata:
           value: "short_kill_tikv_1node,mixed_tikv,shuffle-region-scheduler,kill_tikv_1node_5min"
         - name: client
           value: "1"
-        - name: loki-addr
-          value: ""
-        - name: loki-username
-          value: "loki"
-        - name: loki-password
-          value: "admin"
         - name: tikv-config
           value: "/config/tikv/titan-raw.toml"
         - name: tikv-replicas
@@ -48,12 +42,6 @@ metadata:
                     value: "{{workflow.parameters.nemesis}}"
                   - name: client
                     value: "{{workflow.parameters.client}}"
-                  - name: loki-addr
-                    value: "{{workflow.parameters.loki-addr}}"
-                  - name: loki-username
-                    value: "{{workflow.parameters.loki-username}}"
-                  - name: loki-password
-                    value: "{{workflow.parameters.loki-password}}"
                   - name: tikv-config
                     value: "{{workflow.parameters.tikv-config}}"
                   - name: tikv-replicas

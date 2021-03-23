@@ -25,12 +25,6 @@ spec:
         value: "6h"
       - name: tikv-replicas
         value: "3"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
   templates:
     - name: call-tipocket-resolve-lock
       steps:
@@ -58,9 +52,3 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"

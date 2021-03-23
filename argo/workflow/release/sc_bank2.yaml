@@ -35,12 +35,6 @@ spec:
         value: "4"
       - name: tidb-replica-read
         value: "leader-and-follower"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
       - name: matrix-config
         value: ""
       - name: matrix-tidb
@@ -94,12 +88,6 @@ spec:
                   value: "{{workflow.parameters.tikv-config}}"
                 - name: pd-config
                   value: "{{workflow.parameters.pd-config}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: tikv-replicas
                   value: "{{workflow.parameters.tikv-replicas}}"
                 - name: tidb-replica-read

@@ -25,12 +25,6 @@ spec:
         value: ""
       - name: run-time
         value: "12h"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
       - name: dm-mysql-version
         value: "5.7"
       - name: dm-mysql-storage-size
@@ -74,12 +68,6 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: dm-mysql-version
                   value: "{{workflow.parameters.dm-mysql-version}}"
                 - name: dm-mysql-storage-size

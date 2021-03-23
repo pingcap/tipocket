@@ -27,12 +27,6 @@ spec:
         value: ""
       - name: run-time
         value: "60m"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
       - name: matrix-config
         value: ""
       - name: matrix-tidb
@@ -82,12 +76,6 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: matrix-config
                   value: "{{workflow.parameters.matrix-config}}"
                 - name: matrix-tidb

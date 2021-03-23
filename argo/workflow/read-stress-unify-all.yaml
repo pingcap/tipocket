@@ -21,18 +21,6 @@ spec:
         value: "6h"
       - name: tikv-config
         value: "/config/tikv/unify-all-read-pools.toml"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: loki
-      - name: loki-password
-        value: admin
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
   templates:
     - name: call-tipocket-read-stress
       steps:
@@ -56,17 +44,5 @@ spec:
                   value: "{{workflow.parameters.nemesis}}"
                 - name: run-time
                   value: "{{workflow.parameters.run-time}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: tikv-config
                   value: "{{workflow.parameters.tikv-config}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"

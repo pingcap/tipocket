@@ -45,12 +45,6 @@ spec:
         value: 2
       - name: cdc_version
         value: "nightly"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
   templates:
     - name: call-tipocket-tiflash-cdc
       steps:
@@ -100,9 +94,3 @@ spec:
                   value: "{{workflow.parameters.tiflash-replicas}}"
                 - name: cdc_version
                   value: "{{workflow.parameters.cdc_version}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"

@@ -21,12 +21,6 @@ spec:
         value: "v4.0.0-rc"
       - name: tiflash-replicas
         value: 2
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
   templates:
     - name: call-tipocket-tiflash
       steps:
@@ -52,9 +46,3 @@ spec:
                   value: "{{workflow.parameters.tiflash-image}}"
                 - name: tiflash-replicas
                   value: "{{workflow.parameters.tiflash-replicas}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"

@@ -35,12 +35,6 @@ spec:
         value: "3"
       - name: abtest_general-log
         value: "true"
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
   templates:
     - name: call-tipocket-abtest
       steps:
@@ -80,9 +74,3 @@ spec:
                   value: "{{workflow.parameters.abtest_concurrency}}"
                 - name: abtest_general-log
                   value: "{{workflow.parameters.abtest_general-log}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"

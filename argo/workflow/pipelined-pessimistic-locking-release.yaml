@@ -21,12 +21,6 @@ spec:
         value: local-path
       - name: nemesis
         value: ""
-      - name: loki-addr
-        value: ""
-      - name: loki-username
-        value: "loki"
-      - name: loki-password
-        value: "admin"
       - name: tikv-config
         value: "/config/tikv/pipelined-pessimistic-locking.toml"
       - name: tikv-replicas
@@ -54,12 +48,6 @@ spec:
                   value: "{{workflow.parameters.storage-class}}"
                 - name: nemesis
                   value: "{{workflow.parameters.nemesis}}"
-                - name: loki-addr
-                  value: "{{workflow.parameters.loki-addr}}"
-                - name: loki-username
-                  value: "{{workflow.parameters.loki-username}}"
-                - name: loki-password
-                  value: "{{workflow.parameters.loki-password}}"
                 - name: tikv-config
                   value: "{{workflow.parameters.tikv-config}}"
                 - name: tikv-replicas
