@@ -39,6 +39,7 @@ type ClientCreator struct {
 type Config struct {
 	Concurrency   int
 	DataPerWorker int
+	TTLCandidates []uint64
 }
 
 type ttlClient struct {
