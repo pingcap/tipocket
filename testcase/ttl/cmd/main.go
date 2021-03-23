@@ -44,7 +44,6 @@ func (a *arrayIntFlags) Set(value string) error {
 	return nil
 }
 
-
 // Usage: ./bin/ttl --concurrency 200 --data-per-worker 1000 --ttl 0 --ttl 600 --ttl 3600
 func main() {
 	flag.Var(&ttlCandidates, "ttl", "Time to live, If pass multiple ttls, each worker would randomly pick one")
