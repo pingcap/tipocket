@@ -32,12 +32,6 @@ spec:
             default: "10"
           - name: nemesis
             default: ""
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: matrix-config
             default: ""
           - name: matrix-tidb
@@ -86,9 +80,6 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \
             -request-count={{inputs.parameters.request-count}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

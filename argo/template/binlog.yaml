@@ -30,12 +30,6 @@ spec:
             default: "3"
           - name: binlog_sync-timeout
             default: "1h"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: matrix-config
             default: ""
           - name: matrix-tidb
@@ -77,9 +71,6 @@ spec:
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general-log={{inputs.parameters.abtest_general-log}} \
             -binlog.sync-timeout={{inputs.parameters.binlog_sync-timeout}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

@@ -42,12 +42,6 @@ spec:
             default: "3"
           - name: abtest_general-log
             default: "true"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: matrix-config
             default: ""
           - name: matrix-tidb
@@ -95,9 +89,6 @@ spec:
             -abtest.pd-config={{inputs.parameters.abtest_pd-config}} \
             -abtest.concurrency={{inputs.parameters.abtest_concurrency}} \
             -abtest.general-log={{inputs.parameters.abtest_general-log}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

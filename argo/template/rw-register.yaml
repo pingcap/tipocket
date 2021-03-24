@@ -38,12 +38,6 @@ spec:
             default: "10000"
           - name: round
             default: "1"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: tidb-config
             default: ""
           - name: tikv-config
@@ -79,7 +73,7 @@ spec:
           - sh
           - '-c'
           - |
-            /bin/register \
+            /bin/rw-register \
             -table-count={{inputs.parameters.table-count}} \
             -read-lock={{inputs.parameters.read-lock}} \
             -txn-mode={{inputs.parameters.txn-mode}} \
@@ -101,9 +95,6 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -round={{inputs.parameters.round}} \
             -request-count={{inputs.parameters.request-count}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

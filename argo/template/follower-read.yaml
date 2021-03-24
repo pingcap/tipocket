@@ -22,12 +22,6 @@ spec:
             default: "random_kill, partition_one, shuffle-leader-scheduler"
           - name: run-time
             default: "6h"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: tidb-config
             default: ""
           - name: tikv-config
@@ -85,9 +79,6 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -seq-loop={{inputs.parameters.seq-loop}} \
             -insert-num={{inputs.parameters.insert-num}} \
             -split-region-range={{inputs.parameters.split-range}} \

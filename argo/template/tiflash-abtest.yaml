@@ -42,12 +42,6 @@ spec:
             default: ""
           - name: tiflash-replicas
             default: 2
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: matrix-config
             default: ""
           - name: matrix-tidb
@@ -95,9 +89,6 @@ spec:
             -abtest.general-log={{inputs.parameters.abtest_general-log}} \
             -tiflash-replicas={{inputs.parameters.tiflash-replicas}} \
             -tiflash-image={{inputs.parameters.tiflash-image}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

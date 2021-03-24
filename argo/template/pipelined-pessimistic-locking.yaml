@@ -32,12 +32,6 @@ spec:
             default: "3"
           - name: tikv-config
             default: "/config/tikv/pipelined-pessimistic-locking.toml"
-          - name: loki-addr
-            default: ""
-          - name: loki-username
-            default: "loki"
-          - name: loki-password
-            default: "admin"
           - name: strict
             default: true
       outputs:
@@ -72,7 +66,4 @@ spec:
             -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -strict={{inputs.parameters.strict}}

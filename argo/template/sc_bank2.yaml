@@ -28,12 +28,6 @@ spec:
             default: "5h"
           - name: nemesis
             default: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: tidb-config
             default: ""
           - name: tikv-config
@@ -96,9 +90,6 @@ spec:
             -pd-config={{inputs.parameters.pd-config}} \
             -nemesis={{inputs.parameters.nemesis}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -tidb-replica-read={{inputs.parameters.tidb-replica-read}} \
             -plugin.leak.eat=http://pingcap-dev.hk.ufileos.com/schrodinger/eat.txt \
             -matrix-config={{inputs.parameters.matrix-config}} \

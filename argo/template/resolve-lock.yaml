@@ -30,12 +30,6 @@ spec:
             default: "6h"
           - name: tikv-replicas
             default: "3"
-          - name: loki-addr
-            default: ""
-          - name: loki-username
-            default: "loki"
-          - name: loki-password
-            default: "admin"
           - name: tikv-config
             default: "/config/tikv/split-on-table.toml"
           - name: pd-config
@@ -71,8 +65,5 @@ spec:
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
             -pd-config={{inputs.parameters.pd-config}} \

@@ -24,12 +24,6 @@ spec:
             default: "6h"
           - name: tikv-config
             default: ""
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: tidb-replicas
             default: "0"
           - name: tikv-replicas
@@ -71,9 +65,6 @@ spec:
             -run-time={{inputs.parameters.run-time}} \
             -tikv-replicas={{inputs.parameters.tikv-replicas}} \
             -tikv-config={{inputs.parameters.tikv-config}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \

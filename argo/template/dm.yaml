@@ -20,12 +20,6 @@ spec:
             default: ""
           - name: run-time
             default: "24h"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: dm-mysql-version
             default: "5.7"
           - name: dm-mysql-storage-size
@@ -77,9 +71,6 @@ spec:
             -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -dm.mysql.version={{inputs.parameters.dm-mysql-version}} \
             -dm.mysql.storage-size={{inputs.parameters.dm-mysql-storage-size}} \
             -dm.mysql.enable-binlog={{inputs.parameters.dm-mysql-enable-binlog}} \

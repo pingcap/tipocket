@@ -28,12 +28,6 @@ spec:
             default: ""
           - name: run-time
             default: "4h"
-          - name: loki-addr
-            default:
-          - name: loki-username
-            default: loki
-          - name: loki-password
-            default: admin
           - name: matrix-config
             default: ""
           - name: matrix-tidb
@@ -74,9 +68,6 @@ spec:
             -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \
             -run-time={{inputs.parameters.run-time}} \
-            -loki-addr={{inputs.parameters.loki-addr}} \
-            -loki-username={{inputs.parameters.loki-username}} \
-            -loki-password={{inputs.parameters.loki-password}} \
             -matrix-config={{inputs.parameters.matrix-config}} \
             -matrix-tidb={{inputs.parameters.matrix-tidb}} \
             -matrix-tikv={{inputs.parameters.matrix-tikv}} \
