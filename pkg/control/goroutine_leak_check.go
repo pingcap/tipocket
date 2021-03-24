@@ -104,6 +104,9 @@ func (l *LeakCheck) checkLeak(stacks []*Stack, body, tidbIP string) error {
 		}
 	}
 	if leak {
+		if err := os.MkdirAll(l.logPath, 0755); err != nil {
+			log.Fatal("failed to mkdir %s: %v", l.logPath, err)
+		}
 		file, err := os.OpenFile(path.Join(l.logPath, "leak-check"),
 			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
