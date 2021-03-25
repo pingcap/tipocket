@@ -44,6 +44,7 @@ go 1.15
 require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/pingcap/tipocket v1.0.0
+	github.com/pingcap/tipocket/logsearch v1.0.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
@@ -81,4 +82,6 @@ replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+inc
 replace golang.org/x/net v0.0.0-20190813000000-74dc4d7220e7 => golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 
 replace github.com/pingcap/tipocket => ../../.
+
+replace github.com/pingcap/tipocket/logsearch => ../../logsearch
 `

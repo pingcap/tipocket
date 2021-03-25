@@ -59,7 +59,7 @@ func main() {
 			ReplicaRead:      *replicaRead,
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

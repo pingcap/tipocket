@@ -19,8 +19,10 @@ import (
 	"fmt"
 
 	"github.com/ngaut/log"
+
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/util"
 )
 
@@ -42,6 +44,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	log.Info("start to setup client...")
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
+	util.SetMySQLProxy(fixture.Context.MySQLProxy)
 	db, err := util.OpenDB(dsn, 1)
 	if err != nil {
 		log.Fatalf("open db error: %v", err)

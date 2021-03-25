@@ -81,6 +81,10 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 				log.Fatalf("[cdc-bank] create upstream db client error %v", err)
 			}
 
+			if _, err := db0.Exec("set @@tidb_general_log=1"); err != nil {
+				log.Errorf("[cdc-bank] enable upstream general log error %v", err)
+			}
+
 			// init data
 			if _, err := db0.Exec("create table accounts (id int primary key, balance int)"); err != nil {
 				log.Fatalf("[cdc-bank] create table error %v", err)
@@ -101,6 +105,9 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			db1, err := util.OpenDB(dsn, validateConcurrency)
 			if err != nil {
 				log.Fatalf("[cdc-bank] create downstream db client error %v", err)
+			}
+			if _, err := db1.Exec("set @@tidb_general_log=1"); err != nil {
+				log.Errorf("[cdc-bank] enable downstream general log error %v", err)
 			}
 			// wait at most 60 seconds for initialization of downstream
 			for j := 0; j < 60; j++ {
@@ -211,7 +218,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 					}
 					_ = txn.Rollback()
-					log.Infof("[cdc-bank] [validatorId=%d] success", idx)
+					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
 				}
 			}
 		}(validatorIdx)

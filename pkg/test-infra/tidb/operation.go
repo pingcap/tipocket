@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -50,6 +51,7 @@ const (
 	pdDataDir   = "/var/lib/pd/data"
 	// used for tikv data encryption
 	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
+	plaintextProtocolHeader = "plaintext://"
 )
 
 // Ops knows how to operate TiDB
@@ -196,6 +198,8 @@ func (o *Ops) Apply() error {
 }
 
 func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+	name := tc.Name
+	namespace := tc.Namespace
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -215,7 +219,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
 		if pdReady < pdDesired {
-			log.Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			log.Infof("PD[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, pdReady, pdDesired)
 			return false, nil
 		}
 		if local.Status.TiKV.StatefulSet == nil {
@@ -223,7 +227,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
-			log.Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
 			return false, nil
 		}
 		if local.Status.TiDB.StatefulSet == nil {
@@ -231,7 +235,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
+			log.Infof("TiDB[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tidbReady, tidbDesired)
 			return false, nil
 		}
 		if tc.Spec.TiFlash != nil {
@@ -249,6 +253,9 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 }
 
 func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+	if tm == nil {
+		return nil
+	}
 	desired := tm.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tm, func() error {
 		tm.Spec = desired.Spec
@@ -270,6 +277,9 @@ func (o *Ops) Delete() error {
 		return nil
 	})
 	g.Go(func() error {
+		if o.tc.TidbMonitor == nil {
+			return nil
+		}
 		err := o.cli.Delete(context.TODO(), o.tc.TidbMonitor)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
@@ -397,6 +407,9 @@ func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 }
 
 func parseConfig(config string) (string, error) {
+	if strings.HasPrefix(config, plaintextProtocolHeader) && len(config) > len(plaintextProtocolHeader) {
+		return extractRawConfig(config), nil
+	}
 	// Parse config
 	configData, err := readFileAsString(config)
 	if err == nil {
@@ -420,6 +433,10 @@ func parseConfig(config string) (string, error) {
 		// Add more Scheme support here, like http
 	}
 	return configData, nil
+}
+
+func extractRawConfig(raw string) string {
+	return raw[len(plaintextProtocolHeader):]
 }
 
 func readFileAsString(filename string) (string, error) {
@@ -570,7 +587,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) ([]cluster.Node, error)
 		var podIP = pod.Status.PodIP
 		// because all tidb components are managed by statefulset with a related -peer headless service
 		// we use the fqdn as the the node ip
-		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" {
+		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" || component == "ticdc" {
 			var err error
 			podIP, err = util.GetFQDNFromStsPod(&pod)
 			if err != nil {

@@ -62,6 +62,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/pingcap/tipocket/cmd/util"
+	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
@@ -83,7 +84,8 @@ func main() {
 		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: testcase.CaseCreator{},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
+		LogsClient:    logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }
