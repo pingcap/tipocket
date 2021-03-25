@@ -126,7 +126,7 @@ func (c *ttlClient) RunCase(ctx context.Context, prefix []byte, TTL uint64) {
 		values = append(values, placeHolderValue[:])
 	}
 	if len(keys) == 0 {
-		log.Infof("[%s] no valid keys")
+		log.Infof("[%s] no valid keys", c)
 		return
 	}
 	log.Infof("[%s] generated key range, startkey %v, endkey %v", c, keys[0], keys[len(keys)-1])
