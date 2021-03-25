@@ -75,17 +75,18 @@ var (
 // Config ...
 type Config struct {
 	// NumAccounts is total accounts
-	NumAccounts   int           `toml:"num_accounts"`
-	Interval      time.Duration `toml:"interval"`
-	Concurrency   int           `toml:"concurrency"`
-	RetryLimit    int           `toml:"retry_limit"`
-	EnableLongTxn bool          `toml:"enable_long_txn"`
-	Contention    string        `toml:"contention"`
-	Pessimistic   bool          `toml:"pessimistic"`
-	MinLength     int           `toml:"min_length"`
-	MaxLength     int           `toml:"max_length"`
-	ReplicaRead   string
-	DbName        string
+	NumAccounts         int           `toml:"num_accounts"`
+	Interval            time.Duration `toml:"interval"`
+	Concurrency         int           `toml:"concurrency"`
+	RetryLimit          int           `toml:"retry_limit"`
+	EnableLongTxn       bool          `toml:"enable_long_txn"`
+	Contention          string        `toml:"contention"`
+	Pessimistic         bool          `toml:"pessimistic"`
+	MinLength           int           `toml:"min_length"`
+	MaxLength           int           `toml:"max_length"`
+	ReplicaRead         string
+	DbName              string
+	RandomToggleFeature bool
 }
 
 // ClientCreator ...
@@ -224,6 +225,9 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	}
 
 	c.startVerify(ctx, db)
+	if c.Config.RandomToggleFeature {
+		c.randomToggleFeature(ctx, db)
+	}
 	return nil
 }
 
@@ -259,6 +263,34 @@ func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []
 	}
 	wg.Wait()
 	return nil
+}
+
+func (c *bank2Client) randomToggleFeature(ctx context.Context, db *sql.DB) {
+	go func() {
+		log.Info("random toggle feature is running...")
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				tpls := []string{
+					"set @@global.tidb_enable_async_commit=%d;",
+					"set config tikv gc.`enable-compaction-filter`=%d;",
+				}
+				for _, tpl := range tpls {
+					flag := rand.Intn(2)
+					sql := fmt.Sprintf(tpl, flag)
+					log.Infof("[bank2Client] toggle feature with sql: %s", sql)
+					_, err := db.Exec(sql)
+					if err != nil {
+						log.Warnf("[bank2Client] toggle feature failed: %v", err)
+					}
+				}
+			default:
+			}
+		}
+	}()
 }
 
 func (c *bank2Client) startVerify(ctx context.Context, db *sql.DB) {
