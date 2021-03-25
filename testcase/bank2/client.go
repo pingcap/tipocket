@@ -287,7 +287,6 @@ func (c *bank2Client) randomToggleFeature(ctx context.Context, db *sql.DB) {
 						log.Warnf("[bank2Client] toggle feature failed: %v", err)
 					}
 				}
-			default:
 			}
 		}
 	}()
