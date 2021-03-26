@@ -19,7 +19,7 @@ default: tidy fmt lint build
 build: bindir consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
 		read-stress follower-read pessimistic resolve-lock cdc-bank \
-    example \
+    example ttl \
 # +tipocket:scaffold:makefile_build
 
 bindir:
@@ -128,6 +128,10 @@ verifier:
 
 cross-region:
 	cd testcase/cross-region; make build; \
+	cp bin/* ../../bin/
+
+ttl:
+	cd testcase/ttl ; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd
