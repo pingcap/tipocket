@@ -34,6 +34,9 @@ add placement policy
 	role=leader
 	replicas=1`
 
+// DCLocations stores all the dcLocations' name.
+var DCLocations = []string{}
+
 // Config exposes the config
 type Config struct {
 	TSORequests int
@@ -148,11 +151,7 @@ func (c *crossRegionClient) setupPD() error {
 		return err
 	}
 	log.Info("pd leader ready")
-	err = c.waitAllocatorReady([]string{
-		"dc-1",
-		"dc-2",
-		"dc-3",
-	})
+	err = c.waitAllocatorReady(DCLocations)
 	if err != nil {
 		return err
 	}
@@ -168,11 +167,9 @@ func (c *crossRegionClient) setupStore() error {
 	if stores.Count != 3 {
 		return fmt.Errorf("tikv count should be 3")
 	}
-	i := 0
-	for _, store := range stores.Stores {
-		i++
+	for i, store := range stores.Stores {
 		err = c.pdHTTPClient.SetStoreLabels(store.Id, map[string]string{
-			"zone": fmt.Sprintf("dc-%v", i),
+			"zone": DCLocations[i],
 		})
 		if err != nil {
 			return err
@@ -198,7 +195,7 @@ func (c *crossRegionClient) setupDB() error {
 		return err
 	}
 	for i := 1; i <= 3; i++ {
-		stmt := fmt.Sprintf(stmtPolicy, fmt.Sprintf("p%v", i), fmt.Sprintf("dc-%v", i))
+		stmt := fmt.Sprintf(stmtPolicy, fmt.Sprintf("p%v", i), DCLocations[i-1])
 		_, err = c.db.Exec(stmt)
 		if err != nil {
 			return err

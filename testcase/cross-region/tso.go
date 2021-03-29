@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	dcLocationNumber  = 3
 	physicalShiftBits = 18
 	logicalMask       = (1 << physicalShiftBits) - 1
 	suffixMask        = logicalMask >> (physicalShiftBits - 2) // Log2(3+1) = 2
@@ -70,21 +69,22 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		return err
 	}
 	log.Info("new leader ready")
-	for i := 1; i <= dcLocationNumber; i++ {
-		if err := c.transferPDAllocator(fmt.Sprintf("dc-%d", i)); err != nil {
+	for i := 0; i < len(DCLocations); i++ {
+		if err := c.transferPDAllocator(DCLocations[i]); err != nil {
 			return err
 		}
 	}
 	log.Info("new allocators ready")
 	// after transfer allocator and leader, we can tolerate tso failed once for each dc.
 	c.requestTSOAfterTransfer(ctx, "global")
-	c.requestTSOAfterTransfer(ctx, "dc-1")
-	c.requestTSOAfterTransfer(ctx, "dc-2")
-	c.requestTSOAfterTransfer(ctx, "dc-3")
+	for i := 0; i < len(DCLocations); i++ {
+		c.requestTSOAfterTransfer(ctx, DCLocations[i])
+	}
 	return c.requestTSOs(ctx)
 }
 
 func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
+	dcLocationNumber := len(DCLocations)
 	tsoCtx, tsoCancel := context.WithCancel(ctx)
 	defer tsoCancel()
 	tsoWg := &sync.WaitGroup{}
@@ -92,8 +92,8 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 	tsoErrCh := make(chan error, dcLocationNumber+1)
 	tsoCh := make(chan TSO, (dcLocationNumber+1)*c.TSORequests)
 	go c.requestTSO(tsoCtx, "global", tsoWg, tsoCh, tsoErrCh)
-	for i := 1; i <= dcLocationNumber; i++ {
-		go c.requestTSO(tsoCtx, fmt.Sprintf("dc-%v", i), tsoWg, tsoCh, tsoErrCh)
+	for i := 0; i < dcLocationNumber; i++ {
+		go c.requestTSO(tsoCtx, DCLocations[i], tsoWg, tsoCh, tsoErrCh)
 	}
 	tsoWg.Wait()
 	var tsoErrors []error
