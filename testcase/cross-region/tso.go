@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	dcLocationNumber  = 3
 	physicalShiftBits = 18
 	logicalMask       = (1 << physicalShiftBits) - 1
 	suffixMask        = logicalMask >> (physicalShiftBits - 2) // Log2(3+1) = 2
@@ -70,7 +69,7 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 		return err
 	}
 	log.Info("new leader ready")
-	for i := 0; i < dcLocationNumber; i++ {
+	for i := 0; i < len(DCLocations); i++ {
 		if err := c.transferPDAllocator(DCLocations[i]); err != nil {
 			return err
 		}
@@ -78,13 +77,14 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	log.Info("new allocators ready")
 	// after transfer allocator and leader, we can tolerate tso failed once for each dc.
 	c.requestTSOAfterTransfer(ctx, "global")
-	for i := 0; i < dcLocationNumber; i++ {
+	for i := 0; i < len(DCLocations); i++ {
 		c.requestTSOAfterTransfer(ctx, DCLocations[i])
 	}
 	return c.requestTSOs(ctx)
 }
 
 func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
+	dcLocationNumber := len(DCLocations)
 	tsoCtx, tsoCancel := context.WithCancel(ctx)
 	defer tsoCancel()
 	tsoWg := &sync.WaitGroup{}
