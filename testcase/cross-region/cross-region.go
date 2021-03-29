@@ -34,6 +34,7 @@ add placement policy
 	role=leader
 	replicas=1`
 
+// DCLocations stores all the dcLocations' name.
 var DCLocations = []string{}
 
 // Config exposes the config
