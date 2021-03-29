@@ -59,21 +59,27 @@ func main() {
 
 func provideCrossRegionCluster() cluster.Cluster {
 	namespace := fixture.Context.Namespace
-	names := []string{
-		"dc-1",
-		"dc-2",
-		"dc-3",
+
+	clusterPrefix := ""
+	if fixture.Context.ClusterName != "" {
+		clusterPrefix = fixture.Context.ClusterName + "-"
 	}
+	names := []string{
+		clusterPrefix + "dc-1",
+		clusterPrefix + "dc-2",
+		clusterPrefix + "dc-3",
+	}
+
 	confs := []fixture.TiDBClusterConfig{
-		provideConf(2, 1, 1, nil, "dc-1"),
+		provideConf(2, 1, 1, nil, names[0]),
 		provideConf(2, 1, 1, &fixture.ClusterRef{
-			Name:      "dc-1",
+			Name:      names[0],
 			Namespace: namespace,
-		}, "dc-2"),
+		}, names[1]),
 		provideConf(2, 1, 1, &fixture.ClusterRef{
-			Name:      "dc-1",
+			Name:      names[0],
 			Namespace: namespace,
-		}, "dc-3"),
+		}, names[2]),
 	}
 	return test_infra.NewCrossRegionTestCluster(namespace, names, confs)
 }
