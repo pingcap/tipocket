@@ -7,6 +7,7 @@ import (
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
+	"go.uber.org/zap"
 )
 
 // WrapErrors wrap errors into error
@@ -50,8 +51,8 @@ func WithSleepInterval(sleep time.Duration) WaitOption {
 }
 
 // WaitUntil repeatedly evaluates f() for a period of time, util it returns true.
-func WaitUntil(f CheckFunc, opts ...WaitOption) error {
-	log.Info("wait start")
+func WaitUntil(waitFor string, f CheckFunc, opts ...WaitOption) error {
+	log.Info("wait start", zap.String("wait-for", waitFor))
 	option := &WaitOp{
 		retryTimes:    waitMaxRetry,
 		sleepInterval: waitRetrySleep,
@@ -65,5 +66,5 @@ func WaitUntil(f CheckFunc, opts ...WaitOption) error {
 		}
 		time.Sleep(option.sleepInterval)
 	}
-	return fmt.Errorf("wait timeout")
+	return fmt.Errorf("wait timeout for %s", waitFor)
 }
