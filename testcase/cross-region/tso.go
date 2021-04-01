@@ -64,11 +64,7 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	if err := c.transferLeader(); err != nil {
 		return err
 	}
-	log.Info("leader transfer committed")
-	if err := c.waitLeaderReady(); err != nil {
-		return err
-	}
-	log.Info("new leader ready")
+	log.Info("leader transfer committed and new leader is ready")
 	for i := 0; i < len(DCLocations); i++ {
 		if err := c.transferPDAllocator(DCLocations[i]); err != nil {
 			return err
@@ -227,7 +223,7 @@ func (c *crossRegionClient) transferLeader() error {
 }
 
 func (c *crossRegionClient) waitLeaderReady() error {
-	return util2.WaitUntil(func() bool {
+	return util2.WaitUntil("PD leader election", func() bool {
 		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
@@ -237,7 +233,7 @@ func (c *crossRegionClient) waitLeaderReady() error {
 }
 
 func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
-	return util2.WaitUntil(func() bool {
+	return util2.WaitUntil(fmt.Sprintf("%s allocators election", dcLocations), func() bool {
 		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
@@ -253,7 +249,7 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 }
 
 func (c *crossRegionClient) waitLeader(name string) error {
-	return util2.WaitUntil(func() bool {
+	return util2.WaitUntil(fmt.Sprintf("%s leader election", name), func() bool {
 		mems, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
@@ -262,11 +258,11 @@ func (c *crossRegionClient) waitLeader(name string) error {
 			return false
 		}
 		return true
-	})
+	}, util2.WithSleepInterval(20*time.Second), util2.WithRetryTimes(5))
 }
 
 func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
-	return util2.WaitUntil(func() bool {
+	return util2.WaitUntil(fmt.Sprintf("%s of %s allocator election", name, dcLocation), func() bool {
 		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return false
@@ -277,7 +273,7 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 			}
 		}
 		return false
-	}, util2.WithSleepInterval(5*time.Second), util2.WithRetryTimes(30))
+	}, util2.WithSleepInterval(10*time.Second), util2.WithRetryTimes(18))
 }
 
 func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc string) {
