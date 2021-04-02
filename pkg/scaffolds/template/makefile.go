@@ -16,12 +16,17 @@ const (
 	cp bin/* ../../bin/
 
 `
+	makefileCmdIndividualBuildInsertionTemplate = `%[1]s:
+	cd testcase/%[1]s; make build;
+
+`
 )
 
 // MakefileUpdater inserts a build rule for the new test case
 type MakefileUpdater struct {
 	file.InserterMixin
-	CaseName string
+	CaseName        string
+	IndividualBuild bool
 }
 
 // GetIfExistsAction ...
@@ -31,8 +36,15 @@ func (m *MakefileUpdater) GetIfExistsAction() file.IfExistsAction {
 
 // GetCodeFragments ...
 func (m *MakefileUpdater) GetCodeFragments() map[file.Marker]file.CodeFragment {
-	return map[file.Marker]file.CodeFragment{
-		makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
-		makefileCmdMarker:   {fmt.Sprintf(makefileCmdInsertionTemplate, m.CaseName)},
+	if m.IndividualBuild {
+		return map[file.Marker]file.CodeFragment{
+			makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
+			makefileCmdMarker:   {fmt.Sprintf(makefileCmdIndividualBuildInsertionTemplate, m.CaseName)},
+		}
+	} else {
+		return map[file.Marker]file.CodeFragment{
+			makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
+			makefileCmdMarker:   {fmt.Sprintf(makefileCmdInsertionTemplate, m.CaseName)},
+		}
 	}
 }

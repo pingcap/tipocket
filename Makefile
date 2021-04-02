@@ -12,7 +12,7 @@ LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(sh
 
 GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
-DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
+DOCKER_REGISTRY_TIPOCKET := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)tipocket
 
 default: tidy fmt lint build
 
@@ -168,8 +168,9 @@ endif
 groupimports: install-goimports
 	goimports -w -l -local github.com/pingcap/tipocket $$($(PACKAGE_DIRECTORIES))
 
+i ?= true
 init: tipocket
-	bin/tipocket init -c $(c)
+	bin/tipocket init -c=$(c) -i=$i
 
 install-goimports:
 ifeq (, $(shell which goimports))
@@ -250,9 +251,11 @@ test:
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make test';
 
 image:
-	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_TIPOCKET}/tipocket:latest .
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'if [ -f %/Dockerfile ]; then DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_TIPOCKET}/`basename %`:latest -f %/Dockerfile .; fi';
 
 docker-push:
-	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
+	docker push ${DOCKER_REGISTRY_TIPOCKET}/tipocket:latest
+	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'if [ -f %/Dockerfile ]; then DOCKER_BUILDKIT=1 docker push ${DOCKER_REGISTRY_TIPOCKET}/`basename %`:latest; fi';
 
 .PHONY: all clean pocket compare test fmt

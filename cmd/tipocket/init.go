@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	caseNameFlag string
+	caseNameFlag        string
+	individualBuildFlag bool
 )
 
 func newInitCmd() *cobra.Command {
@@ -35,7 +36,7 @@ func newInitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			scaffolder := scaffolds.NewScaffold()
 			universe := model.NewUniverse()
-			err := scaffolder.Execute(universe, &testcase.Makefile{
+			fileBuilders := []file.Builder{&testcase.Makefile{
 				TemplateMixin: file.TemplateMixin{Path: filepath.Join("testcase", caseNameFlag, "Makefile")},
 				CaseName:      caseNameFlag,
 			}, &testcase.Client{
@@ -51,16 +52,24 @@ func newInitCmd() *cobra.Command {
 				TemplateMixin: file.TemplateMixin{Path: filepath.Join("testcase", caseNameFlag, "revive.toml")},
 				CaseName:      caseNameFlag,
 			}, &template.MakefileUpdater{
-				InserterMixin: file.InserterMixin{Path: "Makefile"},
-				CaseName:      caseNameFlag,
+				InserterMixin:   file.InserterMixin{Path: "Makefile"},
+				CaseName:        caseNameFlag,
+				IndividualBuild: individualBuildFlag,
 			}, &template.CaseJsonnetUpdater{
 				InserterMixin: file.InserterMixin{Path: filepath.Join("run", "lib", "case.libsonnet")},
 				CaseName:      caseNameFlag,
 			}, &workflow.CaseJsonnetTemplate{
-				TemplateMixin: file.TemplateMixin{Path: filepath.Join("run", "workflow", fmt.Sprintf("%s.jsonnet", caseNameFlag))},
-				CaseName:      caseNameFlag,
-			})
-			if err != nil {
+				TemplateMixin:   file.TemplateMixin{Path: filepath.Join("run", "workflow", fmt.Sprintf("%s.jsonnet", caseNameFlag))},
+				CaseName:        caseNameFlag,
+				IndividualBuild: individualBuildFlag,
+			}}
+			if individualBuildFlag {
+				fileBuilders = append(fileBuilders, &testcase.Dockerfile{
+					TemplateMixin: file.TemplateMixin{Path: filepath.Join("testcase", caseNameFlag, "Dockerfile")},
+					CaseName:      caseNameFlag,
+				})
+			}
+			if err := scaffolder.Execute(universe, fileBuilders...); err != nil {
 				return err
 			}
 			fmt.Printf("create a new case `%[1]s`: testcase/%[1]s\n", caseNameFlag)
@@ -68,6 +77,7 @@ func newInitCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&caseNameFlag, "case-name", "c", "", "test case name")
+	cmd.Flags().BoolVarP(&individualBuildFlag, "individual-build", "i", false, "individual build from root image")
 	cmd.MarkFlagRequired("case-name")
 	return cmd
 }

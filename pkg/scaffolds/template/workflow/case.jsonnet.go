@@ -18,7 +18,8 @@ import "github.com/pingcap/tipocket/pkg/scaffolds/file"
 // CaseJsonnetTemplate uses for client.go
 type CaseJsonnetTemplate struct {
 	file.TemplateMixin
-	CaseName string
+	CaseName        string
+	IndividualBuild bool
 }
 
 // GetIfExistsAction ...
@@ -33,14 +34,19 @@ func (c *CaseJsonnetTemplate) Validate() error {
 
 // SetTemplateDefaults ...
 func (c *CaseJsonnetTemplate) SetTemplateDefaults() error {
-	c.TemplateBody = clientTemplate
+	if c.IndividualBuild {
+		c.TemplateBody = clientIndividualBuildTemplate
+	} else {
+		c.TemplateBody = clientTemplate
+	}
 	return nil
 }
 
-const clientTemplate = `{
+const (
+	clientTemplate = `{
   _config+:: {
     case_name: '{{ .CaseName }}',
-    image_name: 'hub.pingcap.net/qa/tipocket',
+    image_name: 'hub.pingcap.net/tipocket/tipocket',
     args+: {
       // k8s configurations
       // 'storage-class': 'local-storage',
@@ -49,3 +55,16 @@ const clientTemplate = `{
   },
 }
 `
+	clientIndividualBuildTemplate = `{
+  _config+:: {
+    case_name: '{{ .CaseName }}',
+    image_name: 'hub.pingcap.net/tipocket/{{ .CaseName }}',
+    args+: {
+      // k8s configurations
+      // 'storage-class': 'local-storage',
+    },
+    command: {},
+  },
+}
+`
+)
