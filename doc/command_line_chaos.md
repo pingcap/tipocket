@@ -1,4 +1,4 @@
-<img src="https://github.com/pingcap/chaos-mesh/blob/master/static/logo.png" alt="chaos_logo" width="400"/>
+<img src="https://raw.githubusercontent.com/pingcap/chaos-mesh/master/static/logo.svg" alt="chaos_logo" width="400"/>
 
 # Command Line Usages of Chaos
 If  you deploy TiDB clusters with Ansible, Chaos Mesh is not applicable. In this case, you can still do chaos experiments using command line. This document walks you through the command usages of the typical chaos experiments. In the end, we provide a demo script to show a full chaos experiment using command line.
