@@ -41,10 +41,9 @@ func (m *MakefileUpdater) GetCodeFragments() map[file.Marker]file.CodeFragment {
 			makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
 			makefileCmdMarker:   {fmt.Sprintf(makefileCmdIndividualBuildInsertionTemplate, m.CaseName)},
 		}
-	} else {
-		return map[file.Marker]file.CodeFragment{
-			makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
-			makefileCmdMarker:   {fmt.Sprintf(makefileCmdInsertionTemplate, m.CaseName)},
-		}
+	}
+	return map[file.Marker]file.CodeFragment{
+		makefileBuildMarker: {fmt.Sprintf(makefileBuildInsertionTemplate, m.CaseName)},
+		makefileCmdMarker:   {fmt.Sprintf(makefileCmdInsertionTemplate, m.CaseName)},
 	}
 }

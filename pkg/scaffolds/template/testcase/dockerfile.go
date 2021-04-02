@@ -15,7 +15,7 @@ package testcase
 
 import "github.com/pingcap/tipocket/pkg/scaffolds/file"
 
-// GoModule uses for go.mod
+// Dockerfile uses for Dockerfile template
 type Dockerfile struct {
 	file.TemplateMixin
 	CaseName string
