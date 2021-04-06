@@ -26,7 +26,7 @@ type killGenerator struct {
 
 // Generate generates container-kill actions, to simulate the case that node can't be recovered quickly after being killed
 func (g killGenerator) Generate(nodes []cluster.Node) []*core.NemesisOperation {
-	var n int
+	n := 1
 	var duration = time.Second * time.Duration(rand.Intn(120)+60)
 	var component *cluster.Component
 
