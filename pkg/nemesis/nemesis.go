@@ -46,6 +46,7 @@ func init() {
 		core.RegisterNemesis(podKill{client})
 		core.RegisterNemesis(containerKill{client})
 		core.RegisterNemesis(networkPartition{client})
+		core.RegisterNemesis(networkPartitionSingleRoute{client})
 		core.RegisterNemesis(netem{client})
 		core.RegisterNemesis(timeChaos{client})
 		core.RegisterNemesis(scaling{client})
