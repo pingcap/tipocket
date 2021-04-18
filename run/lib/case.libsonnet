@@ -66,5 +66,9 @@
     [
       '/bin/block-writer',
     ],
+  'ttl'(args={})::
+    [
+      '/bin/tll',
+    ],
   // +tipocket:scaffold:case_decls
 }
