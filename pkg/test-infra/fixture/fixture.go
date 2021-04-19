@@ -297,7 +297,7 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiCDCImage, "ticdc-image", "", "cdc image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
-	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PrepareSQL, "prepare-sql", "", "SQLs that run after the TiDB cluster is created (cluster A in abtest case)")
 	flag.IntVar(&Context.TiDBClusterConfig.TiDBReplicas, "tidb-replicas", 2, "number of tidb replicas")
