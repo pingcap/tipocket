@@ -29,13 +29,6 @@ zone = '%v'
 )
 
 func main() {
-	// set the default values
-	_ = flag.Set("namespace", "cross-region")
-	_ = flag.Set("pd-image", "hub.pingcap.net/jmpotato/pd:release-5.0-4615539")
-	_ = flag.Set("pd-storage-class", "shared-nvme-disks")
-	_ = flag.Set("tikv-storage-class", "nvme-disks")
-	_ = flag.Set("log-storage-class", "shared-sas-disks")
-
 	flag.Parse()
 	cfg := control.Config{
 		Mode:        control.ModeStandard,
