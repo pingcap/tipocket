@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	round          = flag.Int("round", 3, "the number of rounds to test")
+	round          = flag.Int("test-round", 3, "the number of rounds to test")
 	tsoRequests    = flag.Int("tso-request-count", 2000, "tso requests count for each allocator")
 	pdConfTemplate = `
 enable-local-tso = true
