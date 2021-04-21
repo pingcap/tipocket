@@ -23,8 +23,8 @@ func WrapErrors(errs []error) error {
 }
 
 const (
-	waitMaxRetry   = 200
-	waitRetrySleep = time.Millisecond * 100
+	waitMaxRetry   = 30
+	waitRetrySleep = time.Second * 10
 )
 
 // CheckFunc is a condition checker that passed to WaitUntil. Its implementation
@@ -53,6 +53,7 @@ func WithSleepInterval(sleep time.Duration) WaitOption {
 // WaitUntil repeatedly evaluates f() for a period of time, util it returns true.
 func WaitUntil(waitFor string, f CheckFunc, opts ...WaitOption) error {
 	log.Info("wait start", zap.String("wait-for", waitFor))
+	// We will wait for 5 minutes by default in the TiPocket test.
 	option := &WaitOp{
 		retryTimes:    waitMaxRetry,
 		sleepInterval: waitRetrySleep,

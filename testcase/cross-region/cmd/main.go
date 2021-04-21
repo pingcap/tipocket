@@ -18,6 +18,7 @@ import (
 )
 
 var (
+	round          = flag.Int("round", 3, "the number of rounds to test")
 	tsoRequests    = flag.Int("tso-request-count", 2000, "tso requests count for each allocator")
 	pdConfTemplate = `
 enable-local-tso = true
@@ -49,6 +50,7 @@ func main() {
 			Cfg: &crossregion.Config{
 				DBName:      "test",
 				TSORequests: *tsoRequests,
+				Round:       *round,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
