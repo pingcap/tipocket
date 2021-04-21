@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
@@ -13,6 +12,7 @@ import (
 )
 
 const (
+	globalDCLocation  = "global"
 	physicalShiftBits = 18
 	logicalMask       = (1 << physicalShiftBits) - 1
 	suffixMask        = logicalMask >> (physicalShiftBits - 2) // Log2(3+1) = 2
@@ -72,7 +72,7 @@ func (c *crossRegionClient) testTSO(ctx context.Context) error {
 	}
 	log.Info("new allocators ready")
 	// after transfer allocator and leader, we can tolerate tso failed once for each dc.
-	c.requestTSOAfterTransfer(ctx, "global")
+	c.requestTSOAfterTransfer(ctx, globalDCLocation)
 	for i := 0; i < len(DCLocations); i++ {
 		c.requestTSOAfterTransfer(ctx, DCLocations[i])
 	}
@@ -87,7 +87,7 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 	tsoWg.Add(4)
 	tsoErrCh := make(chan error, dcLocationNumber+1)
 	tsoCh := make(chan TSO, (dcLocationNumber+1)*c.TSORequests)
-	go c.requestTSO(tsoCtx, "global", tsoWg, tsoCh, tsoErrCh)
+	go c.requestTSO(tsoCtx, globalDCLocation, tsoWg, tsoCh, tsoErrCh)
 	for i := 0; i < dcLocationNumber; i++ {
 		go c.requestTSO(tsoCtx, DCLocations[i], tsoWg, tsoCh, tsoErrCh)
 	}
@@ -127,6 +127,11 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 	}
 	lastPhysical, lastLogical := getLastTSO(dcLocation)
 	for i := 0; i < c.TSORequests; i++ {
+		// Prepare the last Global TSO for the later Local TSO to compare
+		var lastGlobalTSOPhysical, lastGlobalTSOLogical int64
+		if dcLocation != globalDCLocation {
+			lastGlobalTSOPhysical, lastGlobalTSOLogical = getLastTSO(globalDCLocation)
+		}
 		physical, logical, err := c.pdClient.GetLocalTS(ctx, dcLocation)
 		if err != nil {
 			log.Error("requestTSO failed", zap.String("dc-location", dcLocation), zap.Error(err))
@@ -137,9 +142,15 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 			zap.Int64("physical", physical),
 			zap.Int64("logical", logical))
 		// assert tso won't fallback
-		if physical < lastPhysical || (physical == lastPhysical && logical <= lastLogical) {
-			errCh <- fmt.Errorf("tso fallback physical: %v, logical: %v, dc-location: %v, last-physical: %v, last-logical: %v",
-				physical, logical, dcLocation, lastPhysical, lastLogical)
+		if tsLessEqual(physical, logical, lastPhysical, lastLogical) {
+			errCh <- fmt.Errorf("tso fallback, dc-location: %s, physical: %d, logical: %d, last-physical: %d, last-logical: %d",
+				dcLocation, physical, logical, lastPhysical, lastLogical)
+			return
+		}
+		// assert local tso is bigger than last Global TSO
+		if tsLessEqual(physical, logical, lastGlobalTSOPhysical, lastGlobalTSOLogical) {
+			errCh <- fmt.Errorf("local tso fallback than global, dc-location: %s, physical: %d, logical: %d, last-global-physical: %d, last-global-logical: %d",
+				dcLocation, physical, logical, lastGlobalTSOPhysical, lastGlobalTSOLogical)
 			return
 		}
 		newSuffix := int(logical & suffixMask)
@@ -154,6 +165,10 @@ func (c *crossRegionClient) requestTSO(ctx context.Context, dcLocation string, w
 		lastPhysical, lastLogical = physical, logical
 	}
 	setLastTSO(dcLocation, lastPhysical, lastLogical)
+}
+
+func tsLessEqual(physical, logical, lastPhysical, lastLogical int64) bool {
+	return physical < lastPhysical || (physical == lastPhysical && logical <= lastLogical)
 }
 
 func (c *crossRegionClient) transferPDAllocator(dcLocation string) error {
@@ -258,7 +273,7 @@ func (c *crossRegionClient) waitLeader(name string) error {
 			return false
 		}
 		return true
-	}, util2.WithSleepInterval(20*time.Second), util2.WithRetryTimes(5))
+	})
 }
 
 func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
@@ -273,7 +288,7 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 			}
 		}
 		return false
-	}, util2.WithSleepInterval(10*time.Second), util2.WithRetryTimes(18))
+	})
 }
 
 func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc string) {

@@ -39,6 +39,7 @@ var DCLocations = []string{}
 
 // Config exposes the config
 type Config struct {
+	Round       int
 	TSORequests int
 	DBName      string
 	//TODO: support configure DCLocationNum instead of fixed 6
@@ -116,7 +117,13 @@ func (c *crossRegionClient) TearDown(ctx context.Context, _ []cluster.ClientNode
 
 // Start...
 func (c *crossRegionClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
-	return c.testTSO(ctx)
+	for i := 0; i < c.Round; i++ {
+		log.Info("Start to test TSO", zap.Int("round", i))
+		if err := c.testTSO(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *crossRegionClient) setup() error {
