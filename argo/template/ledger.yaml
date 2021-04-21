@@ -65,6 +65,7 @@ spec:
             -image-version={{inputs.parameters.image-version}} \
             -tidb-image={{inputs.parameters.tidb-image}} \
             -tikv-image={{inputs.parameters.tikv-image}} \
+            -tikv-config=base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw \
             -pd-image={{inputs.parameters.pd-image}} \
             -purge={{inputs.parameters.purge}} \
             -delNS=true \

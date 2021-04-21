@@ -55,6 +55,7 @@ spec:
             -repository={{inputs.parameters.repository}} \
             -storage-class={{inputs.parameters.storage-class}} \
             -image-version={{inputs.parameters.image-version}} \
+            -tikv-config=base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw \
             -purge={{inputs.parameters.purge}} \
             -delNS=true \
             -nemesis={{inputs.parameters.nemesis}} \

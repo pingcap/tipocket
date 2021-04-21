@@ -31,7 +31,7 @@ spec:
           - name: tidb-config
             default: ""
           - name: tikv-config
-            default: ""
+            default: "base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw"
           - name: pd-config
             default: ""
           - name: tikv-replicas

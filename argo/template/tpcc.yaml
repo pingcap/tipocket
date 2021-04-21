@@ -74,6 +74,7 @@ spec:
             -tidb-image={{inputs.parameters.tidb-image}} \
             -tikv-image={{inputs.parameters.tikv-image}} \
             -pd-image={{inputs.parameters.pd-image}} \
+            -tikv-config=base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw \
             -purge={{inputs.parameters.purge}} \
             -delNS=true \
             -client={{inputs.parameters.client}} \
