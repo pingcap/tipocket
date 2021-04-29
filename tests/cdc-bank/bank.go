@@ -215,7 +215,8 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						continue
 					}
 					if balanceSum != expectedSum {
-						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
+						log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
+						continue
 					}
 					_ = txn.Rollback()
 					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
