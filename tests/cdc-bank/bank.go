@@ -192,9 +192,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
+			var flag = false
 			for {
 				select {
 				case <-ctx.Done():
+					if flag {
+						atomic.AddInt32(&counter, 1)
+					}
 					return
 				default:
 					txn, err := downstream.Begin()
@@ -217,10 +221,10 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						continue
 					}
 					if balanceSum == expectedSum {
-						atomic.AddInt32(&counter, 1)
+						flag = true
 						_ = txn.Rollback()
 						log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
-						return
+						continue
 					}
 					log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 				}
