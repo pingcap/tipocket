@@ -214,12 +214,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						_ = txn.Rollback()
 						continue
 					}
-					if balanceSum != expectedSum {
-						log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
-						continue
+					if balanceSum == expectedSum {
+						_ = txn.Rollback()
+						log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
+						return
 					}
-					_ = txn.Rollback()
-					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
+
+					log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 				}
 			}
 		}(validatorIdx)
