@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ngaut/log"
@@ -185,6 +186,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}(connID)
 	}
 
+	var counter int32 = 0
 	// downstream validators
 	for validatorIdx := 0; validatorIdx < validateConcurrency; validatorIdx++ {
 		wg.Add(1)
@@ -215,16 +217,21 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						continue
 					}
 					if balanceSum == expectedSum {
+						atomic.AddInt32(&counter, 1)
 						_ = txn.Rollback()
 						log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
 						return
 					}
-
 					log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 				}
 			}
 		}(validatorIdx)
 	}
 	wg.Wait()
+
+	if atomic.LoadInt32(&counter) != int32(validateConcurrency) {
+		log.Fatalf("[cdc-bank] validate failed, counter: %d, concurrency: %d", counter, validateConcurrency)
+	}
+
 	return nil
 }
