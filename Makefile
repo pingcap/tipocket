@@ -20,6 +20,7 @@ build: bindir consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud \
 		read-stress follower-read pessimistic resolve-lock cdc-bank \
     example ttl \
+    write-stress \
 # +tipocket:scaffold:makefile_build
 
 bindir:
@@ -132,6 +133,10 @@ cross-region:
 
 ttl:
 	cd testcase/ttl ; make build; \
+	cp bin/* ../../bin/
+
+write-stress:
+	cd testcase/write-stress; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd

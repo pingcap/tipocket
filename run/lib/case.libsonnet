@@ -70,5 +70,9 @@
     [
       '/bin/tll',
     ],
+  'write-stress'(args={})::
+    [
+      '/bin/write-stress',
+    ],
   // +tipocket:scaffold:case_decls
 }
