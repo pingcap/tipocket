@@ -32,16 +32,21 @@ import (
 )
 
 // CaseCreator is a creator of test client
-type CaseCreator struct{}
+type CaseCreator struct {
+	Concurrency int
+}
 
 // Create creates a test client
 func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
-	return &Client{}
+	return &Client{
+		concurrency: c.Concurrency,
+	}
 }
 
 // Client defines how our test case works
 type Client struct {
-	db *sql.DB
+	db          *sql.DB
+	concurrency int
 }
 
 // SetUp implements the core.Client interface.

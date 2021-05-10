@@ -30,6 +30,10 @@ import (
 	testcase "github.com/pingcap/tipocket/testcase/write-stress"
 )
 
+var (
+	concurrency = flag.Int("concurrency", 256, "write concurrency")
+)
+
 func main() {
 	flag.Parse()
 	cfg := control.Config{
@@ -41,7 +45,7 @@ func main() {
 	suit := util.Suit{
 		Config:        &cfg,
 		Provider:      cluster.NewDefaultClusterProvider(),
-		ClientCreator: testcase.CaseCreator{},
+		ClientCreator: testcase.CaseCreator{Concurrency: *concurrency},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
 		LogsClient:    logs.NewDiagnosticLogClient(),
