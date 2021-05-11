@@ -209,7 +209,6 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}(connID)
 	}
 
-	var counter int32 = 0
 	// downstream validators
 	for validatorIdx := 0; validatorIdx < validateConcurrency; validatorIdx++ {
 		wg.Add(1)
@@ -259,10 +258,6 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}(validatorIdx)
 	}
 	wg.Wait()
-
-	if atomic.LoadInt32(&counter) != int32(validateConcurrency) {
-		log.Fatalf("[cdc-bank] validate failed, counter: %d, concurrency: %d", counter, validateConcurrency)
-	}
 
 	return nil
 }
