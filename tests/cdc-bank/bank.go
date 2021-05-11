@@ -22,6 +22,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
@@ -48,9 +50,11 @@ func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	}
 }
 
-const initBalance int = 1000
-const regions int = 16
-const validateConcurrency int = 32
+const (
+	initBalance         int = 1000
+	regions             int = 16
+	validateConcurrency int = 32
+)
 
 type client struct {
 	*Config
@@ -126,7 +130,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}
 	}
 
-	var wg sync.WaitGroup
+	var (
+		wg      sync.WaitGroup
+		count   int32 = 0
+		skip    int32 = 0
+		tblChan       = make(chan string, 1)
+	)
+
 	// upstream transfers
 	for connID := 0; connID < c.Concurrency; connID++ {
 		wg.Add(1)
@@ -137,6 +147,18 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 				case <-ctx.Done():
 					return
 				default:
+					if atomic.AddInt32(&count, 1)%1000 == 0 {
+						atomic.StoreInt32(&skip, 1)
+
+						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
+						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
+						mustExec(ctx, upstream, ddl)
+						tblChan <- tblName
+
+						atomic.StoreInt32(&skip, 0)
+						continue
+					}
+
 					account1 := rand.Intn(c.Accounts)
 					account2 := (rand.Intn(c.Accounts-1) + account1 + 1) % c.Accounts
 					txn, err := upstream.Begin()
@@ -164,23 +186,26 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					amount := rand.Intn(maxAmount)
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
-					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
-						log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
-						_ = txn.Rollback()
-						continue
+
+					for atomic.LoadInt32(&skip) != 1 {
+						if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
+							log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
+							_ = txn.Rollback()
+							continue
+						}
+						if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance2, pk(account2)); err != nil {
+							log.Errorf("[cdc-bank] [connID=%d] update account2 error %v", connID, err)
+							_ = txn.Rollback()
+							continue
+						}
+						if err := txn.Commit(); err != nil {
+							log.Errorf("[cdc-bank] [connID=%d] commit error %v", connID, err)
+							_ = txn.Rollback()
+							continue
+						}
+						log.Infof("[cdc-bank] [connID=%d] transfer %d, %d: %d -> %d, %d: %d -> %d", connID, amount,
+							account1, balance1, newBalance1, account2, balance2, newBalance2)
 					}
-					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance2, pk(account2)); err != nil {
-						log.Errorf("[cdc-bank] [connID=%d] update account2 error %v", connID, err)
-						_ = txn.Rollback()
-						continue
-					}
-					if err := txn.Commit(); err != nil {
-						log.Errorf("[cdc-bank] [connID=%d] commit error %v", connID, err)
-						_ = txn.Rollback()
-						continue
-					}
-					log.Infof("[cdc-bank] [connID=%d] transfer %d, %d: %d -> %d, %d: %d -> %d", connID, amount,
-						account1, balance1, newBalance1, account2, balance2, newBalance2)
 				}
 			}
 		}(connID)
@@ -192,15 +217,16 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			var flag = false
 			for {
 				select {
-				case <-ctx.Done():
-					if flag {
-						atomic.AddInt32(&counter, 1)
-					}
-					return
-				default:
+				case tblName := <-tblChan:
+					waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Minute)
+					waitTable(waitCtx, downstream, tblName)
+					waitCancel()
+					log.Infof("ddl synced")
+
+					// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
+					// all previous DDL and DML are replicated too.
 					txn, err := downstream.Begin()
 					if err != nil {
 						log.Errorf("[cdc-bank] [validatorId=%d] begin txn error %v", idx, err)
@@ -221,14 +247,15 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						continue
 					}
 
-
-					if balanceSum == expectedSum {
-						flag = true
-						log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
-					} else {
-						log.Errorf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
+					if balanceSum != expectedSum {
+						_ = txn.Rollback()
+						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 					}
-					_ = txn.Rollback()
+					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d, tblName: %s", idx, startTS, tblName)
+				case <-ctx.Done():
+					return
+				default:
+					continue
 				}
 			}
 		}(validatorIdx)
@@ -240,4 +267,43 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	}
 
 	return nil
+}
+
+func mustExec(ctx context.Context, db *sql.DB, query string) {
+	execF := func() error {
+		_, err := db.ExecContext(ctx, query)
+		return err
+	}
+	err := util.RunWithRetry(ctx, 3, 100*time.Millisecond, execF)
+	if err != nil {
+		log.Fatal("exec failed", zap.String("query", query), zap.Error(err))
+	}
+}
+
+func waitTable(ctx context.Context, db *sql.DB, table string) {
+	for {
+		if isTableExist(ctx, db, table) {
+			return
+		}
+		log.Info("wait table", zap.String("table", table))
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Second):
+		}
+	}
+}
+
+func isTableExist(ctx context.Context, db *sql.DB, table string) bool {
+	// if table is not exist, return true directly
+	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", table)
+	var t string
+	err := db.QueryRowContext(ctx, query).Scan(&t)
+	switch {
+	case err == sql.ErrNoRows:
+		return false
+	case err != nil:
+		log.Fatal("query failed", zap.String("query", query), zap.Error(err))
+	}
+	return true
 }
