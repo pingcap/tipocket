@@ -31,7 +31,8 @@ import (
 )
 
 var (
-	concurrency = flag.Int("concurrency", 256, "write concurrency")
+	concurrency = flag.Int("concurrency", 1024, "write concurrency")
+	caseName    = flag.String("case-name", "uniform", "test case name")
 )
 
 func main() {
@@ -43,12 +44,15 @@ func main() {
 	}
 	c := fixture.Context
 	suit := util.Suit{
-		Config:        &cfg,
-		Provider:      cluster.NewDefaultClusterProvider(),
-		ClientCreator: testcase.CaseCreator{Concurrency: *concurrency},
-		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
-		LogsClient:    logs.NewDiagnosticLogClient(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
+		ClientCreator: testcase.CaseCreator{
+			Concurrency: *concurrency,
+			CaseName:    *caseName,
+		},
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
+		LogsClient:  logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }
