@@ -50,11 +50,9 @@ func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 	}
 }
 
-const (
-	initBalance         int = 1000
-	regions             int = 16
-	validateConcurrency int = 32
-)
+const initBalance int = 1000
+const regions int = 16
+const validateConcurrency int = 32
 
 type client struct {
 	*Config
