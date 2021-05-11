@@ -101,35 +101,18 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 func (c *Client) runClient(ctx context.Context) error {
 	rng := rand.New(rand.NewSource(rand.Int63()))
 
-	var txn *sql.Tx
-	defer func() {
-		if txn != nil {
-			_ = txn.Rollback()
-		}
-	}()
-
 	col2 := make([]byte, 192)
 	data := make([]byte, 65536)
 	for {
-		txn, err := c.db.BeginTx(ctx, &sql.TxOptions{})
-		if err != nil {
-			return errors.Trace(err)
-		}
-		for i := 0; i < 10; i++ {
-			uuid := uuid.New().String()
-			col1 := rng.Int63()
-			col2Len := rng.Intn(192)
-			_, _ = rng.Read(col2[:col2Len])
-			dataLen := rng.Intn(65536)
-			_, _ = rng.Read(data[:dataLen])
-			_, err := txn.ExecContext(ctx, "insert into write_stress values (?, ?, ?, ?)", uuid, col1,
-				base64.StdEncoding.EncodeToString(col2[:col2Len]),
-				base64.StdEncoding.EncodeToString(data[:dataLen]))
-			if err != nil {
-				return errors.Trace(err)
-			}
-		}
-		err = txn.Commit()
+		uuid := uuid.New().String()
+		col1 := rng.Int63()
+		col2Len := rng.Intn(192)
+		_, _ = rng.Read(col2[:col2Len])
+		dataLen := rng.Intn(65536)
+		_, _ = rng.Read(data[:dataLen])
+		_, err := c.db.ExecContext(ctx, "insert into write_stress values (?, ?, ?, ?)", uuid, col1,
+			base64.StdEncoding.EncodeToString(col2[:col2Len]),
+			base64.StdEncoding.EncodeToString(data[:dataLen]))
 		if err != nil {
 			return errors.Trace(err)
 		}
