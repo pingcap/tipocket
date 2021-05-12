@@ -130,8 +130,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		count   int32 = 0
 		tblChan       = make(chan string, 1)
 		skip          = false
-		runLock       = sync.Mutex{}
-		cond          = sync.NewCond(&runLock)
+		cond          = sync.NewCond(&sync.Mutex{})
 	)
 
 	// upstream transfers
@@ -145,13 +144,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					return
 				default:
 					if atomic.AddInt32(&count, 1)%1000 == 0 {
+						cond.L.Lock()
+						skip = true
+						cond.L.Unlock()
+
 						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
 						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
 						mustExec(ctx, upstream, ddl)
-
-						runLock.Lock()
-						skip = true
-						runLock.Unlock()
 
 						tblChan <- tblName
 						continue
