@@ -185,7 +185,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
 
-					for atomic.LoadInt32(&skip) != 1 {
+					if atomic.LoadInt32(&skip) != 1 {
 						if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
 							log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
 							_ = txn.Rollback()
@@ -216,14 +216,14 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			defer wg.Done()
 			for {
 				select {
+				// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
+				// all previous DDL and DML are replicated too.
 				case tblName := <-tblChan:
 					waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Minute)
 					waitTable(waitCtx, downstream, tblName)
 					waitCancel()
-					log.Infof("ddl synced")
+					log.Info("ddl synced")
 
-					// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
-					// all previous DDL and DML are replicated too.
 					txn, err := downstream.Begin()
 					if err != nil {
 						log.Errorf("[cdc-bank] [validatorId=%d] begin txn error %v", idx, err)
