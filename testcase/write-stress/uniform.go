@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/base64"
 	"math/rand"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/ngaut/log"
@@ -41,25 +42,24 @@ func (c *uniformClient) SetUp(ctx context.Context, nodes []cluster.Node, clientN
 
 // Start implements the core.StandardClientExtensions interface.
 func (c *uniformClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	ctx2, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	ch := make(chan error)
+	var wg sync.WaitGroup
 	for i := 0; i < c.concurrency; i++ {
+		wg.Add(1)
 		go func() {
-			err := c.runClient(ctx2)
-			log.Error(err)
-			ch <- err
+			defer wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				err := c.runClient(ctx)
+				log.Error(err)
+			}
 		}()
 	}
 
-	for i := 0; i < c.concurrency; i++ {
-		err := <-ch
-		if err != nil {
-			return err
-		}
-	}
-
+	wg.Wait()
 	log.Info("everything is ok!")
 	return nil
 }

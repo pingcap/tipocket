@@ -64,6 +64,5 @@ func (c *baseClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []
 }
 
 func (c *baseClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
-	util.MustExec(c.db, "drop table t")
 	return nil
 }
