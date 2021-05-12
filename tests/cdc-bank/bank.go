@@ -112,18 +112,15 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			if _, err := db1.Exec("set @@tidb_general_log=1"); err != nil {
 				log.Errorf("[cdc-bank] enable downstream general log error %v", err)
 			}
-			// wait at most 60 seconds for initialization of downstream
-			for j := 0; j < 60; j++ {
-				var sumBalance int
-				row := db1.QueryRow("select sum(balance) from accounts")
-				err := row.Scan(&sumBalance)
-				if err != nil || sumBalance != expectedSum {
-					log.Infof("wait until downstream is initialized")
-					time.Sleep(time.Second)
-					continue
-				}
-				break
-			}
+
+			// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
+			// all previous DDL and DML are replicated too.
+			mustExec(ctx, upstream, `CREATE TABLE IF NOT EXISTS finishmark (foo BIGINT PRIMARY KEY)`)
+			waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
+			waitTable(waitCtx, downstream, "finishmark")
+			waitCancel()
+			log.Info("all tables synced")
+
 			downstream = db1
 		}
 	}
@@ -131,8 +128,10 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	var (
 		wg      sync.WaitGroup
 		count   int32 = 0
-		skip    int32 = 0
 		tblChan       = make(chan string, 1)
+		skip          = false
+		runLock       = sync.Mutex{}
+		cond          = sync.NewCond(&runLock)
 	)
 
 	// upstream transfers
@@ -146,14 +145,15 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					return
 				default:
 					if atomic.AddInt32(&count, 1)%1000 == 0 {
-						atomic.StoreInt32(&skip, 1)
-
 						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
 						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
 						mustExec(ctx, upstream, ddl)
-						tblChan <- tblName
 
-						atomic.StoreInt32(&skip, 0)
+						runLock.Lock()
+						skip = true
+						runLock.Unlock()
+
+						tblChan <- tblName
 						continue
 					}
 
@@ -185,25 +185,29 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
 
-					if atomic.LoadInt32(&skip) != 1 {
-						if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
-							log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
-							_ = txn.Rollback()
-							continue
-						}
-						if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance2, pk(account2)); err != nil {
-							log.Errorf("[cdc-bank] [connID=%d] update account2 error %v", connID, err)
-							_ = txn.Rollback()
-							continue
-						}
-						if err := txn.Commit(); err != nil {
-							log.Errorf("[cdc-bank] [connID=%d] commit error %v", connID, err)
-							_ = txn.Rollback()
-							continue
-						}
-						log.Infof("[cdc-bank] [connID=%d] transfer %d, %d: %d -> %d, %d: %d -> %d", connID, amount,
-							account1, balance1, newBalance1, account2, balance2, newBalance2)
+					cond.L.Lock()
+					for skip {
+						cond.Wait()
 					}
+					cond.L.Unlock()
+
+					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
+						log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
+						_ = txn.Rollback()
+						continue
+					}
+					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance2, pk(account2)); err != nil {
+						log.Errorf("[cdc-bank] [connID=%d] update account2 error %v", connID, err)
+						_ = txn.Rollback()
+						continue
+					}
+					if err := txn.Commit(); err != nil {
+						log.Errorf("[cdc-bank] [connID=%d] commit error %v", connID, err)
+						_ = txn.Rollback()
+						continue
+					}
+					log.Infof("[cdc-bank] [connID=%d] transfer %d, %d: %d -> %d, %d: %d -> %d", connID, amount,
+						account1, balance1, newBalance1, account2, balance2, newBalance2)
 				}
 			}
 		}(connID)
@@ -243,6 +247,11 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						_ = txn.Rollback()
 						continue
 					}
+
+					cond.L.Lock()
+					skip = false
+					cond.Broadcast()
+					cond.L.Unlock()
 
 					if balanceSum != expectedSum {
 						_ = txn.Rollback()
