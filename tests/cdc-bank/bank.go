@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/juju/errors"
 	"go.uber.org/zap"
 
 	"github.com/ngaut/log"
@@ -128,9 +129,8 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	var (
 		wg      sync.WaitGroup
 		count   int32 = 0
+		skip    int32 = 0
 		tblChan       = make(chan string, 1)
-		skip          = false
-		cond          = sync.NewCond(&sync.Mutex{})
 	)
 
 	// upstream transfers
@@ -144,15 +144,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					return
 				default:
 					if atomic.AddInt32(&count, 1)%1000 == 0 {
-						cond.L.Lock()
-						skip = true
-						cond.L.Unlock()
-
+						atomic.StoreInt32(&skip, 1)
 						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
 						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
 						mustExec(ctx, upstream, ddl)
 
 						tblChan <- tblName
+						atomic.StoreInt32(&skip, 0)
 						continue
 					}
 
@@ -184,11 +182,10 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
 
-					cond.L.Lock()
-					for skip {
-						cond.Wait()
+					if atomic.LoadInt32(&skip) == 1 {
+						_ = txn.Rollback()
+						continue
 					}
-					cond.L.Unlock()
 
 					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
 						log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
@@ -227,6 +224,11 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					waitCancel()
 					log.Info("ddl synced")
 
+					endTs, err := getDDLEndTs(downstream, tblName)
+					if err != nil {
+						log.Errorf("[cdc-bank] get ddl end ts error %v", err)
+					}
+
 					txn, err := downstream.Begin()
 					if err != nil {
 						log.Errorf("[cdc-bank] [validatorId=%d] begin txn error %v", idx, err)
@@ -239,6 +241,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						_ = txn.Rollback()
 						continue
 					}
+
+					if _, err := txn.Exec(fmt.Sprintf("set @@tidb_snapshot='%s'", endTs)); err != nil {
+						log.Errorf("[cdc-bank] [validatorId=%d] set @@tidb_snapshot=%s error %v", idx, endTs, err)
+						_ = txn.Rollback()
+						continue
+					}
+
 					row = txn.QueryRow("select sum(balance) from accounts")
 					var balanceSum int
 					if err := row.Scan(&balanceSum); err != nil {
@@ -247,16 +256,16 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						continue
 					}
 
-					cond.L.Lock()
-					skip = false
-					cond.Broadcast()
-					cond.L.Unlock()
-
 					if balanceSum != expectedSum {
 						_ = txn.Rollback()
 						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 					}
+
 					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d, tblName: %s", idx, startTS, tblName)
+					if _, err := txn.Exec("set @@tidb_snapshot=''"); err != nil {
+						log.Errorf("[cdc-bank][validatorId=%d] set @@tidb_snapshot='' error %v", idx, err)
+					}
+
 				case <-ctx.Done():
 					return
 				default:
@@ -307,4 +316,38 @@ func isTableExist(ctx context.Context, db *sql.DB, table string) bool {
 		log.Fatal("query failed", zap.String("query", query), zap.Error(err))
 	}
 	return true
+}
+
+type dataRow struct {
+	JobID       int64
+	DBName      string
+	TblName     string
+	JobType     string
+	SchemaState string
+	SchemeID    int64
+	TblID       int64
+	RowCount    int64
+	StartTime   string
+	EndTime     string
+	State       string
+}
+
+func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
+	rows, err := db.Query("admin show ddl jobs")
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var line dataRow
+	for rows.Next() {
+		if err := rows.Scan(&line.JobID, &line.DBName, &line.TblName, &line.JobType, &line.SchemaState, &line.SchemeID,
+			&line.TblID, &line.RowCount, &line.StartTime, &line.EndTime, &line.State); err != nil {
+			return "", err
+		}
+		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
+			return line.EndTime, nil
+		}
+	}
+	return "", errors.New(fmt.Sprintf("cannot find in ddl history, tableName: %s", tableName))
 }
