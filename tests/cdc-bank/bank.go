@@ -226,7 +226,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 
 					endTs, err := getDDLEndTs(downstream, tblName)
 					if err != nil {
-						log.Errorf("[cdc-bank] get ddl end ts error %v", err)
+						log.Fatalf("[cdc-bank] get ddl end ts error %v", err)
 					}
 
 					txn, err := downstream.Begin()
@@ -306,16 +306,22 @@ func waitTable(ctx context.Context, db *sql.DB, table string) {
 
 func isTableExist(ctx context.Context, db *sql.DB, table string) bool {
 	// if table is not exist, return true directly
+	if _, err := db.Exec("use test"); err != nil {
+		log.Fatalf("use db test failed")
+	}
+
 	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", table)
 	var t string
 	err := db.QueryRowContext(ctx, query).Scan(&t)
-	switch {
-	case err == sql.ErrNoRows:
-		return false
-	case err != nil:
-		log.Fatal("query failed", zap.String("query", query), zap.Error(err))
+	if err == nil {
+		return true
 	}
-	return true
+	if err == sql.ErrNoRows {
+		return false
+	}
+
+	log.Fatal("query failed", zap.String("query", query), zap.Error(err))
+	return false
 }
 
 type dataRow struct {
