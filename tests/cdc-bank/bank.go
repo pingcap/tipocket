@@ -129,7 +129,6 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	var (
 		wg      sync.WaitGroup
 		count   int32 = 0
-		skip    int32 = 0
 		tblChan       = make(chan string, 1)
 	)
 
@@ -143,14 +142,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 				case <-ctx.Done():
 					return
 				default:
+					// send ddl periodically
 					if atomic.AddInt32(&count, 1)%1000 == 0 {
-						atomic.StoreInt32(&skip, 1)
 						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
 						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
 						mustExec(ctx, upstream, ddl)
 
 						tblChan <- tblName
-						atomic.StoreInt32(&skip, 0)
 						continue
 					}
 
@@ -181,11 +179,6 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					amount := rand.Intn(maxAmount)
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
-
-					if atomic.LoadInt32(&skip) == 1 {
-						_ = txn.Rollback()
-						continue
-					}
 
 					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
 						log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
