@@ -19,7 +19,11 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/juju/errors"
+	"go.uber.org/zap"
 
 	"github.com/ngaut/log"
 
@@ -109,23 +113,25 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			if _, err := db1.Exec("set @@tidb_general_log=1"); err != nil {
 				log.Errorf("[cdc-bank] enable downstream general log error %v", err)
 			}
-			// wait at most 60 seconds for initialization of downstream
-			for j := 0; j < 60; j++ {
-				var sumBalance int
-				row := db1.QueryRow("select sum(balance) from accounts")
-				err := row.Scan(&sumBalance)
-				if err != nil || sumBalance != expectedSum {
-					log.Infof("wait until downstream is initialized")
-					time.Sleep(time.Second)
-					continue
-				}
-				break
-			}
+
+			// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
+			// all previous DDL and DML are replicated too.
+			mustExec(ctx, upstream, `CREATE TABLE IF NOT EXISTS finishmark (foo BIGINT PRIMARY KEY)`)
+			waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
+			waitTable(waitCtx, downstream, "finishmark")
+			waitCancel()
+			log.Info("all tables synced")
+
 			downstream = db1
 		}
 	}
 
-	var wg sync.WaitGroup
+	var (
+		wg      sync.WaitGroup
+		count   int32 = 0
+		tblChan       = make(chan string, 1)
+	)
+
 	// upstream transfers
 	for connID := 0; connID < c.Concurrency; connID++ {
 		wg.Add(1)
@@ -136,6 +142,16 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 				case <-ctx.Done():
 					return
 				default:
+					// send ddl periodically
+					if atomic.AddInt32(&count, 1)%1000 == 0 {
+						tblName := fmt.Sprintf("finishmark%d", atomic.LoadInt32(&count))
+						ddl := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (foo BIGINT PRIMARY KEY)", tblName)
+						mustExec(ctx, upstream, ddl)
+
+						tblChan <- tblName
+						continue
+					}
+
 					account1 := rand.Intn(c.Accounts)
 					account2 := (rand.Intn(c.Accounts-1) + account1 + 1) % c.Accounts
 					txn, err := upstream.Begin()
@@ -163,6 +179,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					amount := rand.Intn(maxAmount)
 					newBalance1 := balance1 - amount
 					newBalance2 := balance2 + amount
+
 					if _, err := txn.Exec("update accounts set balance = ? where id = ?", newBalance1, pk(account1)); err != nil {
 						log.Errorf("[cdc-bank] [connID=%d] update account1 error %v", connID, err)
 						_ = txn.Rollback()
@@ -192,9 +209,19 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			defer wg.Done()
 			for {
 				select {
-				case <-ctx.Done():
-					return
-				default:
+				// DDL is a strong sync point in TiCDC. Once finishmark table is replicated to downstream
+				// all previous DDL and DML are replicated too.
+				case tblName := <-tblChan:
+					waitCtx, waitCancel := context.WithTimeout(ctx, 2*time.Minute)
+					waitTable(waitCtx, downstream, tblName)
+					waitCancel()
+					log.Info("ddl synced")
+
+					endTs, err := getDDLEndTs(downstream, tblName)
+					if err != nil {
+						log.Fatalf("[cdc-bank] get ddl end ts error %v", err)
+					}
+
 					txn, err := downstream.Begin()
 					if err != nil {
 						log.Errorf("[cdc-bank] [validatorId=%d] begin txn error %v", idx, err)
@@ -207,6 +234,13 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						_ = txn.Rollback()
 						continue
 					}
+
+					if _, err := txn.Exec(fmt.Sprintf("set @@tidb_snapshot='%s'", endTs)); err != nil {
+						log.Errorf("[cdc-bank] [validatorId=%d] set @@tidb_snapshot=%s error %v", idx, endTs, err)
+						_ = txn.Rollback()
+						continue
+					}
+
 					row = txn.QueryRow("select sum(balance) from accounts")
 					var balanceSum int
 					if err := row.Scan(&balanceSum); err != nil {
@@ -214,15 +248,105 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 						_ = txn.Rollback()
 						continue
 					}
+
 					if balanceSum != expectedSum {
+						_ = txn.Rollback()
 						log.Fatalf("[cdc-bank] [validatorId=%d] sum: %d, expected: %d, startTS: %d", idx, balanceSum, expectedSum, startTS)
 					}
-					_ = txn.Rollback()
-					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d", idx, startTS)
+
+					log.Infof("[cdc-bank] [validatorId=%d] success, startTS: %d, tblName: %s", idx, startTS, tblName)
+					if _, err := txn.Exec("set @@tidb_snapshot=''"); err != nil {
+						log.Errorf("[cdc-bank][validatorId=%d] set @@tidb_snapshot='' error %v", idx, err)
+					}
+
+				case <-ctx.Done():
+					return
+				default:
+					continue
 				}
 			}
 		}(validatorIdx)
 	}
 	wg.Wait()
+
 	return nil
+}
+
+func mustExec(ctx context.Context, db *sql.DB, query string) {
+	execF := func() error {
+		_, err := db.ExecContext(ctx, query)
+		return err
+	}
+	err := util.RunWithRetry(ctx, 3, 100*time.Millisecond, execF)
+	if err != nil {
+		log.Fatal("exec failed", zap.String("query", query), zap.Error(err))
+	}
+}
+
+func waitTable(ctx context.Context, db *sql.DB, table string) {
+	for {
+		if isTableExist(ctx, db, table) {
+			return
+		}
+		log.Info("wait table", zap.String("table", table))
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(time.Second):
+		}
+	}
+}
+
+func isTableExist(ctx context.Context, db *sql.DB, table string) bool {
+	// if table is not exist, return true directly
+	if _, err := db.Exec("use test"); err != nil {
+		log.Fatalf("use db test failed")
+	}
+
+	query := fmt.Sprintf("SHOW TABLES LIKE '%s'", table)
+	var t string
+	err := db.QueryRowContext(ctx, query).Scan(&t)
+	if err == nil {
+		return true
+	}
+	if err == sql.ErrNoRows {
+		return false
+	}
+
+	log.Fatal("query failed", zap.String("query", query), zap.Error(err))
+	return false
+}
+
+type dataRow struct {
+	JobID       int64
+	DBName      string
+	TblName     string
+	JobType     string
+	SchemaState string
+	SchemeID    int64
+	TblID       int64
+	RowCount    int64
+	StartTime   string
+	EndTime     string
+	State       string
+}
+
+func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
+	rows, err := db.Query("admin show ddl jobs")
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var line dataRow
+	for rows.Next() {
+		if err := rows.Scan(&line.JobID, &line.DBName, &line.TblName, &line.JobType, &line.SchemaState, &line.SchemeID,
+			&line.TblID, &line.RowCount, &line.StartTime, &line.EndTime, &line.State); err != nil {
+			return "", err
+		}
+		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
+			return line.EndTime, nil
+		}
+	}
+	return "", errors.New(fmt.Sprintf("cannot find in ddl history, tableName: %s", tableName))
 }
