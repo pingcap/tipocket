@@ -30,7 +30,7 @@ After fill on the testcase metadata, I should write a workflow file on [workflow
 {
   _config+:: {
     case_name: 'list_append',
-    image_name: 'hub.pingcap.net/qa/tipocket',
+    image_name: 'hub.pingcap.net/tipocket/tipocket',
     args+: {
       // k8s configurations
       // 'storage-class': 'local-storage',

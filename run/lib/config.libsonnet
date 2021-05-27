@@ -1,7 +1,7 @@
 {
   _config:: {
     schedule: '0 0 * * *',
-    image_name: 'hub.pingcap.net/qa/tipocket',
+    image_name: 'hub.pingcap.net/tipocket/tipocket',
     args: {
       // cluster configurations
       hub: 'docker.io',
