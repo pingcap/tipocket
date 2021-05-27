@@ -17,6 +17,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/ngaut/log"
@@ -78,7 +79,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	}
 
 	// Create a tempdir.
-	c.tempdir, err = os.MkdirTemp("", "dynamicprivstest")
+	c.tempdir, err = ioutil.TempDir("", "dynamicprivstest")
 	if err != nil {
 		log.Fatalf("failed to setup temp dir: %v", err)
 	}
