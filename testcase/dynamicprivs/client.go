@@ -52,10 +52,6 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 		log.Fatalf("open db error: %v", err)
 	}
 
-	// Change for both my session and new sessions
-	util.MustExec(db, "SET GLOBAL tidb_enable_dynamic_privileges=1")
-	util.MustExec(db, "SET tidb_enable_dynamic_privileges=1")
-
 	util.MustExec(db, "drop table if exists t")
 	util.MustExec(db, "create table t(id int)")
 	util.MustExec(db, "insert into t(id) values(1)")
