@@ -1,6 +1,6 @@
 module github.com/pingcap/tipocket/testcase/rawkv-linearizability
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gengliqi/persistent_treap v0.0.0-20200403155416-2b2a1532211c

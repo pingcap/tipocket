@@ -1,6 +1,6 @@
 module github.com/pingcap/tipocket/testcase/pessimistic
 
-go 1.15
+go 1.16
 
 require (
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
