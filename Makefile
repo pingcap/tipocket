@@ -250,7 +250,7 @@ test:
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make test';
 
 image:
-	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
 	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest
