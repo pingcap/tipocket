@@ -177,7 +177,7 @@ ifeq (, $(shell which goimports))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go install golang.org/x/tools/cmd/goimports@latest;\
+	GO111MODULE=on go install golang.org/x/tools/cmd/goimports@latest ;\
 	go mod download golang.org/x/net\
 	rm -rf $$TMP_DIR ;\
 	}
