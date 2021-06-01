@@ -118,7 +118,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 			// all previous DDL and DML are replicated too.
 			mustExec(ctx, upstream, `CREATE TABLE IF NOT EXISTS finishmark (foo BIGINT PRIMARY KEY)`)
 			waitCtx, waitCancel := context.WithTimeout(ctx, time.Minute)
-			waitTable(waitCtx, downstream, "finishmark")
+			waitTable(waitCtx, db1, "finishmark")
 			waitCancel()
 			log.Info("all tables synced")
 
