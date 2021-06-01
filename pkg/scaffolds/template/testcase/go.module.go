@@ -39,7 +39,7 @@ func (g *GoModule) SetTemplateDefaults() error {
 
 const goModuleTemplate = `module github.com/pingcap/tipocket/testcase/{{ .CaseName }}
 
-go 1.15
+go 1.16
 
 require (
 	github.com/go-sql-driver/mysql v1.5.0

@@ -177,7 +177,8 @@ ifeq (, $(shell which goimports))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get golang.org/x/tools/cmd/goimports ;\
+	GO111MODULE=on go install golang.org/x/tools/cmd/goimports@latest ;\
+	go mod download golang.org/x/net\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -188,7 +189,7 @@ ifeq (, $(shell which jsonnet))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnet ;\
+	GO111MODULE=on go install github.com/google/go-jsonnet/cmd/jsonnet@latest ;\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -199,7 +200,7 @@ ifeq (, $(shell which jsonnetfmt))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get github.com/google/go-jsonnet/cmd/jsonnetfmt ;\
+	GO111MODULE=on go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest ;\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -210,7 +211,7 @@ ifeq (, $(shell which yq))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get github.com/mikefarah/yq/v4@v4.4.1 ;\
+	GO111MODULE=on go install github.com/mikefarah/yq/v4@v4.4.1 ;\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -221,7 +222,7 @@ ifeq (, $(shell which jb))
 	set -e ;\
 	TMP_DIR=$$(mktemp -d) ;\
 	cd $$TMP_DIR ;\
-	GO111MODULE=on go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb ;\
+	GO111MODULE=on go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest ;\
 	rm -rf $$TMP_DIR ;\
 	}
 endif
@@ -250,7 +251,7 @@ test:
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make test';
 
 image:
-	DOCKER_BUILDKIT=1 docker build -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
+	DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -t ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest .
 
 docker-push:
 	docker push ${DOCKER_REGISTRY_PREFIX}pingcap/tipocket:latest

@@ -1,6 +1,6 @@
 module github.com/pingcap/tipocket/testcase/ttl
 
-go 1.15
+go 1.16
 
 require (
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac

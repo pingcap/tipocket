@@ -1,6 +1,6 @@
 module github.com/pingcap/tipocket/testcase/bank
 
-go 1.15
+go 1.16
 
 require (
 	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
