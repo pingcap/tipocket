@@ -327,7 +327,7 @@ type dataRow struct {
 	TblID       int64
 	RowCount    int64
 	StartTime   string
-	EndTime     string
+	EndTime     *string
 	State       string
 }
 
@@ -345,7 +345,11 @@ func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
 			return "", err
 		}
 		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
-			return line.EndTime, nil
+			if line.EndTime == nil {
+				log.Warnf("ddl end time is null, line=%+v", line)
+				return "", nil
+			}
+			return *line.EndTime, nil
 		}
 	}
 	return "", errors.New(fmt.Sprintf("cannot find in ddl history, tableName: %s", tableName))
