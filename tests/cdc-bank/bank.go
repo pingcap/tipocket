@@ -202,6 +202,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}(connID)
 	}
 
+	var valid, total int64
 	// downstream validators
 	for validatorIdx := 0; validatorIdx < validateConcurrency; validatorIdx++ {
 		wg.Add(1)
@@ -217,10 +218,18 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					waitCancel()
 					log.Info("ddl synced")
 
+					atomic.AddInt64(&total, 1)
+
 					endTs, err := getDDLEndTs(downstream, tblName)
 					if err != nil {
 						log.Fatalf("[cdc-bank] get ddl end ts error %v", err)
 					}
+					// endTs maybe empty due to unknown reason now, if we meet this accidentally, just ignore this round.
+					if endTs == "" {
+						continue
+					}
+
+					atomic.AddInt64(&valid, 1)
 
 					txn, err := downstream.Begin()
 					if err != nil {
@@ -269,6 +278,11 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	}
 	wg.Wait()
 
+	if total == 0 {
+		log.Warn("[cdc-bank] finished, but total check round is 0")
+	} else {
+		log.Infof("[cdc-bank] finished, valid check round: %+v, total try round: %+v, ratio: %f", valid, total, float64(valid)/float64(total))
+	}
 	return nil
 }
 
@@ -327,7 +341,7 @@ type dataRow struct {
 	TblID       int64
 	RowCount    int64
 	StartTime   string
-	EndTime     string
+	EndTime     *string
 	State       string
 }
 
@@ -345,7 +359,11 @@ func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
 			return "", err
 		}
 		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
-			return line.EndTime, nil
+			if line.EndTime == nil {
+				log.Warnf("ddl end time is null, line=%+v", line)
+				return "", nil
+			}
+			return *line.EndTime, nil
 		}
 	}
 	return "", errors.New(fmt.Sprintf("cannot find in ddl history, tableName: %s", tableName))
