@@ -347,7 +347,7 @@ func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
 		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
 			if line.EndTime == nil {
 				log.Warnf("ddl end time is null, line=%+v", line)
-				return "", nil
+				continue
 			}
 			return *line.EndTime, nil
 		}
