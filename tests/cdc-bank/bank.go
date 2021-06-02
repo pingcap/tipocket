@@ -221,6 +221,10 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					if err != nil {
 						log.Fatalf("[cdc-bank] get ddl end ts error %v", err)
 					}
+					// endTs maybe empty due to unknown reason now, if we meet this accidentally, just ignore this round.
+					if endTs == "" {
+						continue
+					}
 
 					txn, err := downstream.Begin()
 					if err != nil {
@@ -347,7 +351,7 @@ func getDDLEndTs(db *sql.DB, tableName string) (result string, err error) {
 		if line.JobType == "create table" && line.TblName == tableName && line.State == "synced" {
 			if line.EndTime == nil {
 				log.Warnf("ddl end time is null, line=%+v", line)
-				continue
+				return "", nil
 			}
 			return *line.EndTime, nil
 		}
