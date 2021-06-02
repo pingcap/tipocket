@@ -202,6 +202,7 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		}(connID)
 	}
 
+	var valid, total int64
 	// downstream validators
 	for validatorIdx := 0; validatorIdx < validateConcurrency; validatorIdx++ {
 		wg.Add(1)
@@ -217,6 +218,8 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					waitCancel()
 					log.Info("ddl synced")
 
+					atomic.AddInt64(&total, 1)
+
 					endTs, err := getDDLEndTs(downstream, tblName)
 					if err != nil {
 						log.Fatalf("[cdc-bank] get ddl end ts error %v", err)
@@ -225,6 +228,8 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 					if endTs == "" {
 						continue
 					}
+
+					atomic.AddInt64(&valid, 1)
 
 					txn, err := downstream.Begin()
 					if err != nil {
@@ -273,6 +278,11 @@ func (c *client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	}
 	wg.Wait()
 
+	if total == 0 {
+		log.Warn("[cdc-bank] finished, but total check round is 0")
+	} else {
+		log.Infof("[cdc-bank] finished, valid check round: %+v, total try round: %+v, ratio: %f", valid, total, float64(valid)/float64(total))
+	}
 	return nil
 }
 
