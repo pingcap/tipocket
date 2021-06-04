@@ -53,7 +53,7 @@ func (cte *criticalTSOError) Error() string {
 	case suffixChangedError:
 		errTypeMsg = "suffixChangedError"
 	}
-	return fmt.Sprintf("%s: %s", errTypeMsg, cte.msg)
+	return fmt.Sprintf("criticalTSOError: %s, %s", errTypeMsg, cte.msg)
 }
 
 // TSO wraps the tso response
