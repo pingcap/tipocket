@@ -3,31 +3,48 @@ package staleread
 import (
 	"context"
 	"fmt"
-	"github.com/pingcap/log"
-	"github.com/prometheus/client_golang/api"
-	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"go.uber.org/zap"
 	"time"
 
+	"github.com/pingcap/log"
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
+	"github.com/prometheus/client_golang/api"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"github.com/tiancaiamao/sysbench"
+	"go.uber.org/zap"
 )
 
+type Config struct {
+	SysBenchWorkerCount int
+	SysBenchDuration    time.Duration
+	RowsEachInsert      int
+	InsertCount         int
+}
+
 type ClientCreator struct {
+	Config
 }
 
 // Create ...
 func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 	return &staleReadClient{
-		initialized: false,
+		workerCount:    l.SysBenchWorkerCount,
+		duration:       l.SysBenchDuration,
+		insertCount:    l.InsertCount,
+		rowsEachInsert: l.RowsEachInsert,
+		initialized:    false,
 	}
 }
 
 type staleReadClient struct {
-	sysBenchConf *sysbench.Config
-	promCli      api.Client
-	initialized  bool
+	workerCount    int
+	duration       time.Duration
+	rowsEachInsert int
+	insertCount    int
+	sysBenchConf   *sysbench.Config
+	promCli        api.Client
+	initialized    bool
 }
 
 // SetUp...
@@ -38,18 +55,22 @@ func (c *staleReadClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
 	sysCase := &SysbenchCase{}
-	sysCase.dbHost = buildTiDBSvcName(name, namespace)
-	sysCase.rowsEachInsert = 50
-	sysCase.insertCount = 50
+	sysCase.rowsEachInsert = c.rowsEachInsert
+	sysCase.insertCount = c.insertCount
 	c.sysBenchConf = &sysbench.Config{
-		Conn: sysbench.DefaultConnConfig(),
+		Conn: sysbench.ConnConfig{
+			User: "root",
+			Host: buildTiDBHost(name, namespace),
+			Port: 4000,
+			DB:   "test",
+		},
 		Prepare: sysbench.PrepareConfig{
 			WorkerCount: 1,
 			Task:        sysCase,
 		},
 		Run: sysbench.RunConfig{
-			WorkerCount: 4,
-			Duration:    5 * time.Minute,
+			WorkerCount: c.workerCount,
+			Duration:    c.duration,
 			Task:        sysCase,
 		},
 		Cleanup: sysCase,
@@ -62,18 +83,39 @@ func (c *staleReadClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []
 	}
 	c.promCli = promCli
 	c.initialized = true
+	log.Info("stale read testcase setup success")
 	return nil
 }
 
 // SetUp...
 func (c *staleReadClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
+	log.Info("Run sysbench test")
 	sysbench.RunTest(c.sysBenchConf)
+	log.Info("Run sysbench test success")
 	v1api := v1.NewAPI(c.promCli)
-	v, _, err := v1api.QueryRange(ctx, "", v1.Range{Start: time.Now().Add(-5 * time.Minute), End: time.Now(), Step: 15 * time.Second})
+	value, _, err := v1api.QueryRange(ctx, `pd_scheduler_store_status{store=~".*", type="store_read_rate_keys"}`, v1.Range{Start: time.Now().Add(-30 * time.Second), End: time.Now(), Step: 15 * time.Second})
 	if err != nil {
+		log.Info("query prometheus failed", zap.Error(err))
 		return err
 	}
-	log.Info("metrics", zap.String("metrics", v.String()))
+	smvms := make(map[string][]StoreMetricsValue, 0)
+	switch v := value.(type) {
+	case model.Matrix:
+		for _, stream := range v {
+			storeID := stream.Metric["store"]
+			smv := make([]StoreMetricsValue, 0)
+			for _, row := range stream.Values {
+				smv = append(smv, StoreMetricsValue{
+					Timestamp: row.Timestamp.Unix(),
+					Value:     float64(row.Value),
+					StoreID:   string(storeID),
+				})
+			}
+			smvms[string(storeID)] = smv
+		}
+	default:
+		log.Warn("mode value transform error")
+	}
 	return nil
 }
 
@@ -82,10 +124,21 @@ func (c *staleReadClient) TearDown(ctx context.Context, _ []cluster.ClientNode, 
 	return nil
 }
 
-func buildTiDBSvcName(name, namespace string) string {
-	return fmt.Sprintf("%s-tidb.%s.svc:4000", name, namespace)
+func buildTiDBHost(name, namespace string) string {
+	return fmt.Sprintf("%s-tidb.%s.svc", name, namespace)
 }
 
 func buildPrometheusSvcName(name, namespace string) string {
 	return fmt.Sprintf("%s-prometheus.%s.svc:9090", name, namespace)
+}
+
+type StoreMetricsValue struct {
+	Timestamp int64
+	Value     float64
+	StoreID   string
+}
+
+// TODO: assert store read bytes/keys metrics
+func handleStoreMetricsValue(smvms map[string][]StoreMetricsValue, duration time.Duration) {
+
 }

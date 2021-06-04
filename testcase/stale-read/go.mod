@@ -5,13 +5,15 @@ go 1.16
 require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
-	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8 // indirect
+	github.com/pingcap/kvproto v0.0.0-20210219064844-c1844a4775d6 // indirect
+	github.com/pingcap/log v0.0.0-20201112100606-8f1e84a3abc8
 	github.com/pingcap/tipocket v1.0.0
 	github.com/pingcap/tipocket/logsearch v0.0.0-20210602095541-45d321986652
 	github.com/prometheus/client_golang v1.5.0
+	github.com/prometheus/common v0.9.1
+	github.com/stretchr/testify v1.6.0 // indirect
 	github.com/tiancaiamao/sysbench v0.0.0-20200214034607-ee9d97eabd23
-	github.com/tikv/pd v1.1.0-beta.0.20210225143804-1f200cbcd647 // indirect
-	go.uber.org/zap v1.15.0 // indirect
+	go.uber.org/zap v1.15.0
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0

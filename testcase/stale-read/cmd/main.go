@@ -18,14 +18,23 @@ import (
 
 func main() {
 	flag.Parse()
+	fixture.Context.ClusterName = "stale-read"
+	fixture.Context.Namespace = "gaosong"
 	cfg := control.Config{
 		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 	}
 	c := fixture.Context
+	c.TiDBClusterConfig.PDReplicas = 1
 	c.TiDBClusterConfig.TiDBReplicas = 1
-	c.TiDBClusterConfig.TiKVReplicas = 5
+	c.TiDBClusterConfig.TiKVReplicas = 1
+	c.TiDBClusterConfig.LogStorageClassName = "shared-sas-disks"
+	c.TiDBClusterConfig.PDStorageClassName = "shared-nvme-disks"
+	c.TiDBClusterConfig.TiKVStorageClassName = "nvme-disks"
+	c.TiDBClusterConfig.PDImage = "hub.pingcap.net/gaosong/pd:newly-master"
+	c.TiDBClusterConfig.TiDBImage = "hub.pingcap.net/gaosong/tidb:newly-master"
+	c.TiDBClusterConfig.TiKVImage = "hub.pingcap.net/gaosong/tikv:newly-master"
 	suit := util.Suit{
 		Config:        &cfg,
 		Provider:      cluster.NewDefaultClusterProvider(),

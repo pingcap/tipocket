@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/pingcap/errors"
-	"github.com/tiancaiamao/sysbench"
 	"math/rand"
+	"time"
+
+	"github.com/pingcap/errors"
+	"github.com/pingcap/log"
+	"github.com/tiancaiamao/sysbench"
+	"go.uber.org/zap"
 )
 
 const createTableTemplate = `create table if not exists sbtest%d (
@@ -20,12 +24,21 @@ const splitTableTemplate = `SPLIT TABLE sbtest%d BETWEEN (0) AND (1000000000) RE
 type SysbenchCase struct {
 	insertCount    int
 	rowsEachInsert int
-	dbHost         string
 }
 
 func (c *SysbenchCase) CreateTable(db *sql.DB) error {
-	db.Exec(fmt.Sprintf(createTableTemplate, 0))
-	db.Exec(fmt.Sprintf(splitTableTemplate, 0))
+	if err := c.DropTable(db); err != nil {
+		log.Error("fail to drop table", zap.Error(err))
+		return err
+	}
+	if _, err := db.Exec(fmt.Sprintf(createTableTemplate, 0)); err != nil {
+		log.Error("fail to create table", zap.Error(err))
+		return err
+	}
+	if _, err := db.Exec(fmt.Sprintf(splitTableTemplate, 0)); err != nil {
+		log.Error("fail to split table", zap.Error(err))
+		return err
+	}
 	return nil
 }
 
@@ -46,33 +59,39 @@ func (c *SysbenchCase) InsertData(worker *sysbench.Worker, db *sql.DB) error {
 
 		_, err := db.Exec(buf.String())
 		if err != nil {
+			log.Info("Insert data error", zap.Error(err))
 			return errors.WithStack(err)
 		}
 	}
+	log.Info("insert data finish")
 	return nil
 }
 
+// TODO: fulfill workload in future
 func (c *SysbenchCase) Execute(worker *sysbench.Worker, db *sql.DB) error {
-	for i := 0; i < 100; i++ {
-		err := c.executeSET(db)
-		if err != nil {
-			return err
-		}
-		err = c.executeSTART(db)
-		if err != nil {
-			return err
-		}
-		err = c.executeSelect(db)
-		if err != nil {
-			return err
-		}
+	log.Info("worker start execute")
+	err := c.executeSET(db)
+	if err != nil {
+		log.Info("execute set transaction read only as of testcase fail", zap.Error(err))
+		return err
 	}
+	err = c.executeSelect(db)
+	if err != nil {
+		log.Info("execute select as of timestamp fail", zap.Error(err))
+		return err
+	}
+	log.Info("worker start success")
 	return nil
 }
 
 func (c *SysbenchCase) executeSET(db *sql.DB) error {
 	num := c.insertCount * c.rowsEachInsert
-	_, err := db.Exec("SET TRANSACTION READ ONLY AS OF TIMESTAMP tidb_bounded_staleness(DATE_SUB(NOW(), INTERVAL 10 SECOND)")
+	now := time.Now()
+	previous := now.Add(-3 * time.Second)
+	nowStr := now.Format("2006-1-2 15:04:05.000")
+	previousStr := previous.Format("2006-1-2 15:04:05.000")
+	setSQL := fmt.Sprintf(`SET TRANSACTION READ ONLY as of timestamp tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
+	_, err := db.Exec(setSQL)
 	if err != nil {
 		return err
 	}
@@ -84,9 +103,15 @@ func (c *SysbenchCase) executeSET(db *sql.DB) error {
 	return nil
 }
 
+// TODO: don't know why this case failed
 func (c *SysbenchCase) executeSTART(db *sql.DB) error {
 	num := c.insertCount * c.rowsEachInsert
-	_, err := db.Exec("START TRANSACTION READ ONLY AS OF TIMESTAMP tidb_bounded_staleness(DATE_SUB(NOW(), INTERVAL 10 SECOND)")
+	now := time.Now()
+	previous := now.Add(-3 * time.Second)
+	nowStr := now.Format("2006-1-2 15:04:05.000")
+	previousStr := previous.Format("2006-1-2 15:04:05.000")
+	startSQL := fmt.Sprintf(`START TRANSACTION READ ONLY AS OF TIMESTAMP tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
+	_, err := db.Exec(startSQL)
 	if err != nil {
 		return err
 	}
@@ -104,7 +129,12 @@ func (c *SysbenchCase) executeSTART(db *sql.DB) error {
 
 func (c *SysbenchCase) executeSelect(db *sql.DB) error {
 	num := c.insertCount * c.rowsEachInsert
-	rows, err := db.Query("select id, k, c, pad from sbtest0 as of timestamp tidb_bounded_staleness(DATE_SUB(NOW(), INTERVAL 10 SECOND) where k in (?, ?, ?)", rand.Intn(num), rand.Intn(num), rand.Intn(num))
+	now := time.Now()
+	previous := now.Add(-3 * time.Second)
+	nowStr := now.Format("2006-1-2 15:04:05.000")
+	previousStr := previous.Format("2006-1-2 15:04:05.000")
+	selectSQL := fmt.Sprintf("select id, k, c, pad from sbtest0 as of timestamp tidb_bounded_staleness('%v','%v') where k in (%v, %v, %v)", previousStr, nowStr, rand.Intn(num), rand.Intn(num), rand.Intn(num))
+	rows, err := db.Query(selectSQL)
 	defer rows.Close()
 	if err != nil {
 		return errors.WithStack(err)
