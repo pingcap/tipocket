@@ -406,7 +406,7 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 
 func (c *crossRegionClient) waitLeader(name string) error {
 	for {
-		fmt.Printf("Wait for %s leader election\n", name)
+		log.Info("Wait for leader election", zap.String("name", name))
 		mems, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return err
@@ -420,7 +420,7 @@ func (c *crossRegionClient) waitLeader(name string) error {
 
 func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 	for {
-		fmt.Printf("Wait for %s of %s allocator election\n", name, dcLocation)
+		log.Info("Wait for allocator election", zap.String("name", name), zap.String("dc-location", dcLocation))
 		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
 			return err
