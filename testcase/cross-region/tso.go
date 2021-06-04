@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
@@ -17,6 +18,43 @@ const (
 	logicalMask       = (1 << physicalShiftBits) - 1
 	suffixMask        = logicalMask >> (physicalShiftBits - 2) // Log2(3+1) = 2
 )
+
+type criticalTSOErrorType int
+
+const (
+	// fallbackError indicates the TSO fallback occurs.
+	fallbackError criticalTSOErrorType = iota
+	// uniquenessError indicates the TSO is not unique.
+	uniquenessError
+	// suffixChangedError indicates the TSO suffix changed unexpectedly.
+	suffixChangedError
+)
+
+// criticalTSOError represents the critical error which should never occur.
+type criticalTSOError struct {
+	errType criticalTSOErrorType
+	msg     string
+}
+
+func newCriticalTSOError(errType criticalTSOErrorType, msg string) *criticalTSOError {
+	return &criticalTSOError{
+		errType: errType,
+		msg:     msg,
+	}
+}
+
+func (cte *criticalTSOError) Error() string {
+	var errTypeMsg string
+	switch cte.errType {
+	case fallbackError:
+		errTypeMsg = "fallbackError"
+	case uniquenessError:
+		errTypeMsg = "uniquenessError"
+	case suffixChangedError:
+		errTypeMsg = "suffixChangedError"
+	}
+	return fmt.Sprintf("%s: %s", errTypeMsg, cte.msg)
+}
 
 // TSO wraps the tso response
 type TSO struct {
@@ -105,14 +143,23 @@ func (c *crossRegionClient) requestTSOs(ctx context.Context) error {
 		_, ok := recordTSO[key]
 		if ok {
 			tsoErrors = append(tsoErrors,
-				fmt.Errorf("tso repeated, physical: %v, logical: %v, dc-location %v",
-					tsoRes.physical, tsoRes.logical, tsoRes.dcLocation))
+				newCriticalTSOError(
+					uniquenessError,
+					fmt.Sprintf("tso repeated, physical: %v, logical: %v, dc-location %v",
+						tsoRes.physical, tsoRes.logical, tsoRes.dcLocation)))
 			break
 		}
 		recordTSO[key] = struct{}{}
 	}
-	if len(tsoErrors) > 0 {
-		return util2.WrapErrors(tsoErrors)
+	// Only return the critical errors.
+	criticalTSOErrors := make([]error, 0, len(tsoErrors))
+	for _, err := range tsoErrors {
+		if _, ok := err.(*criticalTSOError); ok {
+			criticalTSOErrors = append(criticalTSOErrors, err)
+		}
+	}
+	if len(criticalTSOErrors) > 0 {
+		return util2.WrapErrors(criticalTSOErrors)
 	}
 	return nil
 }
@@ -147,8 +194,10 @@ func (c *crossRegionClient) requestGlobalTSO(ctx context.Context, dcLocations []
 		log.Info("request Global TSO", zap.Int64("physical", physical), zap.Int64("logical", logical))
 		// Assert Global TSO won't fallback
 		if tsLessEqual(physical, logical, lastGlobalPhysical, lastGlobalLogical) {
-			errCh <- fmt.Errorf("tso fallback, dc-location: %s, physical: %d, logical: %d, last-physical: %d, last-logical: %d",
-				globalDCLocation, physical, logical, lastGlobalPhysical, lastGlobalLogical)
+			errCh <- newCriticalTSOError(
+				fallbackError,
+				fmt.Sprintf("tso fallback, dc-location: %s, physical: %d, logical: %d, last-physical: %d, last-logical: %d",
+					globalDCLocation, physical, logical, lastGlobalPhysical, lastGlobalLogical))
 			return
 		}
 		// Assert Global TSO is bigger than all pre Local TSOs
@@ -156,8 +205,10 @@ func (c *crossRegionClient) requestGlobalTSO(ctx context.Context, dcLocations []
 			preLocalPhysical := localPhysicalMap[dcLocation]
 			preLocalLogical := localLogicalMap[dcLocation]
 			if tsLessEqual(physical, logical, preLocalPhysical, preLocalLogical) {
-				errCh <- fmt.Errorf("global tso fallback than pre local tso, dc-location: %s, global-physical: %d, global-logical: %d, pre-local-physical: %d, pre-local-logical: %d",
-					dcLocation, physical, logical, preLocalPhysical, preLocalLogical)
+				errCh <- newCriticalTSOError(
+					fallbackError,
+					fmt.Sprintf("global tso fallback than pre local tso, dc-location: %s, global-physical: %d, global-logical: %d, pre-local-physical: %d, pre-local-logical: %d",
+						dcLocation, physical, logical, preLocalPhysical, preLocalLogical))
 				return
 			}
 		}
@@ -175,8 +226,10 @@ func (c *crossRegionClient) requestGlobalTSO(ctx context.Context, dcLocations []
 			afterLocalPhysical := localPhysicalMap[dcLocation]
 			afterLocalLogical := localLogicalMap[dcLocation]
 			if tsLessEqual(afterLocalPhysical, afterLocalLogical, physical, logical) {
-				errCh <- fmt.Errorf("after local tso fallback than global tso, dc-location: %s, after-local-physical: %d, after-local-logical: %d, global-physical: %d, global-logical: %d",
-					dcLocation, afterLocalPhysical, afterLocalLogical, physical, logical)
+				errCh <- newCriticalTSOError(
+					fallbackError,
+					fmt.Sprintf("after local tso fallback than global tso, dc-location: %s, after-local-physical: %d, after-local-logical: %d, global-physical: %d, global-logical: %d",
+						dcLocation, afterLocalPhysical, afterLocalLogical, physical, logical))
 				return
 			}
 		}
@@ -209,7 +262,7 @@ func checkTSOSuffix(dcLocation string, logical int64) (int, error) {
 	if oldSuffix == newSuffix {
 		return oldSuffix, nil
 	}
-	return oldSuffix, fmt.Errorf("tso suffix changed, oldSuffix: %d, newSuffix: %d, dc-location: %s", oldSuffix, newSuffix, dcLocation)
+	return oldSuffix, newCriticalTSOError(suffixChangedError, fmt.Sprintf("tso suffix changed, oldSuffix: %d, newSuffix: %d, dc-location: %s", oldSuffix, newSuffix, dcLocation))
 }
 
 func (c *crossRegionClient) requestLocalTSO(ctx context.Context, dcLocation string, wg *sync.WaitGroup, tsoCh chan<- TSO, errCh chan<- error) {
@@ -352,31 +405,33 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 }
 
 func (c *crossRegionClient) waitLeader(name string) error {
-	return util2.WaitUntil(fmt.Sprintf("%s leader election", name), func() bool {
+	for {
+		fmt.Printf("Wait for %s leader election\n", name)
 		mems, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
-			return false
+			return err
 		}
-		if mems.Leader == nil || mems.Leader.Name != name {
-			return false
+		if mems.Leader != nil && mems.Leader.Name == name {
+			return nil
 		}
-		return true
-	})
+		time.Sleep(30 * time.Second)
+	}
 }
 
 func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
-	return util2.WaitUntil(fmt.Sprintf("%s of %s allocator election", name, dcLocation), func() bool {
+	for {
+		fmt.Printf("Wait for %s of %s allocator election\n", name, dcLocation)
 		members, err := c.pdHTTPClient.GetMembers()
 		if err != nil {
-			return false
+			return err
 		}
 		for dc, member := range members.TsoAllocatorLeaders {
 			if dcLocation == dc && member.Name == name {
-				return true
+				return nil
 			}
 		}
-		return false
-	})
+		time.Sleep(30 * time.Second)
+	}
 }
 
 func (c *crossRegionClient) requestTSOAfterTransfer(ctx context.Context, dc string) {
