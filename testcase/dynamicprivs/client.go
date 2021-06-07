@@ -62,7 +62,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 
 	util.MustExec(db, "DROP USER IF EXISTS backupadmin")
 	util.MustExec(db, "CREATE USER backupadmin")
-	util.MustExec(db, "GRANT BACKUP_ADMIN ON *.* TO backupadmin")
+	util.MustExec(db, "GRANT BACKUP_ADMIN, RESTORE_ADMIN ON *.* TO backupadmin")
 
 	if err := db.Close(); err != nil {
 		log.Fatalf("could not close initial connection due to: %v", err)
@@ -101,7 +101,6 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 	var (
 		location      string
 		size          string
@@ -117,10 +116,18 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	if location != expectedLocation {
 		return fmt.Errorf("expected backup to %s, but got %s", expectedLocation, location)
 	}
+	rows.Close()
+	log.Info("backup complete")
 
 	// In future we should try restoring as well, but it currently won't work due to
 	// https://github.com/pingcap/tidb/issues/24912
-
-	log.Info("backup completed")
+	restoreStmt := fmt.Sprintf("RESTORE DATABASE * FROM '%s'", expectedLocation)
+	log.Info("restoring database from: ", expectedLocation)
+	rows, err = c.db.QueryContext(ctx, restoreStmt)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	log.Info("restore completed")
 	return nil
 }
