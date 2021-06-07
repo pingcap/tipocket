@@ -116,6 +116,8 @@ func (c *staleReadClient) Start(ctx context.Context, cfg interface{}, cnodes []c
 	default:
 		log.Warn("mode value transform error")
 	}
+	// assert metrics here
+	handleStoreMetricsValue(smvms, c.duration)
 	return nil
 }
 

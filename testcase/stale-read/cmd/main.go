@@ -3,10 +3,7 @@ package main
 import (
 	"context"
 	"flag"
-	staleread "github.com/pingcap/tipocket/testcase/stale-read"
-
-	// use mysql
-	_ "github.com/go-sql-driver/mysql"
+	"time"
 
 	"github.com/pingcap/tipocket/cmd/util"
 	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
@@ -14,12 +11,19 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	test_infra "github.com/pingcap/tipocket/pkg/test-infra"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
+	staleread "github.com/pingcap/tipocket/testcase/stale-read"
+)
+
+var (
+	workerCount    = flag.Int("sysbench-worker-count", 1, "the worker count of the sysbench")
+	runDuration    = flag.Duration("sysbench-duration", 1*time.Minute, "the duration of the sysbench running")
+	rowsEachInsert = flag.Int("rows-each-insert", 50, "rows each time insert")
+	insertCount    = flag.Int("insert-count", 20, "count of the inserting")
 )
 
 func main() {
 	flag.Parse()
 	fixture.Context.ClusterName = "stale-read"
-	fixture.Context.Namespace = "gaosong"
 	cfg := control.Config{
 		Mode:        control.ModeStandard,
 		ClientCount: 1,
@@ -36,12 +40,19 @@ func main() {
 	c.TiDBClusterConfig.TiDBImage = "hub.pingcap.net/gaosong/tidb:newly-master"
 	c.TiDBClusterConfig.TiKVImage = "hub.pingcap.net/gaosong/tikv:newly-master"
 	suit := util.Suit{
-		Config:        &cfg,
-		Provider:      cluster.NewDefaultClusterProvider(),
-		ClientCreator: staleread.ClientCreator{},
-		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
-		LogsClient:    logs.NewDiagnosticLogClient(),
+		Config:   &cfg,
+		Provider: cluster.NewDefaultClusterProvider(),
+		ClientCreator: staleread.ClientCreator{
+			Config: staleread.Config{
+				SysBenchWorkerCount: *workerCount,
+				SysBenchDuration:    *runDuration,
+				RowsEachInsert:      *rowsEachInsert,
+				InsertCount:         *insertCount,
+			},
+		},
+		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
+		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
+		LogsClient:  logs.NewDiagnosticLogClient(),
 	}
 	suit.Run(context.Background())
 }
