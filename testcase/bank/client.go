@@ -48,6 +48,8 @@ const (
 
 // Below are the SQL strings for testing tables.
 const (
+	accountTableTemplate       = `accounts%s`
+	recordTableTemplate        = `record`
 	dropAccountTableTemplate   = `drop table if exists accounts%s`
 	dropRecordTableTemplate    = `drop table if exists record`
 	createAccountTableTemplate = `create table if not exists accounts%s (id BIGINT PRIMARY KEY, balance BIGINT NOT NULL, remark VARCHAR(128))`
@@ -63,15 +65,18 @@ PRIMARY KEY(id))`
 
 // Config is for bank testing.
 type Config struct {
-	EnableLongTxn bool
-	Pessimistic   bool
-	RetryLimit    int
-	Accounts      int
-	Tables        int
-	Interval      time.Duration
-	Concurrency   int
-	ReplicaRead   string
-	DbName        string
+	EnableLongTxn                bool
+	Pessimistic                  bool
+	RetryLimit                   int
+	Accounts                     int
+	Tables                       int
+	Interval                     time.Duration
+	Concurrency                  int
+	ReplicaRead                  string
+	DbName                       string
+	TiFlashReplicNum             int
+	MaxSecondsBeforeTiFlashAvail int
+	CheckTiFlashConsistency      bool
 }
 
 // BankCase is for concurrent balance transfer.
@@ -184,6 +189,7 @@ func (c *bankCase) tryDrop(db *sql.DB, index int) bool {
 
 func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay delayMode) error {
 	var total int
+	var totalTiFlash int
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -199,6 +205,23 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		}
 	}
 
+	if c.cfg.CheckTiFlashConsistency {
+		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tiflash'")
+		if err != nil {
+			return err
+		}
+		uuid := fastuuid.MustNewGenerator().Hex128()
+		query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)
+		if err = tx.QueryRow(query).Scan(&totalTiFlash, &uuid); err != nil {
+			log.Errorf("[%s] select sum error %v", c, err)
+			return errors.Trace(err)
+		}
+	}
+
+	_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
+	if err != nil {
+		return err
+	}
 	uuid := fastuuid.MustNewGenerator().Hex128()
 	query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)
 	if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
@@ -213,6 +236,14 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		log.Infof("[%s] select sum(balance) to verify use tso %d", c, tso)
 	}
 	tx.Commit()
+	if c.cfg.CheckTiFlashConsistency {
+		if totalTiFlash != total {
+			log.Errorf("[%s] accouts%s total tikv got %d, but got %d, query uuid is %s", c, index, total, total, uuid)
+			atomic.StoreInt32(&c.stopped, 1)
+			c.wg.Wait()
+			log.Fatalf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
+		}
+	}
 	check := c.cfg.Accounts * 1000
 	if total != check {
 		log.Errorf("[%s] accouts%s total must %d, but got %d, query uuid is %s", c, index, check, total, uuid)
@@ -289,6 +320,8 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	}
 	isDropped := c.tryDrop(db, id)
 	if !isDropped {
+		util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashReplicNum, c.cfg.MaxSecondsBeforeTiFlashAvail)
+		util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashReplicNum, c.cfg.MaxSecondsBeforeTiFlashAvail)
 		c.startVerify(ctx, db, index)
 		return nil
 	}
@@ -297,6 +330,8 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	util.MustExec(db, dropRecordTableTemplate)
 	util.MustExec(db, fmt.Sprintf(createAccountTableTemplate, index))
 	util.MustExec(db, createRecordTableTemplate)
+	util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashReplicNum, c.cfg.MaxSecondsBeforeTiFlashAvail)
+	util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashReplicNum, c.cfg.MaxSecondsBeforeTiFlashAvail)
 	var wg sync.WaitGroup
 
 	// TODO: fix the error is NumAccounts can't be divided by batchSize.
