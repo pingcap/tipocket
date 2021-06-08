@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// Config ...
 type Config struct {
 	SysBenchWorkerCount int
 	SysBenchDuration    time.Duration
@@ -22,6 +23,7 @@ type Config struct {
 	InsertCount         int
 }
 
+// ClientCreator ...
 type ClientCreator struct {
 	Config
 }
@@ -87,7 +89,7 @@ func (c *staleReadClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []
 	return nil
 }
 
-// SetUp...
+// Start ...
 func (c *staleReadClient) Start(ctx context.Context, cfg interface{}, cnodes []cluster.ClientNode) error {
 	log.Info("Run sysbench test")
 	sysbench.RunTest(c.sysBenchConf)
@@ -134,6 +136,7 @@ func buildPrometheusSvcName(name, namespace string) string {
 	return fmt.Sprintf("%s-prometheus.%s.svc:9090", name, namespace)
 }
 
+// StoreMetricsValue indicates the metrics value for a store from prometheus
 type StoreMetricsValue struct {
 	Timestamp int64
 	Value     float64

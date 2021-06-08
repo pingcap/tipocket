@@ -5,6 +5,9 @@ import (
 	"flag"
 	"time"
 
+	// use mysql
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/pingcap/tipocket/cmd/util"
 	logs "github.com/pingcap/tipocket/logsearch/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/cluster"

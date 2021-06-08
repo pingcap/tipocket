@@ -21,11 +21,13 @@ pad char(255) not null default '')`
 
 const splitTableTemplate = `SPLIT TABLE sbtest%d BETWEEN (0) AND (1000000000) REGIONS 100;`
 
+// SysbenchCase indicates a sysbench case
 type SysbenchCase struct {
 	insertCount    int
 	rowsEachInsert int
 }
 
+// CreateTable ...
 func (c *SysbenchCase) CreateTable(db *sql.DB) error {
 	if err := c.DropTable(db); err != nil {
 		log.Error("fail to drop table", zap.Error(err))
@@ -42,6 +44,7 @@ func (c *SysbenchCase) CreateTable(db *sql.DB) error {
 	return nil
 }
 
+// InsertData ...
 func (c *SysbenchCase) InsertData(worker *sysbench.Worker, db *sql.DB) error {
 	var buf bytes.Buffer
 	pkID := worker.ID
@@ -67,6 +70,7 @@ func (c *SysbenchCase) InsertData(worker *sysbench.Worker, db *sql.DB) error {
 	return nil
 }
 
+// Execute ...
 // TODO: fulfill workload in future
 func (c *SysbenchCase) Execute(worker *sysbench.Worker, db *sql.DB) error {
 	log.Info("worker start execute")
@@ -142,6 +146,7 @@ func (c *SysbenchCase) executeSelect(db *sql.DB) error {
 	return nil
 }
 
+// DropTable ...
 func (c *SysbenchCase) DropTable(db *sql.DB) error {
 	_, err := db.Exec("drop table if exists sbtest0")
 	return err
