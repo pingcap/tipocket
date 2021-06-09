@@ -21,6 +21,7 @@ type Config struct {
 	SysBenchDuration    time.Duration
 	RowsEachInsert      int
 	InsertCount         int
+	PreSec              int
 }
 
 // ClientCreator ...
@@ -36,6 +37,7 @@ func (l ClientCreator) Create(node cluster.ClientNode) core.Client {
 		insertCount:    l.InsertCount,
 		rowsEachInsert: l.RowsEachInsert,
 		initialized:    false,
+		preSecs:        l.PreSec,
 	}
 }
 
@@ -47,6 +49,7 @@ type staleReadClient struct {
 	sysBenchConf   *sysbench.Config
 	promCli        api.Client
 	initialized    bool
+	preSecs        int
 }
 
 // SetUp...
@@ -56,9 +59,11 @@ func (c *staleReadClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes []
 	}
 	name := cnodes[idx].ClusterName
 	namespace := cnodes[idx].Namespace
-	sysCase := &SysbenchCase{}
-	sysCase.rowsEachInsert = c.rowsEachInsert
-	sysCase.insertCount = c.insertCount
+	sysCase := &SysbenchCase{
+		rowsEachInsert: c.rowsEachInsert,
+		insertCount:    c.insertCount,
+		preSec:         c.preSecs,
+	}
 	c.sysBenchConf = &sysbench.Config{
 		Conn: sysbench.ConnConfig{
 			User: "root",

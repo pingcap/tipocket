@@ -25,6 +25,7 @@ const splitTableTemplate = `SPLIT TABLE sbtest%d BETWEEN (0) AND (1000000000) RE
 type SysbenchCase struct {
 	insertCount    int
 	rowsEachInsert int
+	preSec         int
 }
 
 // CreateTable ...
@@ -91,7 +92,7 @@ func (c *SysbenchCase) Execute(worker *sysbench.Worker, db *sql.DB) error {
 func (c *SysbenchCase) executeSET(db *sql.DB) error {
 	num := c.insertCount * c.rowsEachInsert
 	now := time.Now()
-	previous := now.Add(-3 * time.Second)
+	previous := now.Add(time.Duration(-c.preSec) * time.Second)
 	nowStr := now.Format("2006-1-2 15:04:05.000")
 	previousStr := previous.Format("2006-1-2 15:04:05.000")
 	setSQL := fmt.Sprintf(`SET TRANSACTION READ ONLY as of timestamp tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
@@ -107,34 +108,10 @@ func (c *SysbenchCase) executeSET(db *sql.DB) error {
 	return nil
 }
 
-// TODO: don't know why this case failed
-func (c *SysbenchCase) executeSTART(db *sql.DB) error {
-	num := c.insertCount * c.rowsEachInsert
-	now := time.Now()
-	previous := now.Add(-3 * time.Second)
-	nowStr := now.Format("2006-1-2 15:04:05.000")
-	previousStr := previous.Format("2006-1-2 15:04:05.000")
-	startSQL := fmt.Sprintf(`START TRANSACTION READ ONLY AS OF TIMESTAMP tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
-	_, err := db.Exec(startSQL)
-	if err != nil {
-		return err
-	}
-	rows, err := db.Query("select id, k, c, pad from sbtest0 where k in (?, ?, ?)", rand.Intn(num), rand.Intn(num), rand.Intn(num))
-	defer rows.Close()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	_, err = db.Exec("COMMIT")
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *SysbenchCase) executeSelect(db *sql.DB) error {
 	num := c.insertCount * c.rowsEachInsert
 	now := time.Now()
-	previous := now.Add(-3 * time.Second)
+	previous := now.Add(time.Duration(-c.preSec) * time.Second)
 	nowStr := now.Format("2006-1-2 15:04:05.000")
 	previousStr := previous.Format("2006-1-2 15:04:05.000")
 	selectSQL := fmt.Sprintf("select id, k, c, pad from sbtest0 as of timestamp tidb_bounded_staleness('%v','%v') where k in (%v, %v, %v)", previousStr, nowStr, rand.Intn(num), rand.Intn(num), rand.Intn(num))

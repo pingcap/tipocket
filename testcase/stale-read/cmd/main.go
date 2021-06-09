@@ -22,6 +22,7 @@ var (
 	runDuration    = flag.Duration("sysbench-duration", 1*time.Minute, "the duration of the sysbench running")
 	rowsEachInsert = flag.Int("rows-each-insert", 50, "rows each time insert")
 	insertCount    = flag.Int("insert-count", 20, "count of the inserting")
+	preSecs        = flag.Int("pre-secs", 3, "previous seconds of stale read query")
 )
 
 func main() {
@@ -51,6 +52,7 @@ func main() {
 				SysBenchDuration:    *runDuration,
 				RowsEachInsert:      *rowsEachInsert,
 				InsertCount:         *insertCount,
+				PreSec:              *preSecs,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
