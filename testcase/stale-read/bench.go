@@ -68,6 +68,8 @@ func (c *SysbenchCase) InsertData(worker *sysbench.Worker, db *sql.DB) error {
 		}
 	}
 	log.Info("insert data finish")
+	// wait some seconds to push safe_ts
+	time.Sleep(5 * time.Second)
 	return nil
 }
 
@@ -96,15 +98,15 @@ func (c *SysbenchCase) executeSET(db *sql.DB) error {
 	nowStr := now.Format("2006-1-2 15:04:05.000")
 	previousStr := previous.Format("2006-1-2 15:04:05.000")
 	setSQL := fmt.Sprintf(`SET TRANSACTION READ ONLY as of timestamp tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
-	_, err := db.Exec(setSQL)
-	if err != nil {
-		return err
-	}
-	rows, err := db.Query("select id, k, c, pad from sbtest0 where k in (?, ?, ?)", rand.Intn(num), rand.Intn(num), rand.Intn(num))
-	defer rows.Close()
-	if err != nil {
-		return errors.WithStack(err)
-	}
+	// set transaction as of and select
+	mustExec(db, setSQL)
+	mustExec(db, fmt.Sprintf("select id, k, c, pad from sbtest0 where k in (%v, %v, %v)", rand.Intn(num), rand.Intn(num), rand.Intn(num)))
+
+	// set transaction as of and begin
+	mustExec(db, setSQL)
+	mustExec(db, "begin")
+	mustExec(db, fmt.Sprintf("select id, k, c, pad from sbtest0 where k in (%v, %v, %v)", rand.Intn(num), rand.Intn(num), rand.Intn(num)))
+	mustExec(db, "commit")
 	return nil
 }
 
@@ -115,12 +117,20 @@ func (c *SysbenchCase) executeSelect(db *sql.DB) error {
 	nowStr := now.Format("2006-1-2 15:04:05.000")
 	previousStr := previous.Format("2006-1-2 15:04:05.000")
 	selectSQL := fmt.Sprintf("select id, k, c, pad from sbtest0 as of timestamp tidb_bounded_staleness('%v','%v') where k in (%v, %v, %v)", previousStr, nowStr, rand.Intn(num), rand.Intn(num), rand.Intn(num))
-	rows, err := db.Query(selectSQL)
-	defer rows.Close()
-	if err != nil {
-		return errors.WithStack(err)
-	}
+	mustExec(db, selectSQL)
 	return nil
+}
+
+func (c *SysbenchCase) executeStart(db *sql.DB) {
+	num := c.insertCount * c.rowsEachInsert
+	now := time.Now()
+	previous := now.Add(time.Duration(-c.preSec) * time.Second)
+	nowStr := now.Format("2006-1-2 15:04:05.000")
+	previousStr := previous.Format("2006-1-2 15:04:05.000")
+	startSQL := fmt.Sprintf(`START TRANSACTION READ ONLY as of timestamp tidb_bounded_staleness('%v', '%v')`, previousStr, nowStr)
+	mustExec(db, startSQL)
+	mustExec(db, fmt.Sprintf("select id, k, c, pad from sbtest0 where k in (%v, %v, %v)", rand.Intn(num), rand.Intn(num), rand.Intn(num)))
+	mustExec(db, "commit")
 }
 
 // DropTable ...
@@ -142,4 +152,12 @@ func randString(n int) string {
 
 func nextPrimaryID(workerCount int, current int) int {
 	return current + workerCount
+}
+
+func mustExec(db *sql.DB, sql string) {
+	_, err := db.Exec(sql)
+	if err != nil {
+		log.Error("get err for sql", zap.String("sql", sql), zap.Error(err))
+		panic(fmt.Sprintf("get err for sql: %v, err: %v", sql, err.Error()))
+	}
 }

@@ -36,7 +36,7 @@ func main() {
 	c := fixture.Context
 	c.TiDBClusterConfig.PDReplicas = 1
 	c.TiDBClusterConfig.TiDBReplicas = 1
-	c.TiDBClusterConfig.TiKVReplicas = 1
+	c.TiDBClusterConfig.TiKVReplicas = 3
 	c.TiDBClusterConfig.LogStorageClassName = "shared-sas-disks"
 	c.TiDBClusterConfig.PDStorageClassName = "shared-nvme-disks"
 	c.TiDBClusterConfig.TiKVStorageClassName = "nvme-disks"
