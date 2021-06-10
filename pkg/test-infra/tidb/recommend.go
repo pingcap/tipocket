@@ -47,26 +47,27 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 // EnableTiFlash add TiFlash spec in TiDB cluster
 func (t *Recommendation) EnableTiFlash(config fixture.TiDBClusterConfig) {
 	tag, fullImage, replicas := config.ImageVersion, config.TiFlashImage, config.TiFlashReplicas
+	tiflashDataStorageClass := provideTiFlashStorageClassName(config)
 	if t.TidbCluster.Spec.TiFlash == nil {
 		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
 			Replicas:         int32(replicas),
-			MaxFailoverCount: pointer.Int32Ptr(0),
+			MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 			ComponentSpec: v1alpha1.ComponentSpec{
 				Image: util.BuildImage("tiflash", tag, fullImage),
 			},
 			StorageClaims: []v1alpha1.StorageClaim{
 				{
-					StorageClassName: &fixture.Context.LocalVolumeStorageClass,
+					StorageClassName: &tiflashDataStorageClass,
 					Resources: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
-							fixture.Memory: resource.MustParse("2Gi"),
+							fixture.Memory: resource.MustParse("16Gi"),
 						},
 						Limits: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("4000m"),
-							fixture.Memory: resource.MustParse("16Gi"),
+							fixture.Memory: resource.MustParse("20Gi"),
 						},
-					}, "50Gi"),
+					}, "100Gi"),
 				},
 			},
 		}
@@ -122,6 +123,17 @@ func provideTiKVStorageClassName(clusterConfig fixture.TiDBClusterConfig) string
 	}
 	if len(clusterConfig.TiKVStorageClassName) > 0 {
 		sc = clusterConfig.TiKVStorageClassName
+	}
+	return sc
+}
+
+func provideTiFlashStorageClassName(clusterConfig fixture.TiDBClusterConfig) string {
+	sc := fixture.Context.LocalVolumeStorageClass
+	if len(fixture.Context.TiDBClusterConfig.TiFlashStorageClassName) > 0 {
+		sc = fixture.Context.TiDBClusterConfig.TiFlashStorageClassName
+	}
+	if len(clusterConfig.TiFlashStorageClassName) > 0 {
+		sc = clusterConfig.TiFlashStorageClassName
 	}
 	return sc
 }

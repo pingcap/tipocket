@@ -63,7 +63,6 @@ type fixtureContext struct {
 	BinlogConfig             BinlogConfig
 	CDCConfig                CDCConfig
 	DMConfig                 DMConfig
-	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
 	// Other
 	pprofAddr  string
@@ -151,9 +150,10 @@ type TiDBClusterConfig struct {
 	// TiDB fail-points value
 	TiDBFailPoint string
 
-	PDStorageClassName   string
-	TiKVStorageClassName string
-	LogStorageClassName  string
+	PDStorageClassName      string
+	TiKVStorageClassName    string
+	TiFlashStorageClassName string
+	LogStorageClassName     string
 
 	// If Ref is defined, the target TidbCluster will add it into Spec.PDAddresses
 	Ref *ClusterRef

@@ -64,6 +64,11 @@ var (
 		`TRUNCATE TABLE bank2_transaction;`,
 		`TRUNCATE TABLE bank2_transaction_leg;`,
 	}
+	tableNames = []string{
+		"bank2_accounts",
+		"bank2_transaction",
+		"bank2_transaction_leg",
+	}
 	remark = strings.Repeat("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXVZlkjsanksqiszndqpijdslnnq", 16)
 
 	// PadLength returns a random padding length for `remark` field within user
@@ -75,17 +80,18 @@ var (
 // Config ...
 type Config struct {
 	// NumAccounts is total accounts
-	NumAccounts   int           `toml:"num_accounts"`
-	Interval      time.Duration `toml:"interval"`
-	Concurrency   int           `toml:"concurrency"`
-	RetryLimit    int           `toml:"retry_limit"`
-	EnableLongTxn bool          `toml:"enable_long_txn"`
-	Contention    string        `toml:"contention"`
-	Pessimistic   bool          `toml:"pessimistic"`
-	MinLength     int           `toml:"min_length"`
-	MaxLength     int           `toml:"max_length"`
-	ReplicaRead   string
-	DbName        string
+	NumAccounts         int           `toml:"num_accounts"`
+	Interval            time.Duration `toml:"interval"`
+	Concurrency         int           `toml:"concurrency"`
+	RetryLimit          int           `toml:"retry_limit"`
+	EnableLongTxn       bool          `toml:"enable_long_txn"`
+	Contention          string        `toml:"contention"`
+	Pessimistic         bool          `toml:"pessimistic"`
+	MinLength           int           `toml:"min_length"`
+	MaxLength           int           `toml:"max_length"`
+	ReplicaRead         string
+	DbName              string
+	TiFlashDataReplicas int
 }
 
 // ClientCreator ...
@@ -149,6 +155,13 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	for _, stmt := range stmtsCreate {
 		if _, err := db.Exec(stmt); err != nil {
 			log.Fatalf("execute statement %s error %v", stmt, err)
+		}
+	}
+	// create tiflash replica
+	maxSecondsBeforeTiFlashAvail := 1000
+	for _, tableName := range tableNames {
+		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.DbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return err
 		}
 	}
 
@@ -262,7 +275,7 @@ func (c *bank2Client) Start(ctx context.Context, cfg interface{}, clientNodes []
 }
 
 func (c *bank2Client) startVerify(ctx context.Context, db *sql.DB) {
-	c.verify(db)
+	c.verify(ctx, db)
 
 	go func() {
 		for {
@@ -270,13 +283,13 @@ func (c *bank2Client) startVerify(ctx context.Context, db *sql.DB) {
 			case <-ctx.Done():
 				return
 			case <-time.After(c.Config.Interval):
-				c.verify(db)
+				c.verify(ctx, db)
 			}
 		}
 	}()
 }
 
-func (c *bank2Client) verify(db *sql.DB) {
+func (c *bank2Client) verify(ctx context.Context, db *sql.DB) {
 	tx, err := db.Begin()
 	if err != nil {
 		_ = errors.Trace(err)
@@ -295,6 +308,13 @@ func (c *bank2Client) verify(db *sql.DB) {
 
 	var total int64
 	expectTotal := (int64(c.Config.NumAccounts) * initialBalance) * 2
+
+	// read from tikv
+	_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
+	if err != nil {
+		log.Warn(err)
+		return
+	}
 
 	// query with IndexScan
 	uuid := fastuuid.MustNewGenerator().Hex128()
@@ -324,13 +344,49 @@ func (c *bank2Client) verify(db *sql.DB) {
 		log.Fatalf("[%s] bank2_accounts total should be %d, but got %d, query uuid is %s", c, expectTotal, total, uuid)
 	}
 
+	// query with tiflash
+	if c.TiFlashDataReplicas > 0 {
+		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tiflash'")
+		if err != nil {
+			log.Warn(err)
+			return
+		}
+
+		readTiFlash := func() error {
+			uuid := fastuuid.MustNewGenerator().Hex128()
+			query := fmt.Sprintf("SELECT SUM(balance) AS total, '%s' as uuid FROM bank2_accounts", uuid)
+			if err = tx.QueryRow(query).Scan(&total, &uuid); err != nil {
+				log.Errorf("[%s] select sum error %v", c, err)
+				return errors.Trace(err)
+			}
+			return nil
+		}
+		err = util.RunWithRetry(ctx, c.RetryLimit, time.Second, readTiFlash)
+		if err != nil {
+			_ = err
+			return
+		}
+		if total != expectTotal {
+			log.Errorf("[%s] bank2_accounts total should be %d, but tiflash got %d, query uuid is %s", c, expectTotal, total, uuid)
+			atomic.StoreInt32(&c.stop, 1)
+			c.wg.Wait()
+			log.Fatalf("[%s] bank2_accounts total should be %d, but tiflash got %d, query uuid is %s", c, expectTotal, total, uuid)
+		}
+
+		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
+		if err != nil {
+			log.Warn(err)
+			return
+		}
+	}
+
 	if _, err := tx.Exec("ADMIN CHECK TABLE bank2_accounts"); err != nil {
 		log.Errorf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
 		errStr := err.Error()
 		if strings.Contains(errStr, "1105") &&
 			!(strings.Contains(errStr, "cancelled DDL job") ||
 				strings.Contains(errStr, "Information schema is changed") ||
-				strings.Contains(errStr, "TiKV server timeout") || 
+				strings.Contains(errStr, "TiKV server timeout") ||
 				strings.Contains(errStr, "redirect failed") ||
 				strings.Contains(errStr, "no leader") ||
 				strings.Contains(errStr, "injected")) {
