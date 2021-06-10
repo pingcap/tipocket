@@ -16,24 +16,6 @@ import (
 	"github.com/pingcap/tipocket/util"
 )
 
-const stmtDrop = `
-drop table if exists t;
-`
-const stmtCreate = `
-create table t (c int)
-PARTITION BY RANGE (c) (
-	PARTITION p1 VALUES LESS THAN (6),
-	PARTITION p2 VALUES LESS THAN (11),
-	PARTITION p3 VALUES LESS THAN (16)
-);`
-
-const stmtPolicy = `
-alter table t alter partition %v
-add placement policy
-	constraints='["+zone=%v"]'
-	role=leader
-	replicas=1`
-
 // DCLocations stores all the dcLocations' name.
 var DCLocations = []string{}
 
@@ -137,11 +119,6 @@ func (c *crossRegionClient) setup() error {
 		return err
 	}
 	log.Info("TiKV setup successfully")
-	err = c.setupDB()
-	if err != nil {
-		return err
-	}
-	log.Info("DB setup successfully")
 	return nil
 }
 
@@ -171,39 +148,13 @@ func (c *crossRegionClient) setupStore() error {
 	if err != nil {
 		return err
 	}
-	if stores.Count != 3 {
-		return fmt.Errorf("tikv count should be 3")
+	if stores.Count != 1 {
+		return fmt.Errorf("tikv count should be 1")
 	}
 	for i, store := range stores.Stores {
 		err = c.pdHTTPClient.SetStoreLabels(store.Id, map[string]string{
 			"zone": DCLocations[i],
 		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *crossRegionClient) setupDB() error {
-	_, err := c.db.Exec(stmtDrop)
-	if err != nil {
-		log.Info("setupDB stmtDrop failed", zap.Error(err))
-		return err
-	}
-	_, err = c.db.Exec(stmtCreate)
-	if err != nil {
-		log.Info("setupDB stmtCreate failed", zap.Error(err))
-		return err
-	}
-	log.Info("setupDB stmtCreate success")
-	_, err = c.db.Exec(`set global tidb_enable_alter_placement=1`)
-	if err != nil {
-		return err
-	}
-	for i := 1; i <= 3; i++ {
-		stmt := fmt.Sprintf(stmtPolicy, fmt.Sprintf("p%v", i), DCLocations[i-1])
-		_, err = c.db.Exec(stmt)
 		if err != nil {
 			return err
 		}

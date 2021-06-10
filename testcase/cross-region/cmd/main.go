@@ -67,12 +67,12 @@ func provideCrossRegionCluster() cluster.Cluster {
 	crossregion.DCLocations = names
 
 	confs := []fixture.TiDBClusterConfig{
-		provideConf(2, 1, 1, nil, names[0]),
-		provideConf(2, 1, 1, &fixture.ClusterRef{
+		provideConf(2, 1, 0, nil, names[0]),
+		provideConf(2, 0, 0, &fixture.ClusterRef{
 			Name:      names[0],
 			Namespace: namespace,
 		}, names[1]),
-		provideConf(2, 1, 1, &fixture.ClusterRef{
+		provideConf(2, 0, 0, &fixture.ClusterRef{
 			Name:      names[0],
 			Namespace: namespace,
 		}, names[2]),
