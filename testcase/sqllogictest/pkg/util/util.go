@@ -226,6 +226,7 @@ func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
 	}
 }
 
+// SetAndWaitTiFlashReplica create tiflash replicas for a table and wait it to be available or timeout
 func SetAndWaitTiFlashReplica(ctx context.Context, db *sql.DB, dbName, tableName string, replicaCount, retryCount int) error {
 	var sql string
 	if dbName != "" {
