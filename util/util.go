@@ -227,7 +227,12 @@ func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
 }
 
 func SetAndWaitTiFlashReplica(ctx context.Context, db *sql.DB, dbName, tableName string, replicaCount, retryCount int) error {
-	sql := fmt.Sprintf("alter table %s.%s set tiflash replica %d", dbName, tableName, replicaCount)
+	var sql string
+	if dbName != "" {
+		sql = fmt.Sprintf("alter table %s.%s set tiflash replica %d", dbName, tableName, replicaCount)
+	} else {
+		sql = fmt.Sprintf("alter table %s set tiflash replica %d", tableName, replicaCount)
+	}
 	log.Infof("begin to execute %s", sql)
 	MustExec(db, sql)
 
