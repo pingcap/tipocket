@@ -3,6 +3,7 @@ package crossregion
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -384,7 +385,7 @@ func (c *crossRegionClient) waitLeaderReady() error {
 		if err != nil {
 			return false
 		}
-		return members.Leader != nil
+		return members != nil && members.Leader != nil
 	})
 }
 
@@ -394,10 +395,12 @@ func (c *crossRegionClient) waitAllocatorReady(dcLocations []string) error {
 		if err != nil {
 			return false
 		}
-		for _, dcLocation := range dcLocations {
-			_, ok := members.TsoAllocatorLeaders[dcLocation]
-			if !ok {
-				return false
+		if members != nil && members.TsoAllocatorLeaders != nil {
+			for _, dcLocation := range dcLocations {
+				_, ok := members.TsoAllocatorLeaders[dcLocation]
+				if !ok {
+					return false
+				}
 			}
 		}
 		return true
@@ -408,10 +411,10 @@ func (c *crossRegionClient) waitLeader(name string) error {
 	for {
 		log.Info("Wait for leader election", zap.String("name", name))
 		mems, err := c.pdHTTPClient.GetMembers()
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "no leader") {
 			return err
 		}
-		if mems.Leader != nil && mems.Leader.Name == name {
+		if mems != nil && mems.Leader != nil && mems.Leader.Name == name {
 			return nil
 		}
 		time.Sleep(30 * time.Second)
@@ -422,12 +425,14 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 	for {
 		log.Info("Wait for allocator election", zap.String("name", name), zap.String("dc-location", dcLocation))
 		members, err := c.pdHTTPClient.GetMembers()
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "no leader") {
 			return err
 		}
-		for dc, member := range members.TsoAllocatorLeaders {
-			if dcLocation == dc && member.Name == name {
-				return nil
+		if members != nil && members.TsoAllocatorLeaders != nil {
+			for dc, member := range members.TsoAllocatorLeaders {
+				if dcLocation == dc && member.Name == name {
+					return nil
+				}
 			}
 		}
 		time.Sleep(30 * time.Second)
