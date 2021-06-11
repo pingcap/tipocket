@@ -157,11 +157,13 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 			log.Fatalf("execute statement %s error %v", stmt, err)
 		}
 	}
-	// create tiflash replica
-	maxSecondsBeforeTiFlashAvail := 1000
-	for _, tableName := range tableNames {
-		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.DbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return errors.Trace(err)
+	if c.TiFlashDataReplicas > 0 {
+		// create tiflash replica
+		maxSecondsBeforeTiFlashAvail := 1000
+		for _, tableName := range tableNames {
+			if err := util.SetAndWaitTiFlashReplica(ctx, db, c.DbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return errors.Trace(err)
+			}
 		}
 	}
 

@@ -331,11 +331,13 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	// just set a safe threshold for tiflash become available
 	maxSecondsBeforeTiFlashAvail := 1000
 	if !isDropped {
-		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return errors.Trace(err)
-		}
-		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return errors.Trace(err)
+		if c.cfg.TiFlashDataReplicas > 0 {
+			if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return errors.Trace(err)
+			}
+			if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return errors.Trace(err)
+			}
 		}
 		c.startVerify(ctx, db, index)
 		return nil
@@ -345,11 +347,13 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	util.MustExec(db, dropRecordTableTemplate)
 	util.MustExec(db, fmt.Sprintf(createAccountTableTemplate, index))
 	util.MustExec(db, createRecordTableTemplate)
-	if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-		return errors.Trace(err)
-	}
-	if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-		return errors.Trace(err)
+	if c.cfg.TiFlashDataReplicas > 0 {
+		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return errors.Trace(err)
+		}
+		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return errors.Trace(err)
+		}
 	}
 	var wg sync.WaitGroup
 

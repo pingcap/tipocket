@@ -115,10 +115,12 @@ func (c *ledgerClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 		log.Fatalf("execute statement %s error %v", stmtCreate, err)
 	}
 
-	// create tiflash replica
-	maxSecondsBeforeTiFlashAvail := 1000
-	if err := util.SetAndWaitTiFlashReplica(ctx, db, dbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-		return err
+	if c.TiFlashDataReplicas > 0 {
+		// create tiflash replica
+		maxSecondsBeforeTiFlashAvail := 1000
+		if err := util.SetAndWaitTiFlashReplica(ctx, db, dbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return err
+		}
 	}
 
 	var wg sync.WaitGroup

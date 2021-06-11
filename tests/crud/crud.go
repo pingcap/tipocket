@@ -90,11 +90,13 @@ func (c *crudClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []
 	util.MustExec(c.db, "DROP TABLE IF EXISTS crud_users, crud_posts")
 	util.MustExec(c.db, "CREATE TABLE crud_users (id BIGINT PRIMARY KEY, name VARCHAR(16), posts BIGINT)")
 	util.MustExec(c.db, "CREATE TABLE crud_posts (id BIGINT PRIMARY KEY, author BIGINT, title VARCHAR(128))")
-	// create tiflash replica
-	maxSecondsBeforeTiFlashAvail := 1000
-	for _, tableName := range tableNames {
-		if err := util.SetAndWaitTiFlashReplica(ctx, c.db, c.DBName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return err
+	if c.TiFlashDataReplicas > 0 {
+		// create tiflash replica
+		maxSecondsBeforeTiFlashAvail := 1000
+		for _, tableName := range tableNames {
+			if err := util.SetAndWaitTiFlashReplica(ctx, c.db, c.DBName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

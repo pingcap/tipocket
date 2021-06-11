@@ -454,11 +454,14 @@ func (t *tester) execStatement(ctx context.Context, stmt statement, tiFlashDataR
 		}
 		return fmt.Errorf("%s: expected success, but found %v", stmt.pos, err)
 	}
-	// grep create table statement and set TiFlash replica
-	// replace '\n' with ' ' so that we can get table name for multi-line create statement
-	if m := createTableRE.FindStringSubmatch(strings.Replace(stmt.sql, "\n", " ", -1)); m != nil {
-		if err := util.SetAndWaitTiFlashReplica(ctx, t.db, "", m[1], tiFlashDataReplicas, 3*dbTryNumber); err != nil {
-			return err
+
+	if tiFlashDataReplicas > 0 {
+		// grep create table statement and set TiFlash replica
+		// replace '\n' with ' ' so that we can get table name for multi-line create statement
+		if m := createTableRE.FindStringSubmatch(strings.Replace(stmt.sql, "\n", " ", -1)); m != nil {
+			if err := util.SetAndWaitTiFlashReplica(ctx, t.db, "", m[1], tiFlashDataReplicas, 3*dbTryNumber); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
