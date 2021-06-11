@@ -63,6 +63,7 @@ type fixtureContext struct {
 	BinlogConfig             BinlogConfig
 	CDCConfig                CDCConfig
 	DMConfig                 DMConfig
+	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
 	// Other
 	pprofAddr  string

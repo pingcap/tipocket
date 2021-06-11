@@ -205,7 +205,7 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 	// read from tikv
 	_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
 	if err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	uuid := fastuuid.MustNewGenerator().Hex128()
 	query := fmt.Sprintf("select sum(balance) as total, '%s' as uuid from accounts%s", uuid, index)
@@ -233,7 +233,7 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 	if c.cfg.TiFlashDataReplicas > 0 {
 		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tiflash'")
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 
 		readFromTiFlash := func() error {
@@ -257,7 +257,7 @@ func (c *bankCase) verify(ctx context.Context, db *sql.DB, index string, delay d
 		}
 		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 
@@ -332,10 +332,10 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	maxSecondsBeforeTiFlashAvail := 1000
 	if !isDropped {
 		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		c.startVerify(ctx, db, index)
 		return nil
@@ -346,10 +346,10 @@ func (c *bankCase) initDB(ctx context.Context, db *sql.DB, id int) error {
 	util.MustExec(db, fmt.Sprintf(createAccountTableTemplate, index))
 	util.MustExec(db, createRecordTableTemplate)
 	if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, fmt.Sprintf(accountTableTemplate, index), c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	if err := util.SetAndWaitTiFlashReplica(ctx, db, c.cfg.DbName, recordTableTemplate, c.cfg.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	var wg sync.WaitGroup
 

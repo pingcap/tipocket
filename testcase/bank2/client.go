@@ -161,7 +161,7 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	maxSecondsBeforeTiFlashAvail := 1000
 	for _, tableName := range tableNames {
 		if err := util.SetAndWaitTiFlashReplica(ctx, db, c.DbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 

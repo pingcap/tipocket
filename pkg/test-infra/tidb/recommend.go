@@ -61,11 +61,11 @@ func (t *Recommendation) EnableTiFlash(config fixture.TiDBClusterConfig) {
 					Resources: fixture.WithStorage(corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("1000m"),
-							fixture.Memory: resource.MustParse("16Gi"),
+							fixture.Memory: resource.MustParse("8Gi"),
 						},
 						Limits: corev1.ResourceList{
 							fixture.CPU:    resource.MustParse("4000m"),
-							fixture.Memory: resource.MustParse("20Gi"),
+							fixture.Memory: resource.MustParse("16Gi"),
 						},
 					}, "100Gi"),
 				},
