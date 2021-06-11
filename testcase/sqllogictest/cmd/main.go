@@ -41,7 +41,7 @@ var (
 
 func main() {
 	flag.Parse()
-
+	
 	cfg := control.Config{
 		Mode:        control.ModeStandard,
 		ClientCount: 1,
