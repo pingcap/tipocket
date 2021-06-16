@@ -16,6 +16,7 @@ package testcase
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"math/rand"
 	"sync"
 
@@ -35,8 +36,23 @@ func (c *uniformClient) SetUp(ctx context.Context, nodes []cluster.Node, clientN
 	if err := c.baseClient.SetUp(ctx, nodes, clientNodes, idx); err != nil {
 		return err
 	}
-	util.MustExec(c.db, "drop table if exists write_stress")
-	util.MustExec(c.db, "create table write_stress(id varchar(40) primary key clustered, col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))")
+	// Use 32 threads to create tables.
+	var wg sync.WaitGroup
+	for i := 0; i < 32; i++ {
+		wg.Add(1)
+		go func(tid int) {
+			defer wg.Done()
+			for j := 0; j < c.tables; j++ {
+				if j%32 == tid {
+					sql := fmt.Sprintf("drop table if exists write_stress%d", j+1)
+					util.MustExec(c.db, sql)
+					sql = fmt.Sprintf("create table write_stress(id varchar(40) primary key clustered, col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))", j+1)
+					util.MustExec(c.db, sql)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
 	return nil
 }
 
@@ -68,15 +84,17 @@ func (c *uniformClient) runClient(ctx context.Context) error {
 	rng := rand.New(rand.NewSource(rand.Int63()))
 
 	col2 := make([]byte, 192)
-	data := make([]byte, 65536)
+	data := make([]byte, c.padLength)
 	for {
 		uuid := uuid.New().String()
 		col1 := rng.Int63()
 		col2Len := rng.Intn(192)
 		_, _ = rng.Read(col2[:col2Len])
-		dataLen := rng.Intn(65536)
+		dataLen := rng.Intn(c.padLength)
 		_, _ = rng.Read(data[:dataLen])
-		_, err := c.db.ExecContext(ctx, "insert into write_stress values (?, ?, ?, ?)", uuid, col1,
+		tid := rng.Int()%c.tables + 1
+		sql := fmt.Sprintf("insert into write_stress%d values (?, ?, ?)", tid)
+		_, err := c.db.ExecContext(ctx, sql, uuid, col1,
 			base64.StdEncoding.EncodeToString(col2[:col2Len]),
 			base64.StdEncoding.EncodeToString(data[:dataLen]))
 		if err != nil {

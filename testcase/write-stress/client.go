@@ -28,13 +28,19 @@ import (
 
 // CaseCreator is a creator of test client
 type CaseCreator struct {
-	Concurrency int
 	CaseName    string
+	Concurrency int
+	Tables      int
+	PadLength   int
 }
 
 // Create creates a test client
 func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
-	base := baseClient{concurrency: c.Concurrency}
+	base := baseClient{
+		concurrency: c.Concurrency,
+		tables:      c.Tables,
+		padLength:   c.PadLength,
+	}
 	switch c.CaseName {
 	case "uniform":
 		return &uniformClient{base}
@@ -47,6 +53,8 @@ func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
 type baseClient struct {
 	db          *sql.DB
 	concurrency int
+	tables      int
+	padLength   int
 }
 
 func (c *baseClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {

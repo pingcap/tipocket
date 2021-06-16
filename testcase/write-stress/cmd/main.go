@@ -32,7 +32,10 @@ import (
 
 var (
 	concurrency = flag.Int("concurrency", 1024, "write concurrency")
-	caseName    = flag.String("case-name", "uniform", "test case name")
+	tables      = flag.Int("tables", 1, "total tables")
+	padLength   = flag.Int("pad-length", 65536, "pad string length")
+
+	caseName = flag.String("case-name", "uniform", "test case name")
 )
 
 func main() {
@@ -47,8 +50,10 @@ func main() {
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: testcase.CaseCreator{
-			Concurrency: *concurrency,
 			CaseName:    *caseName,
+			Concurrency: *concurrency,
+			Tables:      *tables,
+			PadLength:   *padLength,
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
