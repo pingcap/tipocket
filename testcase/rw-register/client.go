@@ -19,6 +19,7 @@ import (
 	ellecore "github.com/pingcap/tipocket/pkg/elle/core"
 	elleregister "github.com/pingcap/tipocket/pkg/elle/rw_register"
 	elletxn "github.com/pingcap/tipocket/pkg/elle/txn"
+	"github.com/pingcap/tipocket/util"
 )
 
 type registerResponse struct {
@@ -35,11 +36,12 @@ func (c registerResponse) IsUnknown() bool {
 }
 
 type client struct {
-	tableCount  int
-	useIndex    bool
-	readLock    string
-	txnMode     string
-	replicaRead string
+	tableCount          int
+	useIndex            bool
+	readLock            string
+	txnMode             string
+	replicaRead         string
+	tiflashDataReplicas int
 
 	db          *sql.DB
 	nextRequest func() ellecore.Op
@@ -132,6 +134,19 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			if c.useIndex {
 				column = "sk"
 			}
+			if c.tiflashDataReplicas > 0 {
+				if _, err := txn.Exec("set @@session.tidb_isolation_read_engines='tiflash'"); err != nil {
+					_ = txn.Rollback()
+					return registerResponse{
+						Result: ellecore.Op{
+							Time:  time.Now(),
+							Type:  ellecore.OpTypeFail,
+							Value: request.Value,
+							Error: err.Error(),
+						},
+					}
+				}
+			}
 			query := fmt.Sprintf("select val from register where %s = ?", column)
 			if c.readLock != "" {
 				query += " " + c.readLock
@@ -146,6 +161,19 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 						Value: request.Value,
 						Error: err.Error(),
 					},
+				}
+			}
+			if c.tiflashDataReplicas > 0 {
+				if _, err := txn.Exec("set @@session.tidb_isolation_read_engines='tikv'"); err != nil {
+					_ = txn.Rollback()
+					return registerResponse{
+						Result: ellecore.Op{
+							Time:  time.Now(),
+							Type:  ellecore.OpTypeFail,
+							Value: request.Value,
+							Error: err.Error(),
+						},
+					}
 				}
 			}
 			var value string
@@ -207,7 +235,7 @@ func (c *client) NextRequest() interface{} {
 	return c.nextRequest()
 }
 
-func (c *client) DumpState(_ context.Context) (interface{}, error) {
+func (c *client) DumpState(ctx context.Context) (interface{}, error) {
 	if _, err := c.db.Exec("drop table if exists register"); err != nil {
 		return nil, err
 	}
@@ -222,30 +250,38 @@ func (c *client) DumpState(_ context.Context) (interface{}, error) {
 			return nil, err
 		}
 	}
+	maxSecondsBeforeTiFlashAvail := 1000
+	if c.tiflashDataReplicas > 0 {
+		if err := util.SetAndWaitTiFlashReplica(ctx, c.db, "", "register", c.tiflashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return nil, err
+		}
+	}
 	return nil, nil
 }
 
 // ClientCreator can create list append client
 type registerClientCreator struct {
-	tableCount  int
-	readLock    string
-	txnMode     string
-	replicaRead string
+	tableCount          int
+	readLock            string
+	txnMode             string
+	replicaRead         string
+	tiflashDataReplicas int
 
 	it *elletxn.MopIterator
 	mu sync.Mutex
 }
 
 // NewClientCreator ...
-func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string, tiflashDataReplicas int) core.ClientCreator {
 	opt := elletxn.DefaultWrTxnOpts()
 	opt.MaxWritesPerKey = 1024
 	return &registerClientCreator{
-		tableCount:  tableCount,
-		readLock:    readLock,
-		txnMode:     txnMode,
-		replicaRead: replicaRead,
-		it:          elletxn.WrTxn(opt),
+		tableCount:          tableCount,
+		readLock:            readLock,
+		txnMode:             txnMode,
+		replicaRead:         replicaRead,
+		tiflashDataReplicas: tiflashDataReplicas,
+		it:                  elletxn.WrTxn(opt),
 	}
 }
 
