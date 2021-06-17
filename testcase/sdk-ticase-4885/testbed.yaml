@@ -1,0 +1,14 @@
+generateName: testbed-
+items:
+- name: tc
+  type: TIDB_CLUSTER
+  spec:
+    pd:
+      replicas: 1
+      image: pingcap/pd:v5.0.0
+    tidb:
+      replicas: 1
+      image: pingcap/tidb:v5.0.0
+    tikv:
+      replicas: 1
+      image: pingcap/tikv:v5.0.0
