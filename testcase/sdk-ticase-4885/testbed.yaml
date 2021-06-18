@@ -1,15 +1,33 @@
 ---
-generateName: testbed-
+generateName: sdk-ticase-4885-
 items:
-- name: tc
-  type: TIDB_CLUSTER
-  spec:
-    pd:
-      replicas: 1
-      image: pingcap/pd:v5.0.0
-    tidb:
-      replicas: 1
-      image: pingcap/tidb:v5.0.0
-    tikv:
-      replicas: 1
-      image: pingcap/tikv:v5.0.0
+    -   name: tc
+        type: TIDB_CLUSTER
+        spec:
+            pd:
+                replicas: 1
+                image: pingcap/pd:v4.0.13
+            tidb:
+                replicas: 1
+                image: pingcap/tidb:v4.0.13
+            tikv:
+                replicas: 1
+                image: pingcap/tikv:v4.0.13
+    -   name: br
+        type: BR_NODE
+        spec:
+            image: docker.io/pingcap/br:v4.0.13
+    -   name: go-tpc
+        type: WORKLOAD_NODE
+        spec:
+            container:
+                name: go-tpc
+                image: hub.pingcap.net/qa/go-tpc:v1.0.7
+                command:
+                    - tail
+                    - "-f"
+                    - "/dev/null"
+                resources:
+                    requests:
+                        memory: 64Mi
+                        cpu: 1000m

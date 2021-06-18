@@ -98,6 +98,8 @@ github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/imdario/mergo v0.3.5/go.mod h1:2EnlNZ0deacrJVfApfmtdGgDfMuh/nq6Ok1EcJh5FfA=
+github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
+github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/jpillora/backoff v1.0.0 h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
 github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3/go.mod h1:+SdeFBvtyEkXs7REEP0seUULqWtbJapLOCVDaaPEHmU=
@@ -143,10 +145,11 @@ github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR
 github.com/pingcap/errors v0.11.4/go.mod h1:Oi8TUi2kEtXXLMJk9l1cGmz20kV3TaQ0usTwv5KuLY8=
 github.com/pingcap/kvproto v0.0.0-20210611081648-a215b4e61d2f h1:6K+5nbl1I3el9mYt/mlWorBR95qqmQdwrXYaNQrWWE8=
 github.com/pingcap/kvproto v0.0.0-20210611081648-a215b4e61d2f/go.mod h1:IOdRDPLyda8GX2hE/jO7gqaCV/PNFh8BZQCQZXfIOqI=
-github.com/pingcap/test-infra v0.0.0-20210615085352-587d8dd4a79d h1:Xy1dvBQkr0Zh8E6yL8AfZy32xwPoyCN55M/2RUOxmII=
 github.com/pingcap/test-infra v0.0.0-20210615085352-587d8dd4a79d/go.mod h1:Tdm7sIXzE8cpY6iqll6TaSbboyXqj4bGSUt2S23k1Xg=
-github.com/pingcap/test-infra/sdk v0.0.0-20210617124714-c7a66de592c8 h1:bJOAsiksWT1kQX4ZQEZhkIjpIkNI1TA+1+4VHGIntGg=
-github.com/pingcap/test-infra/sdk v0.0.0-20210617124714-c7a66de592c8/go.mod h1:De0CljMCvi6/J5qBhdNHLtIyo2kWQC0oe9d+prLEO4Q=
+github.com/pingcap/test-infra v0.0.0-20210618145625-d6a1d462d807 h1:x5GExNECwlKg4Q/RfquIYnTYDrssd7qnCDLnqInKa9w=
+github.com/pingcap/test-infra v0.0.0-20210618145625-d6a1d462d807/go.mod h1:Tdm7sIXzE8cpY6iqll6TaSbboyXqj4bGSUt2S23k1Xg=
+github.com/pingcap/test-infra/sdk v0.0.0-20210618145625-d6a1d462d807 h1:ZdeqILFzshyNCeTaHoWLNwfQK1hR06onpqMNXTWBTPo=
+github.com/pingcap/test-infra/sdk v0.0.0-20210618145625-d6a1d462d807/go.mod h1:De0CljMCvi6/J5qBhdNHLtIyo2kWQC0oe9d+prLEO4Q=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
