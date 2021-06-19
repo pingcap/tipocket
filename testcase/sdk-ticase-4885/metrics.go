@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ListenMetrics(prometheusURL URL, INTERVAL time.Duration, logger *zap.Logger, stopper chan int) {
+func ListenMetrics(prometheusURL *URL, INTERVAL time.Duration, logger *zap.Logger, stopper chan int) {
 	log := logger.Sugar()
 	defer log.Sync()
 
@@ -204,7 +204,11 @@ func queryNow(query string, api prometheus_api.API, log *zap.Logger) (model.Valu
 func Exec(description string, workload resource.WorkloadNode, options resource.WorkloadNodeExecOptions, log *zap.Logger) error {
 	_, stderr, exitCode, err := workload.Exec(options)
 	if err != nil {
-		log.Error("errored when executing command workload", zap.String("description", description), zap.Any("options", options), zap.Error(err))
+		log.Error("errored when executing command workload",
+			zap.String("description", description),
+			zap.Any("options", options),
+			zap.Int("exitCode", exitCode),
+			zap.String("stderr", stderr))
 		return err
 	}
 	if exitCode != 0 {

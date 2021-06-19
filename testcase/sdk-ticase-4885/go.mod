@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/joho/godotenv v1.3.0
 	github.com/pingcap/test-infra v0.0.0-20210618145625-d6a1d462d807
-	github.com/pingcap/test-infra/sdk v0.0.0-20210618145625-d6a1d462d807
+	github.com/pingcap/test-infra/sdk v0.0.0-20210619005533-233d680ca18f
 	github.com/prometheus/client_golang v1.11.0
 	github.com/prometheus/common v0.26.0
 	go.uber.org/zap v1.16.0

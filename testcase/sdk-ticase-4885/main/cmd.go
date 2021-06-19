@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	apiresource "github.com/pingcap/test-infra/common/model/resource"
+	_ "github.com/pingcap/test-infra/sdk/resource/impl/k8s" //register k8s impl
 
 	. "github.com/tipocket/testcase/sdk-ticase-4885"
 )
@@ -29,7 +29,9 @@ import (
 //  - tpcc_br_storage_uri: Location of BR backup. Defaults to s3://tpcc/br-2t.
 //  - tpcc_br_s3_endpoint: --s3.endpoint of BR. Defaults to http://minio.pingcap.net:9000.
 //  - tpcc_warehouses: --warehouses of go-tpc. Defaults to 4.
-//  - tpcc_tables: -T of go-tpc. Defaults to 8.
+//  - tpcc_threads: -T of go-tpc. Defaults to 8.
+//  - tpcc_runtime: --time of go-tpc. Defaults to 5m.
+//  - tpcc_db: -D of go-tpc. Defaults to tpcc30k.
 //  - scale_instance_type: During the two scaling phase, which component should be scaled. e.g. tikv, tidb. Required.
 //  - scale_size: During the two scaling phase, how many instances should be scaled. Required.
 //  - scale_timeout: Timeout of the two scaling phase. Defaults to 5m.
@@ -48,7 +50,9 @@ func main() {
 	brUri := ctx.Param("tpcc_br_storage_uri", "s3://tpcc/br-2t")
 	brEndpoint := ctx.Param("tpcc_br_s3_endpoint", "http://minio.pingcap.net:9000")
 	tpccWarehouses := Try(strconv.Atoi(ctx.Param("tpcc_warehouses", "4"))).(int)
-	tpccTables := Try(strconv.Atoi(ctx.Param("tpcc_tables", "8"))).(int)
+	tpccThreads := Try(strconv.Atoi(ctx.Param("tpcc_threads", "8"))).(int)
+	tpccRuntime := ctx.Param("tpcc_runtime", "5m")
+	tpccDB := ctx.Param("tpcc_db", "tpcc30k")
 
 	phaseInterval := Try(time.ParseDuration(ctx.Param("phase_interval", "3h"))).(time.Duration)
 	metricInterval := Try(time.ParseDuration(ctx.Param("metric_interval", "1m"))).(time.Duration)
@@ -66,22 +70,26 @@ func main() {
 
 	log.Info("environment initialized. running BR to import data.")
 	err := Exec("br", br, resource.WorkloadNodeExecOptions{
-		Command: fmt.Sprintf("./br restore full --pd \"%s\" --storage \"%s\" --s3.endpoint \"%s\" --send-credentials-to-tikv=true",
-			regexp.MustCompile("^http(s)://").ReplaceAllString(Try(target.ServiceURL(resource.PDAddr)).(string), ""),
-			brEndpoint,
-			brUri),
+		Command: fmt.Sprintf(`export AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin; ./br restore full --pd %s --storage %s --s3.endpoint %s --send-credentials-to-tikv=true`,
+			Try(target.ServiceURL(resource.PDAddr)).(*url.URL).Host,
+			brUri,
+			brEndpoint),
 	}, log)
 	if err != nil {
 		return
 	}
 
-	log.Info("data imported. now running TPC-C test.")
+	dbURL := Try(target.ServiceURL(resource.DBAddr)).(*url.URL)
+	cmd := fmt.Sprintf("/go-tpc tpcc --host %s -P4000 -D %s --warehouses %d run -T %d --time %s", dbURL.Hostname(), tpccDB, tpccWarehouses, tpccThreads, tpccRuntime)
+	log.Info("data imported. now running TPC-C test, command: " + cmd)
+
 	err = Exec("go_tpc", tpc, resource.WorkloadNodeExecOptions{
-		Command: fmt.Sprintf("/go-tpc tpcc --warehouses %d run -T %d", tpccWarehouses, tpccTables),
+		Command: cmd,
 	}, log)
 	if err != nil {
 		return
 	}
+	// assert go-tpc really runs about tpccRuntime durations
 
 	stopper := make(chan int)
 	go func() {
@@ -129,7 +137,7 @@ func main() {
 		stopper <- 0
 	}()
 
-	go ListenMetrics(Try(target.ServiceURL(resource.Prometheus)).(url.URL), metricInterval, log, stopper)
+	go ListenMetrics(Try(target.ServiceURL(resource.Prometheus)).(*url.URL), metricInterval, log, stopper)
 }
 
 func getReplicas(target resource.TiDBCluster, scaleInstanceType resource.TiDBCompType) uint32 {
