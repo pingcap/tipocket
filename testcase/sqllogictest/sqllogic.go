@@ -247,7 +247,7 @@ LOOP:
 				fmt.Fprintln(&buf, line)
 			}
 			stmt.sql = strings.TrimSpace(buf.String())
-			if err := t.execStatement(ctx, stmt, tiFlashDataReplicas); err != nil {
+			if err := t.execStatement(ctx, stmt, fmt.Sprintf("sqllogic_test_%d", runid), tiFlashDataReplicas); err != nil {
 				sendFatalResult(resultChan, err.Error())
 				return
 			}
@@ -411,7 +411,7 @@ func (l *lineScanner) Scan() bool {
 	return ok
 }
 
-func (t *tester) execStatement(ctx context.Context, stmt statement, tiFlashDataReplicas int) error {
+func (t *tester) execStatement(ctx context.Context, stmt statement, dbName string, tiFlashDataReplicas int) error {
 	defer func() {
 		var err error
 		if e := recover(); e != nil {
@@ -459,7 +459,7 @@ func (t *tester) execStatement(ctx context.Context, stmt statement, tiFlashDataR
 		// grep create table statement and set TiFlash replica
 		// replace '\n' with ' ' so that we can get table name for multi-line create statement
 		if m := createTableRE.FindStringSubmatch(strings.Replace(stmt.sql, "\n", " ", -1)); m != nil {
-			if err := util.SetAndWaitTiFlashReplica(ctx, t.db, "", m[1], tiFlashDataReplicas, 3*dbTryNumber); err != nil {
+			if err := util.SetAndWaitTiFlashReplica(ctx, t.db, dbName, m[1], tiFlashDataReplicas, 3*dbTryNumber); err != nil {
 				return err
 			}
 		}

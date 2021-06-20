@@ -229,11 +229,7 @@ func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
 // SetAndWaitTiFlashReplica create tiflash replicas for a table and wait it to be available or timeout
 func SetAndWaitTiFlashReplica(ctx context.Context, db *sql.DB, dbName, tableName string, replicaCount, retryCount int) error {
 	var sql string
-	if dbName != "" {
-		sql = fmt.Sprintf("alter table %s.%s set tiflash replica %d", dbName, tableName, replicaCount)
-	} else {
-		sql = fmt.Sprintf("alter table %s set tiflash replica %d", tableName, replicaCount)
-	}
+	sql = fmt.Sprintf("alter table %s.%s set tiflash replica %d", dbName, tableName, replicaCount)
 	log.Infof("begin to execute %s", sql)
 	MustExec(db, sql)
 
@@ -258,7 +254,7 @@ func SetAndWaitTiFlashReplica(ctx context.Context, db *sql.DB, dbName, tableName
 		return nil
 	})
 	if err != nil {
-		return errors.Errorf("wait TiFlash replica of %v.%v error after %v seconds: %d", dbName, tableName, retryCount, err)
+		return errors.Errorf("wait TiFlash replica of %s.%s error after %d seconds: %v", dbName, tableName, retryCount, err)
 	}
 	return nil
 }
