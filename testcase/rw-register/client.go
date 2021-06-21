@@ -47,6 +47,8 @@ type client struct {
 	nextRequest func() ellecore.Op
 }
 
+const dbName = "test"
+
 func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var err error
 	txnMode := c.txnMode
@@ -63,7 +65,7 @@ func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	}
 
 	node := clientNodes[idx]
-	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, dbName))
 	if err != nil {
 		return err
 	}
@@ -252,7 +254,7 @@ func (c *client) DumpState(ctx context.Context) (interface{}, error) {
 	}
 	maxSecondsBeforeTiFlashAvail := 1000
 	if c.tiflashDataReplicas > 0 {
-		if err := util.SetAndWaitTiFlashReplica(ctx, c.db, "", "register", c.tiflashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+		if err := util.SetAndWaitTiFlashReplica(ctx, c.db, dbName, "register", c.tiflashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
 			return nil, err
 		}
 	}
