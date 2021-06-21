@@ -16,7 +16,7 @@ func main() {
 	config.DisableStacktrace = true
 	logger := Try(config.Build()).(*zap.Logger)
 
-	ListenMetrics(*Try(Parse("http://127.0.0.1:9090")).(*URL), 5*time.Second, logger, stopper)
+	ListenMetrics(Try(Parse("http://tc-prometheus.sdk-ticase-4885-s4q78.svc:9090")).(*URL), 5*time.Second, logger, stopper)
 
 	go func() {
 		time.Sleep(5 * time.Minute)

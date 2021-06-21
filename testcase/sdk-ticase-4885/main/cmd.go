@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
+	apiresource "github.com/pingcap/test-infra/common/model/resource"
 	"github.com/pingcap/test-infra/sdk/core"
 	"github.com/pingcap/test-infra/sdk/resource"
 	"go.uber.org/zap"
 
-	apiresource "github.com/pingcap/test-infra/common/model/resource"
-	_ "github.com/pingcap/test-infra/sdk/resource/impl/k8s" //register k8s impl
+	_ "github.com/pingcap/test-infra/sdk/resource/impl/k8s"
 
 	. "github.com/tipocket/testcase/sdk-ticase-4885"
 )
@@ -29,9 +30,7 @@ import (
 //  - tpcc_br_storage_uri: Location of BR backup. Defaults to s3://tpcc/br-2t.
 //  - tpcc_br_s3_endpoint: --s3.endpoint of BR. Defaults to http://minio.pingcap.net:9000.
 //  - tpcc_warehouses: --warehouses of go-tpc. Defaults to 4.
-//  - tpcc_threads: -T of go-tpc. Defaults to 8.
-//  - tpcc_runtime: --time of go-tpc. Defaults to 5m.
-//  - tpcc_db: -D of go-tpc. Defaults to tpcc30k.
+//  - tpcc_tables: -T of go-tpc. Defaults to 8.
 //  - scale_instance_type: During the two scaling phase, which component should be scaled. e.g. tikv, tidb. Required.
 //  - scale_size: During the two scaling phase, how many instances should be scaled. Required.
 //  - scale_timeout: Timeout of the two scaling phase. Defaults to 5m.
@@ -50,9 +49,7 @@ func main() {
 	brUri := ctx.Param("tpcc_br_storage_uri", "s3://tpcc/br-2t")
 	brEndpoint := ctx.Param("tpcc_br_s3_endpoint", "http://minio.pingcap.net:9000")
 	tpccWarehouses := Try(strconv.Atoi(ctx.Param("tpcc_warehouses", "4"))).(int)
-	tpccThreads := Try(strconv.Atoi(ctx.Param("tpcc_threads", "8"))).(int)
-	tpccRuntime := ctx.Param("tpcc_runtime", "5m")
-	tpccDB := ctx.Param("tpcc_db", "tpcc30k")
+	tpccTables := Try(strconv.Atoi(ctx.Param("tpcc_tables", "4"))).(int)
 
 	phaseInterval := Try(time.ParseDuration(ctx.Param("phase_interval", "3h"))).(time.Duration)
 	metricInterval := Try(time.ParseDuration(ctx.Param("metric_interval", "1m"))).(time.Duration)
@@ -66,12 +63,13 @@ func main() {
 	// Initialize resource
 	target := ctx.Resource("tc").(resource.TiDBCluster)
 	br := ctx.Resource("br").(resource.BR)
-	tpc := ctx.Resource("go_tpc").(resource.WorkloadNode)
+	tpc := ctx.Resource("go-tpc").(resource.WorkloadNode)
 
 	log.Info("environment initialized. running BR to import data.")
 	err := Exec("br", br, resource.WorkloadNodeExecOptions{
-		Command: fmt.Sprintf(`export AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin; ./br restore full --pd %s --storage %s --s3.endpoint %s --send-credentials-to-tikv=true`,
-			Try(target.ServiceURL(resource.PDAddr)).(*url.URL).Host,
+		Command: fmt.Sprintf("AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin "+
+			"./br restore full --pd \"%s\" --storage \"%s\" --s3.endpoint \"%s\" --send-credentials-to-tikv=true",
+			regexp.MustCompile("https?://").ReplaceAllString(Try(target.ServiceURL(resource.PDAddr)).(*url.URL).String(), ""),
 			brUri,
 			brEndpoint),
 	}, log)
@@ -79,65 +77,74 @@ func main() {
 		return
 	}
 
-	dbURL := Try(target.ServiceURL(resource.DBAddr)).(*url.URL)
-	cmd := fmt.Sprintf("/go-tpc tpcc --host %s -P4000 -D %s --warehouses %d run -T %d --time %s", dbURL.Hostname(), tpccDB, tpccWarehouses, tpccThreads, tpccRuntime)
-	log.Info("data imported. now running TPC-C test, command: " + cmd)
-
-	err = Exec("go_tpc", tpc, resource.WorkloadNodeExecOptions{
-		Command: cmd,
-	}, log)
-	if err != nil {
-		return
-	}
-	// assert go-tpc really runs about tpccRuntime durations
+	log.Info("data imported. now running TPC-C test.")
+	dbAddr := Try(target.ServiceURL(resource.DBAddr)).(*url.URL)
+	log.Info("DB is at " + dbAddr.String())
 
 	stopper := make(chan int)
+
 	go func() {
-		// scale out
-		replicas := getReplicas(target, scaleInstanceType)
-		scale := resource.TiDBClusterScaleOptions{
-			Target:   scaleInstanceType,
-			Replicas: replicas + uint32(scaleSize),
-			Timeout:  scaleTimeout,
-		}
-		log.Info("now scaling out.", zap.Any("scale_options", scale))
-		err := target.Scale(scale)
-		if err != nil {
-			log.Error("errored when scaling out", zap.Any("scale_options", scale), zap.Error(err))
-		}
-		time.Sleep(phaseInterval)
-		log.Info("phase scaling out executed. now sleeping...", zap.Duration("phase_interval", phaseInterval))
+		select {
+		case <-stopper:
+			return
+		default:
+			err = Exec("go-tpc", tpc, resource.WorkloadNodeExecOptions{
+				Command: fmt.Sprintf("/go-tpc tpcc --warehouses %d run -T %d --host %s",
+					tpccWarehouses,
+					tpccTables,
+					dbAddr.Hostname()), // TODO: should go-tpc accepts DSN directly?
+			}, log)
 
-		// scale in
-		replicas = getReplicas(target, scaleInstanceType)
-		scale = resource.TiDBClusterScaleOptions{
-			Target:   scaleInstanceType,
-			Replicas: replicas - uint32(scaleSize),
-			Timeout:  scaleTimeout,
+			if err != nil {
+				return
+			}
 		}
-		log.Info("now scaling in.", zap.Any("scale_options", scale))
-		err = target.Scale(scale)
-		if err != nil {
-			log.Error("errored when scaling in", zap.Any("scale_options", scale), zap.Error(err))
-		}
-		time.Sleep(phaseInterval)
-		log.Info("phase in out executed. now sleeping...", zap.Duration("phase_interval", phaseInterval))
-
-		upgrade := resource.TiDBClusterUpgradeOptions{
-			Target: upgradeTarget,
-			Image:  upgradeImage,
-		}
-		err = target.Upgrade(upgrade)
-		if err != nil {
-			log.Error("errored when upgrade", zap.Any("upgrade_options", upgrade), zap.Error(err))
-		}
-		time.Sleep(phaseInterval)
-		log.Info("phase upgrade executed. now exiting...")
-
-		stopper <- 0
 	}()
 
 	go ListenMetrics(Try(target.ServiceURL(resource.Prometheus)).(*url.URL), metricInterval, log, stopper)
+
+	// scale out
+	replicas := getReplicas(target, scaleInstanceType)
+	scale := resource.TiDBClusterScaleOptions{
+		Target:   scaleInstanceType,
+		Replicas: replicas + uint32(scaleSize),
+		Timeout:  scaleTimeout,
+	}
+	log.Info("now scaling out.", zap.Any("scale_options", scale))
+	err = target.Scale(scale)
+	if err != nil {
+		log.Error("errored when scaling out", zap.Any("scale_options", scale), zap.Error(err))
+	}
+	time.Sleep(phaseInterval)
+	log.Info("phase scaling out executed. now sleeping...", zap.Duration("phase_interval", phaseInterval))
+
+	// scale in
+	replicas = getReplicas(target, scaleInstanceType)
+	scale = resource.TiDBClusterScaleOptions{
+		Target:   scaleInstanceType,
+		Replicas: replicas - uint32(scaleSize),
+		Timeout:  scaleTimeout,
+	}
+	log.Info("now scaling in.", zap.Any("scale_options", scale))
+	err = target.Scale(scale)
+	if err != nil {
+		log.Error("errored when scaling in", zap.Any("scale_options", scale), zap.Error(err))
+	}
+	time.Sleep(phaseInterval)
+	log.Info("phase in out executed. now sleeping...", zap.Duration("phase_interval", phaseInterval))
+
+	upgrade := resource.TiDBClusterUpgradeOptions{
+		Target: upgradeTarget,
+		Image:  upgradeImage,
+	}
+	err = target.Upgrade(upgrade)
+	if err != nil {
+		log.Error("errored when upgrade", zap.Any("upgrade_options", upgrade), zap.Error(err))
+	}
+	time.Sleep(phaseInterval)
+	log.Info("phase upgrade executed. now exiting...")
+
+	stopper <- 0
 }
 
 func getReplicas(target resource.TiDBCluster, scaleInstanceType resource.TiDBCompType) uint32 {

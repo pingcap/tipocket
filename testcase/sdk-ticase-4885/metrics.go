@@ -202,24 +202,24 @@ func queryNow(query string, api prometheus_api.API, log *zap.Logger) (model.Valu
 }
 
 func Exec(description string, workload resource.WorkloadNode, options resource.WorkloadNodeExecOptions, log *zap.Logger) error {
-	_, stderr, exitCode, err := workload.Exec(options)
+	log.Info(description + " executing with " + options.Command)
+	stdout, stderr, exitCode, err := workload.Exec(options)
 	if err != nil {
-		log.Error("errored when executing command workload",
+		log.Error("errored when executing command on workload",
 			zap.String("description", description),
 			zap.Any("options", options),
 			zap.Int("exitCode", exitCode),
-			zap.String("stderr", stderr))
+			zap.String("stdout", stdout),
+			zap.String("stderr", stderr), zap.Error(err))
 		return err
 	}
-	if exitCode != 0 {
-		// TODO: do log.Error writes into stderr?
-		log.Error("errored returned from executed command",
-			zap.String("description", description),
-			zap.Any("options", options),
-			zap.Int("exitCode", exitCode),
-			zap.String("stderr", stderr))
-		return errors.New("errored returned from executed command. description: " + description)
-	}
+
+	log.Info("executed command on workload",
+		zap.String("description", description),
+		zap.Any("options", options),
+		zap.Int("exitCode", exitCode),
+		zap.String("stderr", stderr),
+		zap.String("stdout", stdout))
 	return nil
 }
 
