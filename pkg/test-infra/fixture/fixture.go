@@ -151,9 +151,10 @@ type TiDBClusterConfig struct {
 	// TiDB fail-points value
 	TiDBFailPoint string
 
-	PDStorageClassName   string
-	TiKVStorageClassName string
-	LogStorageClassName  string
+	PDStorageClassName      string
+	TiKVStorageClassName    string
+	TiFlashStorageClassName string
+	LogStorageClassName     string
 
 	// If Ref is defined, the target TidbCluster will add it into Spec.PDAddresses
 	Ref *ClusterRef
@@ -362,6 +363,7 @@ func init() {
 	flag.BoolVar(&Context.TiDBClusterConfig.MatrixConfig.NoCleanup, "no-cleanup-matrix", false, "Do not cleanup Matrix context after initialized")
 	flag.StringVar(&Context.TiDBClusterConfig.PDStorageClassName, "pd-storage-class", "", "PD dedicated storage class")
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVStorageClassName, "tikv-storage-class", "", "TiKV dedicated storage class")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashStorageClassName, "tiflash-storage-class", "", "TiFlash dedicated storage class")
 	flag.StringVar(&Context.TiDBClusterConfig.LogStorageClassName, "log-storage-class", "", "log dedicated storage class")
 	flag.StringVar(&Context.MySQLProxy, "mysql-proxy", "", "mysql proxy is just like HTTP(S)_PROXY, only uses for MySQL connection now")
 

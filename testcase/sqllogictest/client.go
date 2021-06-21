@@ -31,12 +31,13 @@ import (
 
 // Config is for sqllogicClient
 type Config struct {
-	SkipError   bool
-	TaskCount   int
-	CaseURL     string
-	TestDir     string
-	ReplicaRead string
-	DbName      string
+	SkipError           bool
+	TaskCount           int
+	CaseURL             string
+	TestDir             string
+	ReplicaRead         string
+	DbName              string
+	TiFlashDataReplicas int
 }
 
 type sqllogicClient struct {
@@ -134,7 +135,7 @@ func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes [
 	go addTasks(ctx, fileNames, taskChan)
 
 	for i := 0; i < c.TaskCount; i++ {
-		go doProcess(ctx, doneChan, taskChan, resultChan, dbs[i], i, c.SkipError)
+		go doProcess(ctx, doneChan, taskChan, resultChan, dbs[i], i, c.TiFlashDataReplicas, c.SkipError)
 	}
 
 	go doWait(ctx, doneChan, resultChan, c.TaskCount)

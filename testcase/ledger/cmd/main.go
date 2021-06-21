@@ -33,10 +33,11 @@ import (
 )
 
 var (
-	accounts    = flag.Int("accounts", 1000000, "the number of accounts")
-	interval    = flag.Duration("interval", 2*time.Second, "check interval")
-	concurrency = flag.Int("concurrency", 200, "concurrency of worker")
-	txnMode     = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
+	accounts            = flag.Int("accounts", 1000000, "the number of accounts")
+	interval            = flag.Duration("interval", 2*time.Second, "check interval")
+	concurrency         = flag.Int("concurrency", 200, "concurrency of worker")
+	txnMode             = flag.String("txn-mode", "pessimistic", "TiDB txn mode")
+	tiflashDataReplicas = flag.Int("tiflash-data-replicas", 0, "the number of the tiflash data replica")
 )
 
 func main() {
@@ -51,10 +52,11 @@ func main() {
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
 		ClientCreator: ledger.ClientCreator{Cfg: &ledger.Config{
-			NumAccounts: *accounts,
-			Concurrency: *concurrency,
-			Interval:    *interval,
-			TxnMode:     *txnMode,
+			NumAccounts:         *accounts,
+			Concurrency:         *concurrency,
+			Interval:            *interval,
+			TxnMode:             *txnMode,
+			TiFlashDataReplicas: *tiflashDataReplicas,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,

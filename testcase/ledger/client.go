@@ -26,6 +26,7 @@ var (
 )
 
 const (
+	tableName  = `ledger_accounts`
 	stmtDrop   = `DROP TABLE IF EXISTS ledger_accounts`
 	stmtCreate = `
 CREATE TABLE IF NOT EXISTS ledger_accounts (
@@ -49,10 +50,11 @@ TRUNCATE TABLE ledger_accounts;
 
 // Config is for ledgerClient
 type Config struct {
-	NumAccounts int           `toml:"num_accounts"`
-	Interval    time.Duration `toml:"interval"`
-	Concurrency int           `toml:"concurrency"`
-	TxnMode     string        `toml:"txn_mode"`
+	NumAccounts         int           `toml:"num_accounts"`
+	Interval            time.Duration `toml:"interval"`
+	Concurrency         int           `toml:"concurrency"`
+	TxnMode             string        `toml:"txn_mode"`
+	TiFlashDataReplicas int
 }
 
 // ClientCreator creates ledgerClient
@@ -81,9 +83,11 @@ func (c *ledgerClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 		return nil
 	}
 
+	dbName := "test"
+
 	var err error
 	node := clientNodes[idx]
-	dsn := fmt.Sprintf("root@tcp(%s:%d)/test?multiStatements=true", node.IP, node.Port)
+	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s?multiStatements=true", node.IP, node.Port, dbName)
 
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)
@@ -110,6 +114,15 @@ func (c *ledgerClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes 
 	if _, err := c.db.Exec(stmtCreate); err != nil {
 		log.Fatalf("execute statement %s error %v", stmtCreate, err)
 	}
+
+	if c.TiFlashDataReplicas > 0 {
+		// create tiflash replica
+		maxSecondsBeforeTiFlashAvail := 1000
+		if err := util.SetAndWaitTiFlashReplica(ctx, db, dbName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+			return err
+		}
+	}
+
 	var wg sync.WaitGroup
 	type Job struct {
 		begin, end int
@@ -303,7 +316,7 @@ VALUES (
 }
 
 func (c *ledgerClient) startVerify(ctx context.Context, db *sql.DB) {
-	c.verify(db)
+	c.verify(ctx, db)
 
 	go func() {
 		for {
@@ -311,13 +324,13 @@ func (c *ledgerClient) startVerify(ctx context.Context, db *sql.DB) {
 			case <-ctx.Done():
 				return
 			case <-time.After(c.Interval):
-				c.verify(db)
+				c.verify(ctx, db)
 			}
 		}
 	}()
 }
 
-func (c *ledgerClient) verify(db *sql.DB) error {
+func (c *ledgerClient) verify(ctx context.Context, db *sql.DB) error {
 	start := time.Now()
 	tx, err := db.Begin()
 	if err != nil {
@@ -325,6 +338,12 @@ func (c *ledgerClient) verify(db *sql.DB) error {
 		return errors.Trace(err)
 	}
 	defer tx.Rollback()
+
+	// read from tikv
+	_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
+	if err != nil {
+		return errors.Trace(err)
+	}
 
 	var total int64
 	err = tx.QueryRow(`
@@ -343,6 +362,41 @@ select sum(balance) total from
 		atomic.StoreInt32(&c.stop, 1)
 		c.wg.Wait()
 		log.Fatalf("check total balance got %v", total)
+	}
+
+	// query with tiflash
+	if c.TiFlashDataReplicas > 0 {
+		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tiflash'")
+		if err != nil {
+			return errors.Trace(err)
+		}
+
+		readTiFlash := func() error {
+			err = tx.QueryRow(`
+select sum(balance) total from
+  (select account_id, max(causality_id) max_causality_id from ledger_accounts group by account_id) last
+  join ledger_accounts
+    on last.account_id = ledger_accounts.account_id and last.max_causality_id = ledger_accounts.causality_id`).Scan(&total)
+			if err != nil {
+				return errors.Trace(err)
+			}
+			return nil
+		}
+		err = util.RunWithRetry(ctx, retryLimit, time.Second, readTiFlash)
+		if err != nil {
+			return err
+		}
+		if total != 0 {
+			log.Errorf("check total balance tiflash got %v", total)
+			atomic.StoreInt32(&c.stop, 1)
+			c.wg.Wait()
+			log.Fatalf("check total balance tiflash got %v", total)
+		}
+
+		_, err = tx.Exec("set @@session.tidb_isolation_read_engines='tikv'")
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Infof("verify ok, cost time: %v", time.Since(start))

@@ -18,16 +18,22 @@ import (
 
 var errNotExist = errors.New("the request row does not exist")
 
+var tableNames = []string{
+	"crud_users",
+	"crud_posts",
+}
+
 // Config is for crudClient
 type Config struct {
-	DBName      string
-	UserCount   int
-	PostCount   int
-	UpdateUsers int
-	UpdatePosts int
-	Interval    time.Duration
-	RetryLimit  int
-	TxnMode     string
+	DBName              string
+	UserCount           int
+	PostCount           int
+	UpdateUsers         int
+	UpdatePosts         int
+	Interval            time.Duration
+	RetryLimit          int
+	TxnMode             string
+	TiFlashDataReplicas int
 }
 
 // ClientCreator creates crudClient
@@ -84,6 +90,15 @@ func (c *crudClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []
 	util.MustExec(c.db, "DROP TABLE IF EXISTS crud_users, crud_posts")
 	util.MustExec(c.db, "CREATE TABLE crud_users (id BIGINT PRIMARY KEY, name VARCHAR(16), posts BIGINT)")
 	util.MustExec(c.db, "CREATE TABLE crud_posts (id BIGINT PRIMARY KEY, author BIGINT, title VARCHAR(128))")
+	if c.TiFlashDataReplicas > 0 {
+		// create tiflash replica
+		maxSecondsBeforeTiFlashAvail := 1000
+		for _, tableName := range tableNames {
+			if err := util.SetAndWaitTiFlashReplica(ctx, c.db, c.DBName, tableName, c.TiFlashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -286,11 +301,32 @@ func (c *crudClient) checkAllPostCount(db *sql.DB) error {
 		}
 		return nil
 	}
+	// read from tikv
+	if _, err := db.Exec("set @@session.tidb_isolation_read_engines='tikv'"); err != nil {
+		return err
+	}
 	if err := util.RunWithRetry(context.Background(), c.RetryLimit, 10*time.Second, checkF); err != nil {
 		return errors.Trace(err)
 	}
 	if count1 != count2 {
 		log.Fatalf("[%s] total posts count not match %v != %v", c, count1, count2)
+	}
+	// query with tiflash
+	if c.TiFlashDataReplicas > 0 {
+		if _, err := db.Exec("set @@session.tidb_isolation_read_engines='tiflash'"); err != nil {
+			return err
+		}
+
+		if err := util.RunWithRetry(context.Background(), c.RetryLimit, 10*time.Second, checkF); err != nil {
+			return errors.Trace(err)
+		}
+		if count1 != count2 {
+			log.Fatalf("[%s] total posts count not match %v != %v", c, count1, count2)
+		}
+
+		if _, err := db.Exec("set @@session.tidb_isolation_read_engines='tikv'"); err != nil {
+			return err
+		}
 	}
 
 	return nil
