@@ -64,6 +64,10 @@ func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 		return fmt.Errorf("illegal txn_mode value: %s", txnMode)
 	}
 
+	if c.tiflashDataReplicas > 0 && c.readLock != "" {
+		return fmt.Errorf("readLock must be empty when tiflash data replica is larger than 0")
+	}
+
 	node := clientNodes[idx]
 	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, dbName))
 	if err != nil {
