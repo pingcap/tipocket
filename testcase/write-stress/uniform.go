@@ -46,7 +46,7 @@ func (c *uniformClient) SetUp(ctx context.Context, nodes []cluster.Node, clientN
 				if j%32 == tid {
 					sql := fmt.Sprintf("drop table if exists write_stress%d", j+1)
 					util.MustExec(c.db, sql)
-					sql = fmt.Sprintf("create table write_stress(id varchar(40) primary key clustered, col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))", j+1)
+					sql = fmt.Sprintf("create table write_stress%d(id varchar(40) primary key clustered, col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))", j+1)
 					util.MustExec(c.db, sql)
 				}
 			}
