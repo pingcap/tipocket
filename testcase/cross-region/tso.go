@@ -430,7 +430,7 @@ func (c *crossRegionClient) waitAllocator(name, dcLocation string) error {
 		}
 		if members != nil && members.TsoAllocatorLeaders != nil {
 			for dc, member := range members.TsoAllocatorLeaders {
-				if dcLocation == dc && member.Name == name {
+				if dcLocation == dc && member != nil && member.Name == name {
 					return nil
 				}
 			}
