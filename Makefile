@@ -17,8 +17,8 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 default: tidy fmt lint build
 
 build: bindir consistency isolation pocket on-dup sqllogic block-writer \
-		region-available crud \
-		read-stress follower-read stale-read pessimistic resolve-lock cdc-bank \
+		region-available crud stale-read \
+		read-stress follower-read pessimistic resolve-lock cdc-bank \
     example ttl \
 # +tipocket:scaffold:makefile_build
 
@@ -66,9 +66,6 @@ sqllogic:
 region-available:
 	$(GOBUILD) $(GOMOD) -o bin/region-available cmd/region-available/*.go
 
-stale-read:
-	$(GOBUILD) $(GOMOD) -o bin/stale-read cmd/stale-read/main.go
-
 pessimistic:
 	cd testcase/pessimistic; make build; \
 	cp bin/* ../../bin/
@@ -115,6 +112,10 @@ bank:
 
 block-writer:
 	cd testcase/block-writer; make build; \
+	cp bin/* ../../bin/
+
+stale-read:
+	cd testcase/stale-read; make build; \
 	cp bin/* ../../bin/
 
 vbank:
