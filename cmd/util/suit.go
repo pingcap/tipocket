@@ -30,7 +30,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/control"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
-	"github.com/pingcap/tipocket/pkg/loki"
+	"github.com/pingcap/tipocket/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/nemesis"
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/verify"
@@ -53,6 +53,8 @@ type Suit struct {
 	ClusterDefs cluster.Cluster
 	// Plugins
 	Plugins []control.Plugin
+	// LogsSearch client
+	LogsClient logs.SearchLogClient
 }
 
 // Run runs the suit.
@@ -65,9 +67,6 @@ func (suit *Suit) Run(ctx context.Context) {
 		}
 	)
 	sctx, cancel := context.WithCancel(ctx)
-	// get the time before creating the tidb cluster
-	// note this is just a approximate value
-	startTime := time.Now()
 
 	// Apply Matrix config
 	matrixEnabled, matrixSetupNodes, matrixCleanup, err := matrixnize(&clusterSpec)
@@ -97,20 +96,16 @@ func (suit *Suit) Run(ctx context.Context) {
 		log.Fatal("no client nodes exist")
 	}
 	if suit.Config.ClientCount == 0 {
-		log.Fatal("suit.Config.ClientCount is required")
+		suit.Config.ClientCount = 1
+	}
+	if suit.Config.RunRound == 0 {
+		suit.Config.RunRound = 1
 	}
 	// fill clientNodes
 	retClientCount := len(suit.Config.ClientNodes)
 	for len(suit.Config.ClientNodes) < suit.Config.ClientCount {
 		suit.Config.ClientNodes = append(suit.Config.ClientNodes,
 			suit.Config.ClientNodes[rand.Intn(retClientCount)])
-	}
-
-	// set loki client
-	var lokiCli *loki.Client
-	if fixture.Context.LokiAddress != "" {
-		lokiCli = loki.NewClient(startTime, fixture.Context.LokiAddress,
-			fixture.Context.LokiUsername, fixture.Context.LokiPassword)
 	}
 
 	// set plugins
@@ -124,8 +119,7 @@ func (suit *Suit) Run(ctx context.Context) {
 		suit.ClientRequestGen,
 		suit.VerifySuit,
 		suit.Plugins,
-		lokiCli,
-		fixture.Context.LogPath,
+		suit.LogsClient,
 	)
 
 	sigs := make(chan os.Signal, 1)
@@ -153,8 +147,8 @@ func (suit *Suit) Run(ctx context.Context) {
 
 func (suit *Suit) setDefaultPlugins() {
 	var defaultPlugins = []control.Plugin{
-		&control.PanicCheck{},
-		&control.LeakCheck{},
+		control.NewLeakCheck(fixture.Context.LeakCheckEatFile, fixture.Context.LogPath, fixture.Context.LeakCheckSilent),
+		control.NewPanicCheck(fixture.Context.PanicCheckSilent),
 	}
 	if len(suit.Plugins) == 0 {
 		suit.Plugins = defaultPlugins
@@ -163,7 +157,7 @@ func (suit *Suit) setDefaultPlugins() {
 
 // ClientLoopFunc defines ClientLoop func
 type ClientLoopFunc func(ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -175,7 +169,7 @@ type ClientLoopFunc func(ctx context.Context,
 // Each request costs a requestCount, and loop finishes after requestCount is used up or the `ctx` has been done.
 func OnClientLoop(
 	ctx context.Context,
-	client core.Client,
+	client core.OnScheduleClientExtensions,
 	node cluster.ClientNode,
 	proc *int64,
 	requestCount *int64,
@@ -229,7 +223,7 @@ func OnClientLoop(
 // BuildClientLoopThrottle receives a duration and build a ClientLoopFunc that sends a request every `duration` time
 func BuildClientLoopThrottle(duration time.Duration) ClientLoopFunc {
 	return func(ctx context.Context,
-		client core.Client,
+		client core.OnScheduleClientExtensions,
 		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,

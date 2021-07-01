@@ -36,15 +36,13 @@ var (
 	qosFile     = flag.String("qos-file", "./qos.log", "qos file")
 	checkerName = flag.String("checker", "consistency", "consistency or qos")
 	warehouses  = flag.Int("warehouses", 10, "tpcc warehouses")
-	asyncCommit = flag.Bool("async-commit", false, "whether to enable the async commit feature (default false)")
-	onePC       = flag.Bool("one-pc", false, "whether to enable the one-phase commit feature (default false)")
 )
 
 func main() {
 	flag.Parse()
 
 	cfg := control.Config{
-		Mode:         control.ModeSequential,
+		Mode:         control.ModeNemesisSequential,
 		ClientCount:  fixture.Context.ClientCount,
 		RequestCount: fixture.Context.RequestCount,
 		RunRound:     fixture.Context.RunRound,
@@ -58,8 +56,6 @@ func main() {
 			Warehouses: *warehouses,
 			Parts:      1,
 		},
-		AsyncCommit: *asyncCommit,
-		OnePC:       *onePC,
 	}
 	creator := clientCreator
 	var checker core.Checker
@@ -88,7 +84,7 @@ func main() {
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.BuildClientLoopThrottle(*ticker),
 		VerifySuit:       verifySuit,
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

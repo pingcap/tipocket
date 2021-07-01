@@ -36,7 +36,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -70,7 +70,7 @@ func main() {
 		},
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewDMCluster(c.Namespace, c.Namespace, c.DMConfig, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewDMCluster(c.Namespace, c.ClusterName, c.DMConfig, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

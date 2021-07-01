@@ -12,7 +12,7 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 
 ## Toolkit
 
-* [go-sqlsmith](https://github.com/pingcap/tipocket/tree/master/pkg/go-sqlsmith): go-sqlsmith is our Go implementation of sqlsmith, it's a fuzz-testing tool which can generate random MySQL-dialect SQL queries.
+* [go-sqlsmith](https://github.com/chaos-mesh/go-sqlsmith): go-sqlsmith is our Go implementation of sqlsmith, it's a fuzz-testing tool which can generate random MySQL-dialect SQL queries.
 * [go-elle](https://github.com/pingcap/tipocket/tree/master/pkg/elle): Our Go port version of jepsen-io/elle, a general transactional consistency checker for black-box databases.
 
 ## Nemesis
@@ -21,13 +21,20 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 * short_kill_tikv_1node, short_kill_pd_leader: Kill selected container, used to inject short duration of unavailable fault.
 * partition_one: Isolate single nodes
 * scaling: Scale up/down TiDB/PD/TiKV nodes randomly
-* shuffle-leader-scheduler/shuffle-region-scheduler/random-merge-scheduler: Just as there name implies.
-~~* delay_tikv, delay_pd, errno_tikv, errno_pd, mixed_tikv, mixed_pd: Inject IO-related fault.~~
+* shuffle-leader-scheduler/shuffle-region-scheduler/random-merge-scheduler: Just as there name implies
+* ~~delay_tikv, delay_pd, errno_tikv, errno_pd, mixed_tikv, mixed_pd: Inject IO-related fault.~~
 * small_skews, subcritical_skews, critical_skews, big_skews, huge_skews: Clock skew, small_skews ~100ms, subcritical_skews ~200ms, critical_skews ~250ms, big_skews ~500ms and huge_skews ~5s.
 
-## Place your test case
+## Create a new case
 
-The new test case should be placed on ./testcase directory and create a nested sub-module avoiding go module conflict mutually.
+run `make init c=$case`, for example:
+
+```sh
+$ make init c=demo
+GO15VENDOREXPERIMENT="1" CGO_ENABLED=1 GOOS= GOARCH=amd64 GO111MODULE=on go build -ldflags '-s -w -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=2021-02-05 07:13:54" -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=a70411f45605864da28a5000aff72a226a1ab27f"'  -o bin/tipocket cmd/tipocket/*.go
+bin/tipocket init -c demo
+create a new case `demo`: testcase/demo
+```
 
 ## Debug and Run
 
@@ -35,10 +42,35 @@ If you have a K8s cluster, you can use the below commands to deploy and run the 
 
 ### On a K8s cluster
 
+
+#### Access directly
+
 ```sh
 make build
-export KUBECONFIG=$(YOUR_KUBECONFIG_PATH)
-bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -purge=true -storage-class=local-path
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+
+# direct connect
+bin/${testcase} -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+```
+
+This method can't resolve the k8s cluster network accessing and DNS resolution issues, but it's useful for most cases.
+
+#### Access by a proxy on k8s cluster
+
+```bash
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
+bin/${testcase} -mysql-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
+```
+
+This method overcomes the k8s cluster network accessing problem, but one flaw is retained: DNS resolution, so proxychains-ng is recommended here (if you don't mind to install it: `brew install proxychains-ng`).
+
+```bash
+export KUBECONFIG=${YOUR_KUBECONFIG_PATH}
+kubectl apply -f hacks/debug/k8s-proxy.yaml -n ${ns}
+# edit hacks/debug/proxychains.conf, replace REPLACE_ME_WITH_REAL_NODE_IP with a k8s node ip,
+# you can connect to the k8s administrator to get a k8s node ip
+proxychains4 -f hacks/debug/proxychains.conf bin/${testcase} -mysql-proxy=socks5://${a_node_ip}:30080 -namespace=${ns} -hub=docker.io -image-version=nightly -storage-class=local-path
 ```
 
 ### On the local environment
@@ -54,13 +86,13 @@ tiup playground --kv 3
 * Specify that cluster address through `-tidb-server` `-tikv-server` and `-pd-server`
 
 ```bash
--tidb-server 127.0.0.1:4000 
+bin/${testcase} -tidb-server 127.0.0.1:4000 
 ```
 
 * If a cluster has many service addresses, you can pass a flag multiple times
 
 ```bash
--tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
+bin/${testcase} -tikv-server 127.0.0.1:20160 -tikv-server 127.0.0.1:20161
 ```
 
 ## Workloads

@@ -35,14 +35,14 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = fixture.Context.CDCConfig.LogPath
+	pocketConfig.Options.Path = "cdc.log"
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.SyncTimeout.Duration = fixture.Context.BinlogConfig.SyncTimeout
@@ -68,7 +68,7 @@ func main() {
 		},
 		NemesisGens:      waitWarmUpNemesisGens,
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewCDCCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

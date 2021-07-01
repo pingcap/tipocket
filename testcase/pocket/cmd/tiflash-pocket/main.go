@@ -33,14 +33,14 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
 	}
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = false
-	pocketConfig.Options.Path = fixture.Context.TiFlashConfig.LogPath
+	pocketConfig.Options.Path = "tiflash.log"
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
 	suit := util.Suit{
 		Config:   &cfg,
@@ -54,7 +54,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: test_infra.NewTiFlashCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewTiFlashCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

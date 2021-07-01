@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 )
@@ -21,8 +22,8 @@ const (
 	Pump Component = "pump"
 	// Drainer Component identifier
 	Drainer Component = "drainer"
-	// CDC Component identifier
-	CDC Component = "cdc"
+	// TiCDC Component identifier
+	TiCDC Component = "ticdc"
 	// DM Component identifier
 	DM Component = "dm"
 	// Monitor Component identifier
@@ -57,9 +58,23 @@ type Node struct {
 	*Client   `json:"-"`
 }
 
+// Address returns the endpoint address of node
+func (node Node) Address() string {
+	return fmt.Sprintf("%s:%d", node.IP, node.Port)
+}
+
 // String ...
 func (node Node) String() string {
-	return fmt.Sprintf("%s %s:%d", node.PodName, node.IP, node.Port)
+	sb := new(strings.Builder)
+	fmt.Fprintf(sb, "node[comp=%s,ip=%s:%d", node.Component, node.IP, node.Port)
+	if node.Namespace != "" {
+		fmt.Fprintf(sb, ",ns=%s", node.Namespace)
+	}
+	if node.PodName != "" {
+		fmt.Fprintf(sb, ",pod=%s", node.PodName)
+	}
+	fmt.Fprint(sb, "]")
+	return sb.String()
 }
 
 // ClientNode is TiDB's exposed endpoint, can be a nodeport, or downgrade cluster ip
@@ -71,14 +86,23 @@ type ClientNode struct {
 	Port        int32
 }
 
-// Address returns the endpoint address of node
+// Address returns the endpoint address of clientNode
 func (clientNode ClientNode) Address() string {
 	return fmt.Sprintf("%s:%d", clientNode.IP, clientNode.Port)
 }
 
 // String ...
 func (clientNode ClientNode) String() string {
-	return fmt.Sprintf("%s %s:%d", clientNode.ClusterName, clientNode.IP, clientNode.Port)
+	sb := new(strings.Builder)
+	fmt.Fprintf(sb, "client_node[comp=%s,ip=%s:%d", clientNode.Component, clientNode.IP, clientNode.Port)
+	if clientNode.Namespace != "" {
+		fmt.Fprintf(sb, ",ns=%s", clientNode.Namespace)
+	}
+	if clientNode.ClusterName != "" {
+		fmt.Fprintf(sb, ",cluster=%s", clientNode.ClusterName)
+	}
+	fmt.Fprint(sb, "]")
+	return sb.String()
 }
 
 // Cluster interface

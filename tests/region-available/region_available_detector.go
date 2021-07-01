@@ -100,18 +100,6 @@ func (d *regionAvailableDetector) TearDown(ctx context.Context, nodes []cluster.
 	return nil
 }
 
-func (d *regionAvailableDetector) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (d *regionAvailableDetector) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (d *regionAvailableDetector) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (d *regionAvailableDetector) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")
 	defer func() {

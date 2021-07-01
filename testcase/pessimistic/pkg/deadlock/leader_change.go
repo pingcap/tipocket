@@ -64,18 +64,6 @@ func (c *detectorClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-func (c *detectorClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *detectorClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *detectorClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *detectorClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Infof("start to test...")
 	defer func() {

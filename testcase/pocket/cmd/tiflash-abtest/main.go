@@ -20,7 +20,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -43,7 +43,7 @@ func main() {
 		Sleep:              10,
 	}}
 	c := fixture.Context
-	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Path = "abtest.log"
 	pocketConfig.Options.Concurrency = 1
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	suit := util.Suit{
@@ -58,7 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(c.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs:      test_infra.NewTiFlashABTestCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
+		ClusterDefs:      test_infra.NewTiFlashABTestCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig, c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())
 }

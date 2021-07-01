@@ -1,5 +1,5 @@
 # syntax = docker/dockerfile:1.0-experimental
-FROM golang:alpine3.10 AS build_base
+FROM golang:alpine3.13 AS build_base
 
 RUN apk add --no-cache gcc libc-dev make bash git
 

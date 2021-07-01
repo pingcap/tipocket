@@ -33,7 +33,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -41,7 +41,7 @@ func main() {
 
 	pocketConfig := config.Init()
 	pocketConfig.Options.Serialize = true
-	pocketConfig.Options.Path = fixture.Context.ABTestConfig.LogPath
+	pocketConfig.Options.Path = "abtest.log"
 	pocketConfig.Options.Concurrency = fixture.Context.ABTestConfig.Concurrency
 	pocketConfig.Options.GeneralLog = fixture.Context.ABTestConfig.GeneralLog
 	pocketConfig.Options.EnableHint = fixture.Context.EnableHint
@@ -58,7 +58,7 @@ func main() {
 		},
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
-		ClusterDefs: test_infra.NewABTestCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig,
+		ClusterDefs: test_infra.NewABTestCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig,
 			c.ABTestConfig.ClusterBConfig),
 	}
 	suit.Run(context.Background())

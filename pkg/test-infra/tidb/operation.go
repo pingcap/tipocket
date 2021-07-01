@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -50,6 +51,7 @@ const (
 	pdDataDir   = "/var/lib/pd/data"
 	// used for tikv data encryption
 	tikvEncryptionMasterKey = "c7fd825f4ec91c07067553896cb1b4ad9e32e9175e7750aa39cc1771fc8eb589"
+	plaintextProtocolHeader = "plaintext://"
 )
 
 // Ops knows how to operate TiDB
@@ -72,9 +74,12 @@ func (o *Ops) GetTiDBCluster() *v1alpha1.TidbCluster {
 	return o.tc.TidbCluster
 }
 
-func (o *Ops) getTiDBServiceByMeta(meta *metav1.ObjectMeta) (*corev1.Service, error) {
+func (o *Ops) getTiDBServiceByClusterName(ns string, clusterName string) (*corev1.Service, error) {
 	svc := &corev1.Service{
-		ObjectMeta: *meta,
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      fmt.Sprintf("%s-tidb", clusterName),
+		},
 	}
 	key, err := client.ObjectKeyFromObject(svc)
 	if err != nil {
@@ -101,30 +106,45 @@ func (o *Ops) GetNodes() ([]cluster.Node, error) {
 	for _, pod := range pods.Items {
 		r.Items = append(r.Items, pod)
 	}
-	return o.parseNodeFromPodList(r), nil
+	return o.parseNodeFromPodList(r)
 }
 
 // GetClientNodes ...
 func (o *Ops) GetClientNodes() ([]cluster.ClientNode, error) {
 	var clientNodes []cluster.ClientNode
 
-	ips, err := util.GetNodeIPs(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
-	if err != nil {
-		return clientNodes, err
-	} else if len(ips) == 0 {
-		return clientNodes, errors.New("k8s node not found")
+	if util.IsInK8sPodEnvironment() {
+		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return nil, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			Component:   "tidb",
+			ClusterName: o.name,
+			IP:          svc.Spec.ClusterIP,
+			Port:        getTiDBServicePort(svc),
+		})
+	} else {
+		// If case isn't running on k8s pod, uses nodeIP:tidb_port as clientNode for conveniently debug on local
+		ips, err := util.GetNodeIPsFromPod(o.cli, o.ns, map[string]string{"app.kubernetes.io/instance": o.name})
+		if err != nil {
+			return nil, err
+		} else if len(ips) == 0 {
+			return nil, errors.New("k8s node not found")
+		}
+		svc, err := o.getTiDBServiceByClusterName(o.ns, o.name)
+		if err != nil {
+			return clientNodes, err
+		}
+		clientNodes = append(clientNodes, cluster.ClientNode{
+			Namespace:   o.ns,
+			ClusterName: o.name,
+			Component:   "tidb",
+			IP:          ips[0],
+			Port:        getTiDBNodePort(svc),
+		})
 	}
-
-	svc, err := o.getTiDBServiceByMeta(&o.tc.Service.ObjectMeta)
-	if err != nil {
-		return clientNodes, err
-	}
-	clientNodes = append(clientNodes, cluster.ClientNode{
-		Namespace:   svc.ObjectMeta.Namespace,
-		ClusterName: svc.ObjectMeta.Labels["app.kubernetes.io/instance"],
-		IP:          ips[0], // compatible with the old code, can anyone FIXME?
-		Port:        getTiDBNodePort(svc),
-	})
 	return clientNodes, nil
 }
 
@@ -178,6 +198,8 @@ func (o *Ops) Apply() error {
 }
 
 func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) error {
+	name := tc.Name
+	namespace := tc.Namespace
 	local := tc.DeepCopy()
 	return wait.PollImmediate(5*time.Second, timeout, func() (bool, error) {
 		key, err := client.ObjectKeyFromObject(local)
@@ -197,7 +219,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		pdReady, pdDesired := local.Status.PD.StatefulSet.ReadyReplicas, local.Spec.PD.Replicas
 		if pdReady < pdDesired {
-			log.Infof("PD do not have enough ready replicas, ready: %d, desired: %d", pdReady, pdDesired)
+			log.Infof("PD[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, pdReady, pdDesired)
 			return false, nil
 		}
 		if local.Status.TiKV.StatefulSet == nil {
@@ -205,7 +227,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		tikvReady, tikvDesired := local.Status.TiKV.StatefulSet.ReadyReplicas, local.Spec.TiKV.Replicas
 		if tikvReady < tikvDesired {
-			log.Infof("TiKV do not have enough ready replicas, ready: %d, desired: %d", tikvReady, tikvDesired)
+			log.Infof("TiKV[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tikvReady, tikvDesired)
 			return false, nil
 		}
 		if local.Status.TiDB.StatefulSet == nil {
@@ -213,7 +235,7 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 		}
 		tidbReady, tidbDesired := local.Status.TiDB.StatefulSet.ReadyReplicas, local.Spec.TiDB.Replicas
 		if tidbReady < tidbDesired {
-			log.Infof("TiDB do not have enough ready replicas, ready: %d, desired: %d", tidbReady, tidbDesired)
+			log.Infof("TiDB[%s/%s] do not have enough ready replicas, ready: %d, desired: %d", namespace, name, tidbReady, tidbDesired)
 			return false, nil
 		}
 		if tc.Spec.TiFlash != nil {
@@ -231,6 +253,9 @@ func (o *Ops) waitTiDBReady(tc *v1alpha1.TidbCluster, timeout time.Duration) err
 }
 
 func (o *Ops) applyTiDBMonitor(tm *v1alpha1.TidbMonitor) error {
+	if tm == nil {
+		return nil
+	}
 	desired := tm.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(context.TODO(), o.cli, tm, func() error {
 		tm.Spec = desired.Spec
@@ -252,6 +277,9 @@ func (o *Ops) Delete() error {
 		return nil
 	})
 	g.Go(func() error {
+		if o.tc.TidbMonitor == nil {
+			return nil
+		}
 		err := o.cli.Delete(context.TODO(), o.tc.TidbMonitor)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
@@ -262,7 +290,7 @@ func (o *Ops) Delete() error {
 }
 
 func (o *Ops) applyTiDBConfigMap(tc *v1alpha1.TidbCluster, configString string) error {
-	configMap, err := getTiDBConfigMap(tc)
+	configMap, err := getTiDBConfigMap(tc, o.config)
 	if err != nil {
 		return err
 	}
@@ -379,6 +407,9 @@ func (o *Ops) GetPDMember(namespace, name string) (string, []string, error) {
 }
 
 func parseConfig(config string) (string, error) {
+	if strings.HasPrefix(config, plaintextProtocolHeader) && len(config) > len(plaintextProtocolHeader) {
+		return extractRawConfig(config), nil
+	}
 	// Parse config
 	configData, err := readFileAsString(config)
 	if err == nil {
@@ -402,6 +433,10 @@ func parseConfig(config string) (string, error) {
 		// Add more Scheme support here, like http
 	}
 	return configData, nil
+}
+
+func extractRawConfig(raw string) string {
+	return raw[len(plaintextProtocolHeader):]
 }
 
 func readFileAsString(filename string) (string, error) {
@@ -440,8 +475,8 @@ func getPDConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
-func getTiDBConfigMap(tc *v1alpha1.TidbCluster) (*corev1.ConfigMap, error) {
-	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name, Failpoints: fixture.Context.TiDBFailpoint})
+func getTiDBConfigMap(tc *v1alpha1.TidbCluster, config fixture.TiDBClusterConfig) (*corev1.ConfigMap, error) {
+	s, err := RenderTiDBStartScript(&StartScriptModel{ClusterName: tc.Name, Failpoints: config.TiDBFailPoint})
 	if err != nil {
 		return nil, err
 	}
@@ -539,21 +574,30 @@ func getDiscoveryMeta(tc *v1alpha1.TidbCluster) (metav1.ObjectMeta, label.Label)
 	return objMeta, discoveryLabel
 }
 
-func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
+func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) ([]cluster.Node, error) {
 	var nodes []cluster.Node
 	for _, pod := range pods.Items {
 		component, ok := pod.ObjectMeta.Labels["app.kubernetes.io/component"]
 		if !ok {
 			component = ""
+			continue
 		} else if component == "discovery" || component == "monitor" {
 			continue
 		}
-
+		var podIP = pod.Status.PodIP
+		// because all tidb components are managed by statefulset with a related -peer headless service
+		// we use the fqdn as the the node ip
+		if component == "tikv" || component == "tidb" || component == "pd" || component == "tiflash" || component == "ticdc" {
+			var err error
+			podIP, err = util.GetFQDNFromStsPod(&pod)
+			if err != nil {
+				return nil, err
+			}
+		}
 		nodes = append(nodes, cluster.Node{
 			Namespace: pod.ObjectMeta.Namespace,
-			// TODO use better way to retrieve version?
 			PodName:   pod.ObjectMeta.Name,
-			IP:        pod.Status.PodIP,
+			IP:        podIP,
 			Component: cluster.Component(component),
 			Port:      util.FindPort(pod.ObjectMeta.Name, component, pod.Spec.Containers),
 			Client: &cluster.Client{
@@ -565,7 +609,7 @@ func (o *Ops) parseNodeFromPodList(pods *corev1.PodList) []cluster.Node {
 			},
 		})
 	}
-	return nodes
+	return nodes, nil
 }
 
 func getNodeIP(nodeList *corev1.NodeList) string {
@@ -582,6 +626,15 @@ func getTiDBNodePort(svc *corev1.Service) int32 {
 		}
 	}
 	return 0
+}
+
+func getTiDBServicePort(svc *corev1.Service) int32 {
+	for _, port := range svc.Spec.Ports {
+		if port.Port == 4000 {
+			return port.Port
+		}
+	}
+	panic("couldn't find the tidb exposed port")
 }
 
 // GetTiDBConfig is used for Matrix-related setups

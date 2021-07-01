@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"os"
 	"strings"
 
 	"github.com/ngaut/log"
@@ -56,6 +57,8 @@ func FindPort(podName, component string, containers []corev1.Container) int32 {
 		priorityPort = 8261
 	} else if component == string(cluster.MySQL) {
 		priorityPort = 3306
+	} else if component == string(cluster.TiCDC) {
+		priorityPort = 8301
 	}
 
 	for _, port := range ports {
@@ -129,11 +132,11 @@ func chooseHub(image string) string {
 	return fixture.Context.HubAddress
 }
 
-// GetNodeIPs gets the IPs (or addresses) for nodes.
-func GetNodeIPs(cli client.Client, namespace string, labels map[string]string) ([]string, error) {
+// GetNodeIPsFromPod gets the IPs (or addresses) for nodes.
+func GetNodeIPsFromPod(cli client.Client, namespace string, podLabels map[string]string) ([]string, error) {
 	var ips []string
 	pods := &corev1.PodList{}
-	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(labels)); err != nil {
+	if err := cli.List(context.Background(), pods, client.InNamespace(namespace), client.MatchingLabels(podLabels)); err != nil {
 		return ips, err
 	}
 
@@ -155,4 +158,21 @@ func GetServiceByMeta(cli client.Client, svc *corev1.Service) (*corev1.Service, 
 		return nil, err
 	}
 	return clone, nil
+}
+
+// IsInK8sPodEnvironment checks whether in the k8s pod environment
+// refer: https://stackoverflow.com/questions/36639062/how-do-i-tell-if-my-container-is-running-inside-a-kubernetes-cluster/54130803#54130803
+func IsInK8sPodEnvironment() bool {
+	return os.Getenv("KUBERNETES_SERVICE_HOST") != ""
+}
+
+// GetFQDNFromStsPod generates the full qualified domain name from a pod of sts which has a headless(or other service kinds) service with it
+func GetFQDNFromStsPod(pod *corev1.Pod) (string, error) {
+	if pod.Spec.Hostname == "" {
+		return "", fmt.Errorf("expect non-empty .spec.hostname of %s/%s", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	}
+	if pod.Spec.Subdomain == "" {
+		return "", fmt.Errorf("expect non-empty .spec.subdomain of %s/%s", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
+	}
+	return fmt.Sprintf("%s.%s.%s.svc", pod.Spec.Hostname, pod.Spec.Subdomain, pod.Namespace), nil
 }

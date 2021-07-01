@@ -206,10 +206,6 @@ func (c *bankClient) DumpState(ctx context.Context) (interface{}, error) {
 	return balances, nil
 }
 
-func (c *bankClient) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
-	return nil
-}
-
 // BankClientCreator creates a bank test client for tidb.
 type BankClientCreator struct {
 }

@@ -41,7 +41,6 @@ type StorageType string
 
 type fixtureContext struct {
 	// Control config
-	Mode         int
 	ClientCount  int
 	Nemesis      string
 	RunRound     int
@@ -50,6 +49,7 @@ type fixtureContext struct {
 	HistoryFile  string
 	// Test-infra
 	Namespace                string
+	ClusterName              string
 	WaitClusterReadyDuration time.Duration
 	Purge                    bool
 	DeleteNS                 bool
@@ -65,10 +65,6 @@ type fixtureContext struct {
 	DMConfig                 DMConfig
 	TiFlashConfig            TiFlashConfig
 	ABTestConfig             ABTestConfig
-	// Loki
-	LokiAddress  string
-	LokiUsername string
-	LokiPassword string
 	// Other
 	pprofAddr  string
 	EnableHint bool
@@ -76,10 +72,19 @@ type fixtureContext struct {
 	// Plugins
 	LeakCheckEatFile string
 	LeakCheckSilent  bool
-	// failpoints
-	TiDBFailpoint string
+	// Only warning if panic found?
+	PanicCheckSilent bool
 
 	ReplicaRead string
+
+	// mysql proxy, for example: socks://address:port
+	MySQLProxy string
+}
+
+// ClusterRef references a TidbCluster
+type ClusterRef struct {
+	Name      string
+	Namespace string
 }
 
 type addressArrayFlags []string
@@ -120,6 +125,7 @@ type TiDBClusterConfig struct {
 	TiKVImage    string
 	PDImage      string
 	TiFlashImage string
+	TiCDCImage   string
 
 	// configurations
 	TiDBConfig string
@@ -133,6 +139,7 @@ type TiDBClusterConfig struct {
 	TiKVReplicas    int
 	PDReplicas      int
 	TiFlashReplicas int
+	TiCDCReplicas   int
 
 	// Database address
 	TiDBAddr addressArrayFlags
@@ -140,6 +147,17 @@ type TiDBClusterConfig struct {
 	PDAddr   addressArrayFlags
 
 	MatrixConfig MatrixConfig
+
+	// TiDB fail-points value
+	TiDBFailPoint string
+
+	PDStorageClassName      string
+	TiKVStorageClassName    string
+	TiFlashStorageClassName string
+	LogStorageClassName     string
+
+	// If Ref is defined, the target TidbCluster will add it into Spec.PDAddresses
+	Ref *ClusterRef
 }
 
 // Context ...
@@ -245,7 +263,6 @@ func printVersion() {
 func init() {
 	printVersion()
 
-	flag.IntVar(&Context.Mode, "mode", 0, "control mode, 0: mixed, 1: sequential mode, 2: self scheduled mode")
 	flag.IntVar(&Context.ClientCount, "client", 5, "client count")
 	// (TODO:yeya24) Now nemesis option is only for one TiDBCluster. If we want to add nemesis in AB Test,
 	// we can add another option for ClusterB.
@@ -256,6 +273,7 @@ func init() {
 	flag.StringVar(&Context.HistoryFile, "history", "./history.log", "history file record client operation")
 
 	flag.StringVar(&Context.Namespace, "namespace", "", "test namespace")
+	flag.StringVar(&Context.ClusterName, "cluster-name", "", "test cluster name")
 	flag.StringVar(&Context.MySQLVersion, "mysql-version", "5.6", "Default mysql version")
 	flag.StringVar(&Context.DockerRepository, "repository", "pingcap", "repo name, default is pingcap")
 	flag.StringVar(&Context.LocalVolumeStorageClass, "storage-class", "local-path", "storage class name")
@@ -265,10 +283,6 @@ func init() {
 
 	flag.BoolVar(&Context.Purge, "purge", false, "purge the whole cluster on success")
 	flag.BoolVar(&Context.DeleteNS, "delNS", false, "delete the deployed namespace")
-
-	flag.StringVar(&Context.LokiAddress, "loki-addr", "", "loki address. If empty then don't query logs from loki.")
-	flag.StringVar(&Context.LokiUsername, "loki-username", "", "loki username. Needed when basic auth is configured in loki")
-	flag.StringVar(&Context.LokiPassword, "loki-password", "", "loki password. Needed when basic auth is configured in loki")
 
 	flag.StringVar(&Context.HubAddress, "hub", "", "hub address, default to docker hub")
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBHubAddress, "tidb-hub", "", "tidb hub address, will overwrite -hub")
@@ -281,15 +295,19 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.TiKVImage, "tikv-image", "", "tikv image")
 	flag.StringVar(&Context.TiDBClusterConfig.PDImage, "pd-image", "", "pd image")
 	flag.StringVar(&Context.TiDBClusterConfig.TiFlashImage, "tiflash-image", "", "tiflash image")
+	flag.StringVar(&Context.TiDBClusterConfig.TiCDCImage, "ticdc-image", "", "cdc image")
 
 	flag.StringVar(&Context.TiDBClusterConfig.TiDBConfig, "tidb-config", "", "path of tidb config file (cluster A in abtest case)")
-	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "", "path of tikv config file (cluster A in abtest case)")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVConfig, "tikv-config", "base64://W3N0b3JhZ2VdCnJlc2VydmUtc3BhY2UgPSAw", "path of tikv config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PDConfig, "pd-config", "", "path of pd config file (cluster A in abtest case)")
 	flag.StringVar(&Context.TiDBClusterConfig.PrepareSQL, "prepare-sql", "", "SQLs that run after the TiDB cluster is created (cluster A in abtest case)")
 	flag.IntVar(&Context.TiDBClusterConfig.TiDBReplicas, "tidb-replicas", 2, "number of tidb replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiKVReplicas, "tikv-replicas", 3, "number of tikv replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.PDReplicas, "pd-replicas", 3, "number of pd replicas")
 	flag.IntVar(&Context.TiDBClusterConfig.TiFlashReplicas, "tiflash-replicas", 0, "number of tiflash replicas, set 0 to disable tiflash")
+
+	// failpoint
+	flag.StringVar(&Context.TiDBClusterConfig.TiDBFailPoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
 
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.ImageVersion, "abtest.image-version", "", "specify version for cluster B")
 	flag.StringVar(&Context.ABTestConfig.ClusterBConfig.TiDBConfig, "abtest.tidb-config", "", "tidb config file for cluster B")
@@ -299,18 +317,16 @@ func init() {
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiKVReplicas, "abtest.tikv-replicas", 3, "number of tikv replicas for cluster B")
 	flag.IntVar(&Context.ABTestConfig.ClusterBConfig.TiFlashReplicas, "abtest.tiflash-replicas", 0, "number of tiflash replicas for cluster B, set 0 to disable tiflash")
 
-	flag.StringVar(&Context.ABTestConfig.LogPath, "abtest.log", "", "log path for abtest, default to stdout")
 	flag.IntVar(&Context.ABTestConfig.Concurrency, "abtest.concurrency", 3, "test concurrency, parallel session number")
 	flag.BoolVar(&Context.ABTestConfig.GeneralLog, "abtest.general-log", false, "enable general log in TiDB")
 
-	flag.StringVar(&Context.CDCConfig.Image, "cdc.version", "", `overwrite "-image-version" flag for CDC`)
-	flag.StringVar(&Context.CDCConfig.LogPath, "cdc.log", "", "log path for cdc test, default to stdout")
 	flag.BoolVar(&Context.CDCConfig.EnableKafka, "cdc.enable-kafka", false, "enable kafka sink")
 	flag.StringVar(&Context.CDCConfig.KafkaConsumerImage, "cdc.kafka-consumer-image", "docker.io/pingcap/ticdc-kafka:nightly", "the kafka consumer image to use when kafka is enabled")
 	flag.StringVar(&Context.CDCConfig.LogLevel, "cdc.log-level", "debug", "log level for cdc test, default debug")
 	flag.StringVar(&Context.CDCConfig.Timezone, "cdc.timezone", "UTC", "timezone of cdc cluster, default UTC")
 	flag.StringVar(&Context.CDCConfig.SortEngine, "cdc.sort-engine", "memory", "sort engine")
-	flag.StringVar(&Context.CDCConfig.SortDir, "cdc.sort-dir", "/tmp/sort_cache", "file sort dir")
+	flag.StringVar(&Context.CDCConfig.SortDir, "cdc.sort-dir", "/tmp/cdc/sort_cache", "file sort dir")
+	flag.StringVar(&Context.CDCConfig.LogFile, "cdc.log-file", "/tmp/cdc/cdc.log", "cdc log file")
 
 	flag.StringVar(&Context.DMConfig.MySQLConf.Version, "dm.mysql.version", "5.7", "MySQL version used in DM-pocket")
 	flag.StringVar(&Context.DMConfig.MySQLConf.StorageSize, "dm.mysql.storage-size", "10Gi", "request storage size for MySQL")
@@ -320,21 +336,18 @@ func init() {
 	flag.IntVar(&Context.DMConfig.MasterReplica, "dm.master-replicas", 3, "number of DM-master replicas")
 	flag.IntVar(&Context.DMConfig.WorkerReplica, "dm.worker-replicas", 3, "number of DM-worker replicas")
 
-	flag.StringVar(&Context.TiFlashConfig.LogPath, "tiflash.log", "", "log path for TiFlash test, default to stdout")
-
 	flag.BoolVar(&Context.BinlogConfig.EnableRelayLog, "relay-log", false, "if enable relay log")
 	flag.StringVar(&Context.BinlogConfig.Image, "binlog-image", "", `overwrite "-image-version" flag for drainer`)
 	flag.DurationVar(&Context.BinlogConfig.SyncTimeout, "binlog.sync-timeout", time.Hour, "binlog-like job's sync timeout")
 
 	flag.BoolVar(&Context.EnableHint, "enable-hint", false, "enable to generate sql hint")
 
-	flag.StringVar(&Context.LogPath, "log-path", "/var/run/tipocket-logs", "TiDB cluster logs path")
+	flag.StringVar(&Context.LogPath, "log-path", "tipocket-logs", "tipocket logs path")
 
 	// plugins
 	flag.StringVar(&Context.LeakCheckEatFile, "plugin.leak.eat", "", "leak check eat file path")
 	flag.BoolVar(&Context.LeakCheckSilent, "plugin.leak.silent", true, "leak check silent mode")
-	// failpoint
-	flag.StringVar(&Context.TiDBFailpoint, "failpoint.tidb", "github.com/pingcap/tidb/server/enableTestAPI=return", "TiDB failpoints")
+	flag.BoolVar(&Context.PanicCheckSilent, "plugin.panic.silent", false, "panic check silent mode")
 
 	flag.StringVar(&Context.ReplicaRead, "replica-read", "", "replica read target [leader, follower, leader-and-follower]")
 
@@ -348,6 +361,11 @@ func init() {
 	flag.StringVar(&Context.TiDBClusterConfig.MatrixConfig.MatrixPDConfig, "matrix-pd", "", "PD config generated by Matrix")
 	flag.Var(&Context.TiDBClusterConfig.MatrixConfig.MatrixSQLConfig, "matrix-sql", "SQL files generated by Matrix")
 	flag.BoolVar(&Context.TiDBClusterConfig.MatrixConfig.NoCleanup, "no-cleanup-matrix", false, "Do not cleanup Matrix context after initialized")
+	flag.StringVar(&Context.TiDBClusterConfig.PDStorageClassName, "pd-storage-class", "", "PD dedicated storage class")
+	flag.StringVar(&Context.TiDBClusterConfig.TiKVStorageClassName, "tikv-storage-class", "", "TiKV dedicated storage class")
+	flag.StringVar(&Context.TiDBClusterConfig.TiFlashStorageClassName, "tiflash-storage-class", "", "TiFlash dedicated storage class")
+	flag.StringVar(&Context.TiDBClusterConfig.LogStorageClassName, "log-storage-class", "", "log dedicated storage class")
+	flag.StringVar(&Context.MySQLProxy, "mysql-proxy", "", "mysql proxy is just like HTTP(S)_PROXY, only uses for MySQL connection now")
 
 	log.SetHighlighting(false)
 	go func() {

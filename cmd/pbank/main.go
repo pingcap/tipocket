@@ -44,7 +44,7 @@ func main() {
 		parser  = tidb.BankParser()
 		model   = tidb.BankModel()
 		cfg     = control.Config{
-			Mode:         control.Mode(fixture.Context.Mode),
+			Mode:         control.ModeOnSchedule,
 			ClientCount:  fixture.Context.ClientCount,
 			RequestCount: fixture.Context.RequestCount,
 			RunRound:     fixture.Context.RunRound,
@@ -100,7 +100,7 @@ func main() {
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

@@ -40,7 +40,7 @@ var (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -56,7 +56,7 @@ func main() {
 			LocalMode:     *localMode,
 		}},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace,
+		ClusterDefs: test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName,
 			fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())

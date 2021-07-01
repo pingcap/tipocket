@@ -32,7 +32,7 @@ import (
 func main() {
 	flag.Parse()
 	cfg := control.Config{
-		Mode:        control.ModeSelfScheduled,
+		Mode:        control.ModeStandard,
 		ClientCount: 1,
 		RunTime:     fixture.Context.RunTime,
 		RunRound:    1,
@@ -43,7 +43,7 @@ func main() {
 		Provider:      cluster.NewDefaultClusterProvider(),
 		ClientCreator: titan.CaseCreator{},
 		NemesisGens:   util.ParseNemesisGenerators(fixture.Context.Nemesis),
-		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.Namespace, c.TiDBClusterConfig),
+		ClusterDefs:   test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

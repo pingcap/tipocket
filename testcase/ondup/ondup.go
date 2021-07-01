@@ -86,18 +86,6 @@ func (c *ondupClient) TearDown(ctx context.Context, nodes []cluster.ClientNode, 
 	return nil
 }
 
-func (c *ondupClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-func (c *ondupClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-func (c *ondupClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 func (c *ondupClient) Start(ctx context.Context, cfg interface{}, clientNode []cluster.ClientNode) error {
 	childCtx, cancelFunc := context.WithCancel(ctx)
 	defer cancelFunc()

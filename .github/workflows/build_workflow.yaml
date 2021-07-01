@@ -1,0 +1,18 @@
+name: "Build-workflow"
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.16.x
+      - uses: actions/checkout@v2
+
+      - name: "build workflow"
+        run: |
+          export PATH=${PATH}:`go env GOPATH`/bin
+          make clean_workflow
+          make build_workflow
+          make build_cron_workflow

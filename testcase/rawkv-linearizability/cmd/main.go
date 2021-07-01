@@ -41,7 +41,7 @@ func main() {
 		Parser:  rawkv_linearizability.RawkvParser(),
 	}
 	cfg := control.Config{
-		Mode:         control.Mode(control.ModeMixed),
+		Mode:         control.Mode(control.ModeOnSchedule),
 		ClientCount:  fixture.Context.ClientCount,
 		RequestCount: fixture.Context.RequestCount,
 		RunRound:     fixture.Context.RunRound,
@@ -59,7 +59,6 @@ func main() {
 	suit := util.Suit{
 		Config:   &cfg,
 		Provider: cluster.NewDefaultClusterProvider(),
-		//Provider: cluster.NewLocalClusterProvisioner([]string{"127.0.0.1:4000"}, []string{"127.0.0.1:2379"}, kvs),
 		ClientCreator: rawkv_linearizability.RawkvClientCreator{
 			Cfg: rawkv_linearizability.Config{
 				KeyStart:        *keyStart,
@@ -72,7 +71,7 @@ func main() {
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit:       verifySuit,
-		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.Namespace, fixture.Context.TiDBClusterConfig),
+		ClusterDefs:      test_infra.NewDefaultCluster(fixture.Context.Namespace, fixture.Context.ClusterName, fixture.Context.TiDBClusterConfig),
 	}
 	suit.Run(context.Background())
 }

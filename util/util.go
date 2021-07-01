@@ -225,3 +225,36 @@ func RandomlyChangeReplicaRead(job, replicaRead string, db *sql.DB) {
 		log.Info("Do not change replica read")
 	}
 }
+
+// SetAndWaitTiFlashReplica create tiflash replicas for a table and wait it to be available or timeout
+func SetAndWaitTiFlashReplica(ctx context.Context, db *sql.DB, dbName, tableName string, replicaCount, retryCount int) error {
+	var sql string
+	sql = fmt.Sprintf("alter table %s.%s set tiflash replica %d", dbName, tableName, replicaCount)
+	log.Infof("begin to execute %s", sql)
+	MustExec(db, sql)
+
+	err := RunWithRetry(ctx, retryCount, time.Second, func() error {
+		instance, available := "", -1
+		if err := db.QueryRow("select INSTANCE FROM information_schema.cluster_info where type='tidb'").Scan(&instance); err != nil {
+			return err
+		}
+		query := fmt.Sprintf("select AVAILABLE from information_schema.tiflash_replica where "+
+			"TABLE_SCHEMA='%s' and TABLE_NAME='%s'", dbName, tableName)
+		log.Infof(query)
+		if err := db.QueryRow(query).Scan(&available); err != nil {
+			return err
+		}
+		log.Infof("instance = %v, available = %v", instance, available)
+		if available == 0 {
+			return errors.Errorf("TiFlash replica not available")
+		}
+		if available == -1 {
+			return errors.Errorf("query TiFlash replica status failed.")
+		}
+		return nil
+	})
+	if err != nil {
+		return errors.Errorf("wait TiFlash replica of %s.%s error after %d seconds: %v", dbName, tableName, retryCount, err)
+	}
+	return nil
+}

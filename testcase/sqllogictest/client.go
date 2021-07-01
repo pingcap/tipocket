@@ -31,12 +31,13 @@ import (
 
 // Config is for sqllogicClient
 type Config struct {
-	SkipError   bool
-	TaskCount   int
-	CaseURL     string
-	TestDir     string
-	ReplicaRead string
-	DbName      string
+	SkipError           bool
+	TaskCount           int
+	CaseURL             string
+	TestDir             string
+	ReplicaRead         string
+	DbName              string
+	TiFlashDataReplicas int
 }
 
 type sqllogicClient struct {
@@ -102,21 +103,6 @@ func (c *sqllogicClient) TearDown(ctx context.Context, nodes []cluster.ClientNod
 	return nil
 }
 
-// Invoke does nothing
-func (c *sqllogicClient) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-// NextRequest does nothing
-func (c *sqllogicClient) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState does nothing
-func (c *sqllogicClient) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
-
 // Start starts test
 func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes []cluster.ClientNode) error {
 	startTime := time.Now()
@@ -149,7 +135,7 @@ func (c *sqllogicClient) Start(ctx context.Context, _ interface{}, clientNodes [
 	go addTasks(ctx, fileNames, taskChan)
 
 	for i := 0; i < c.TaskCount; i++ {
-		go doProcess(ctx, doneChan, taskChan, resultChan, dbs[i], i, c.SkipError)
+		go doProcess(ctx, doneChan, taskChan, resultChan, dbs[i], i, c.TiFlashDataReplicas, c.SkipError)
 	}
 
 	go doWait(ctx, doneChan, resultChan, c.TaskCount)

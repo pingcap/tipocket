@@ -74,11 +74,16 @@ func (t *Ops) GetNodes() ([]cluster.Node, error) {
 	if err != nil {
 		return []cluster.Node{}, err
 	}
-
+	// because the drainer is managed by statefulset with a headless service,
+	// we use the fqdn as the node ip
+	fqdn, err := util.GetFQDNFromStsPod(pod)
+	if err != nil {
+		return nil, err
+	}
 	return []cluster.Node{{
 		Namespace: pod.ObjectMeta.Namespace,
 		PodName:   pod.ObjectMeta.Name,
-		IP:        pod.Status.PodIP,
+		IP:        fqdn,
 		Component: cluster.Drainer,
 		Port:      util.FindPort(pod.ObjectMeta.Name, string(cluster.Drainer), pod.Spec.Containers),
 	}}, nil

@@ -67,6 +67,11 @@ func (f *follower) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cl
 	return nil
 }
 
+// TearDown
+func (f *follower) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
+	return nil
+}
+
 // Start
 func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("start to test...")
@@ -105,26 +110,6 @@ func (f *follower) Start(ctx context.Context, cfg interface{}, clientNodes []clu
 	}
 
 	return nil
-}
-
-// TearDown
-func (f *follower) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
-	return nil
-}
-
-// Invoke
-func (f *follower) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-// NextRequest
-func (f *follower) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState
-func (f *follower) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
 }
 
 func testSwitchFollowerRead(f *follower) {

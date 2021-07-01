@@ -3,7 +3,6 @@ package control
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -15,7 +14,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/pkg/history"
-	"github.com/pingcap/tipocket/pkg/loki"
+	"github.com/pingcap/tipocket/pkg/logs"
 	"github.com/pingcap/tipocket/pkg/verify"
 	"github.com/pingcap/tipocket/util"
 
@@ -36,7 +35,7 @@ type Controller struct {
 	nemesisGenerators core.NemesisGenerators
 
 	clientRequestGenerator func(ctx context.Context,
-		client core.Client,
+		client core.OnScheduleClientExtensions,
 		node cluster.ClientNode,
 		proc *int64,
 		requestCount *int64,
@@ -48,12 +47,9 @@ type Controller struct {
 	proc         int64
 	requestCount int64
 
-	// TODO(yeya24): make log service an interface
-	lokiClient *loki.Client
-	logPath    string
-
-	suit    verify.Suit
-	plugins []Plugin
+	suit       verify.Suit
+	plugins    []Plugin
+	logsClient logs.SearchLogClient
 }
 
 // NewController creates a controller.
@@ -62,11 +58,10 @@ func NewController(
 	cfg *Config,
 	clientCreator core.ClientCreator,
 	nemesisGenerators core.NemesisGenerators,
-	clientRequestGenerator func(ctx context.Context, client core.Client, node cluster.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
+	clientRequestGenerator func(ctx context.Context, client core.OnScheduleClientExtensions, node cluster.ClientNode, proc *int64, requestCount *int64, recorder *history.Recorder),
 	verifySuit verify.Suit,
 	plugins []Plugin,
-	lokiCli *loki.Client,
-	logPath string,
+	logsClient logs.SearchLogClient,
 ) *Controller {
 	if db := core.GetDB(cfg.DB); db == nil {
 		log.Fatalf("database %s is not registered", cfg.DB)
@@ -77,20 +72,8 @@ func NewController(
 	c.nemesisGenerators = nemesisGenerators
 	c.clientRequestGenerator = clientRequestGenerator
 	c.suit = verifySuit
-	c.lokiClient = lokiCli
-	c.logPath = logPath
 	c.plugins = plugins
-
-	// create the log artifact dir
-	if _, err := os.Stat(c.logPath); err != nil {
-		if os.IsNotExist(err) {
-			if err := os.Mkdir(c.logPath, os.ModePerm); err != nil {
-				log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
-			}
-		} else {
-			log.Fatalf("failed to create directory %s error is %v", c.logPath, err)
-		}
-	}
+	c.logsClient = logsClient
 
 	for _, node := range c.cfg.ClientNodes {
 		c.clients = append(c.clients, clientCreator.Create(node))
@@ -107,12 +90,12 @@ func (c *Controller) Close() {
 // Run runs the controller.
 func (c *Controller) Run() {
 	switch c.cfg.Mode {
-	case ModeMixed:
-		c.RunMixed()
-	case ModeSequential:
+	case ModeStandard:
+		c.TransferControlToClient()
+	case ModeOnSchedule:
+		c.RunClientOnSchedule()
+	case ModeNemesisSequential:
 		c.RunWithNemesisSequential()
-	case ModeSelfScheduled:
-		c.RunSelfScheduled()
 	default:
 		log.Fatalf("unhandled mode %s", c.cfg.Mode)
 	}
@@ -124,9 +107,9 @@ func (c *Controller) setUpPlugin() {
 	}
 }
 
-// RunMixed runs workload round by round, with nemesis injected seamlessly
+// RunClientOnSchedule runs workload round by round, with nemesis injected seamlessly
 // Nemesis and workload are running concurrently, nemesis won't pause when one round of workload is finished
-func (c *Controller) RunMixed() {
+func (c *Controller) RunClientOnSchedule() {
 	c.setUpDB()
 	c.setUpClient()
 	c.setUpPlugin()
@@ -166,7 +149,7 @@ ROUND:
 		for i := 0; i < n; i++ {
 			go func(i int) {
 				defer clientWg.Done()
-				c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
+				c.clientRequestGenerator(ctx, c.clients[i].(core.OnScheduleClientExtensions), c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 			}(i)
 		}
 
@@ -235,7 +218,7 @@ ENTRY:
 			for i := 0; i < n; i++ {
 				go func(i int) {
 					defer clientWg.Done()
-					c.clientRequestGenerator(ctx, c.clients[i], c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
+					c.clientRequestGenerator(ctx, c.clients[i].(core.OnScheduleClientExtensions), c.cfg.ClientNodes[i], &proc, &requestCount, recorder)
 				}(i)
 			}
 
@@ -269,8 +252,8 @@ ENTRY:
 	c.tearDownDB()
 }
 
-// RunSelfScheduled runs the controller with self scheduled
-func (c *Controller) RunSelfScheduled() {
+// TransferControlToClient transfer control to client
+func (c *Controller) TransferControlToClient() {
 	c.setUpDB()
 	c.setUpClient()
 	c.setUpPlugin()
@@ -295,7 +278,7 @@ func (c *Controller) RunSelfScheduled() {
 		ii := i
 		g.Go(func() error {
 			log.Infof("run client %d...", ii)
-			return client.Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
+			return client.(core.StandardClientExtensions).Start(nCtx, c.cfg.ClientConfig, c.cfg.ClientNodes)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -395,7 +378,7 @@ func (c *Controller) dumpState(ctx context.Context, recorder *history.Recorder) 
 		var err error
 		for _, client := range c.clients {
 			for _, node := range c.cfg.ClientNodes {
-				sum, err = client.DumpState(ctx)
+				sum, err = client.(core.OnScheduleClientExtensions).DumpState(ctx)
 				if err == nil {
 					log.Infof("begin to dump on node %s", node)
 					recorder.RecordState(sum)

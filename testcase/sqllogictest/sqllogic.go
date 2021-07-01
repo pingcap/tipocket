@@ -99,6 +99,9 @@ type value struct {
 var (
 	// Regexp for query result hash result like "15 values hashing to f7f59b0d893d8b24a77e45c84e33a4dc"
 	resultHashRE = regexp.MustCompile(`^(\d+)\s+values?\s+hashing\s+to\s+([0-9A-Fa-f]+)$`)
+	// In case there are multi-line statement or some fields like VARCHAR(10)
+	createTableRE = regexp.MustCompile(`^CREATE TABLE (\w+)\(.+`)
+	createIndexRE = regexp.MustCompile(`^\s*CREATE\s+(UNIQUE\s+)?INDEX`)
 )
 
 func createDatabases(num int, host string, user string, password string, replicaMode string) []*sql.DB {
@@ -139,7 +142,7 @@ func addTasks(ctx context.Context, tasks []string, taskChan chan string) {
 }
 
 func doProcess(ctx context.Context, doneChan chan struct{}, taskChan chan string, resultChan chan *result,
-	db *sql.DB, runid int, skipError bool) {
+	db *sql.DB, runid int, tiFlashDataReplicas int, skipError bool) {
 	for task := range taskChan {
 		t := &tester{
 			labelHashes: make(map[string]string),
@@ -147,7 +150,7 @@ func doProcess(ctx context.Context, doneChan chan struct{}, taskChan chan string
 		}
 
 		log.Infof("[sqllogic] run %s", task)
-		t.run(ctx, task, resultChan, runid, skipError)
+		t.run(ctx, task, resultChan, runid, tiFlashDataReplicas, skipError)
 		select {
 		case <-ctx.Done():
 			return
@@ -193,7 +196,7 @@ func (t *tester) prepare(ctx context.Context, runid int, task string) {
 
 }
 
-func (t *tester) run(ctx context.Context, path string, resultChan chan *result, runid int, skipError bool) {
+func (t *tester) run(ctx context.Context, path string, resultChan chan *result, runid int, tiFlashDataReplicas int, skipError bool) {
 	var err error
 
 	file, err := os.Open(path)
@@ -244,7 +247,7 @@ LOOP:
 				fmt.Fprintln(&buf, line)
 			}
 			stmt.sql = strings.TrimSpace(buf.String())
-			if err := t.execStatement(ctx, stmt); err != nil {
+			if err := t.execStatement(ctx, stmt, fmt.Sprintf("sqllogic_test_%d", runid), tiFlashDataReplicas); err != nil {
 				sendFatalResult(resultChan, err.Error())
 				return
 			}
@@ -315,12 +318,26 @@ LOOP:
 					q.expectedValues = len(q.expectedResults)
 				}
 			}
+			if tiFlashDataReplicas > 0 {
+				if _, err := t.db.Exec("set @@session.tidb_isolation_read_engines='tiflash'"); err != nil {
+					log.Warnf("[sqllogic] meet error %s", err)
+					return
+				}
+			}
 
 			if err := t.execQuery(ctx, q); err != nil {
 				if skipError {
 					sendErrorResult(resultChan, err.Error())
 				} else {
 					sendFatalResult(resultChan, err.Error())
+					return
+				}
+			}
+
+			// restore `tidb_isolation_read_engines`
+			if tiFlashDataReplicas > 0 {
+				if _, err := t.db.Exec("set @@session.tidb_isolation_read_engines='tikv,tiflash'"); err != nil {
+					log.Warnf("[sqllogic] meet error %s", err)
 					return
 				}
 			}
@@ -394,7 +411,7 @@ func (l *lineScanner) Scan() bool {
 	return ok
 }
 
-func (t *tester) execStatement(ctx context.Context, stmt statement) error {
+func (t *tester) execStatement(ctx context.Context, stmt statement, dbName string, tiFlashDataReplicas int) error {
 	defer func() {
 		var err error
 		if e := recover(); e != nil {
@@ -409,6 +426,12 @@ func (t *tester) execStatement(ctx context.Context, stmt statement) error {
 			log.Errorf("[sqllogic] PANIC for %s:[%s] %v\n%s", stmt.pos, stmt.sql, err, debug.Stack())
 		}
 	}()
+
+	// skip create index statement due to it is useless in TiFlash and it will spend much time.
+	if tiFlashDataReplicas > 0 && createIndexRE.FindStringSubmatch(strings.ToTitle(stmt.sql)) != nil {
+		log.Infof("[sqllogic] skip sql %s", stmt.sql)
+		return nil
+	}
 
 	err := util.RunWithRetry(ctx, dbTryNumber, 3, func() error {
 		_, err := t.db.ExecContext(ctx, stmt.sql)
@@ -430,6 +453,16 @@ func (t *tester) execStatement(ctx context.Context, stmt statement) error {
 			return nil
 		}
 		return fmt.Errorf("%s: expected success, but found %v", stmt.pos, err)
+	}
+
+	if tiFlashDataReplicas > 0 {
+		// grep create table statement and set TiFlash replica
+		// replace '\n' with ' ' so that we can get table name for multi-line create statement
+		if m := createTableRE.FindStringSubmatch(strings.Replace(stmt.sql, "\n", " ", -1)); m != nil {
+			if err := util.SetAndWaitTiFlashReplica(ctx, t.db, dbName, m[1], tiFlashDataReplicas, 3*dbTryNumber); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

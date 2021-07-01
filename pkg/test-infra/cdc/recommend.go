@@ -28,133 +28,31 @@ import (
 
 // CDC defines the configuration for running on Kubernetes
 type CDC struct {
-	*appsv1.StatefulSet
-	*corev1.Service
 	*batchv1.Job
 }
 
 // RecommendedCDCCluster creates cluster with CDC
-func newCDC(ns, name string) *CDC {
+func newCDC(ns, clusterName, upstreamClusterName, downstreamClusterName string) *CDC {
 	var (
-		cdcName        = fmt.Sprintf("%s-cdc", name)
-		cdcJobName     = fmt.Sprintf("%s-job", cdcName)
-		upstreamPDAddr = fmt.Sprintf("%s-upstream-pd", name)
-		downstreamDB   = fmt.Sprintf("%s-downstream-tidb", name)
-		cdcLabels      = map[string]string{
-			"app.kubernetes.io/name":      "tidb-cluster",
-			"app.kubernetes.io/component": "cdc",
-			"app.kubernetes.io/instance":  cdcName,
-		}
-		sinkURI  string
-		logLevel = fixture.Context.CDCConfig.LogLevel
-		timezone = fixture.Context.CDCConfig.Timezone
+		cdcJobName     = fmt.Sprintf("%s-job", clusterName)
+		upstreamPDAddr = fmt.Sprintf("%s-pd", upstreamClusterName)
+		downstreamDB   = fmt.Sprintf("%s-tidb", downstreamClusterName)
+		sinkURI        string
 	)
 	if fixture.Context.CDCConfig.EnableKafka {
-		kafkaName := fmt.Sprintf("%s-kafka", name)
+		kafkaName := fmt.Sprintf("%s-kafka", clusterName)
 		sinkURI = fmt.Sprintf("kafka://%s:9092/cdc-test?partition-num=6&max-message-bytes=67108864&replication-factor=1", kafkaName)
 	} else {
 		sinkURI = fmt.Sprintf("mysql://root@%s:4000/", downstreamDB)
 	}
-	logVol := corev1.VolumeMount{
-		Name:      "log",
-		MountPath: "/var/log/cdc",
-	}
-
 	return &CDC{
-		Service: &corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      cdcName,
-				Namespace: ns,
-				Labels:    cdcLabels,
-			},
-			Spec: corev1.ServiceSpec{
-				Type: corev1.ServiceTypeClusterIP,
-				Ports: []corev1.ServicePort{
-					{
-						Name: "http",
-						Port: 8300,
-					},
-				},
-				ClusterIP: corev1.ClusterIPNone,
-				Selector:  cdcLabels,
-			},
-		},
-		StatefulSet: &appsv1.StatefulSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      cdcName,
-				Namespace: ns,
-				Labels:    cdcLabels,
-			},
-			Spec: appsv1.StatefulSetSpec{
-				ServiceName: cdcName,
-				Replicas:    pointer.Int32Ptr(3),
-				Selector:    &metav1.LabelSelector{MatchLabels: cdcLabels},
-				Template: corev1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{Labels: cdcLabels},
-					Spec: corev1.PodSpec{
-						Containers: []corev1.Container{
-							{
-								Name: "cdc",
-								Command: []string{
-									"/cdc",
-									"server",
-									fmt.Sprintf("--pd=%s", fmt.Sprintf("http://%s:2379", upstreamPDAddr)),
-									"--addr=0.0.0.0:8300",
-									fmt.Sprintf("--advertise-addr=%s", fmt.Sprintf("http://$(POD_NAME).%s.%s:8300", cdcName, ns)),
-									"--log-file", "/var/log/cdc/cdc.log",
-									"--log-level", logLevel,
-									"--tz", timezone,
-								},
-								Env: []corev1.EnvVar{
-									{
-										Name: "POD_NAME",
-										ValueFrom: &corev1.EnvVarSource{
-											FieldRef: &corev1.ObjectFieldSelector{
-												APIVersion: "v1",
-												FieldPath:  "metadata.name",
-											},
-										},
-									},
-								},
-								Ports: []corev1.ContainerPort{
-									{
-										Name:          "http",
-										ContainerPort: 8300,
-									},
-								},
-								Image:           util.BuildImage("ticdc", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.CDCConfig.Image),
-								ImagePullPolicy: corev1.PullAlways,
-								VolumeMounts:    []corev1.VolumeMount{logVol},
-							},
-							{
-								Name: "cdc-log",
-								Command: []string{
-									"/bin/sh",
-									"-c",
-									`touch /var/log/cdc/cdc.log; tail -n0 -F /var/log/cdc/cdc.log`,
-								},
-								Image:           "busybox",
-								ImagePullPolicy: corev1.PullIfNotPresent,
-								VolumeMounts:    []corev1.VolumeMount{logVol},
-							},
-						},
-						Volumes: []corev1.Volume{{
-							Name: "log",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						}},
-					},
-				},
-			},
-		},
 		Job: &batchv1.Job{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cdcJobName,
 				Namespace: ns,
 				Labels: map[string]string{
 					"app.kubernetes.io/name":      "tidb-cluster",
-					"app.kubernetes.io/component": "cdc",
+					"app.kubernetes.io/component": "cdc-cli",
 					"app.kubernetes.io/instance":  cdcJobName,
 				},
 			},
@@ -165,7 +63,7 @@ func newCDC(ns, name string) *CDC {
 						Containers: []corev1.Container{
 							{
 								Name:            "cdc-cli",
-								Image:           util.BuildImage("ticdc", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.CDCConfig.Image),
+								Image:           util.BuildImage("ticdc", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.TiDBClusterConfig.TiCDCImage),
 								ImagePullPolicy: corev1.PullAlways,
 								Command: []string{
 									"/cdc",
