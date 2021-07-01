@@ -141,7 +141,7 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 		for i := range ids {
 			ids[i] = rand.Intn(s.TotalRows) + 1
 		}
-		// 0s-200s ago
+		// 0s-100s ago
 		ago := rand.Intn(s.MaxStaleness)
 		timeAgo := time.Now().Add(time.Duration(-ago) * time.Second)
 		stale, ts, err1 := s.staleRead(ctx, conn1, timeAgo, ids)
@@ -156,7 +156,7 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 					log.Fatalf("got different resluts for id %d at %ds ago, tso: %v, stale read: %s, strong read: %s", id, ago, ts, stale[id], pad)
 				}
 			}
-			if count%100 == 0 {
+			if count%10000 == 0 {
 				sql := fmt.Sprintf("select * from %s.%s where id in (%s)", s.DBName, Table, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]"))
 				log.Infof("Stale read %d seconds ago equal to strong read, sql: %s", ago, sql)
 			}
@@ -175,13 +175,13 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 }
 
 func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, ids []int) (map[int]string, uint64, error) {
-	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		log.Warnf("failed to start a read-only transaction, err: %v", err)
 		return nil, 0, err
 	}
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("START TRANSACTION READ ONLY WITH TIMESTAMP BOUND READ TIMESTAMP '%s'", t.String())); err != nil {
+	if _, err := txn.ExecContext(ctx, fmt.Sprintf("START TRANSACTION READ ONLY AS OF TIMESTAMP '%s'", t.String())); err != nil {
 		log.Warnf("failed to start stale read-only transaction, time: %s, err: %v", t.String(), err)
 		return nil, 0, err
 	}
