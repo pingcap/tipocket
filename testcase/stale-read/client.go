@@ -302,18 +302,3 @@ func (s *staleRead) prepareData() {
 func (s *staleRead) TearDown(ctx context.Context, nodes []cluster.ClientNode, idx int) error {
 	return nil
 }
-
-// Invoke
-func (s *staleRead) Invoke(ctx context.Context, node cluster.ClientNode, r interface{}) core.UnknownResponse {
-	panic("implement me")
-}
-
-// NextRequest
-func (s *staleRead) NextRequest() interface{} {
-	panic("implement me")
-}
-
-// DumpState
-func (s *staleRead) DumpState(ctx context.Context) (interface{}, error) {
-	panic("implement me")
-}
