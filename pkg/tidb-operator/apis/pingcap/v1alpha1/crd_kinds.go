@@ -53,7 +53,7 @@ const (
 	TidbClusterAutoScalerKind    = "TidbClusterAutoScaler"
 	TidbClusterAutoScalerKindKey = "tidbclusterautoscaler"
 
-	SpecPath = "github.com/pingcap/tidb-operator/pkg/apis/pingcap/v1alpha1."
+	SpecPath = "github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1."
 )
 
 type CrdKind struct {

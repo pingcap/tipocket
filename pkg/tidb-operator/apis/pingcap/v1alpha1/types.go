@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/pingcap/tipocket/pkg/tidb-operator/binlog"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 )
 
@@ -55,12 +56,18 @@ const (
 	TiFlashMemberType MemberType = "tiflash"
 	// TiCDCMemberType is ticdc container type
 	TiCDCMemberType MemberType = "ticdc"
+	// PumpMemberType is pump container type
+	PumpMemberType MemberType = "pump"
 	// DMMasterMemberType is dm-master container type
 	DMMasterMemberType MemberType = "dm-master"
 	// DMWorkerMemberType is dm-worker container type
 	DMWorkerMemberType MemberType = "dm-worker"
-	// SlowLogTailerMemberType is tidb log tailer container type
+	// SlowLogTailerMemberType is tidb slow log tailer container type
 	SlowLogTailerMemberType MemberType = "slowlog"
+	// RocksDBLogTailerMemberType is tikv rocksdb log tailer container type
+	RocksDBLogTailerMemberType MemberType = "rocksdblog"
+	// RaftLogTailerMemberType is tikv raft log tailer container type
+	RaftLogTailerMemberType MemberType = "raftlog"
 	// TidbMonitorMemberType is tidbmonitor type
 	TidbMonitorMemberType MemberType = "tidbmonitor"
 	// UnknownMemberType is unknown container type
@@ -221,9 +228,15 @@ type TidbClusterSpec struct {
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// Base annotations of TiDB cluster Pods, components may add or override selectors upon this respectively
+	// Base annotations for TiDB cluster, all Pods in the cluster should have these annotations.
+	// Can be overrode by annotations in the specific component spec.
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Base labels for TiDB cluster, all Pods in the cluster should have these labels.
+	// Can be overrode by labels in the specific component spec.
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Base tolerations of TiDB cluster Pods, components may add more tolerations upon this respectively
 	// +optional
@@ -260,6 +273,19 @@ type TidbClusterSpec struct {
 	// StatefulSetUpdateStrategy of TiDB cluster StatefulSets
 	// +optional
 	StatefulSetUpdateStrategy apps.StatefulSetUpdateStrategyType `json:"statefulSetUpdateStrategy,omitempty"`
+
+	// PodSecurityContext of the component
+	// +optional
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// TopologySpreadConstraints describes how a group of pods ought to spread across topology
+	// domains. Scheduler will schedule pods in a way which abides by the constraints.
+	// This field is is only honored by clusters that enables the EvenPodsSpread feature.
+	// All topologySpreadConstraints are ANDed.
+	// +optional
+	// +listType=map
+	// +listMapKey=topologyKey
+	TopologySpreadConstraints []TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // TidbClusterStatus represents the current status of a tidb cluster.
@@ -271,7 +297,6 @@ type TidbClusterStatus struct {
 	Pump       PumpStatus                `json:"pump,omitempty"`
 	TiFlash    TiFlashStatus             `json:"tiflash,omitempty"`
 	TiCDC      TiCDCStatus               `json:"ticdc,omitempty"`
-	Monitor    *TidbMonitorRef           `json:"monitor,omitempty"`
 	AutoScaler *TidbClusterAutoScalerRef `json:"auto-scaler,omitempty"`
 	// Represents the latest available observations of a tidb cluster's state.
 	// +optional
@@ -415,6 +440,20 @@ type TiKVSpec struct {
 	// +optional
 	MaxFailoverCount *int32 `json:"maxFailoverCount,omitempty"`
 
+	// Whether output the RocksDB log in a separate sidecar container
+	// Optional: Defaults to false
+	// +optional
+	SeparateRocksDBLog *bool `json:"separateRocksDBLog,omitempty"`
+
+	// Whether output the Raft log in a separate sidecar container
+	// Optional: Defaults to false
+	// +optional
+	SeparateRaftLog *bool `json:"separateRaftLog,omitempty"`
+
+	// LogTailer is the configurations of the log tailers for TiKV
+	// +optional
+	LogTailer *LogTailerSpec `json:"logTailer,omitempty"`
+
 	// The storageClassName of the persistent volume for TiKV data storage.
 	// Defaults to Kubernetes default storage class.
 	// +optional
@@ -444,13 +483,21 @@ type TiKVSpec struct {
 	MountClusterClientSecret *bool `json:"mountClusterClientSecret,omitempty"`
 
 	// EvictLeaderTimeout indicates the timeout to evict tikv leader, in the format of Go Duration.
-	// Defaults to 3m
+	// Defaults to 10m
 	// +optional
 	EvictLeaderTimeout *string `json:"evictLeaderTimeout,omitempty"`
 
 	// StorageVolumes configure additional storage for TiKV pods.
 	// +optional
 	StorageVolumes []StorageVolume `json:"storageVolumes,omitempty"`
+
+	// StoreLabels configures additional labels for TiKV stores.
+	// +optional
+	StoreLabels []string `json:"storeLabels,omitempty"`
+
+	// EnableNamedStatusPort enables status port(20180) in the Pod spec.
+	// If you set it to `true` for an existing cluster, the TiKV cluster will be rolling updated.
+	EnableNamedStatusPort bool `json:"enableNamedStatusPort,omitempty"`
 }
 
 // TiFlashSpec contains details of TiFlash members
@@ -513,6 +560,11 @@ type TiCDCSpec struct {
 	// +kubebuilder:validation:Minimum=1
 	Replicas int32 `json:"replicas"`
 
+	// TLSClientSecretNames are the names of secrets that store the
+	// client certificates for the downstream.
+	// +optional
+	TLSClientSecretNames []string `json:"tlsClientSecretNames,omitempty"`
+
 	// Base image of the component, image tag is now allowed during validation
 	// +kubebuilder:default=pingcap/ticdc
 	// +optional
@@ -520,31 +572,41 @@ type TiCDCSpec struct {
 
 	// Config is the Configuration of tidbcdc servers
 	// +optional
-	Config *TiCDCConfig `json:"config,omitempty"`
+	Config *CDCConfigWraper `json:"config,omitempty"`
+
+	// StorageVolumes configure additional storage for TiCDC pods.
+	// +optional
+	StorageVolumes []StorageVolume `json:"storageVolumes,omitempty"`
+
+	// The storageClassName of the persistent volume for TiCDC data storage.
+	// Defaults to Kubernetes default storage class.
+	// +optional
+	StorageClassName *string `json:"storageClassName,omitempty"`
 }
 
 // TiCDCConfig is the configuration of tidbcdc
+// ref https://github.com/pingcap/ticdc/blob/a28d9e43532edc4a0380f0ef87314631bf18d866/pkg/config/config.go#L176
 // +k8s:openapi-gen=true
 type TiCDCConfig struct {
 	// Time zone of TiCDC
 	// Optional: Defaults to UTC
 	// +optional
-	Timezone *string `json:"timezone,omitempty"`
+	Timezone *string `toml:"tz,omitempty" json:"timezone,omitempty"`
 
 	// CDC GC safepoint TTL duration, specified in seconds
 	// Optional: Defaults to 86400
 	// +optional
-	GCTTL *int32 `json:"gcTTL,omitempty"`
+	GCTTL *int32 `toml:"gc-ttl,omitempty" json:"gcTTL,omitempty"`
 
 	// LogLevel is the log level
 	// Optional: Defaults to info
 	// +optional
-	LogLevel *string `json:"logLevel,omitempty"`
+	LogLevel *string `toml:"log-level,omitempty" json:"logLevel,omitempty"`
 
 	// LogFile is the log file
 	// Optional: Defaults to /dev/stderr
 	// +optional
-	LogFile *string `json:"logFile,omitempty"`
+	LogFile *string `toml:"log-file,omitempty" json:"logFile,omitempty"`
 }
 
 // LogTailerSpec represents an optional log tailer sidecar container
@@ -604,6 +666,10 @@ type TiDBSpec struct {
 	// Optional: Defaults to true
 	// +optional
 	SeparateSlowLog *bool `json:"separateSlowLog,omitempty"`
+
+	// Optional volume name configuration for slow query log.
+	// +optional
+	SlowLogVolumeName string `json:"slowLogVolumeName,omitempty"`
 
 	// The specification of the slow log tailer sidecar
 	// +optional
@@ -774,10 +840,15 @@ type ComponentSpec struct {
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// Annotations of the component. Merged into the cluster-level annotations if non-empty
+	// Annotations for the component. Merge into the cluster-level annotations if non-empty
 	// Optional: Defaults to cluster-level setting
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Labels for the component. Merge into the cluster-level labels if non-empty
+	// Optional: Defaults to cluster-level setting
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Tolerations of the component. Override the cluster-level tolerations if non-empty
 	// Optional: Defaults to cluster-level setting
@@ -809,6 +880,10 @@ type ComponentSpec struct {
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
+	// Init containers of the components
+	// +optional
+	InitContainers []corev1.Container `json:"initContainers,omitempty"`
+
 	// Additional containers of the component.
 	// +optional
 	AdditionalContainers []corev1.Container `json:"additionalContainers,omitempty"`
@@ -835,6 +910,15 @@ type ComponentSpec struct {
 	// Template.
 	// +optional
 	StatefulSetUpdateStrategy apps.StatefulSetUpdateStrategyType `json:"statefulSetUpdateStrategy,omitempty"`
+
+	// TopologySpreadConstraints describes how a group of pods ought to spread across topology
+	// domains. Scheduler will schedule pods in a way which abides by the constraints.
+	// This field is is only honored by clusters that enables the EvenPodsSpread feature.
+	// All topologySpreadConstraints are ANDed.
+	// +optional
+	// +listType=map
+	// +listMapKey=topologyKey
+	TopologySpreadConstraints []TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // ServiceSpec specifies the service object in k8s
@@ -843,9 +927,13 @@ type ServiceSpec struct {
 	// Type of the real kubernetes service
 	Type corev1.ServiceType `json:"type,omitempty"`
 
-	// Additional annotations of the kubernetes service object
+	// Additional annotations for the service
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Additional labels for the service
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// LoadBalancerIP is the loadBalancerIP of service
 	// Optional: Defaults to omitted
@@ -911,10 +999,12 @@ type Service struct {
 
 // PDStatus is PD status
 type PDStatus struct {
-	Synced          bool                       `json:"synced,omitempty"`
-	Phase           MemberPhase                `json:"phase,omitempty"`
-	StatefulSet     *apps.StatefulSetStatus    `json:"statefulSet,omitempty"`
-	Members         map[string]PDMember        `json:"members,omitempty"`
+	Synced      bool                    `json:"synced,omitempty"`
+	Phase       MemberPhase             `json:"phase,omitempty"`
+	StatefulSet *apps.StatefulSetStatus `json:"statefulSet,omitempty"`
+	// Members contains PDs in current TidbCluster
+	Members map[string]PDMember `json:"members,omitempty"`
+	// PeerMembers contains PDs NOT in current TidbCluster
 	PeerMembers     map[string]PDMember        `json:"peerMembers,omitempty"`
 	Leader          PDMember                   `json:"leader,omitempty"`
 	FailureMembers  map[string]PDFailureMember `json:"failureMembers,omitempty"`
@@ -936,18 +1026,20 @@ type PDMember struct {
 
 // PDFailureMember is the pd failure member information
 type PDFailureMember struct {
-	PodName       string      `json:"podName,omitempty"`
-	MemberID      string      `json:"memberID,omitempty"`
-	PVCUID        types.UID   `json:"pvcUID,omitempty"`
-	MemberDeleted bool        `json:"memberDeleted,omitempty"`
-	CreatedAt     metav1.Time `json:"createdAt,omitempty"`
+	PodName       string                 `json:"podName,omitempty"`
+	MemberID      string                 `json:"memberID,omitempty"`
+	PVCUID        types.UID              `json:"pvcUID,omitempty"`
+	PVCUIDSet     map[types.UID]struct{} `json:"pvcUIDSet,omitempty"`
+	MemberDeleted bool                   `json:"memberDeleted,omitempty"`
+	CreatedAt     metav1.Time            `json:"createdAt,omitempty"`
 }
 
 // UnjoinedMember is the pd unjoin cluster member information
 type UnjoinedMember struct {
-	PodName   string      `json:"podName,omitempty"`
-	PVCUID    types.UID   `json:"pvcUID,omitempty"`
-	CreatedAt metav1.Time `json:"createdAt,omitempty"`
+	PodName   string                 `json:"podName,omitempty"`
+	PVCUID    types.UID              `json:"pvcUID,omitempty"`
+	PVCUIDSet map[types.UID]struct{} `json:"pvcUIDSet,omitempty"`
+	CreatedAt metav1.Time            `json:"createdAt,omitempty"`
 }
 
 // TiDBStatus is TiDB status
@@ -980,6 +1072,7 @@ type TiDBFailureMember struct {
 type TiKVStatus struct {
 	Synced          bool                        `json:"synced,omitempty"`
 	Phase           MemberPhase                 `json:"phase,omitempty"`
+	BootStrapped    bool                        `json:"bootStrapped,omitempty"`
 	StatefulSet     *apps.StatefulSetStatus     `json:"statefulSet,omitempty"`
 	Stores          map[string]TiKVStore        `json:"stores,omitempty"`
 	PeerStores      map[string]TiKVStore        `json:"peerStores,omitempty"`
@@ -1012,17 +1105,18 @@ type TiCDCStatus struct {
 type TiCDCCapture struct {
 	PodName string `json:"podName,omitempty"`
 	ID      string `json:"id,omitempty"`
+	Version string `json:"version,omitempty"`
+	IsOwner bool   `json:"isOwner,omitempty"`
 }
 
 // TiKVStores is either Up/Down/Offline/Tombstone
 type TiKVStore struct {
 	// store id is also uint64, due to the same reason as pd id, we store id as string
-	ID                string      `json:"id"`
-	PodName           string      `json:"podName"`
-	IP                string      `json:"ip"`
-	LeaderCount       int32       `json:"leaderCount"`
-	State             string      `json:"state"`
-	LastHeartbeatTime metav1.Time `json:"lastHeartbeatTime"`
+	ID          string `json:"id"`
+	PodName     string `json:"podName"`
+	IP          string `json:"ip"`
+	LeaderCount int32  `json:"leaderCount"`
+	State       string `json:"state"`
 	// Last time the health transitioned from one to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty"`
 }
@@ -1038,6 +1132,7 @@ type TiKVFailureStore struct {
 type PumpStatus struct {
 	Phase       MemberPhase             `json:"phase,omitempty"`
 	StatefulSet *apps.StatefulSetStatus `json:"statefulSet,omitempty"`
+	Members     []*binlog.NodeStatus    `json:"members,omitempty"`
 }
 
 // TiDBTLSClient can enable TLS connection between TiDB server and MySQL client
@@ -1252,10 +1347,29 @@ const (
 	CleanPolicyTypeDelete CleanPolicyType = "Delete"
 )
 
-// +k8s:openapi-gen=true
 // BackupSpec contains the backup specification for a tidb cluster.
+// +k8s:openapi-gen=true
 type BackupSpec struct {
 	corev1.ResourceRequirements `json:"resources,omitempty"`
+	// List of environment variables to set in the container, like v1.Container.Env.
+	// Note that the following builtin env vars will be overwritten by values set here
+	// - S3_PROVIDER
+	// - S3_ENDPOINT
+	// - AWS_REGION
+	// - AWS_ACL
+	// - AWS_STORAGE_CLASS
+	// - AWS_DEFAULT_REGION
+	// - AWS_ACCESS_KEY_ID
+	// - AWS_SECRET_ACCESS_KEY
+	// - GCS_PROJECT_ID
+	// - GCS_OBJECT_ACL
+	// - GCS_BUCKET_ACL
+	// - GCS_LOCATION
+	// - GCS_STORAGE_CLASS
+	// - GCS_SERVICE_ACCOUNT_JSON_KEY
+	// - BR_LOG_TO_TERM
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
 	// From is the tidb cluster that needs to backup.
 	From *TiDBAccessConfig `json:"from,omitempty"`
 	// Type is the backup type for tidb cluster.
@@ -1281,6 +1395,7 @@ type BackupSpec struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 	// ToolImage specifies the tool image used in `Backup`, which supports BR and Dumpling images.
 	// For examples `spec.toolImage: pingcap/br:v4.0.8` or `spec.toolImage: pingcap/dumpling:v4.0.8`
+	// For BR image, if it does not contain tag, Pod will use image 'ToolImage:${TiKV_Version}'.
 	// +optional
 	ToolImage string `json:"toolImage,omitempty"`
 	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images.
@@ -1297,6 +1412,10 @@ type BackupSpec struct {
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// CleanPolicy denotes whether to clean backup data when the object is deleted from the cluster, if not set, the backup data will be retained
 	CleanPolicy CleanPolicyType `json:"cleanPolicy,omitempty"`
+
+	// PodSecurityContext of the component
+	// +optional
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 }
 
 // +k8s:openapi-gen=true
@@ -1513,6 +1632,25 @@ type RestoreCondition struct {
 // RestoreSpec contains the specification for a restore of a tidb cluster backup.
 type RestoreSpec struct {
 	corev1.ResourceRequirements `json:"resources,omitempty"`
+	// List of environment variables to set in the container, like v1.Container.Env.
+	// Note that the following builtin env vars will be overwritten by values set here
+	// - S3_PROVIDER
+	// - S3_ENDPOINT
+	// - AWS_REGION
+	// - AWS_ACL
+	// - AWS_STORAGE_CLASS
+	// - AWS_DEFAULT_REGION
+	// - AWS_ACCESS_KEY_ID
+	// - AWS_SECRET_ACCESS_KEY
+	// - GCS_PROJECT_ID
+	// - GCS_OBJECT_ACL
+	// - GCS_BUCKET_ACL
+	// - GCS_LOCATION
+	// - GCS_STORAGE_CLASS
+	// - GCS_SERVICE_ACCOUNT_JSON_KEY
+	// - BR_LOG_TO_TERM
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
 	// To is the tidb cluster that needs to restore.
 	To *TiDBAccessConfig `json:"to,omitempty"`
 	// Type is the backup type for tidb cluster.
@@ -1543,6 +1681,7 @@ type RestoreSpec struct {
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 	// ToolImage specifies the tool image used in `Restore`, which supports BR and TiDB Lightning images.
 	// For examples `spec.toolImage: pingcap/br:v4.0.8` or `spec.toolImage: pingcap/tidb-lightning:v4.0.8`
+	// For BR image, if it does not contain tag, Pod will use image 'ToolImage:${TiKV_Version}'.
 	// +optional
 	ToolImage string `json:"toolImage,omitempty"`
 	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images.
@@ -1550,6 +1689,10 @@ type RestoreSpec struct {
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 	// TableFilter means Table filter expression for 'db.table' matching. BR supports this from v4.0.3.
 	TableFilter []string `json:"tableFilter,omitempty"`
+
+	// PodSecurityContext of the component
+	// +optional
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
 }
 
 // RestoreStatus represents the current status of a tidb cluster restore.
@@ -1616,15 +1759,18 @@ type DMClusterList struct {
 // +k8s:openapi-gen=true
 // DMDiscoverySpec contains details of Discovery members for dm
 type DMDiscoverySpec struct {
-	// Address indicates the existed TiDB discovery address
-	Address string `json:"address"`
+	corev1.ResourceRequirements `json:",inline"`
+
+	// (Deprecated) Address indicates the existed TiDB discovery address
+	// +k8s:openapi-gen=false
+	Address string `json:"address,omitempty"`
 }
 
 // +k8s:openapi-gen=true
 // DMClusterSpec describes the attributes that a user creates on a dm cluster
 type DMClusterSpec struct {
 	// Discovery spec
-	Discovery DMDiscoverySpec `json:"discovery"`
+	Discovery DMDiscoverySpec `json:"discovery,omitempty"`
 
 	// dm-master cluster spec
 	// +optional
@@ -1693,9 +1839,15 @@ type DMClusterSpec struct {
 	// +optional
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 
-	// Base annotations of DM cluster Pods, components may add or override selectors upon this respectively
+	// Additional annotations for the dm cluster
+	// Can be overrode by annotations in master spec or worker spec
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Additional labels for the dm cluster
+	// Can be overrode by labels in master spec or worker spec
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Time zone of DM cluster Pods
 	// Optional: Defaults to UTC
@@ -1705,6 +1857,19 @@ type DMClusterSpec struct {
 	// Base tolerations of DM cluster Pods, components may add more tolerations upon this respectively
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// PodSecurityContext of the component
+	// +optional
+	PodSecurityContext *corev1.PodSecurityContext `json:"podSecurityContext,omitempty"`
+
+	// TopologySpreadConstraints describes how a group of pods ought to spread across topology
+	// domains. Scheduler will schedule pods in a way which abides by the constraints.
+	// This field is is only honored by clusters that enables the EvenPodsSpread feature.
+	// All topologySpreadConstraints are ANDed.
+	// +optional
+	// +listType=map
+	// +listMapKey=topologyKey
+	TopologySpreadConstraints []TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // DMClusterStatus represents the current status of a dm cluster.
@@ -1922,11 +2087,29 @@ type WorkerFailureMember struct {
 	CreatedAt metav1.Time `json:"createdAt,omitempty"`
 }
 
-// StorageVolume configures additional storage for PD/TiDB/TiKV pods.
-// If `StorageClassName` not set, default to the `spec.[pd|tidb|tikv].storageClassName`
+// StorageVolume configures additional PVC template for StatefulSets and volumeMount for pods that mount this PVC.
+// Note:
+// If `MountPath` is not set, volumeMount will not be generated. (You may not want to set this field when you inject volumeMount
+// in somewhere else such as Mutating Admission Webhook)
+// If `StorageClassName` is not set, default to the `spec.${component}.storageClassName`
 type StorageVolume struct {
 	Name             string  `json:"name"`
 	StorageClassName *string `json:"storageClassName,omitempty"`
 	StorageSize      string  `json:"storageSize"`
-	MountPath        string  `json:"mountPath"`
+	MountPath        string  `json:"mountPath,omitempty"`
+}
+
+// TopologySpreadConstraint specifies how to spread matching pods among the given topology.
+// It is a minimal version of corev1.TopologySpreadConstraint to avoid to add too many fields of API
+// Refer to https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints
+type TopologySpreadConstraint struct {
+	// TopologyKey is the key of node labels. Nodes that have a label with this key
+	// and identical values are considered to be in the same topology.
+	// We consider each <key, value> as a "bucket", and try to put balanced number
+	// of pods into each bucket.
+	// MaxSkew is default set to 1
+	// WhenUnsatisfiable is default set to DoNotSchedule
+	// LabelSelector is generated by component type
+	// See pkg/apis/pingcap/v1alpha1/tidbcluster_component.go#TopologySpreadConstraints()
+	TopologyKey string `json:"topologyKey"`
 }
