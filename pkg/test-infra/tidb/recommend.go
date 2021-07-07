@@ -175,6 +175,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							MountPath:   "/var/log/pdlog",
 						},
 					},
+					Service: &v1alpha1.ServiceSpec{
+						Type: corev1.ServiceTypeNodePort,
+					},
 				},
 				TiKV: &v1alpha1.TiKVSpec{
 					Replicas: int32(clusterConfig.TiKVReplicas),
@@ -276,6 +279,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 						Version:   "v2.11.1",
 					},
 					LogLevel: "info",
+					Service: v1alpha1.ServiceSpec{
+						Type: corev1.ServiceTypeNodePort,
+					},
 				},
 				Grafana: &v1alpha1.GrafanaSpec{
 					Service: v1alpha1.ServiceSpec{

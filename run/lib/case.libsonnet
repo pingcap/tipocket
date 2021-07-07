@@ -58,6 +58,10 @@
       '/bin/cross-region',
        '-tso-request-count=%s' % args.tso_request_count,
     ],
+  staleread(args={})::
+    [
+      '/bin/stale-read',
+    ],
   'example'(args={})::
     [
       '/bin/example',
