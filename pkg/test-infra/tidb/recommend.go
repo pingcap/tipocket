@@ -24,6 +24,7 @@ import (
 	"github.com/pingcap/tipocket/pkg/test-infra/fixture"
 	"github.com/pingcap/tipocket/pkg/test-infra/util"
 	"github.com/pingcap/tipocket/pkg/tidb-operator/apis/pingcap/v1alpha1"
+	"github.com/pingcap/tipocket/pkg/tidb-operator/util/config"
 )
 
 // Recommendation ...
@@ -240,11 +241,14 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 							fixture.Memory: resource.MustParse("8Gi"),
 						},
 					},
-					Config: &v1alpha1.TiCDCConfig{
-						Timezone: &fixture.Context.CDCConfig.Timezone,
-						LogLevel: &fixture.Context.CDCConfig.LogLevel,
-						// FIXME(@mahjonp): tidb-operator haven't supported StorageVolume claims now.
-						LogFile: &fixture.Context.CDCConfig.LogFile,
+					Config: &v1alpha1.CDCConfigWraper{
+						GenericConfig: &config.GenericConfig{
+							MP: map[string]interface{}{
+								"timezone": fixture.Context.CDCConfig.Timezone,
+								"logLevel": fixture.Context.CDCConfig.LogLevel,
+								"logFile":  fixture.Context.CDCConfig.LogFile,
+							},
+						},
 					},
 				},
 			},
