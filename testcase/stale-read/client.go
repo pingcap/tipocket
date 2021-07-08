@@ -105,13 +105,15 @@ func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			rnd := rand.New(rand.NewSource(time.Now().Unix()))
 			for {
 				ids := make([]int, rand.Intn(99)+1)
 				for i := range ids {
 					ids[i] = rand.Intn(s.TotalRows) + 1
 				}
 				idsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]")
-				pad := fmt.Sprintf("%d", s.encodeTs(time.Now()))
+				pad := make([]byte, 255)
+				util.RandString(pad, rnd)
 				stmt := fmt.Sprintf(`UPDATE %s.%s SET pad="%s" WHERE id in (%s)`, s.DBName, Table, pad, idsStr)
 				if _, err := s.db.Exec(stmt); err != nil {
 					log.Warnf("[stale read] Failed to execute sql [%s], error: %v", stmt, err)

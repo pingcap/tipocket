@@ -30,8 +30,8 @@ import (
 var (
 	dbname          = flag.String("dbname", "test", "name of database to test")
 	concurrency     = flag.Int("concurrency", 200, "concurrency worker count")
-	totalRows       = flag.Int("rows", 3000000, "total rows of data")
-	requestInterval = flag.Duration("request-interval", 50*time.Millisecond, "request freq")
+	totalRows       = flag.Int("rows", 4000000, "total rows of data")
+	requestInterval = flag.Duration("request-interval", 25*time.Millisecond, "request freq")
 	maxStaleness    = flag.Int("staleness", 100, "the max staleness in second")
 )
 
