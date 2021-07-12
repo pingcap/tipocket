@@ -391,7 +391,8 @@ func (c *bank2Client) verify(ctx context.Context, db *sql.DB) {
 				strings.Contains(errStr, "TiKV server timeout") ||
 				strings.Contains(errStr, "redirect failed") ||
 				strings.Contains(errStr, "no leader") ||
-				strings.Contains(errStr, "injected")) {
+				strings.Contains(errStr, "injected") ||
+				(strings.Split(errStr, ":")[1] == "")) {
 			atomic.StoreInt32(&c.stop, 1)
 			c.wg.Wait()
 			log.Fatalf("[%s] ADMIN CHECK TABLE bank2_accounts fails: %v", c, err)
