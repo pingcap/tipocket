@@ -191,14 +191,14 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 }
 
 func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, ids []int) (map[int]string, uint64, error) {
-	txn, err := conn.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		log.Warnf("failed to start a read-only transaction, err: %v", err)
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET TRANSACTION READ ONLY AS OF TIMESTAMP '%s'", t.String())); err != nil {
+		log.Warnf("failed to set stale read-only transaction, time: %s, err: %v", t.String(), err)
 		return nil, 0, err
 	}
 
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("START TRANSACTION READ ONLY AS OF TIMESTAMP '%s'", t.String())); err != nil {
-		log.Warnf("failed to start stale read-only transaction, time: %s, err: %v", t.String(), err)
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		log.Warnf("failed to start a read-only transaction, err: %v", err)
 		return nil, 0, err
 	}
 
