@@ -16,13 +16,16 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: stale-read
+build: mod-sum stale-read
 
 stale-read:
 	$(GOBUILD) $(GOMOD) -o bin/stale-read cmd/*.go
 
 fmt: groupimports
 	go fmt ./...
+
+mod-sum:
+	$(GO) mod tidy
 
 tidy:
 	@echo "go mod tidy"
