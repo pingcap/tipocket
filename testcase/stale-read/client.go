@@ -201,6 +201,7 @@ func (s *staleRead) staleRead(ctx context.Context, conn *sql.Conn, t time.Time, 
 		log.Warnf("failed to start a read-only transaction, err: %v", err)
 		return nil, 0, err
 	}
+	defer txn.Rollback()
 
 	var tso uint64
 	if err = txn.QueryRow("select @@tidb_current_ts").Scan(&tso); err != nil {
