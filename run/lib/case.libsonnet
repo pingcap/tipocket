@@ -66,6 +66,10 @@
     [
       '/bin/block-writer',
     ],
+  'stale-read'(args={})::
+    [
+      '/bin/stale-read',
+    ],
   'ttl'(args={})::
     [
       '/bin/tll',
