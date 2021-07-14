@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	tableCount = flag.Int("table-count", 7, "Table count")
-	readLock   = flag.String("read-lock", "FOR UPDATE", "Maybe empty or 'FOR UPDATE'")
-	txnMode    = flag.String("txn-mode", "pessimistic", "Must be 'pessimistic', 'optimistic' or 'mixed'")
+	tableCount          = flag.Int("table-count", 7, "Table count")
+	readLock            = flag.String("read-lock", "FOR UPDATE", "Maybe empty or 'FOR UPDATE'")
+	txnMode             = flag.String("txn-mode", "pessimistic", "Must be 'pessimistic', 'optimistic' or 'mixed'")
+	tiflashDataReplicas = flag.Int("tiflash-data-replicas", 0, "the number of the tiflash data replica")
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 			History:      fixture.Context.HistoryFile,
 		},
 		Provider:         cluster.NewDefaultClusterProvider(),
-		ClientCreator:    rwregister.NewClientCreator(*tableCount, *readLock, *txnMode, fixture.Context.ReplicaRead),
+		ClientCreator:    rwregister.NewClientCreator(*tableCount, *readLock, *txnMode, fixture.Context.ReplicaRead, *tiflashDataReplicas),
 		NemesisGens:      util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClientRequestGen: util.OnClientLoop,
 		VerifySuit: verify.Suit{
