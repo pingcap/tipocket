@@ -20,8 +20,10 @@ const (
 	PodKill ChaosKind = "pod-kill"
 	// ContainerKill will random kill the specified container of pod, but retain the pod
 	ContainerKill ChaosKind = "container-kill"
-	// NetworkPartition partitions network between nodes
+	// NetworkPartition partitions network between two groups of nodes
 	NetworkPartition ChaosKind = "network-partition"
+	// NetworkPartitionRoute partitions network between two pods without affection traffics between other pairs of pods.
+	NetworkPartitionSingleRoute ChaosKind = "network-partition-single-route"
 	// NetemChaos adds corrupt or other chaos.
 	NetemChaos ChaosKind = "netem-chaos"
 	// TimeChaos means

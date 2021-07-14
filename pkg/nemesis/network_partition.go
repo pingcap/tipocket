@@ -94,7 +94,7 @@ func networkChaosSpecTemplate(partOneNs, partTwoNS string, partOne, partTwo []cl
 }
 
 func (n networkPartition) Invoke(ctx context.Context, _ *cluster.Node, args ...interface{}) error {
-	name, onePart, anotherPart := extractArgs(args...)
+	name, onePart, anotherPart := n.extractArgs(args...)
 	log.Infof("apply nemesis %s %s between %+v and %+v", core.NetworkPartition, name, onePart, anotherPart)
 	return n.cli.ApplyNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,7 +107,7 @@ func (n networkPartition) Invoke(ctx context.Context, _ *cluster.Node, args ...i
 }
 
 func (n networkPartition) Recover(ctx context.Context, _ *cluster.Node, args ...interface{}) error {
-	name, onePart, anotherPart := extractArgs(args...)
+	name, onePart, anotherPart := n.extractArgs(args...)
 	log.Infof("unapply nemesis %s %s between %+v and %+v", core.NetworkPartition, name, onePart, anotherPart)
 	return n.cli.CancelNetChaos(&chaosv1alpha1.NetworkChaos{
 		ObjectMeta: metav1.ObjectMeta{
@@ -123,7 +123,7 @@ func (n networkPartition) Name() string {
 	return string(core.NetworkPartition)
 }
 
-func extractArgs(args ...interface{}) (string, []cluster.Node, []cluster.Node) {
+func (networkPartition) extractArgs(args ...interface{}) (string, []cluster.Node, []cluster.Node) {
 	var name = args[0].(string)
 	var networkParts [][]cluster.Node
 	var onePart []cluster.Node
