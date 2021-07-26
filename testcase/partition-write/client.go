@@ -48,7 +48,7 @@ func (c *Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port)
 	util.SetMySQLProxy(fixture.Context.MySQLProxy)
-	db, err := util.OpenDB(dsn, 256)
+	db, err := util.OpenDB(dsn, 16)
 	if err != nil {
 		log.Fatalf("open db error: %v", err)
 	}
@@ -84,7 +84,7 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 		return err
 	}
 	if _, err := c.db.ExecContext(ctx, "create table t (a bigint, pad text, key k(a)) "+
-		"SHARD_ROW_ID_BITS = 4 partition by range (a) ("+
+		"SHARD_ROW_ID_BITS = 4 PRE_SPLIT_REGIONS = 4 partition by range (a) ("+
 		"partition p0 values less than (1000000), "+
 		"partition p1 values less than (2000000), "+
 		"partition p2 values less than (3000000))"); err != nil {
@@ -92,33 +92,48 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 	}
 
 	current := 0
-	for {
+	for ctx.Err() == nil {
 		var wg sync.WaitGroup
 		for i := 0; i < 512; i++ {
+			conn, err := c.db.Conn(ctx)
+			if err != nil {
+				log.Errorf("failed to get connection: %v", err)
+				continue
+			}
 			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			go func(conn *sql.Conn) {
+				defer func() {
+					conn.Close()
+					wg.Done()
+				}()
 				rng := rand.New(rand.NewSource(rand.Int63()))
 				for j := 0; j < 60000; j++ {
 					a := rng.Intn(1000000) + current*1000000
 					pad := padString(rng)
-					if _, err := c.db.ExecContext(ctx, "insert into t (a, pad) values (?, ?)", a, pad); err != nil {
+					if _, err := conn.ExecContext(ctx, "insert into t (a, pad) values (?, ?)", a, pad); err != nil {
 						log.Errorf("failed to insert: %v", err)
+						if ctx.Err() != nil {
+							return
+						}
 					}
 				}
-			}()
+			}(conn)
 		}
 		wg.Wait()
 
 		go func(p int) {
-			toBeCreated := current + 3
+			toBeCreated := p + 3
 			if _, err := c.db.ExecContext(ctx, fmt.Sprintf("alter table t add partition (partition p%d values less than (%d))", toBeCreated, (toBeCreated+1)*1000000)); err != nil {
 				log.Errorf("failed to add partition p%d: %v", toBeCreated, err)
+			} else {
+				log.Infof("succeed to add partition p%d", toBeCreated)
 			}
-			toBeDeleted := current - 3
+			toBeDeleted := p - 3
 			if toBeDeleted >= 0 {
 				if _, err := c.db.ExecContext(ctx, fmt.Sprintf("alter table t drop partition p%d", toBeDeleted)); err != nil {
 					log.Errorf("failed to drop partition p%d: %v", toBeDeleted, err)
+				} else {
+					log.Infof("succeed to drop partition p%d", toBeDeleted)
 				}
 			}
 
@@ -126,4 +141,5 @@ func (c *Client) Start(ctx context.Context, cfg interface{}, clientNodes []clust
 
 		current++
 	}
+	return ctx.Err()
 }
