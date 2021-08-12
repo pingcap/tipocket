@@ -34,6 +34,7 @@ var (
 	concurrency = flag.Int("concurrency", 1024, "write concurrency")
 	tables      = flag.Int("tables", 1, "total tables")
 	padLength   = flag.Int("pad-length", 65536, "pad string length")
+	dropTable   = flag.Bool("drop-table", false, "drop existed tables")
 
 	caseName = flag.String("case-name", "uniform", "test case name")
 )
@@ -54,6 +55,7 @@ func main() {
 			Concurrency: *concurrency,
 			Tables:      *tables,
 			PadLength:   *padLength,
+			DropTable:   *dropTable,
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
 		ClusterDefs: test_infra.NewDefaultCluster(c.Namespace, c.ClusterName, c.TiDBClusterConfig),

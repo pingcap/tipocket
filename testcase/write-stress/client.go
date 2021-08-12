@@ -32,6 +32,7 @@ type CaseCreator struct {
 	Concurrency int
 	Tables      int
 	PadLength   int
+	DropTable   bool
 }
 
 // Create creates a test client
@@ -40,6 +41,7 @@ func (c CaseCreator) Create(node cluster.ClientNode) core.Client {
 		concurrency: c.Concurrency,
 		tables:      c.Tables,
 		padLength:   c.PadLength,
+		dropTable:   c.DropTable,
 	}
 	switch c.CaseName {
 	case "uniform":
@@ -55,6 +57,7 @@ type baseClient struct {
 	concurrency int
 	tables      int
 	padLength   int
+	dropTable   bool
 }
 
 func (c *baseClient) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {

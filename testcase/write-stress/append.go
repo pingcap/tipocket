@@ -43,10 +43,10 @@ func (c *appendClient) SetUp(ctx context.Context, nodes []cluster.Node, clientNo
 			defer wg.Done()
 			for j := 0; j < c.tables; j++ {
 				if j%32 == tid {
-					sql := fmt.Sprintf("drop table if exists write_stress%d", j+1)
-					util.MustExec(c.db, sql)
-					sql = fmt.Sprintf("create table write_stress%d(col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))", j+1)
-					util.MustExec(c.db, sql)
+					if c.dropTable {
+						util.MustExec(c.db, fmt.Sprintf("drop table if exists write_stress%d", j+1))
+					}
+					util.MustExec(c.db, fmt.Sprintf("create table if not exists write_stress%d(col1 bigint, col2 varchar(256), data longtext, key k(col1, col2))", j+1))
 				}
 			}
 		}(i)
