@@ -93,7 +93,7 @@ func (c *uniformClient) runClient(ctx context.Context) error {
 		dataLen := rng.Intn(c.padLength)
 		_, _ = rng.Read(data[:dataLen])
 		tid := rng.Int()%c.tables + 1
-		sql := fmt.Sprintf("insert into write_stress%d values (?, ?, ?)", tid)
+		sql := fmt.Sprintf("insert into write_stress%d values (?, ?, ?, ?)", tid)
 		_, err := c.db.ExecContext(ctx, sql, uuid, col1,
 			base64.StdEncoding.EncodeToString(col2[:col2Len]),
 			base64.StdEncoding.EncodeToString(data[:dataLen]))
