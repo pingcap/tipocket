@@ -394,6 +394,7 @@ func (c *bank2Client) verify(ctx context.Context, db *sql.DB) {
 				strings.Contains(errStr, "injected") ||
 				strings.Contains(errStr, "context deadline exceeded") ||
 				strings.Contains(errStr, "redirect to not leader") ||
+				strings.Contains(errStr, "raft: stopped") ||
 				(errStr == "Error 1105: ")) {
 			atomic.StoreInt32(&c.stop, 1)
 			c.wg.Wait()
