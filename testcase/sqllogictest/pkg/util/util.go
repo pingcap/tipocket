@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juju/errors"
+	"github.com/pingcap/errors"
 	"github.com/ngaut/log"
 )
 

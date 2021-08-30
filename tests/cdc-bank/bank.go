@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/juju/errors"
+	"github.com/pingcap/errors"
 	"go.uber.org/zap"
 
 	"github.com/ngaut/log"

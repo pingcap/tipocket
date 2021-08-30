@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/go-sql-driver/mysql"
-	"github.com/juju/errors"
+	"github.com/pingcap/errors"
 	"github.com/ngaut/log"
 	"github.com/pingcap/parser/terror"
 )

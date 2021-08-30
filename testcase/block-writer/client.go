@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/juju/errors"
+	"github.com/pingcap/errors"
 	"github.com/ngaut/log"
 
 	"github.com/pingcap/tipocket/pkg/cluster"

@@ -22,9 +22,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
-	github.com/juju/errors v0.0.0-20190930114154-d42613fe1ab9
-	github.com/juju/loggo v0.0.0-20180524022052-584905176618 // indirect
-	github.com/juju/testing v0.0.0-20180920084828-472a3e8b2073 // indirect
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mgechev/revive v1.0.2
@@ -54,7 +51,6 @@ require (
 	golang.org/x/tools v0.0.0-20200921210052-fa0125251cc4 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.17.0
