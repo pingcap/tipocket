@@ -16,16 +16,16 @@ DOCKER_REGISTRY_PREFIX := $(if $(DOCKER_REGISTRY),$(DOCKER_REGISTRY)/,)
 
 default: tidy fmt lint build
 
-build: bindir consistency isolation pocket on-dup sqllogic block-writer \
-		region-available crud stale-read \
-		read-stress follower-read pessimistic resolve-lock cdc-bank \
-    example ttl \
+build: bindir consistency isolation on-dup sqllogic block-writer \
+		crud stale-read \
+		read-stress follower-read cdc-bank \
+    example \
 # +tipocket:scaffold:makefile_build
 
 bindir:
 	mkdir -p bin
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc pessimistic cdc-bank cross-region
+consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc cdc-bank
 
 isolation: list-append rw-register
 
