@@ -25,7 +25,7 @@ build: bindir consistency isolation on-dup sqllogic block-writer \
 bindir:
 	mkdir -p bin
 
-consistency: bank bank2 pbank vbank ledger rawkv-linearizability tpcc cdc-bank
+consistency: bank bank2 pbank vbank rawkv-linearizability tpcc cdc-bank
 
 isolation: list-append rw-register
 
