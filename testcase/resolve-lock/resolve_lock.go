@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -228,9 +230,19 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		}
 		log.Infof("[round-%d] start to GC at safePoint(%v)", loopNum, c.safePoint)
 		// Invoke GC with the safe point
-		greenGCUsed, err := c.resolveLocks(ctx)
+		var greenGCUsed bool
+		for i := 0; i < 5; i++ {
+			greenGCUsed, err = c.resolveLocks(ctx)
+			if err == nil {
+				break
+			}
+			if !strings.Contains(err.Error(), "region unavailable") {
+				log.Errorf("[round-%d] failed to run GC at safe point %v", loopNum, c.safePoint)
+				return errors.Trace(err)
+			}
+		}
 		if err != nil {
-			log.Errorf("[round-%d] failed to run GC at safe point %v", loopNum, c.safePoint)
+			log.Errorf("[round-%d] failed to resolve locks for 5 times at safe point %v", loopNum, c.safePoint)
 			return errors.Trace(err)
 		}
 		log.Infof("[round-%d] GC done at safePoint(%v)", loopNum, c.safePoint)
@@ -540,7 +552,9 @@ func (c *resolveLockClient) reset(ctx context.Context) {
 
 func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 	physical, logical, err := c.pd.GetTS(ctx)
-	if err != nil {
+	//if pd down, errmsg is io.EOF,testcase ignore this errmsg
+	//panic_check plugin check pd panic
+	if err != nil && err != io.EOF {
 		return 0, errors.Trace(err)
 	}
 	ts := oracle.ComposeTS(physical, logical)
