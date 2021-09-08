@@ -6,10 +6,11 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
 	github.com/pingcap/errors v0.11.5-0.20190809092503-95897b64e011
-	github.com/pingcap/kvproto v0.0.0-20200324130106-b8bc94dd8a36
+	github.com/pingcap/kvproto v0.0.0-20200411081810-b85805c9476c
 	github.com/pingcap/pd/v4 v4.0.0-beta.1.0.20200305072537-61d9f9cc35d3
 	github.com/pingcap/tidb v2.1.0-beta+incompatible
 	github.com/pingcap/tipocket v1.0.0
+	github.com/pingcap/tipocket/logsearch v0.0.0-20210820013836-9e41b607c358
 )
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
