@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -207,6 +208,10 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		ts, err := c.getTs(ctx)
 		if err != nil {
 			return errors.Trace(err)
+		} else if ts == 0 {
+			// PD is killed and doesn't recover in time, return nil to finish
+			// the test to avoid false-negative.
+			return nil
 		}
 		log.Infof("[round-%d] start to generate locks at ts(%v)", loopNum, ts)
 		locked, err := c.generateLocks(ctx, time.Microsecond)
@@ -226,6 +231,8 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		c.safePoint, err = c.getTs(ctx)
 		if err != nil {
 			return errors.Trace(err)
+		} else if ts == 0 {
+			return nil
 		}
 		log.Infof("[round-%d] start to GC at safePoint(%v)", loopNum, c.safePoint)
 		// Invoke GC with the safe point
@@ -397,6 +404,8 @@ func (c *resolveLockClient) lockBatch(ctx context.Context, keys [][]byte) (int, 
 		startTs, err := c.getLockTs(ctx)
 		if err != nil {
 			return 0, errors.Trace(err)
+		} else if startTs == 0 {
+			return 0, nil
 		}
 
 		// Write locks in the same region. It doesn't handle region errors or write conflict properly for simplicity.
@@ -550,12 +559,29 @@ func (c *resolveLockClient) reset(ctx context.Context) {
 }
 
 func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
-	physical, logical, err := c.pd.GetTS(ctx)
-	if err != nil {
-		return 0, errors.Trace(err)
+	bo := tikv.NewBackoffer(ctx, 60000)
+	for {
+		physical, logical, err := c.pd.GetTS(ctx)
+		switch err {
+		case nil:
+			ts := oracle.ComposeTS(physical, logical)
+			return ts, nil
+
+		case io.EOF:
+			// If the error is caused by PD panic, the panic_check plugin checks it.
+			//
+			// PD may be killed due to the test environment and it may recover,
+			// so we backoff for a while and if PD doesn't recover in time, we
+			// think the test finishes to avoid false-negative.
+			err = bo.Backoff(tikv.BoPDRPC, err)
+			if err != nil {
+				return 0, nil
+			}
+
+		default:
+			return 0, err
+		}
 	}
-	ts := oracle.ComposeTS(physical, logical)
-	return ts, nil
 }
 
 func (c *resolveLockClient) getLockTs(ctx context.Context) (uint64, error) {
