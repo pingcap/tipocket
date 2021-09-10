@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -207,7 +206,7 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 		ctx := context.Background()
 		ts, err := c.getTs(ctx)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		log.Infof("[round-%d] start to generate locks at ts(%v)", loopNum, ts)
 		locked, err := c.generateLocks(ctx, time.Microsecond)
@@ -552,9 +551,7 @@ func (c *resolveLockClient) reset(ctx context.Context) {
 
 func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 	physical, logical, err := c.pd.GetTS(ctx)
-	//if pd down, errmsg is io.EOF,testcase ignore this errmsg
-	//panic_check plugin check pd panic
-	if err != nil && err != io.EOF {
+	if err != nil {
 		return 0, errors.Trace(err)
 	}
 	ts := oracle.ComposeTS(physical, logical)
