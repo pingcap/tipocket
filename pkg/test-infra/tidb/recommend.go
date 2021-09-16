@@ -46,9 +46,9 @@ func (t *Recommendation) EnablePump(replicas int32) *Recommendation {
 }
 
 // EnableTiFlash add TiFlash spec in TiDB cluster
-func (t *Recommendation) EnableTiFlash(config fixture.TiDBClusterConfig) {
-	tag, fullImage, replicas := config.ImageVersion, config.TiFlashImage, config.TiFlashReplicas
-	tiflashDataStorageClass := provideTiFlashStorageClassName(config)
+func (t *Recommendation) EnableTiFlash(clusterConfig fixture.TiDBClusterConfig) {
+	tag, fullImage, replicas := clusterConfig.ImageVersion, clusterConfig.TiFlashImage, clusterConfig.TiFlashReplicas
+	tiflashDataStorageClass := provideTiFlashStorageClassName(clusterConfig)
 	if t.TidbCluster.Spec.TiFlash == nil {
 		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
 			Replicas:         int32(replicas),
@@ -72,6 +72,9 @@ func (t *Recommendation) EnableTiFlash(config fixture.TiDBClusterConfig) {
 				},
 			},
 		}
+		tiflashCfg := v1alpha1.NewTiFlashConfig()
+		tiflashCfg.Common.Set("logger.level", "debug")
+		t.TidbCluster.Spec.TiFlash.Config = tiflashCfg
 	}
 }
 
