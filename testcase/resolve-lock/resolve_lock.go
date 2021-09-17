@@ -562,7 +562,7 @@ func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 	bo := tikv.NewBackoffer(ctx, 60000)
 	for {
 		physical, logical, err := c.pd.GetTS(ctx)
-		switch err {
+		switch errors.Cause(err) {
 		case nil:
 			ts := oracle.ComposeTS(physical, logical)
 			return ts, nil
