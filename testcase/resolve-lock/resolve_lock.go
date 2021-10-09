@@ -242,7 +242,8 @@ func (c *resolveLockClient) Start(ctx context.Context, cfg interface{}, clientNo
 			if err == nil {
 				break
 			}
-			if !strings.Contains(err.Error(), "region unavailable") {
+			if !(strings.Contains(err.Error(), "region unavailable") || strings.Contains(err.Error(), "Region is unavailable")) &&
+				!strings.Contains(err.Error(), "unexpected scanlock error: error:<locked") {
 				log.Errorf("[round-%d] failed to run GC at safe point %v", loopNum, c.safePoint)
 				return errors.Trace(err)
 			}
