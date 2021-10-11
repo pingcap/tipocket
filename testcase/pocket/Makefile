@@ -6,7 +6,7 @@ VERSION   := $(if $(VERSION),$(VERSION),latest)
 PACKAGES := go list ./...| grep -vE 'vendor'
 
 LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildTS=$(shell date -u '+%Y-%m-%d %I:%M:%S')"
-LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell git rev-parse HEAD)"
+LDFLAGS += -X "github.com/pingcap/tipocket/pkg/test-infra/fixture.BuildHash=$(shell (git rev-parse --git-dir > /dev/null 2>&1 && git rev-parse HEAD) || echo 'NO-HASH')"
 
 GOBUILD=$(GO) build -ldflags '$(LDFLAGS)'
 
@@ -46,7 +46,7 @@ fmt: groupimports
 tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
-	@git diff --exit-code -- go.mod
+	@git rev-parse --git-dir > /dev/null 2>&1 && git diff --exit-code -- go.mod
 
 lint: revive
 	@echo "linting"
