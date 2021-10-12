@@ -150,7 +150,7 @@ fmt: groupimports
 tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
-	[ -d ".git" ] && git diff --exit-code -- go.mod
+	@git rev-parse --git-dir > /dev/null 2>&1 && git diff --exit-code -- go.mod
 	find testcase -mindepth 1 -maxdepth 1 -type d | xargs -I% sh -c 'cd %; make tidy';
 
 lint: install-revive
