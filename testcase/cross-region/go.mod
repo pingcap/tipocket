@@ -7,7 +7,7 @@ require (
 	github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 	github.com/pingcap/log v0.0.0-20210625125904-98ed8e2eb1c7
 	github.com/pingcap/tipocket v1.0.0
-	github.com/tikv/pd v1.1.0-beta.0.20211101054051-788f352581de
+	github.com/tikv/pd v1.1.0-beta.0.20211104095303-69c86d05d379
 	go.uber.org/zap v1.16.0
 	golang.org/x/tools v0.1.7 // indirect
 )
