@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/pingcap/log"
 	pdClient "github.com/tikv/pd/client"
@@ -74,6 +75,9 @@ func (c *crossRegionClient) SetUp(ctx context.Context, _ []cluster.Node, cnodes 
 		if err != nil {
 			return err
 		}
+		// Enable the TSO Follower Proxy and set the max TSO batch wait interval to 1ms.
+		c.pdClient.UpdateOption(pdClient.EnableTSOFollowerProxy, true)
+		c.pdClient.UpdateOption(pdClient.MaxTSOBatchWaitInterval, time.Millisecond)
 	}
 	if err != nil {
 		return err
