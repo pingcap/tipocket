@@ -396,6 +396,7 @@ func (c *bank2Client) verify(ctx context.Context, db *sql.DB) {
 				strings.Contains(errStr, "redirect to not leader") ||
 				strings.Contains(errStr, "raft: stopped") ||
 				strings.Contains(errStr, "raft proposal dropped") ||
+				strings.Contains(errStr, "no available connections") ||
 				(errStr == "Error 1105: ")) {
 			atomic.StoreInt32(&c.stop, 1)
 			c.wg.Wait()
