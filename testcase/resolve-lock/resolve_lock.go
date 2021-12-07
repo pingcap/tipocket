@@ -568,7 +568,7 @@ func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 			ts := oracle.ComposeTS(physical, logical)
 			return ts, nil
 
-		case io.EOF, errors.New("context canceled"):
+		case io.EOF, context.Canceled:
 			// If the error is caused by PD panic, the panic_check plugin checks it.
 			//
 			// PD may be killed due to the test environment and it may recover,
