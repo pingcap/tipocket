@@ -575,7 +575,7 @@ func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 			}
 
 			// If the error is caused by PD panic, the panic_check plugin checks it.
-			// PD may be killed or return error context.Cancele due to the test environment and it may recover,
+			// PD may be killed or return error context.Canceled due to the test environment and it may recover,
 			// so we backoff for a while and if PD doesn't recover in time, we
 			// think the test finishes to avoid false-negative.
 
