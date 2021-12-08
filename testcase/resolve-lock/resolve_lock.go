@@ -569,7 +569,7 @@ func (c *resolveLockClient) getTs(ctx context.Context) (uint64, error) {
 			return ts, nil
 
 		case io.EOF, context.Canceled:
-			//client return error context.Canceled actively
+			// client return error context.Canceled actively
 			if ctx.Err() != nil {
 				return 0, nil
 			}
