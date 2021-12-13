@@ -24,10 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"sync/atomic"
-
 	"github.com/ngaut/log"
-	"github.com/pingcap/tidb/store/tikv/oracle"
 
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
@@ -92,10 +89,6 @@ func (s *staleRead) SetUp(ctx context.Context, nodes []cluster.Node, clientNodes
 	return nil
 }
 
-func (s *staleRead) encodeTs(t time.Time) uint64 {
-	return oracle.ComposeTS(oracle.GetPhysical(t), atomic.AddInt64(&s.counter, 1))
-}
-
 // Start
 func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cluster.ClientNode) error {
 	log.Info("[stale read] start to test...")
@@ -142,13 +135,13 @@ func (s *staleRead) Start(ctx context.Context, cfg interface{}, clientNodes []cl
 }
 
 func (s *staleRead) mustEqualRead(ctx context.Context) {
-	conn1, err := s.db.Conn(ctx)
+	staleReadConn, err := s.db.Conn(ctx)
 	if err != nil {
-		return
+		log.Fatalf("Failed to establish connection for stale read, error: %v", err)
 	}
-	conn2, err := s.db.Conn(ctx)
+	strongReadConn, err := s.db.Conn(ctx)
 	if err != nil {
-		return
+		log.Fatalf("Failed to establish connection for strong read, error: %v", err)
 	}
 	count := 0
 	for {
@@ -160,24 +153,47 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 		// 0s-100s ago
 		ago := rand.Intn(s.MaxStaleness)
 		timeAgo := time.Now().Add(time.Duration(-ago) * time.Second)
-		stale, ts, err1 := s.staleRead(ctx, conn1, timeAgo, ids)
-		strong, err2 := s.strongRead(ctx, conn2, ts, ids)
-		if err1 == nil && err2 == nil {
-			// The result should be the same
-			if len(stale) != len(strong) || len(strong) == 0 {
-				log.Fatalf("got different number of resluts at %d ago, ids: %d, stale: %d, strong: %d, stale res: %v, strong res: %v", ago, len(ids), len(stale), len(strong), stale, strong)
+
+		stale, ts, err := s.staleRead(ctx, staleReadConn, timeAgo, ids)
+		if err != nil {
+			log.Warnf("stale read return error: %v", err)
+			// Backoff then establish a new connection and retry
+			if stopped := sleepOrStop(ctx, s.RequestInterval); stopped {
+				return
 			}
-			for id, pad := range strong {
-				if stalePad, ok := stale[id]; !ok || stalePad != pad {
-					log.Fatalf("got different resluts for id %d at %ds ago, tso: %v, stale read: %s, strong read: %s", id, ago, ts, stale[id], pad)
-				}
+			staleReadConn, err = s.db.Conn(ctx)
+			if err != nil {
+				log.Fatalf("Failed to establish connection for stale read, error: %v", err)
 			}
-			if count%10000 == 0 {
-				sql := fmt.Sprintf("select * from %s.%s where id in (%s)", s.DBName, Table, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]"))
-				log.Infof("Stale read %d seconds ago equal to strong read, sql: %s", ago, sql)
+			continue
+		}
+
+		strong, err := s.strongRead(ctx, strongReadConn, ts, ids)
+		if err != nil {
+			log.Warnf("strong read return error: %v", err)
+			// Backoff then establish a new connection and retry
+			if stopped := sleepOrStop(ctx, s.RequestInterval); stopped {
+				return
 			}
-		} else {
-			log.Warnf("read return error, stale: %v, strong: %v", err1, err2)
+			strongReadConn, err = s.db.Conn(ctx)
+			if err != nil {
+				log.Fatalf("Failed to establish connection for strong read, error: %v", err)
+			}
+			continue
+		}
+
+		// The result should be the same
+		if len(stale) != len(strong) || len(strong) == 0 {
+			log.Fatalf("got different number of resluts at %d ago, ids: %d, stale: %d, strong: %d, stale res: %v, strong res: %v", ago, len(ids), len(stale), len(strong), stale, strong)
+		}
+		for id, pad := range strong {
+			if stalePad, ok := stale[id]; !ok || stalePad != pad {
+				log.Fatalf("got different resluts for id %d at %ds ago, tso: %v, stale read: %s, strong read: %s", id, ago, ts, stale[id], pad)
+			}
+		}
+		if count%10000 == 0 {
+			sql := fmt.Sprintf("select * from %s.%s where id in (%s)", s.DBName, Table, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(ids)), ", "), "[]"))
+			log.Infof("Stale read %d seconds ago equal to strong read, sql: %s", ago, sql)
 		}
 
 		select {
@@ -187,6 +203,16 @@ func (s *staleRead) mustEqualRead(ctx context.Context) {
 			time.Sleep(s.RequestInterval)
 			count++
 		}
+	}
+}
+
+func sleepOrStop(ctx context.Context, interval time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return true
+	default:
+		time.Sleep(interval)
+		return false
 	}
 }
 
