@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/ngaut/log v0.0.0-20180314031856-b8e36e7ba5ac
-	github.com/pingcap/tidb v2.0.11+incompatible
 	github.com/pingcap/tipocket v1.0.0
 )
 
