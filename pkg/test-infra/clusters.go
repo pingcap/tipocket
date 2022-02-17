@@ -170,12 +170,14 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 	up := tidb.New(namespace, name+"-upstream", conf)
 	upstream := up.GetTiDBCluster()
 	upstream.Spec.TiDB.BinlogEnabled = pointer.BoolPtr(true)
+	baseImage, version := util.BuildBaseImageAndVersion("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image)
 	upstream.Spec.Pump = &v1alpha1.PumpSpec{
 		Replicas:             3,
 		ResourceRequirements: fixture.WithStorage(fixture.Small, "10Gi"),
 		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
+		BaseImage:            baseImage,
 		ComponentSpec: v1alpha1.ComponentSpec{
-			Image: util.BuildImage("tidb-binlog", fixture.Context.TiDBClusterConfig.ImageVersion, fixture.Context.BinlogConfig.Image),
+			Version: version,
 		},
 		Config: &config.GenericConfig{},
 	}

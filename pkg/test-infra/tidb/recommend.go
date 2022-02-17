@@ -50,11 +50,13 @@ func (t *Recommendation) EnableTiFlash(clusterConfig fixture.TiDBClusterConfig) 
 	tag, fullImage, replicas := clusterConfig.ImageVersion, clusterConfig.TiFlashImage, clusterConfig.TiFlashReplicas
 	tiflashDataStorageClass := provideTiFlashStorageClassName(clusterConfig)
 	if t.TidbCluster.Spec.TiFlash == nil {
+		baseImage, version := util.BuildBaseImageAndVersion("tiflash", tag, fullImage)
 		t.TidbCluster.Spec.TiFlash = &v1alpha1.TiFlashSpec{
 			Replicas:         int32(replicas),
 			MaxFailoverCount: pointer.Int32Ptr(int32(0)),
+			BaseImage:        baseImage,
 			ComponentSpec: v1alpha1.ComponentSpec{
-				Image: util.BuildImage("tiflash", tag, fullImage),
+				Version: version,
 			},
 			StorageClaims: []v1alpha1.StorageClaim{
 				{
@@ -149,6 +151,11 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	pdDataStorageClass := providePDStorageClassName(clusterConfig)
 	tikvDataStorageClass := provideTiKVStorageClassName(clusterConfig)
 
+	pdBaseImage, pdVersion := util.BuildBaseImageAndVersion("pd", clusterConfig.ImageVersion, clusterConfig.PDImage)
+	tikvBaseImage, tikvVersion := util.BuildBaseImageAndVersion("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage)
+	tidbBaseImage, tidbVersion := util.BuildBaseImageAndVersion("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage)
+	ticdcBaseImage, ticdcVersion := util.BuildBaseImageAndVersion("ticdc", clusterConfig.ImageVersion, clusterConfig.TiCDCImage)
+
 	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
 			ObjectMeta: metav1.ObjectMeta{
@@ -168,8 +175,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &pdDataStorageClass,
+					BaseImage:            pdBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: util.BuildImage("pd", clusterConfig.ImageVersion, clusterConfig.PDImage),
+						Version: pdVersion,
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
@@ -194,8 +202,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					StorageClassName: &tikvDataStorageClass,
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
+					BaseImage:        tikvBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: util.BuildImage("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage),
+						Version: tikvVersion,
 					},
 				},
 				TiDB: &v1alpha1.TiDBSpec{
@@ -218,8 +227,9 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					},
 					// disable auto fail over
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
+					BaseImage:        tidbBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: util.BuildImage("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage),
+						Version: tidbVersion,
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
@@ -230,9 +240,10 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					},
 				},
 				TiCDC: &v1alpha1.TiCDCSpec{
-					Replicas: int32(clusterConfig.TiCDCReplicas),
+					Replicas:  int32(clusterConfig.TiCDCReplicas),
+					BaseImage: ticdcBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Image: util.BuildImage("ticdc", clusterConfig.ImageVersion, clusterConfig.TiCDCImage),
+						Version: ticdcVersion,
 					},
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
