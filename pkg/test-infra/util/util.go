@@ -92,6 +92,7 @@ func ApplyObject(client client.Client, object runtime.Object) error {
 
 // BuildImage builds a image URL: ${fixture.Context.HubAddress}/${fixture.Context.DockerRepository}/$name:$tag
 // or returns the fullImageIfNotEmpty if it's not empty
+// Attention: since tidb-operator v1.3.0, image is deprecated actually, so don't use this function to set the tidbCluster CRD component images
 func BuildImage(name, tag, fullImageIfNotEmpty string) string {
 	if len(fullImageIfNotEmpty) > 0 {
 		return fullImageIfNotEmpty
@@ -108,6 +109,16 @@ func BuildImage(name, tag, fullImageIfNotEmpty string) string {
 	b.WriteString(tag)
 
 	return b.String()
+}
+
+// BuildBaseImageAndVersion generates baseImage and version for tidbCluster CRD components.
+func BuildBaseImageAndVersion(name, tag, fullImageIfNotEmpty string) (baseImage string, version *string) {
+	image := BuildImage(name, tag, fullImageIfNotEmpty)
+	s := strings.Split(image, ":")
+	if len(s) == 1 {
+		return image, nil
+	}
+	return s[0], &s[1]
 }
 
 func chooseHub(image string) string {
