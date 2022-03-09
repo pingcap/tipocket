@@ -226,8 +226,9 @@ func (c *pipelineClient) Start(ctx context.Context, cfg interface{}, clientNodes
 	}()
 
 	for i := 0; i < c.TableSize; i++ {
+		longCheck := i%3 == 0
 		for j := 0; j < c.ContenderCount; j++ {
-			go c.transfer(ctx, i)
+			go c.transfer(ctx, i, longCheck)
 		}
 	}
 
@@ -263,25 +264,38 @@ func (c *pipelineClient) stopScatterTable(db, table string) error {
 	return err
 }
 
-func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int) (bool, error) {
-	tx, err := c.db.Begin()
-	if err != nil {
-		return false, err
+func (c *pipelineClient) checkKeyIsLocked(ctx context.Context, row int, longCheck bool) (bool, error) {
+	checkOnce := func() (bool, error) {
+		tx, err := c.db.Begin()
+		if err != nil {
+			return false, err
+		}
+		defer tx.Rollback()
+		rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id in (%d, %d) FOR UPDATE NOWAIT`, tableName, row, row+c.TableSize))
+		if err == nil {
+			rows.Close()
+			return false, nil
+		}
+		if me, ok := err.(*mysql.MySQLError); !ok || me.Number != 3572 {
+			return false, err
+		}
+		return true, nil
 	}
-	defer tx.Rollback()
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE id in (%d, %d) FOR UPDATE NOWAIT`, tableName, row, row+c.TableSize))
-	if err == nil {
-		rows.Close()
-		return false, nil
+	if longCheck {
+		for i := 0; i < 5; i++ {
+			ok, err := checkOnce()
+			if err != nil || !ok {
+				return ok, err
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
 	}
-	if me, ok := err.(*mysql.MySQLError); !ok || me.Number != 3572 {
-		return false, err
-	}
-	return true, nil
+	return checkOnce()
 }
 
 // transfer transfers 1 from a row to the next row.
-func (c *pipelineClient) transfer(ctx context.Context, row int) {
+// longCheck means it will check whether the row is locked repeatedly for a while.
+func (c *pipelineClient) transfer(ctx context.Context, row int, longCheck bool) {
 	var cnt uint64
 	for {
 		select {
@@ -304,7 +318,7 @@ func (c *pipelineClient) transfer(ctx context.Context, row int) {
 		}
 		// Check whether the lock above is applied successfully.
 		// If there are more than one contenders for each row, it may report false positive because the row can be locked by another transaction.
-		if locked, err := c.checkKeyIsLocked(ctx, row); !locked || err != nil {
+		if locked, err := c.checkKeyIsLocked(ctx, row, longCheck); !locked || err != nil {
 			if c.Strict {
 				log.Fatalf("fail to lock: %v", err)
 			}
