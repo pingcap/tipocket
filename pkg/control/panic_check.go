@@ -122,7 +122,7 @@ func (c *PanicCheck) checkTiDBClusterPanic(ctx context.Context, nodes []cluster.
 					ip, port,
 					from.(time.Time), now,
 					[]logs.LogLevel{logs.LogLevelCritical, logs.LogLevelDebug, logs.LogLevelError, logs.LogLevelInfo, logs.LogLevelTrace, logs.LogLevelUnknown, logs.LogLevelWarn},
-					[]string{"(?i)panic"},
+					[]string{"(?i)panic", "(?i)assertion failed", "(?i)data inconsistency"},
 					logLimit,
 				)
 				if err != nil {
