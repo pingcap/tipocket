@@ -92,6 +92,7 @@ type Config struct {
 	ReplicaRead         string
 	DbName              string
 	TiFlashDataReplicas int
+	ConnParams          string
 }
 
 // ClientCreator ...
@@ -129,6 +130,9 @@ func (c *bank2Client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes [
 	var err error
 	node := clientNodes[idx]
 	dsn := fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, c.DbName)
+	if len(c.ConnParams) > 0 {
+		dsn = dsn + "?" + c.ConnParams
+	}
 
 	log.Infof("start to init...")
 	db, err := util.OpenDB(dsn, 1)

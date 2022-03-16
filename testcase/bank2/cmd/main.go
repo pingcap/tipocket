@@ -45,6 +45,7 @@ var (
 	replicaRead         = flag.String("tidb-replica-read", "leader", "tidb_replica_read mode, support values: leader / follower / leader-and-follower, default value: leader.")
 	dbname              = flag.String("dbname", "test", "name of database to test")
 	tiflashDataReplicas = flag.Int("tiflash-data-replicas", 0, "the number of the tiflash data replica")
+	connParams          = flag.String("conn_params", "", "connection parameters")
 )
 
 func main() {
@@ -74,6 +75,7 @@ func main() {
 				ReplicaRead:         *replicaRead,
 				DbName:              *dbname,
 				TiFlashDataReplicas: *tiflashDataReplicas,
+				ConnParams:          *connParams,
 			},
 		},
 		NemesisGens: util.ParseNemesisGenerators(fixture.Context.Nemesis),
