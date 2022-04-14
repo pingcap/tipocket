@@ -112,13 +112,13 @@ func BuildImage(name, tag, fullImageIfNotEmpty string) string {
 }
 
 // BuildBaseImageAndVersion generates baseImage and version for tidbCluster CRD components.
-func BuildBaseImageAndVersion(name, tag, fullImageIfNotEmpty string) (baseImage string, version *string) {
+func BuildBaseImageAndVersion(name, tag, fullImageIfNotEmpty string) (baseImage string, version string) {
 	image := BuildImage(name, tag, fullImageIfNotEmpty)
 	s := strings.Split(image, ":")
 	if len(s) == 1 {
-		return image, nil
+		return image, "latest"
 	}
-	return s[0], &s[1]
+	return s[0], s[1]
 }
 
 func chooseHub(image string) string {
