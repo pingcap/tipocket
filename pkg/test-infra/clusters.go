@@ -177,7 +177,7 @@ func NewBinlogCluster(namespace, name string, conf fixture.TiDBClusterConfig) cl
 		StorageClassName:     &fixture.Context.LocalVolumeStorageClass,
 		BaseImage:            baseImage,
 		ComponentSpec: v1alpha1.ComponentSpec{
-			Version: version,
+			Version: &version,
 		},
 		Config: &config.GenericConfig{},
 	}

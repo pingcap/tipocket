@@ -56,7 +56,7 @@ func (t *Recommendation) EnableTiFlash(clusterConfig fixture.TiDBClusterConfig) 
 			MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 			BaseImage:        baseImage,
 			ComponentSpec: v1alpha1.ComponentSpec{
-				Version: version,
+				Version: &version,
 			},
 			StorageClaims: []v1alpha1.StorageClaim{
 				{
@@ -155,6 +155,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 	tikvBaseImage, tikvVersion := util.BuildBaseImageAndVersion("tikv", clusterConfig.ImageVersion, clusterConfig.TiKVImage)
 	tidbBaseImage, tidbVersion := util.BuildBaseImageAndVersion("tidb", clusterConfig.ImageVersion, clusterConfig.TiDBImage)
 	ticdcBaseImage, ticdcVersion := util.BuildBaseImageAndVersion("ticdc", clusterConfig.ImageVersion, clusterConfig.TiCDCImage)
+	version := tidbVersion
 
 	r := &Recommendation{
 		TidbCluster: &v1alpha1.TidbCluster{
@@ -171,13 +172,14 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 				PVReclaimPolicy: &reclaimDelete,
 				EnablePVReclaim: &enablePVReclaim,
 				ImagePullPolicy: corev1.PullAlways,
+				Version:         version,
 				PD: &v1alpha1.PDSpec{
 					Replicas:             int32(clusterConfig.PDReplicas),
 					ResourceRequirements: fixture.WithStorage(fixture.Medium, "10Gi"),
 					StorageClassName:     &pdDataStorageClass,
 					BaseImage:            pdBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: pdVersion,
+						Version: &pdVersion,
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
@@ -204,7 +206,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					BaseImage:        tikvBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: tikvVersion,
+						Version: &tikvVersion,
 					},
 				},
 				TiDB: &v1alpha1.TiDBSpec{
@@ -229,7 +231,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					MaxFailoverCount: pointer.Int32Ptr(int32(0)),
 					BaseImage:        tidbBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: tidbVersion,
+						Version: &tidbVersion,
 					},
 					StorageVolumes: []v1alpha1.StorageVolume{
 						{
@@ -243,7 +245,7 @@ func RecommendedTiDBCluster(ns, name string, clusterConfig fixture.TiDBClusterCo
 					Replicas:  int32(clusterConfig.TiCDCReplicas),
 					BaseImage: ticdcBaseImage,
 					ComponentSpec: v1alpha1.ComponentSpec{
-						Version: ticdcVersion,
+						Version: &ticdcVersion,
 					},
 					ResourceRequirements: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
