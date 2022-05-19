@@ -74,5 +74,17 @@
     [
       '/bin/tll',
     ],
+  'partition-write'(args={})::
+    [
+      '/bin/partition-write',
+    ],
+  'partition-write'(args={})::
+    [
+      '/bin/partition-write',
+    ],
+  'partition-write'(args={})::
+    [
+      '/bin/partition-write',
+    ],
   // +tipocket:scaffold:case_decls
 }
