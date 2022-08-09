@@ -18,7 +18,7 @@ TiPocket is inspired by [jepsen-io/jepsen](https://github.com/jepsen-io/jepsen),
 ## Nemesis
 
 * random_kill, all_kill, minor_kill, major_kill, kill_tikv_1node_5min, kill_pd_leader_5min: As their name implies, these nemeses inject unavailable in a specified period of time.
-* short_kill_tikv_1node, short_kill_pd_leader: Kill selected container, used to inject short duration of unavailable fault.
+* short_kill_tikv_1node, short_kill_pd_leader, short_kill_tiflash_1node: Kill selected container, used to inject short duration of unavailable fault.
 * partition_one: Isolate single nodes
 * scaling: Scale up/down TiDB/PD/TiKV nodes randomly
 * shuffle-leader-scheduler/shuffle-region-scheduler/random-merge-scheduler: Just as there name implies

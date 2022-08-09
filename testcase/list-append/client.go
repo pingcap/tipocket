@@ -19,6 +19,7 @@ import (
 	ellecore "github.com/pingcap/tipocket/pkg/elle/core"
 	elleappend "github.com/pingcap/tipocket/pkg/elle/list_append"
 	elletxn "github.com/pingcap/tipocket/pkg/elle/txn"
+	"github.com/pingcap/tipocket/util"
 )
 
 type appendResponse struct {
@@ -35,15 +36,18 @@ func (c appendResponse) IsUnknown() bool {
 }
 
 type client struct {
-	tableCount  int
-	useIndex    bool
-	readLock    string
-	txnMode     string
-	replicaRead string
+	tableCount          int
+	useIndex            bool
+	readLock            string
+	txnMode             string
+	replicaRead         string
+	tiflashDataReplicas int
 
 	db          *sql.DB
 	nextRequest func() ellecore.Op
 }
+
+const dbName = "test"
 
 func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []cluster.ClientNode, idx int) error {
 	var err error
@@ -60,8 +64,12 @@ func (c *client) SetUp(ctx context.Context, _ []cluster.Node, clientNodes []clus
 		return fmt.Errorf("illegal txn_mode value: %s", txnMode)
 	}
 
+	if c.tiflashDataReplicas > 0 && c.readLock != "" {
+		return fmt.Errorf("readLock must be empty when tiflash data replica is larger than 0")
+	}
+
 	node := clientNodes[idx]
-	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/test", node.IP, node.Port))
+	c.db, err = sql.Open("mysql", fmt.Sprintf("root@tcp(%s:%d)/%s", node.IP, node.Port, dbName))
 	if err != nil {
 		return err
 	}
@@ -136,6 +144,19 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 			if c.useIndex {
 				column = "sk"
 			}
+			if c.tiflashDataReplicas > 0 {
+				if _, err := txn.Exec("set @@session.tidb_isolation_read_engines='tiflash'"); err != nil {
+					_ = txn.Rollback()
+					return appendResponse{
+						Result: ellecore.Op{
+							Time:  time.Now(),
+							Type:  ellecore.OpTypeFail,
+							Value: request.Value,
+							Error: err.Error(),
+						},
+					}
+				}
+			}
 			query := fmt.Sprintf("select val from txn_%d where %s = ?", table, column)
 			if c.readLock != "" {
 				query += " " + c.readLock
@@ -150,6 +171,19 @@ func (c *client) Invoke(ctx context.Context, node cluster.ClientNode, r interfac
 						Value: request.Value,
 						Error: err.Error(),
 					},
+				}
+			}
+			if c.tiflashDataReplicas > 0 {
+				if _, err := txn.Exec("set @@session.tidb_isolation_read_engines='tikv'"); err != nil {
+					_ = txn.Rollback()
+					return appendResponse{
+						Result: ellecore.Op{
+							Time:  time.Now(),
+							Type:  ellecore.OpTypeFail,
+							Value: request.Value,
+							Error: err.Error(),
+						},
+					}
 				}
 			}
 			var value string
@@ -208,7 +242,7 @@ func (c *client) NextRequest() interface{} {
 	return c.nextRequest()
 }
 
-func (c *client) DumpState(_ context.Context) (interface{}, error) {
+func (c *client) DumpState(ctx context.Context) (interface{}, error) {
 	for i := 0; i < c.tableCount; i++ {
 		if _, err := c.db.Exec(fmt.Sprintf("drop table if exists txn_%d", i)); err != nil {
 			return nil, err
@@ -224,39 +258,48 @@ func (c *client) DumpState(_ context.Context) (interface{}, error) {
 				return nil, err
 			}
 		}
+		maxSecondsBeforeTiFlashAvail := 1000
+		if c.tiflashDataReplicas > 0 {
+			if err := util.SetAndWaitTiFlashReplica(ctx, c.db, dbName, fmt.Sprintf("txn_%d", i), c.tiflashDataReplicas, maxSecondsBeforeTiFlashAvail); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return nil, nil
 }
 
 // ClientCreator can create list append client
 type appendClientCreator struct {
-	tableCount  int
-	readLock    string
-	txnMode     string
-	replicaRead string
+	tableCount          int
+	readLock            string
+	txnMode             string
+	replicaRead         string
+	tiflashDataReplicas int
 
 	it *elletxn.MopIterator
 	mu sync.Mutex
 }
 
 // NewClientCreator ...
-func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string) core.ClientCreator {
+func NewClientCreator(tableCount int, readLock, txnMode, replicaRead string, tiflashDataReplicas int) core.ClientCreator {
 	return &appendClientCreator{
-		tableCount:  tableCount,
-		readLock:    readLock,
-		txnMode:     txnMode,
-		replicaRead: replicaRead,
-		it:          elletxn.WrTxnWithDefaultOpts(),
+		tableCount:          tableCount,
+		readLock:            readLock,
+		txnMode:             txnMode,
+		replicaRead:         replicaRead,
+		tiflashDataReplicas: tiflashDataReplicas,
+		it:                  elletxn.WrTxnWithDefaultOpts(),
 	}
 }
 
 // Create creates a client.
 func (a *appendClientCreator) Create(_ cluster.ClientNode) core.Client {
 	return &client{
-		tableCount:  a.tableCount,
-		readLock:    a.readLock,
-		txnMode:     a.txnMode,
-		replicaRead: a.replicaRead,
+		tableCount:          a.tableCount,
+		readLock:            a.readLock,
+		txnMode:             a.txnMode,
+		replicaRead:         a.replicaRead,
+		tiflashDataReplicas: a.tiflashDataReplicas,
 		nextRequest: func() ellecore.Op {
 			a.mu.Lock()
 			defer a.mu.Unlock()

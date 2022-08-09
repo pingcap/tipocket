@@ -19,7 +19,7 @@ default: tidy fmt lint build
 build: bindir consistency isolation pocket on-dup sqllogic block-writer \
 		region-available crud stale-read \
 		read-stress follower-read pessimistic resolve-lock cdc-bank \
-    example ttl \
+    example ttl tiflash-u1 \
 # +tipocket:scaffold:makefile_build
 
 bindir:
@@ -136,6 +136,10 @@ cross-region:
 
 ttl:
 	cd testcase/ttl ; make build; \
+	cp bin/* ../../bin/
+
+tiflash-u1:
+	cd testcase/tiflash-u1 ; make build; \
 	cp bin/* ../../bin/
 
 # +tipocket:scaffold:makefile_build_cmd
