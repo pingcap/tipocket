@@ -1,0 +1,92 @@
+metadata:
+  name: tipocket-bank-matrix
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: "Forbid"
+  timezone: "Asia/Shanghai"
+  startingDeadlineSeconds: 0
+  workflowSpec:
+    entrypoint: call-tipocket-bank
+    arguments:
+      parameters:
+        - name: ns
+          value: tipocket-bank-matrix
+        - name: purge
+          value: "true"
+        - name: image-version
+          value: nightly
+        - name: storage-class
+          value: sas
+        - name: nemesis
+          value: random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler
+        - name: client
+          value: "5"
+        - name: request-count
+          value: "20000"
+        - name: round
+          value: "100"
+        - name: loki-addr
+          value: "http://gateway.loki.svc"
+        - name: loki-username
+          value: "loki"
+        - name: loki-password
+          value: "admin"
+        - name: matrix-config
+          value: "/config/matrix.yaml"
+        - name: matrix-tidb
+          value: "tidb.toml"
+        - name: matrix-tikv
+          value: "tikv.toml"
+        - name: matrix-pd
+          value: "pd.toml"
+        - name: matrix-sql
+          value: "mysql-system-vars.sql,tidb-system-vars.sql"
+    templates:
+      - name: call-tipocket-bank
+        steps:
+          - - name: call-wait-cluster
+              templateRef:
+                name: wait-cluster
+                template: wait-cluster
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+          - - name: call-tipocket-bank
+              templateRef:
+                name: tipocket-bank
+                template: tipocket-bank
+              arguments:
+                parameters:
+                  - name: ns
+                    value: "{{workflow.parameters.ns}}"
+                  - name: purge
+                    value: "{{workflow.parameters.purge}}"
+                  - name: image-version
+                    value: "{{workflow.parameters.image-version}}"
+                  - name: storage-class
+                    value: "{{workflow.parameters.storage-class}}"
+                  - name: nemesis
+                    value: "{{workflow.parameters.nemesis}}"
+                  - name: client
+                    value: "{{workflow.parameters.client}}"
+                  - name: request-count
+                    value: "{{workflow.parameters.request-count}}"
+                  - name: round
+                    value: "{{workflow.parameters.round}}"
+                  - name: loki-addr
+                    value: "{{workflow.parameters.loki-addr}}"
+                  - name: loki-username
+                    value: "{{workflow.parameters.loki-username}}"
+                  - name: loki-password
+                    value: "{{workflow.parameters.loki-password}}"
+                  - name: matrix-config
+                    value: "{{workflow.parameters.matrix-config}}"
+                  - name: matrix-tidb
+                    value: "{{workflow.parameters.matrix-tidb}}"
+                  - name: matrix-tikv
+                    value: "{{workflow.parameters.matrix-tikv}}"
+                  - name: matrix-pd
+                    value: "{{workflow.parameters.matrix-pd}}"
+                  - name: matrix-sql
+                    value: "{{workflow.parameters.matrix-sql}}"

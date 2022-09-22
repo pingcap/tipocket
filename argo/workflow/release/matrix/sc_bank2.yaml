@@ -1,0 +1,116 @@
+metadata:
+  generateName: tipocket-scbank2-matrix-
+  namespace: argo
+spec:
+  entrypoint: call-tipocket-scbank2
+  arguments:
+    parameters:
+      - name: ns
+        value: tipocket-scbank2-matrix
+      - name: purge
+        value: "true"
+      - name: hub
+        value: "hub.pingcap.net"
+      - name: repository
+        value: qa
+      - name: image-version
+        value: release-4.0-failpoint
+      - name: tidb-image
+        value: ""
+      - name: tikv-image
+        value: ""
+      - name: pd-image
+        value: ""
+      - name: storage-class
+        value: sas
+      - name: nemesis
+        value: "random_kill,kill_pd_leader_5min,partition_one,subcritical_skews,big_skews,shuffle-leader-scheduler,shuffle-region-scheduler,random-merge-scheduler"
+      - name: tidb-config
+        value: ""
+      - name: tikv-config
+        value: ""
+      - name: pd-config
+        value: ""
+      - name: tikv-replicas
+        value: "4"
+      - name: tidb-replica-read
+        value: "leader-and-follower"
+      - name: loki-addr
+        value: "http://gateway.loki.svc"
+      - name: loki-username
+        value: "loki"
+      - name: loki-password
+        value: "admin"
+      - name: matrix-config
+        value: ""
+      - name: matrix-tidb
+        value: "tidb.toml"
+      - name: matrix-tikv
+        value: "tikv.toml"
+      - name: matrix-pd
+        value: "pd.toml"
+      - name: matrix-sql
+        value: "mysql-system-vars.sql,tidb-system-vars.sql"
+  templates:
+    - name: call-tipocket-scbank2
+      steps:
+        - - name: call-wait-cluster
+            templateRef:
+              name: wait-cluster
+              template: wait-cluster
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+        - - name: call-tipocket-scbank2
+            templateRef:
+              name: tipocket-scbank2
+              template: tipocket-scbank2
+            arguments:
+              parameters:
+                - name: ns
+                  value: "{{workflow.parameters.ns}}"
+                - name: purge
+                  value: "{{workflow.parameters.purge}}"
+                - name: hub
+                  value: "{{workflow.parameters.hub}}"
+                - name: repository
+                  value: "{{workflow.parameters.repository}}"
+                - name: image-version
+                  value: "{{workflow.parameters.image-version}}"
+                - name: tidb-image
+                  value: "{{workflow.parameters.tidb-image}}"
+                - name: tikv-image
+                  value: "{{workflow.parameters.tikv-image}}"
+                - name: pd-image
+                  value: "{{workflow.parameters.pd-image}}"
+                - name: storage-class
+                  value: "{{workflow.parameters.storage-class}}"
+                - name: nemesis
+                  value: "{{workflow.parameters.nemesis}}"
+                - name: tidb-config
+                  value: "{{workflow.parameters.tidb-config}}"
+                - name: tikv-config
+                  value: "{{workflow.parameters.tikv-config}}"
+                - name: pd-config
+                  value: "{{workflow.parameters.pd-config}}"
+                - name: loki-addr
+                  value: "{{workflow.parameters.loki-addr}}"
+                - name: loki-username
+                  value: "{{workflow.parameters.loki-username}}"
+                - name: loki-password
+                  value: "{{workflow.parameters.loki-password}}"
+                - name: tikv-replicas
+                  value: "{{workflow.parameters.tikv-replicas}}"
+                - name: tidb-replica-read
+                  value: "{{workflow.parameters.tidb-replica-read}}"
+                - name: matrix-config
+                  value: "{{workflow.parameters.matrix-config}}"
+                - name: matrix-tidb
+                  value: "{{workflow.parameters.matrix-tidb}}"
+                - name: matrix-tikv
+                  value: "{{workflow.parameters.matrix-tikv}}"
+                - name: matrix-pd
+                  value: "{{workflow.parameters.matrix-pd}}"
+                - name: matrix-sql
+                  value: "{{workflow.parameters.matrix-sql}}"
