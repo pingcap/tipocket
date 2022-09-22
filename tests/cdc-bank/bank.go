@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ngaut/log"
-
 	"github.com/pingcap/tipocket/pkg/cluster"
 	"github.com/pingcap/tipocket/pkg/core"
 	"github.com/pingcap/tipocket/util"
@@ -53,7 +52,7 @@ func (c ClientCreator) Create(_ cluster.ClientNode) core.Client {
 
 const initBalance int = 1000
 const regions int = 16
-const validateConcurrency int = 32
+const validateConcurrency int = 1
 
 type client struct {
 	*Config
