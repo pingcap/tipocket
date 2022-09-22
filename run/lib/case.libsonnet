@@ -74,5 +74,9 @@
     [
       '/bin/tll',
     ],
+  'dynamicprivs'(args={})::
+    [
+      '/bin/dynamicprivs',
+    ],
   // +tipocket:scaffold:case_decls
 }
